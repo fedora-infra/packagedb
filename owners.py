@@ -9,7 +9,6 @@ import sys
 
 def usage():
     print 'Usage: owners.py [PATH TO owners.list]'
-    print '
 
 if __name__ == '__main__':
     if not sys.argv[1]:
@@ -26,5 +25,18 @@ if __name__ == '__main__':
         if line.startswith('#'):
             continue
         fields = line.split('|')
-        
+ 
+        if len(fields) != 6:
+            print 'Malformed line:', line
+            continue
+
+        collection = fields[0]
+        name = fields[1]
+        summary = fields[2]
+        owner = fields[3]
+        qacontact = fields[4]
+        comaintainers = fields[5]
+
+        # Add these to the package db.
+        # Pull from the package db, the ACLs, the 
     sys.exit(0)
