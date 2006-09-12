@@ -1,3 +1,4 @@
+# Version 0.2
 from sqlobject import *
 from sqlobject.inheritance import InheritableSQLObject
 from turbogears.database import PackageHub
@@ -12,8 +13,11 @@ class Collection(SQLObject):
     distro, in a SIG, or on a CD.
 
     Fields:
-    :name: "Core", "Extras", "Python", "GNOME" or whatever names-for-groupings
-        you want.
+    :name: "Fedora Core", "Fedora Extras", "Python", "GNOME" or whatever
+        names-for-groupings you want.  If this is for a grouping that a SIG is
+        interested in, the name should make this apparent.  If it is for one
+        of the distributions it should be the name for the Product that will
+        be used in Bugzilla as well.
     :version: The release of the `Collection`.  If the `Collection` doesn't
         have releases (for instance, SIGs), version should be 0.
     :status: Is the collection being worked on or is it inactive.
@@ -84,13 +88,13 @@ class PackageListing(SQLObject):
     :collection: A `Collection` that holds this `Package`.
     :owner: id from the accountsDB for the owner of the `Package` in this
         `Collection`.  A NULL value here means the package is orphaned.
-    :created: Date the `Package` was requested for this `Collection`.
+    :qacontact: Initial bugzilla QA Contact for this package.
     :status: Whether the `Package` was entered in the `Collection`.
     '''
     package = ForeignKey('Package', notNone=True)
     collection = ForeignKey('Collection', notNone=True)
     owner = IntCol(notNone=False)
-    created = DateTimeCol(default=sqlbuilder.func.NOW(), notNone=True)
+    qacontact = IntCol(notNone=False)
     status = EnumCol(enumValues=('awaitingreview', 'awaitingbranch',
         'approved', 'denied'), default='awaitingreview', notNone=True)
 
@@ -103,7 +107,6 @@ class PackageVersion(SQLObject):
     :version: RPM Version string.
     :release: RPM Release string including any disttag value.
     :status: What is happening with this particular version.
-    :created: When the package version was created.
     '''
     packageListing = ForeignKey('PackageListing', notNone=True)
     epoch = StringCol(length=32, notNone=False)
@@ -112,7 +115,6 @@ class PackageVersion(SQLObject):
     status = EnumCol(enumValues=('awaitingdevel', 'awaitingreview',
         'awaitingqa', 'awaitingpublish', 'approved', 'denied', 'obsolete'),
         default='awaitingdevel', notNone=True)
-    created = DateTimeCol(default=sqlbuilder.func.NOW(), notNone=True)
 
 class PackageInterest(InheritableSQLObject):
     '''An entity that has an active or passive relation to the `PackageListing`.
@@ -201,13 +203,24 @@ class PackageVersionLog(Log):
         'awaitingqa', 'awaitingpublish', 'approved', 'denied', 'obsolete'),
         notNone=True)
 
-class PackageInterestLog(Log):
+class PackageInterestPersonLog(Log):
     '''History of who has watched the packages before.
 
     Fields:
     :packageInterest: The package/person pair that has changed.
     :action: What has happened to it.
     '''
-    packageInterest = ForeignKey('PackageInterest', notNone=True)
+    packageInterest = ForeignKey('PackageInterestPerson', notNone=True)
+    action = EnumCol(enumValues=('added', 'awaitingreview', 'approved',
+        'denied', 'obsolete'), notNone=True)
+
+class PackageInterestGroupLog(Log):
+    '''History of what groups have watched the packages before.
+
+    Fields:
+    :packageInterest: The package/Group pair that has changed.
+    :action: What has happened to it.
+    '''
+    packageInterest = ForeignKey('PackageInterestGroup', notNone=True)
     action = EnumCol(enumValues=('added', 'awaitingreview', 'approved',
         'denied', 'obsolete'), notNone=True)
