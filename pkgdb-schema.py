@@ -34,6 +34,9 @@ class Collection(SQLObject):
     summary = UnicodeCol(length=128, notNone=False, default=None)
     description = UnicodeCol(notNone=False, default=None)
 
+    ### TODO:  There's an sqlmeta atribute that may be a better way to enable
+    # this.  Set a two column unique constraint and have a lookup function
+    # that looks up by name-version.
     def byNameVersion(name, version='0'):
         '''Return the `Collection` from its altenateID, name-version.
 
@@ -87,13 +90,14 @@ class PackageListing(SQLObject):
     :package: `Package` id that is in this `Collection`.
     :collection: A `Collection` that holds this `Package`.
     :owner: id from the accountsDB for the owner of the `Package` in this
-        `Collection`.  A NULL value here means the package is orphaned.
+        `Collection`.  There is a special orphaned account to use if you want
+        to orphan the package.
     :qacontact: Initial bugzilla QA Contact for this package.
     :status: Whether the `Package` was entered in the `Collection`.
     '''
     package = ForeignKey('Package', notNone=True)
     collection = ForeignKey('Collection', notNone=True)
-    owner = IntCol(notNone=False)
+    owner = IntCol(notNone=True)
     qacontact = IntCol(notNone=False)
     status = EnumCol(enumValues=('awaitingreview', 'awaitingbranch',
         'approved', 'denied'), default='awaitingreview', notNone=True)
