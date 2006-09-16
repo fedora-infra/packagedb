@@ -13,19 +13,15 @@ user='pkgdbadmin'
 password='4r3t`3'
 
 import sys
-### TODO:
-# Comment for now.  I think we'll have to rework this script to either parse
-# owners.list (on the fedora infrastructure servers where fedora-accounts is
-# available) or enter a pre-parsed list into the db. (since the test db is not
-# on fedora infrastructure.)
-#import psycopg2
-import website
+import optparse
+import cPickle as pickle
 
 class AccountsDB(object):
     '''The Accounts System Database.'''
 
     def __init__(self):
         '''Acquire a connection to the accounts system database.'''
+        import website
         self.db = website.get_dbh()
         self.dbCmd = self.db.cursor()
 
@@ -43,15 +39,14 @@ class Owners(dict):
     '''Pull the data from the owners.list.
     '''
 
-    def __init__(self, filename):
+    def __init__(self, ownersData):
         '''Pull the data from the file into the data structure.'''
         self.collections = {}
         self.errors = []
         accountsDB = AccountsDB()
-        ownersFile = file(filename, 'r')
         accounts = self.__preseed_accounts()
 
-        for line in ownersFile.readlines():
+        for line in ownersData.splitlines(keepends=True):
             if line.startswith('#'):
                 continue
             line = line.strip()
@@ -122,39 +117,89 @@ class Owners(dict):
         return {'extras-qa@fedoraproject.org' : None,
                 'extras-orphan@fedoraproject.org' : 0}
 
-"""
 class PackageDB(object):
     '''The PackageDB we're entering information into.'''
 
     def __init__(self):
         '''Setup the connection to the DB.'''
+        import psycopg2
+
         self.db = psycopg2.connect(database=dbName, host=dbHost, user=dbUser, password=dbPass)
         self.dbCmd = self.db.cursor()
-"""
+
+def parse_commandline():
+    '''Extract options from the command line.
+    '''
+    parser = optparse.OptionParser(version='%prog ' + __version__,
+            usage='''%prog [OPTIONS] [input-filename]
+       If [input-filename] is not specified, read from stdin''')
+
+    parser.add_option('-f', '--file', dest='pickleFile',
+            help='write to file FILE [default=stdout]',
+            metavar='FILE')
+    parser.add_option('-d', '--dsn', dest='dsn',
+            help='write to the postgres database at DSN instead of a file',
+            metavar='DSN')
+
+    (options, args) = parser.parse_args()
+
+    # Figure out where to write our parsed information
+    if options.pickleFile and options.dsn:
+        parser.error('Cannot specify both a dsn (-d) and temporary file (-t) as output')
+    if not (options.pickleFile and options.dsn):
+        options.pickleFile = '-'
+
+    # Figure out where to read information from
+    if len(args) != 1:
+        inputFile = '-'
+    else:
+        inputFile = args[0]
+
+    return (options, inputFile)
+
 if __name__ == '__main__':
-    if not sys.argv[1]:
-        usage()
-        sys.exit(1)
+    (options, filename) = parse_commandline()
 
-    # Load the data from owners.list
+    # Read the inputFile into memory
+    if filename == '-':
+        inputFile = sys.stdin
+    else:
+        try:
+            inputFile = file(filename, 'r')
+        except IOError:
+            print filename, 'is not a file you can read'
+            sys.exit(1)
+    body = inputFile.read()
+    inputFile.close()
+
     try:
-        owners = Owners(sys.argv[1])
-    except IOError:
-        print sys.argv[1], 'is not a file you can read'
-        sys.exit(1)
-    if (owners.errors):
-        for error in owners.errors:
-            print error
+        # If we have a pickle file, assume it's an intermediate file being
+        # saved to the database.
+        owners = pickle.loads(body)
+    except pickle.UnpicklingError:
+        # Otherwise, assume it's an owners.list file.
+        owners = Owners(inputFile)
+        if owners.errors:
+            # Print the errors but continue
+            for error in owners.errors:
+                print error
 
-    ### FIXME: We need to also take a path to a mirror of the CVS repository.
-    # Then we can create the Collections and the packages present in them.
-    print owners
-    ### FIXME: We need to write out the owners information into a file.  Then
-    # we can transfer it to the test machine.  Need to use a commandline
-    # switches to either do that (parse the owners.list file and translate email
-    # addresses into account ids) or do this second part: enter data into the
-    # packagedb.
-    sys.exit(1)
+        if options.pickleFile:
+            # If we are supposed to output, pickle the output and save to
+            # the file
+            if options.pickleFile == '-':
+                outFile = sys.stdout
+            else:
+                try:
+                    outFile = file(options.pickleFile, 'r')
+                except IOError:
+                    print 'Unable to open', options.pickleFile, 'to save the data'
+                    sys.exit(2)
+            pickle.dump(owners, outFile, -1)
+            outFile.close()
+            sys.exit(0)
+
+    # Write the owner information into the database
     pkgdb = PackageDB()
     pkgdb.import_owners(owners)
     ### FIXME: Next steps:
