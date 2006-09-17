@@ -22,12 +22,13 @@ class AccountsDB(object):
     def __init__(self):
         '''Acquire a connection to the accounts system database.'''
         import website
+        self.website = website
         self.db = website.get_dbh()
         self.dbCmd = self.db.cursor()
 
     def user_id_from_email(self, email):
         '''Find the user_id in the accountsdb for the given email address.'''
-        return website.get_user_id(self.db, email)
+        return self.website.get_user_id(self.db, email)
 
 def usage():
     print 'Usage: owners.py [PATH TO owners.list]'
@@ -46,7 +47,7 @@ class Owners(dict):
         accountsDB = AccountsDB()
         accounts = self.__preseed_accounts()
 
-        for line in ownersData.splitlines(keepends=True):
+        for line in ownersData.splitlines():
             if line.startswith('#'):
                 continue
             line = line.strip()
@@ -146,7 +147,7 @@ def parse_commandline():
     # Figure out where to write our parsed information
     if options.pickleFile and options.dsn:
         parser.error('Cannot specify both a dsn (-d) and temporary file (-t) as output')
-    if not (options.pickleFile and options.dsn):
+    if not (options.pickleFile or options.dsn):
         options.pickleFile = '-'
 
     # Figure out where to read information from
@@ -178,7 +179,7 @@ if __name__ == '__main__':
         owners = pickle.loads(body)
     except pickle.UnpicklingError:
         # Otherwise, assume it's an owners.list file.
-        owners = Owners(inputFile)
+        owners = Owners(body)
         if owners.errors:
             # Print the errors but continue
             for error in owners.errors:
@@ -191,7 +192,7 @@ if __name__ == '__main__':
                 outFile = sys.stdout
             else:
                 try:
-                    outFile = file(options.pickleFile, 'r')
+                    outFile = file(options.pickleFile, 'w')
                 except IOError:
                     print 'Unable to open', options.pickleFile, 'to save the data'
                     sys.exit(2)
