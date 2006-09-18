@@ -1,4 +1,4 @@
-#!/usr/bin/python -tt
+#!/usr/bin/python -t
 '''Usage: owners.py [PATH TO owners.list]
 
 This program parses the owners.list file from a cvs checkout and constructs
@@ -63,7 +63,8 @@ class Owners(dict):
             else:
                 ownerID = accountsDB.user_id_from_email(fields[3])
                 if not ownerID:
-                    self.errors.append('Unknown Owner: ' + line)
+                    self.errors.append('Unknown Owner: ' + fields[3] +
+                            ' in: ' + line)
                     continue
                 accounts[fields[3]] = ownerID
 
@@ -74,7 +75,8 @@ class Owners(dict):
                 qacontact = accountsDB.user_id_from_email(fields[4])
                 if not qacontact:
                     qacontact = '0'
-                    self.errors.append('Unknown QA Contact: ' + line)
+                    self.errors.append('Unknown QA Contact: ' + fields[4] +
+                            ' in: ' + line)
                     continue
                 accounts[fields[4]] = qacontact
 
@@ -85,7 +87,13 @@ class Owners(dict):
                 watcherIDs = []
                 for watcher in watchers:
                     if watcher in accounts:
-                        watcherIDs.append(accounts[watcher])
+                        if type(accounts[watcher]) == dict:
+                            pass
+                            ### FIXME: This one takes special handling.
+                            # Currently special handling is just for adding
+                            # the watcher as a group instead of a person.
+                        else:
+                            watcherIDs.append(accounts[watcher])
                     else:
                         watcherID = accountsDB.user_id_from_email(watcher)
                         if not watcherID:
@@ -116,7 +124,32 @@ class Owners(dict):
         '''
         
         return {'extras-qa@fedoraproject.org' : None,
-                'extras-orphan@fedoraproject.org' : 0}
+                # 100068 is toshio's account.  Use this for now.  Long term,
+                # create an extras-orphan account to set this to.
+                'extras-orphan@fedoraproject.org' : 100068,
+                'fedora-perl-devel-list@redhat.com' : {'group' : 100002},
+                'byte@fedoraproject.org' : 100014,
+                'icon@fedoraproject.org': 100029,
+                'splinux@fedoraproject.org' : 100406,
+                'kevin-redhat-bugzilla@tummy.com' : 100037,
+                'jafo-redhat@tummy.com' : 100488,
+                # Assuming this is Ralf Ertzing: ralf@camperquake.de
+                'redhat-bugzilla@camperquake.de' : 100023,
+                # dan@berrange.com
+                'berrange@redhat.com' : 100447,
+                # mike@flyn.org
+                'redhat@flyn.org' : 100136,
+                # redhat@linuxnetz.de
+                'redhat-bugzilla@linuxnetz.de': 100093,
+                # New address for sopwith sopwith+fedora@gmail.com
+                'sopwith@redhat.com' : 100060,
+                # Scott Bakers: muerte bakers@web-ster.com
+                'scott@perturb.org' : 100881,
+                # karen-peare@uiowa.edu
+                'meme@daughtersoftiresias.org' : 100281,
+                # DavidHart@TQMcube.com
+                'davidhart@tqmcube.com' : 100211
+                }
 
 class PackageDB(object):
     '''The PackageDB we're entering information into.'''
