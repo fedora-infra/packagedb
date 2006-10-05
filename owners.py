@@ -16,19 +16,20 @@ import sys
 import optparse
 import cPickle as pickle
 
+sys.path.append('/var/www/repo/fedora-accounts/')
+import website
+
 class AccountsDB(object):
     '''The Accounts System Database.'''
 
     def __init__(self):
         '''Acquire a connection to the accounts system database.'''
-        import website
-        self.website = website
         self.db = website.get_dbh()
         self.dbCmd = self.db.cursor()
 
     def user_id_from_email(self, email):
         '''Find the user_id in the accountsdb for the given email address.'''
-        return self.website.get_user_id(self.db, email)
+        return website.get_user_id(self.db, email)
 
 def usage():
     print 'Usage: owners.py [PATH TO owners.list]'
@@ -133,6 +134,8 @@ class Owners(dict):
                 'splinux@fedoraproject.org' : 100406,
                 'kevin-redhat-bugzilla@tummy.com' : 100037,
                 'jafo-redhat@tummy.com' : 100488,
+                # skvidal@linux.duke.edu
+                'skvidal@phy.duke.edu' : 100059,
                 # Assuming this is Ralf Ertzing: ralf@camperquake.de
                 'redhat-bugzilla@camperquake.de' : 100023,
                 # dan@berrange.com
