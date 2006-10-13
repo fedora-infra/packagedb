@@ -1,0 +1,139 @@
+==========
+Next Steps
+==========
+
+:Author: Toshio Kuratomi
+:Contact: toshio-tiki-lounge-com
+:Date: Fri, 13 October, 2006
+
+.. contents::
+
+Import Data
+===========
+
+Currently, information about the packages comes from several sources.  We
+need to import data from those sources into the packageDB.
+
+owners.list
+-----------
+
+:Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras cvs co owners; cat owners/owners.list
+:Data: Package names, summary, owner, qacontact, watchers
+:Duration: One-time; Obsoletes
+
+owners.list contains the bulk of new information that we are interested in.
+This file should contain information on all packages whether they are current
+in the repository or not.
+
+comps-fcX.xml.in
+----------------
+
+:Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras cvs co comps; cat comps/comps-fe6.xml.in
+:Data: Groups that the package belongs to.
+:Duration: One-time; Regenerates
+
+There is one comps.xml.in file per release.  It is used to create the comps.xml
+file that lists what groups packages in the repository are for.
+
+In the future, comps-fcX.xml.in could be generated from the packageDB.
+
+CVS Repository
+--------------
+
+:Location: CVSROOT:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras
+:Data: Collections that the package is present in, package metadata present in the spec file (URL, upstream source, etc.)
+:Duration: One-time; Regenerates
+
+The VCS repository (currently CVS) is the source of most information pertaining
+to the package itself.  Most of this information is better taken from the
+built packages, though, as the metadata has already been parsed and pulled into
+the repomd files by that time.
+
+Unique to the CVS repository is knowledge of what packages are present in which
+collections -- FC-{1,2,3,4,5,devel} and FE-{1,2,3,4,5,devel}. RH-{9}, and soon
+EL-{4,5}.  Regardless of whether they were obsoleted or otherwise, disappeared
+in the course of the release.
+
+In the future, the packageDB will manage the branches in the VCS Repository.
+
+Download Repository
+-------------------
+
+:Location: http://download.fedoraproject.org/pub/fedora/linux/extras/$release/repodata/repomd.xml
+:Data: RPM Metadata extracted into an xml file.  License, URL, upstream, present package EVR.
+:Duration: Ongoing
+
+Parsing the Download repository information gives us EVR information which is
+needed for the package_version table.  There is a wealth of other information
+in the files that we could use as well (file listings, summary, etc.) however,
+this is a large extension from the initial stage of the packagedb.
+
+We probably need to cache the repomd files in order to extract information
+sensibly as we're going to be pulling the data from the files on an ongoing
+basis.  Having the cached files allows us to find the differences between the
+old and new information.
+
+Build Server
+------------
+
+:Location: http://buildsys.fedoraproject.org/logs/fedora-development-extras/19621-gnubiff-2.2.2-3.fc6/x86_64/build.log
+:Data: Logs of failed and completed builds
+:Duration: Ongoing
+
+What do we want to do with these?  They are a large source of raw information
+but there's not much in terms of metadata type data.  If we have the db
+horsepower, we could put them into a Full Text Searchable field and put them
+in the db so we can search on them.
+
+Write Web Front End
+===================
+
+The Web front end is the primary interface to the package db.
+
+Status
+------
+
+* A Turbo Gears skeleton has been constructed.
+* A database schema has been created that works with postgreSQL/TurboGears.
+
+TODO
+----
+
+Stage 1
+~~~~~~~
+
+* Finish filling in read-only pages that allow us to see what's in the database
+  for each package.
+* Add comps group information to the database schema so we can generate comps
+  from here.
+
+Stage 2
+~~~~~~~
+
+* Allow owners and trusted users to make changes to the packages listed here.
+* Send email notifications when things change.
+* Write out ACLs to the VCS.
+* Integrate with the accounts system.
+
+Add Ons
+~~~~~~~
+
+* Write admin functionality:
+
+  - Branch script to make new release branches in the VCS.  Owners can
+    immediately branch for certain releases.  For other releases, owner
+    requests and admin clicks one button to confirm the request.  Script
+    takes care of the actual branch.
+
+* RSS Feeds of package changes.
+
+Ideas
+~~~~~
+
+* Hidden branches (for security fixes) need to be integrated somehow.  We may
+  want to include them in this interface but they are a bit more problematic
+  due to the way they operate.
+* Maybe take more information from repomd so and subsume some of repoview's
+  functionality?  This would take us into the realm of what Debian's web
+  interface to their package browser does but it may be too many things for
+  this project.
