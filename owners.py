@@ -8,9 +8,9 @@ an sql file expressing package database relations.
 __version__ = '0.1'
 
 dbName='packagedb'
-host='localhost'
-user='pkgdbadmin'
-password='4r3t`3'
+dbHost='localhost'
+dbUser='pkgdbadmin'
+dbPass='4r3t`3'
 
 import sys
 import optparse
@@ -154,6 +154,9 @@ class Owners(dict):
                 'davidhart@tqmcube.com' : 100211
                 }
 
+class PackageDBError(Exception):
+    pass
+
 class PackageDB(object):
     '''The PackageDB we're entering information into.'''
 
@@ -161,14 +164,36 @@ class PackageDB(object):
         '''Setup the connection to the DB.'''
         import psycopg2
 
-        self.db = psycopg2.connect(database=dbName, host=dbHost, user=dbUser, password=dbPass)
+        self.db = psycopg2.connect(database=dbName, host=dbHost,
+                user=dbUser, password=dbPass)
         self.dbCmd = self.db.cursor()
+
+    def import_owners(self, owners):
+        '''Import data from owners into the DB.
+
+        owners: The information from owners.list
+        '''
+        for collection in owners.collections.keys():
+            self.dbCmd.execute("select * from collection where name = '%s'" %
+                    collection)
+            if not self.dbCmd.fetchall():
+                raise PackageDBError, 'Unknown Collection %s' % collection
+            ### FIXME: determine which collection to place the packages. 
+        for pkg in owners.keys():
+            ### FIXME:  Add the packages to the db.
+            pass
 
 def parse_commandline():
     '''Extract options from the command line.
     '''
     parser = optparse.OptionParser(version='%prog ' + __version__,
             usage='''%prog [OPTIONS] [input-filename]
+       [input-filename] can be either an owners.list file or an intermediate
+       file of preparsed owners information.  This allows us to do a conversion
+       in two steps: the first part on a machine with access to the account
+       system to associate with the owners information.  The second part with
+       access to the database server on which the packageDB will live.
+
        If [input-filename] is not specified, read from stdin''')
 
     parser.add_option('-f', '--file', dest='pickleFile',
@@ -239,7 +264,4 @@ if __name__ == '__main__':
     # Write the owner information into the database
     pkgdb = PackageDB()
     pkgdb.import_owners(owners)
-    ### FIXME: Next steps:
-    # Make sure the collections are in the db
-    # Add the packages to the db.
     sys.exit(0)
