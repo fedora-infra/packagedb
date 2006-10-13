@@ -3,7 +3,7 @@ from sqlobject import *
 from sqlobject.inheritance import InheritableSQLObject
 from turbogears.database import PackageHub
 
-hub = PackageHub('packagedb')
+hub = PackageHub('pkgdb')
 __connection__ = hub
 
 class Collection(SQLObject):
