@@ -17,7 +17,6 @@ for row in records:
         if fileRE.match(fieldValue):
             fileName = fieldValue
         else:
-            print fieldValue
             print "Status: 502"
             print "Unable to load page"
             sys.exit(1)

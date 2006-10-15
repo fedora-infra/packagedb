@@ -20,29 +20,24 @@ owners.list
 :Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras cvs co owners; cat owners/owners.list
 :Data: Package names, summary, owner, qacontact, watchers
 :Duration: One-time; Obsoletes
+:Priority: Essential
 
 owners.list contains the bulk of new information that we are interested in.
 This file should contain information on all packages whether they are current
 in the repository or not.
 
-comps-fcX.xml.in
-----------------
-
-:Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras cvs co comps; cat comps/comps-fe6.xml.in
-:Data: Groups that the package belongs to.
-:Duration: One-time; Regenerates
-
-There is one comps.xml.in file per release.  It is used to create the comps.xml
-file that lists what groups packages in the repository are for.
-
-In the future, comps-fcX.xml.in could be generated from the packageDB.
+This importer is almost complete.  A bit more work needs to be done to combine
+the information here with information from the CVS Repository.  With a
+combination of these we should have all the basic information necessary for
+the first stage of the package DB.
 
 CVS Repository
 --------------
 
 :Location: CVSROOT:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras
 :Data: Collections that the package is present in, package metadata present in the spec file (URL, upstream source, etc.)
-:Duration: One-time; Regenerates
+:Duration: One-time; SyncReversal
+:Priority: Essential
 
 The VCS repository (currently CVS) is the source of most information pertaining
 to the package itself.  Most of this information is better taken from the
@@ -56,12 +51,26 @@ in the course of the release.
 
 In the future, the packageDB will manage the branches in the VCS Repository.
 
+comps-fcX.xml.in
+----------------
+
+:Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras cvs co comps; cat comps/comps-fe6.xml.in
+:Data: Groups that the package belongs to.
+:Duration: One-time; SyncReversal
+:Priority: Add-on
+
+There is one comps.xml.in file per release.  It is used to create the comps.xml
+file that lists what groups packages in the repository are for.
+
+In the future, comps-fcX.xml.in could be generated from the packageDB.
+
 Download Repository
 -------------------
 
 :Location: http://download.fedoraproject.org/pub/fedora/linux/extras/$release/repodata/repomd.xml
 :Data: RPM Metadata extracted into an xml file.  License, URL, upstream, present package EVR.
 :Duration: Ongoing
+:Priority: Add-on
 
 Parsing the Download repository information gives us EVR information which is
 needed for the package_version table.  There is a wealth of other information
@@ -79,6 +88,7 @@ Build Server
 :Location: http://buildsys.fedoraproject.org/logs/fedora-development-extras/19621-gnubiff-2.2.2-3.fc6/x86_64/build.log
 :Data: Logs of failed and completed builds
 :Duration: Ongoing
+:Priority: Add-on
 
 What do we want to do with these?  They are a large source of raw information
 but there's not much in terms of metadata type data.  If we have the db
@@ -94,7 +104,8 @@ Status
 ------
 
 * A Turbo Gears skeleton has been constructed.
-* A database schema has been created that works with postgreSQL/TurboGears.
+* A database schema has been created that works with the
+  postgreSQL-SQLObject-TurboGears combination.
 * Configured apache to pass requests on to the TurboGears instance
 * Wrote a CGI to autostart the TurboGears CGI when a request is made
 
@@ -104,6 +115,7 @@ TODO
 Stage 1
 ~~~~~~~
 
+* See the two "essentials" from Importing Data.
 * Finish filling in read-only pages that allow us to see what's in the database
   for each package.
 * Add comps group information to the database schema so we can generate comps
