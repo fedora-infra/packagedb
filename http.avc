@@ -1,0 +1,2 @@
+type=AVC msg=audit(1160897817.529:5755): avc:  denied  { name_connect } for  pid=23444 comm=httpd dest=8080 scontext=user_u:system_r:httpd_t:s0 tcontext=system_u:object_r:http_cache_port_t:s0 tclass=tcp_socket
+type=AVC msg=audit(1160897680.111:5743): avc:  denied  { getattr } for  pid=23379 comm=httpd name=tg-autostart.cgi dev=dm-0 ino=618079 scontext=user_u:system_r:httpd_t:s0 tcontext=user_u:object_r:user_home_t:s0 tclass=file

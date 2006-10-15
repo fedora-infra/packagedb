@@ -95,6 +95,8 @@ Status
 
 * A Turbo Gears skeleton has been constructed.
 * A database schema has been created that works with postgreSQL/TurboGears.
+* Configured apache to pass requests on to the TurboGears instance
+* Wrote a CGI to autostart the TurboGears CGI when a request is made
 
 TODO
 ----
