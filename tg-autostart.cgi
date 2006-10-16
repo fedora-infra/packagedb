@@ -31,14 +31,18 @@ for row in records:
         print "Status: 502"
         print "Unable to load page"
         sys.exit(1)
-   
+
+pathcomponents = os.environ['REDIRECT_URL'].split('/')
+path = '/' + '/'.join(pathcomponents[2:])
+
 os.chdir(os.path.dirname(fileName))
 os.system('%s &>/tmp/output &' % fileName)
 trial = 0
 page = None
+
 while (trial < 10):
     try:
-        page = urllib2.urlopen('http://localhost:%s/' % port)
+        page = urllib2.urlopen('http://localhost:%s%s' % (port, path))
     except:
         time.sleep(1)
         trial += 1

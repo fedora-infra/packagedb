@@ -16,7 +16,7 @@ layout_params['displayNotes']=False
   <p>List of packages which match the search criteria<br/>
   `Package Name`_ Collection Owner Interest<br/>
 
-  <p><a href="pkgdb/pkgpage">`Package Name`_</a> links to a page with information
+  <p><a href="pkgpage">`Package Name`_</a> links to a page with information
   about the package.
   </p>
   </p>

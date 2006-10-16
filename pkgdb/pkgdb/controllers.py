@@ -20,7 +20,7 @@ class Root(controllers.RootController):
     @expose(template='pkgdb.templates.pkgoverview')
     def index(self):
         return dict(title='Fedora Package Database')
-    
+
     @expose(template='pkgdb.templates.pkgpage')
     def pkgpage(self):
         return dict(title='Fedora Package Database')
