@@ -141,8 +141,8 @@ class PackageInterest(InheritableSQLObject):
     packageListing = ForeignKey('PackageListing', notNone=True)
     status = EnumCol(enumValues=('awaitingreview', 'approved', 'denied',
         'obsolete'), default='awaitingreview', notNone=True)
-    role = EnumCol(enumValues=('comaintainer', 'commitonly', 'watcher'),
-            default='watcher', notNone=True)
+    role = EnumCol(enumValues=('comaintainer', 'commitonly', 'buildonly',
+        'watcher'), default='watcher', notNone=True)
 
 class PackageInterestPerson(PackageInterest):
     '''A person that is interested in the `PackageListing`.
