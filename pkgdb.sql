@@ -1,7 +1,9 @@
 -- Fedora Package Database
 -- Version 0.3
 
-create database pkgdb with owner='pkgdbadmin', encoding='utf-8';
+drop database pkgdb;
+create database pkgdb with owner pkgdbadmin encoding 'UTF8';
+\c pkgdb
 
 -- Collection of packages.
 -- 
@@ -56,9 +58,9 @@ create table Branch (
   collectionId integer not null primary key,
   branchName varchar(32) not null,
   distTag varchar(32) not null,
-  parent integer null,
-  foreign key (parent) references Collection(id),
-  foreign key (collection) references Collection(id)
+  parentId integer null,
+  foreign key (parentId) references Collection(id),
+  foreign key (collectionId) references Collection(id)
 );
 
 -- Associate the packages in one collection with another collection.
@@ -155,8 +157,8 @@ create table PackageVersion (
 );
 
 -- Associate a particular build with a collection.
---
 -- A built package may be part of multiple collections.
+--
 -- Fields:
 -- :packageVersionId: The `PackageVersion` that is being added to a collection.
 -- :collectionId: The `Collection` that the PackageVersion is being added to.
@@ -168,11 +170,11 @@ create table PackageVersionListing (
   foreign key (collectionId) references Collection(id)
 );
 
--- Associates a `PackageVersion` with a `Collection`.
--- A specific version of a package residing in a specific branch.
+-- Associates a `Package` with a `Collection`.
+-- A package residing in a specific branch.
 -- 
 -- Fields:
--- :package: `Package` id that is in this `Collection`.
+-- :packageId: `Package` id that is in this `Collection`.
 -- :collection: A `Collection` that holds this `Package`.
 -- :owner: id from the accountsDB for the owner of the `Package` in this
 --    `Collection`.  There is a special orphaned account to use if you want
@@ -186,9 +188,9 @@ create table PackageListing (
   owner integer not null,
   qacontact integer null,
   status text not null default 'awaitingreview',
-  foreign key (packageVersionId) references PackageVersion(id),
+  foreign key (packageId) references Package(id),
   foreign key (collectionId) references Collection(id),
-  unique(packageVersionId, collectionId)
+  unique(packageId, collectionId),
   check (status = 'awaitingreview' or status = 'awaitingbranch' or
     status = 'approved' or status = 'denied' or status = 'obsolete')
 );
@@ -203,10 +205,10 @@ create table PackageListing (
 -- :status: Whether this permission is active.
 create table PackageACL (
   id serial primary key,
-  pkgListId integer not null,
+  packageListingId integer not null,
   acl text not null,
   status text not null,
-  foreign key (pkgListId) references pkgListId(id),
+  foreign key (packageListingId) references PackageListing(id),
   check (status = 'awaitingreview' or status = 'approved' or status = 'denied'
     or status = 'obsolete'),
   check (acl = 'commit' or acl = 'build' or acl = 'watchbugzilla'
@@ -221,7 +223,7 @@ create table PackageACL (
 create table PersonPackageACL (
   packageACLId integer primary key,
   userId integer not null,
-  foreign key (PackageACLId) references PackageACL (id),
+  foreign key (packageACLId) references PackageACL (id)
 );
 
 -- ACLs that allow a group to do something
@@ -232,7 +234,7 @@ create table PersonPackageACL (
 create table GroupPackagePermissions (
   packageACLId integer primary key,
   groupId integer not null,
-  foreign key (PackageACLId) references PackageACL (id),
+  foreign key (PackageACLId) references PackageACL (id)
 );
   
 -- Log a change to the packageDB.
@@ -242,9 +244,9 @@ create table GroupPackagePermissions (
 -- :userId: Who made the change.
 -- :changeTime: Time that the change occurred.
 create table Log (
-  id serial primary key
+  id serial primary key,
   userId integer not null,
-  changeTime datetime default now() not null
+  changeTime timestamp default now() not null
 );
 
 -- Log a change made to the Package table.
@@ -281,8 +283,8 @@ create table PackageListingLog (
   check (action = 'added' or action = 'removed' or action = 'awaitingreview'
     or action = 'awaitingbranch' or action = 'underreview' or
     action = 'approved' or action = 'denied'),
-  foreign key (logId) references Log (id)
-  foreign key (packageId) references Package(id)
+  foreign key (logId) references Log (id),
+  foreign key (packageListingId) references PackageListing(id)
 );
 
 -- Log changes to built packages.
@@ -301,7 +303,7 @@ create table PackageVersionLog (
     action = 'awaitingreview' or action = 'awaitingqa' or
     action = 'aaitingpublish' or action = 'approved' or action = 'denied' or
     action = 'obsolete'),
-  foreign key (logId) references Log (id)
+  foreign key (logId) references Log (id),
   foreign key (packageVersionId) references PackageVersion(id)
 );
 
@@ -317,10 +319,10 @@ create table PackageACLLog (
   packageACLId integer not null,
   action text not null,
   description text null,
-  check (action = 'added' or or action = 'awaitingreview'
+  check (action = 'added' or action = 'awaitingreview'
     or action = 'awaitingbranch' or action = 'underreview' or
     action = 'approved' or action = 'denied' or action = 'obsolete'),
-  foreign key (logId) references Log (id)
+  foreign key (logId) references Log (id),
   foreign key (packageACLId) references PackageACL(id)
 );
 
