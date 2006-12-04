@@ -179,10 +179,16 @@ class PackageLog(Log):
     Fields:
     :package: `Package` that changed.
     :action: What happened to the package.
+    :URL: reference to document the change
+	For older packages, those will be URLs to ml messages where the
+	review request and the approval were given.
+	For current packages, these should be URLs to the BZ ticket.
+	FIXME: should we add a maximum length to the string ?
     '''
     package = ForeignKey('Package', notNone=True)
     action = EnumCol(enumValues=('added', 'removed', 'statuschanged',
         'awaitingreview', 'underreview', 'approved', 'denied'), notNone=True)
+    URL = StringCol(notNone=False, default=None)
 
 class PackageListingLog(Log):
     '''Records `Package`s moving in and out of `Collection`s.
