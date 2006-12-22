@@ -540,7 +540,7 @@ create trigger no_acl_update_trigger before update on PackageACL
 -- :status: Whether this permission is active.
 create table PersonPackageACL (
   id serial primary key,
-  packageACLId integer,
+  packageACLId integer not null,
   userId integer not null,
   status integer not null,
   unique (packageACLId, userId),
@@ -557,8 +557,8 @@ create table PersonPackageACL (
 -- :groupId: Group id from the account system.
 -- :status: Whether this permission is active.
 create table GroupPackageACL (
-  id serial,
-  packageACLId integer,
+  id serial primary key,
+  packageACLId integer not null,
   groupId integer not null,
   status integer not null,
   unique (packageACLId, groupId),
