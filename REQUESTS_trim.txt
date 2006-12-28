@@ -1,0 +1,1280 @@
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Wed, 09 Feb 2005 17:23:34 -0600
+Subject: logjam
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-February/msg00280.html
+
+From: Aurelien Bompard <gauret@free.fr>
+Date: Fri, 11 Feb 2005 00:41:07 +0100
+Subject: plone
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-February/msg00328.html
+
+From: Adrian Reber <adrian@lisas.de>
+Date: Sat, 12 Feb 2005 23:04:24 +0100
+Subject: gnome-cpufreq-applet
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-February/msg00378.html
+
+From: Matthias Saou
+Date: Wed, 16 Feb 2005 20:11:02 +0100
+Subject: lighttpd
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-February/msg00460.html
+
+From: shishz@hotpop.com
+Date: Fri, 25 Feb 2005 20:15:54 -0500 (EST)
+Subject: perl-XML-LibXSLT
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-February/msg00651.html
+
+From: Bill Nottingham <notting@redhat.com>
+Date: Mon, 28 Feb 2005 16:18:06 -0500
+Subject: aqhbci-qt-tools
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-February/msg00728.html
+
+From: Nils Philippsen <nphilipp@redhat.com>
+Date: Fri, 04 Mar 2005 17:00:34 +0100
+Subject: bzflag
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00077.html
+
+From: Kevin Fenzi <kevin-fedora-extras@scrye.com>
+Date: Sun, 6 Mar 2005 23:04:39 -0700
+Subject: dbh libxfce4mcs libxfce4util libxfcegui4 xfce4-iconbox xfce4-panel xfce4-systray xfce-mcs-manager xfce-mcs-plugins xfce-utils gtk-xfce-engine xfcalendar xfce4-appfinder xfce4-icon-theme xfce4-mixer xfce4-session xfce4-toys xfce4-trigger-launcher xfdesktop xffm xfprint xfwm4 xfwm4-themes Terminal exo
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00130.html
+
+From: Shahms King <shahms@shahms.com>
+Date: Thu, 10 Mar 2005 13:27:45 -0800
+Subject: ipython python-quixote python-durus
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00230.html
+
+From: Brian Pepple <bdpepple@ameritech.net>
+Date: Tue, 15 Mar 2005 14:08:12 -0500
+Subject: liferea
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00374.html
+
+From: Shahms King <shahms@shahms.com>
+Date: Tue, 15 Mar 2005 13:05:43 -0800
+Subject: python-protocols python-psycopg python-simpletal python-tpg python-psyco
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00380.html
+
+From: Adrian Reber <adrian@lisas.de>
+Date: Wed, 16 Mar 2005 10:08:10 +0100
+Subject: xlockmore
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00409.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Wed, 16 Mar 2005 12:38:44 -0500
+Subject: clearlooks deskbar-applet edb ghasher gpredict hamlib kphone ktrack leafpad libosip linphone lock-keys-applet pam_mysql python-amara python-HTMLgen repoml
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00422.html
+
+From: Mark McLoughlin <markmc@redhat.com>
+Date: Fri, 18 Mar 2005 17:44:19 +0000
+Subject: sabayon
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00565.html
+
+From: Ville =?ISO-8859-1?Q?Skytt=E4?= <ville.skytta@iki.fi>
+Date: Sun, 20 Mar 2005 23:52:54 +0200
+Subject: cvsps
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00703.html
+
+From: Shahms King <shahms@shahms.com>
+Date: Mon, 21 Mar 2005 11:28:18 -0800
+Subject: python-protocols python-psycopg python-simpletal python-tpg python-psyco
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00798.html
+
+From: =?ISO-8859-1?Q?Jos=E9_Pedro_Oliveira?= <jpo@di.uminho.pt>
+Date: Wed, 23 Mar 2005 14:48:43 +0000
+Subject: tetex-beamer tetex-pgf tetex-xcolor tetex-bytefield
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00869.html
+
+From: Gijs Hollestelle <g.hollestelle@gmail.com>
+Date: Wed, 23 Mar 2005 16:39:54 +0100
+Subject: python-cherrypy python-cherrytemplate
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00875.html
+
+From: Kevin Fenzi <kevin-fedora-extras@scrye.com>
+Date: Wed, 23 Mar 2005 13:56:08 -0700
+Subject: xfwm4-themes xfwm4 xfprint xffm xfdesktop
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00887.html
+
+From: Kevin Fenzi <kevin-fedora-extras@scrye.com>
+Date: Wed, 23 Mar 2005 14:50:37 -0700
+Subject: xfce4-toys xfce4-trigger-launcher xfce-mcs-manager xfce-mcs-plugins xfce-utils
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00889.html
+
+From: Nils Philippsen <nphilipp@redhat.com>
+Date: Thu, 24 Mar 2005 14:17:50 +0100
+Subject: ufraw
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00918.html
+
+From: Aaron VanDevender <sig@netdot.net>
+Date: Thu, 24 Mar 2005 14:19:32 -0600
+Subject: jack-audio-connection-kit
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00972.html
+
+From: Aaron VanDevender <sig@netdot.net>
+Date: Fri, 25 Mar 2005 01:32:20 -0600
+Subject: ladspa ladspa-cmt
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01002.html
+
+From: Kevin Fenzi <kevin-fedora-extras@scrye.com>
+Date: Fri, 25 Mar 2005 11:34:53 -0700
+Subject: xfce4-iconbox xfce4-icon-theme xfce4-mixer xfce4-session xfce4-systray
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01010.html
+
+From: Kevin Fenzi <kevin-fedora-extras@scrye.com>
+Date: Fri, 25 Mar 2005 12:03:51 -0700
+Subject: dbh gtk-xfce-engine libxfce4mcs libxfce4util libxfcegui4 xfcalendar xfce4-appfinder
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01014.html
+
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Date: 25 Mar 2005 12:19:16 -0800
+Subject: swh-plugins fftw3
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01019.html
+
+From: Kevin Fenzi <kevin-fedora-extras@scrye.com>
+Date: Fri, 25 Mar 2005 13:19:49 -0700
+Subject: xfce4-panel
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01020.html
+
+From: Aaron Kurtz <a.kurtz@hardsun.net>
+Date: Fri, 25 Mar 2005 21:43:43 -0800
+Subject: feh
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01026.html
+
+From: Aaron Bennett <aaron.bennett@olin.edu>
+Date: Mon, 28 Mar 2005 09:11:08 -0500
+Subject: mysqlblasy
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01040.html
+
+From: Brian Pepple <bdpepple@ameritech.net>
+Date: Tue, 29 Mar 2005 15:55:34 -0500
+Subject: contact-lookup-applet
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01076.html
+
+From: Enrico Scholz <enrico.scholz@informatik.tu-chemnitz.de>
+Date: Wed, 30 Mar 2005 01:49:05 +0200
+Subject: dhcp-forwarder dietlibc ip-sentinel util-vserver xca
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01082.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Tue, 29 Mar 2005 19:00:10 -0500
+Subject: fyre
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01083.html
+
+From: Konstantin Ryabitsev <mricon@gmail.com>
+Date: Wed, 30 Mar 2005 10:28:25 -0500
+Subject: python-elementtree python-kid repoview
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01098.html
+
+From: =?ISO-8859-1?Q?Jos=E9_Pedro_Oliveira?= <jpo@di.uminho.pt>
+Date: Wed, 30 Mar 2005 21:48:52 +0100
+Subject: tetex-perltex
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg01118.html
+
+From: Konstantin Ryabitsev <mricon@gmail.com>
+Date: Fri, 1 Apr 2005 09:18:40 -0500
+Subject: epylog
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00004.html
+
+From: "Jeffrey C. Ollie" <jeff@ocjtech.us>
+Date: Fri, 01 Apr 2005 23:14:53 -0600
+Subject: asterisk
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00014.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Sun, 03 Apr 2005 22:25:12 -0500
+Subject: comical
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00044.html
+
+From: Adrian Reber <adrian@lisas.de>
+Date: Mon, 4 Apr 2005 11:57:18 +0200
+Subject: autossh bwm-ng colortail htop
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00054.html
+
+From: Hunter Matthews <thm@duke.edu>
+Date: Mon, 04 Apr 2005 12:06:33 -0400
+Subject: perl-GD-SVG perl-Graph perl-Heap perl-MIME-Lite perl-SOAP-Lite perl-SVG perl-Text-Shellwords perl-XML-Writer perl-bioperl
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00065.html
+
+From: Ralf Ertzinger <fedora@camperquake.de>
+Date: Tue, 5 Apr 2005 21:21:32 +0200
+Subject: enemies-of-carlotta
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00116.html
+
+From: Michael Peters <funkyres@gmail.com>
+Date: Sun, 20 Mar 2005 13:28:45 -0800
+Subject: perl-Template-Toolkit perl-Text-Autoformat perl-Tie-DBI
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-March/msg00699.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Wed, 06 Apr 2005 08:10:35 -0400
+Subject: notecase
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00156.html
+
+From: =?ISO-8859-1?Q?G=E9rard?= Milmeister <gemi@bluewin.ch>
+Date: Wed, 06 Apr 2005 22:37:16 +0200
+Subject: gcl
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00194.html
+
+From: Jochen Schmitt <Jochen@herr-schmitt.de>
+Date: Thu, 07 Apr 2005 20:27:16 +0200
+Subject: inadyn
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00226.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Mon, 11 Apr 2005 11:01:16 -0500
+Subject: R QuantLib perl-Jcode perl-OLE-Storage_Lite perl-Spreadsheet-WriteExcel perl-Unicode-Map udunits
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00266.html
+
+From: "Jeffrey C. Ollie" <jeff@ocjtech.us>
+Date: Tue, 12 Apr 2005 23:03:43 -0500
+Subject: bzr
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00326.html
+
+From: Michael Peters <funkyres@gmail.com>
+Date: Wed, 13 Apr 2005 02:14:34 -0700
+Subject: PyRTF
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00334.html
+
+From: "Jeffrey C. Ollie" <jeff@ocjtech.us>
+Date: Wed, 13 Apr 2005 15:10:09 -0500
+Subject: monotone
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00360.html
+
+From: Michael Peters <funkyres@gmail.com>
+Date: Wed, 13 Apr 2005 18:38:49 -0700
+Subject: gourmet
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00375.html
+
+From: Josh Bressers <bressers@redhat.com>
+Date: Wed, 13 Apr 2005 22:23:49 -0400
+Subject: nmh
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00376.html
+
+From: Konstantin Ryabitsev <mricon@gmail.com>
+Date: Thu, 14 Apr 2005 17:05:52 -0400
+Subject: verbiste
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00401.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Fri, 15 Apr 2005 14:57:25 -0400
+Subject: gnet2
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00425.html
+
+From: John Dennis <jdennis@redhat.com>
+Date: Fri, 15 Apr 2005 17:12:43 -0400
+Subject: cyrus-imapd
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00429.html
+
+From: Kevin Gray <hula-kevin@iprone.com>
+Date: Fri, 15 Apr 2005 20:33:20 -0400
+Subject: hula
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00439.html
+
+From: Michael Fleming <mfleming@enlartenment.com>
+Date: Sun, 17 Apr 2005 21:17:05 +1000
+Subject: mlmmj
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00458.html
+
+From: Matthias Saou
+Date: Sun, 17 Apr 2005 18:28:28 +0200
+Subject: p7zip
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00462.html
+
+From: Matthew Miller <mattdm@mattdm.org>
+Date: Mon, 18 Apr 2005 10:01:54 -0400
+Subject: python-ZSI python-SOAPpy python-fpconst
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00477.html
+
+From: Shahms King <shahms@shahms.com>
+Date: Mon, 18 Apr 2005 08:59:23 -0700
+Subject: bazaar
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00481.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Mon, 18 Apr 2005 23:31:16 -0400 (EDT)
+Subject: x3270
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00501.html
+
+From: Ralf Ertzinger <fedora@camperquake.de>
+Date: Tue, 19 Apr 2005 14:56:08 +0200
+Subject: bmp-flac
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00510.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Tue, 19 Apr 2005 09:34:29 -0500
+Subject: blacs scalapack R-RScaLAPACK
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00520.html
+
+From: Matthias Saou
+Date: Tue, 19 Apr 2005 18:10:54 +0200
+Subject: moin
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00528.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Tue, 19 Apr 2005 20:14:10 -0400 (EDT)
+Subject: openbox obpager obconf
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00550.html
+
+From: Matthias Saou
+Date: Wed, 20 Apr 2005 17:28:51 +0200
+Subject: bmp-itouch
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00567.html
+
+From: Josh Boyer <jwboyer@jdub.homelinux.org>
+Date: Wed, 20 Apr 2005 19:36:20 -0500
+Subject: quilt
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00577.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Thu, 21 Apr 2005 07:03:30 -0400
+Subject: sqlite2
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00588.html
+
+From: Aaron Kurtz <a.kurtz@hardsun.net>
+Date: Thu, 21 Apr 2005 04:54:59 -0700
+Subject: netspeed_applet
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00591.html
+
+From: Quentin Spencer <qspencer@ieee.org>
+Date: Thu, 21 Apr 2005 11:32:28 -0500
+Subject: fftw3 cln GiNaC octave-forge
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00601.html
+
+From: Ed Hill <ed@eh3.com>
+Date: Fri, 22 Apr 2005 10:40:31 -0400
+Subject: nco cdo
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00632.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Fri, 22 Apr 2005 12:42:06 -0500
+Subject: c-ares
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00642.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Sat, 23 Apr 2005 07:21:58 -0400 (EDT)
+Subject: tre
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00658.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Sat, 23 Apr 2005 08:29:43 -0400 (EDT)
+Subject: xdaliclock
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00659.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Sat, 23 Apr 2005 10:05:30 -0500
+Subject: opendap librx
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00664.html
+
+From: Paul P Komkoff Jr <i@stingr.net>
+Date: Sun, 24 Apr 2005 14:07:20 +0400
+Subject: rzip
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00695.html
+
+From: Hans de Goede <j.w.r.degoede@hhs.nl>
+Date: Wed, 27 Apr 2005 17:11:19 +0200
+Subject: Glide3
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00798.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Wed, 27 Apr 2005 23:49:21 -0700
+Subject: gstreamer-plugins-libvisual
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00829.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Wed, 27 Apr 2005 23:49:19 -0700
+Subject: libvisual-plugins
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00830.html
+
+From: "W. Michael Petullo" <mike@flyn.org>
+Date: Thu, 28 Apr 2005 11:55:15 -0500
+Subject: pam_mount
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-April/msg00844.html
+
+From: Tian <tian@c-sait.net>
+Date: Mon, 2 May 2005 23:00:40 +0200
+Subject: gcfilms
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00017.html
+
+From: "Daniel Wittenberg" <daniel-wittenberg@starken.com>
+Date: Tue, 03 May 2005 23:42:12 -0500
+Subject: snort
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00056.html
+
+From: Konstantin Ryabitsev <mricon@gmail.com>
+Date: Fri, 6 May 2005 16:09:47 -0400
+Subject: pylint python-logilab-common
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00179.html
+
+From: Quentin Spencer <qspencer@ieee.org>
+Date: Fri, 06 May 2005 16:27:52 -0500
+Subject: octave
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00181.html
+
+From: =?ISO-8859-1?Q?Jos=E9_Pedro_Oliveira?= <jpo@di.uminho.pt>
+Date: Sat, 07 May 2005 01:29:38 +0100
+Subject: syslog-ng
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00188.html
+
+From: Brian Pepple <bdpepple@ameritech.net>
+Date: Sat, 07 May 2005 14:08:22 -0400
+Subject: loudmouth gossip
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00238.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Sat, 07 May 2005 13:51:09 -0700
+Subject: gstreamer-plugins-extras
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00256.html
+
+From: Paul Howarth <paul@city-fan.org>
+Date: Mon, 09 May 2005 13:07:31 +0100
+Subject: gtorrentviewer
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00324.html
+
+From: Paul Howarth <paul@city-fan.org>
+Date: Tue, 10 May 2005 11:45:34 +0100
+Subject: pptp
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00391.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Wed, 11 May 2005 12:00:09 -0400
+Subject: pyparsing
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00429.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Wed, 11 May 2005 15:45:34 -0400 (EDT)
+Subject: fping
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00432.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Wed, 11 May 2005 15:47:01 -0400 (EDT)
+Subject: hobbit
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00433.html
+
+From: Rick Stout <zipsonic@gmail.com>
+Date: Wed, 11 May 2005 15:15:39 -0700
+Subject: nx
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00437.html
+
+From: Rick Stout <zipsonic@gmail.com>
+Date: Wed, 11 May 2005 15:22:16 -0700
+Subject: freenx
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00438.html
+
+From: Jens Petersen <petersen@redhat.com>
+Date: Thu, 12 May 2005 17:46:26 +0900
+Subject: ghc
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00450.html
+
+From: Adrian Reber <adrian@lisas.de>
+Date: Fri, 13 May 2005 18:01:18 +0200
+Subject: netselect
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00513.html
+
+From: Peter Lemenkov <lemenkov@newmail.ru>
+Date: Sat, 14 May 2005 22:11:20 +0400
+Subject: rxvt-unicode evilwm
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00539.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Tue, 17 May 2005 14:39:39 -0400 (EDT)
+Subject: autossh
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00602.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Wed, 18 May 2005 12:28:26 -0500
+Subject: mfstools
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00636.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Thu, 19 May 2005 16:26:00 -0400 (EDT)
+Subject: qgo
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00697.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Thu, 19 May 2005 19:53:57 -0500
+Subject: scrub
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00715.html
+
+From: Ville =?ISO-8859-1?Q?Skytt=E4?= <ville.skytta@iki.fi>
+Date: Fri, 20 May 2005 09:31:36 +0300
+Subject: colordiff
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg00729.html
+
+From: Kevin Fenzi <kevin-fedora-extras@scrye.com>
+Date: Thu, 26 May 2005 21:11:17 -0600
+Subject: fwrestart
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01003.html
+
+From: Aaron Kurtz <a.kurtz@hardsun.net>
+Date: Thu, 26 May 2005 21:16:01 -0700
+Subject: nautilus-share
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01005.html
+
+From: Pawel Salek <pawsa@theochem.kth.se>
+Date: Fri, 27 May 2005 20:56:02 +0000
+Subject: balsa
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01028.html
+
+From: Didier Casse <elprodigio@gmail.com>
+Date: Mon, 30 May 2005 00:43:35 +0800
+Subject: eet edb imlib2 embryo evas ecore edje epeg epsilon etox esmart emotion ewl iconbar entice entrance examine elicit erss eclair enlightenment engage engrave e_utils e_modules e17genmenu
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01041.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Sun, 29 May 2005 17:56:16 -0700
+Subject: latex-prosper
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01053.html
+
+From: Andres Baravalle <andres@baravalle.it>
+Date: Mon, 30 May 2005 17:35:18 +0100
+Subject: phpgrabcomics
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01097.html
+
+From: Sindre Pedersen Bjordal <foolish@fedoraforum.org>
+Date: Tue, 31 May 2005 03:38:26 +0200
+Subject: smeg pyxdg
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01107.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Tue, 31 May 2005 03:34:34 -0700
+Subject: sword
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01115.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Tue, 31 May 2005 03:53:41 -0700
+Subject: gnomesword
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01116.html
+
+From: Matthias Saou
+Date: Tue, 31 May 2005 16:27:55 +0200
+Subject: php-pecl-pdo php-pecl-pdo-sqlite
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-May/msg01117.html
+
+From: Jens Petersen <petersen@redhat.com>
+Date: Wed, 01 Jun 2005 17:12:24 +0900
+Subject: darcs
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00014.html
+
+From: jfontain@free.fr
+Date: Wed,  1 Jun 2005 12:48:07 +0200
+Subject: moomps
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00022.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Thu, 02 Jun 2005 00:35:39 +0200
+Subject: rxvt-unicode
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00050.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Thu, 02 Jun 2005 09:44:49 +0200
+Subject: airsnort
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00059.html
+
+From: Christian.Iseli@licr.org
+Date: Thu, 02 Jun 2005 21:21:25 +0200
+Subject: multi-rsync
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00089.html
+
+From: Ian Pilcher <i.pilcher@comcast.net>
+Date: Thu, 02 Jun 2005 14:15:11 -0500
+Subject: NEdit
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00098.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Fri, 3 Jun 2005 02:54:13 -0400 (EDT)
+Subject: rinetd
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00107.html
+
+From: seth vidal <skvidal@phy.duke.edu>
+Date: Sat, 04 Jun 2005 16:02:05 -0400
+Subject: mock yum-utils
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00150.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Sun, 05 Jun 2005 12:00:54 +0200
+Subject: bubblemon wmacpi wmapmload wmCalClock wmweather+
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00162.html
+
+From: Warren Togami <wtogami@redhat.com>
+Date: Sun, 05 Jun 2005 20:14:54 -1000
+Subject: spamass-milter
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00183.html
+
+From: Ralf Ertzinger <fedora@camperquake.de>
+Date: Mon, 6 Jun 2005 16:37:40 +0200
+Subject: libevent tor
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00189.html
+
+From: Ryo Dairiki <ryo-dairiki@mbm.nifty.com>
+Date: Tue, 07 Jun 2005 20:59:41 +0900
+Subject: scim-tables
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00228.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Tue, 07 Jun 2005 21:25:32 -0700
+Subject: tetex-prosper
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00243.html
+
+
+From: Peter Lemenkov <lemenkov@newmail.ru>
+Date: Thu, 09 Jun 2005 01:38:42 +0400
+Subject: jam
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00280.html
+
+From: Jochen Schmitt <Jochen@herr-schmitt.de>
+Date: Thu, 09 Jun 2005 18:54:26 +0200
+Subject: kyum
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00303.html
+
+From: Jeremy Katz <katzj@redhat.com>
+Date: Sun, 12 Jun 2005 16:36:22 -0400
+Subject: drivel
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00426.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Mon, 13 Jun 2005 11:50:37 -0500
+Subject: gambas
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00454.html
+
+From: Thomas Vander Stichele <thomas@apestaart.org>
+Date: Mon, 13 Jun 2005 20:50:58 +0200
+Subject: liboggz libannodex libcmml mod_annodex
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00463.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Tue, 14 Jun 2005 17:54:43 +0200
+Subject: perl-Tk
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00495.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Tue, 14 Jun 2005 17:54:45 +0200
+Subject: perl-Tk-JPEG-Lite
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00496.html
+
+From: Nils Philippsen <nphilipp@redhat.com>
+Date: Thu, 16 Jun 2005 17:21:59 +0200
+Subject: trickle
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00554.html
+
+From: Christopher Aillon <caillon@redhat.com>
+Date: Thu, 16 Jun 2005 14:11:13 -0400
+Subject: epiphany-extensions
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00558.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Thu, 16 Jun 2005 13:28:54 -0700
+Subject: perl-File-BOM
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00575.html
+
+From: Joost van der Sluis <joost@cnoc.nl>
+Date: Fri, 17 Jun 2005 14:08:47 +0200
+Subject: fpc
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00611.html
+
+From: "UTUMI Hirosi" <utuhiro@infoseek.jp>
+Date: Fri, 17 Jun 2005 22:01:20 +0900
+Subject: anthy m17n-lib
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00616.html
+
+From: David Zeuthen <davidz@redhat.com>
+Date: Fri, 17 Jun 2005 12:18:54 -0400
+Subject: NetworkManager-vpnc
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00632.html
+
+From: David Woodhouse <dwmw2@infradead.org>
+Date: Fri, 17 Jun 2005 18:01:29 +0100
+Subject: ctrlproxy
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00634.html
+
+From: Paul Wouters <paul@cypherpunks.ca>
+Date: Fri, 17 Jun 2005 20:43:14 +0200 (CEST)
+Subject: libotr gaim-otr
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00640.html
+
+From: "Michael A. Peters" <mpeters@mac.com>
+Date: Fri, 17 Jun 2005 11:52:30 -0700
+Subject: pan
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00641.html
+
+From: Paul Nasrat <pnasrat@redhat.com>
+Date: Fri, 17 Jun 2005 17:52:46 -0400
+Subject: splint
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00654.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Sat, 18 Jun 2005 04:10:09 -0400
+Subject: boa-consructor
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00667.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Sat, 18 Jun 2005 23:31:01 -0500
+Subject: ebtables
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00704.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Sun, 19 Jun 2005 22:31:58 -0500
+Subject: xbase xbsql rekall
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00732.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Thu, 23 Jun 2005 09:48:36 +0200
+Subject: fnfx
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00933.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Thu, 23 Jun 2005 10:04:00 +0200
+Subject: ncmpc
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00935.html
+
+From: Ryo Dairiki <ryo-dairiki@mbm.nifty.com>
+Date: Fri, 24 Jun 2005 20:31:52 +0900
+Subject: scim-pinyin
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg00971.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Sat, 25 Jun 2005 16:01:44 +0200 (CEST)
+Subject: suphp
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01007.html
+
+From: Steven Pritchard <steve@silug.org>
+Date: Sun, 26 Jun 2005 14:16:56 -0500
+Subject: openvpn
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01060.html
+
+From: Colin Charles <byte@aeon.com.my>
+Date: Mon, 27 Jun 2005 16:17:11 +1000
+Subject: xwrits
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01080.html
+
+From: Michael Schwendt <bugs.michael@gmx.net>
+Date: Mon, 27 Jun 2005 13:51:31 +0200
+Subject: gai-temp
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01085.html
+
+From: Chris Ricker <kaboom@oobleck.net>
+Date: Mon, 27 Jun 2005 13:34:57 -0400 (EDT)
+Subject: dirvish perl-Period perl-Time-modules
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01104.html
+
+From: Jens Petersen <petersen@redhat.com>
+Date: Tue, 28 Jun 2005 20:58:46 +0900
+Subject: scim-anthy
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01144.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Tue, 28 Jun 2005 15:22:04 +0200 (CEST)
+Subject: slmodem
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01147.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Tue, 28 Jun 2005 15:12:10 -0500
+Subject: hdf5
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01206.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Wed, 29 Jun 2005 12:29:41 +0200
+Subject: wv2
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01226.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Wed, 29 Jun 2005 12:29:39 +0200
+Subject: libpqxx
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01227.html
+
+From: "Dennis Gilmore" <dennis@ausil.us>
+Date: Wed, 29 Jun 2005 14:59:34 -0500 (CDT)
+Subject: konversation
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01252.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Wed, 29 Jun 2005 23:15:13 +0200 (CEST)
+Subject: barcode
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01256.html
+
+From: Ville =?ISO-8859-1?Q?Skytt=E4?= <ville.skytta@iki.fi>
+Date: Thu, 30 Jun 2005 16:17:09 +0300
+Subject: dvb-apps
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01291.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Thu, 30 Jun 2005 09:25:44 -0500
+Subject: lout
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01300.html
+
+From: "Douglas E. Warner" <silfreed-fel@silfreed.net>
+Date: Thu, 30 Jun 2005 14:14:39 -0400
+Subject: wpa_supplicant
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01332.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Fri, 01 Jul 2005 00:03:03 +0200
+Subject: koffice
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01367.html
+
+From: Konstantin Ryabitsev <mricon@gmail.com>
+Date: Thu, 30 Jun 2005 18:19:41 -0400
+Subject: diction
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-June/msg01369.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Fri, 1 Jul 2005 03:35:29 +0200 (CEST)
+Subject: dd_rescue
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00010.html
+
+From: Ralf Corsepius <rc040203@freenet.de>
+Date: Fri, 01 Jul 2005 09:31:11 +0200
+Subject: perl-Number-Compare
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00022.html
+
+From: Ralf Corsepius <rc040203@freenet.de>
+Date: Fri, 01 Jul 2005 11:00:45 +0200
+Subject: perl-Want
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00029.html
+
+From: Ville =?ISO-8859-1?Q?Skytt=E4?= <ville.skytta@iki.fi>
+Date: Fri, 01 Jul 2005 12:31:38 +0300
+Subject: vdr
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00032.html
+
+From: =?UTF-8?B?Sm9zw6k=?= Matos <jamatos@fc.up.pt>
+Date: Fri, 01 Jul 2005 12:48:25 +0100
+Subject: pygsl
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00057.html
+
+From: Ralf Corsepius <rc040203@freenet.de>
+Date: Fri, 01 Jul 2005 14:55:35 +0200
+Subject: perl-Sort-Versions
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00072.html
+
+From: Ralf Corsepius <rc040203@freenet.de>
+Date: Fri, 01 Jul 2005 14:56:42 +0200
+Subject: perl-Text-Glob
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00074.html
+
+From: Ralf Corsepius <rc040203@freenet.de>
+Date: Fri, 01 Jul 2005 14:57:30 +0200
+Subject: perl-File-Find-Rule
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00075.html
+
+From: Ralf Corsepius <rc040203@freenet.de>
+Date: Fri, 01 Jul 2005 14:59:34 +0200
+Subject: perl-Devel-StackTrace
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00077.html
+
+From: Jeremy Katz <katzj@redhat.com>
+Date: Fri, 01 Jul 2005 12:46:27 -0400
+Subject: mercurial
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00131.html
+
+From: Hans de Goede <j.w.r.degoede@hhs.nl>
+Date: Fri, 01 Jul 2005 21:14:51 +0200
+Subject: svgalib
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00145.html
+
+From: =?ISO-8859-1?Q?Jos=E9_Pedro_Oliveira?= <jpo@di.uminho.pt>
+Date: Sat, 02 Jul 2005 02:42:14 +0100
+Subject: perl-WWW-Mechanize perl-Array-Compare perl-Tree-DAG_Node perl-Test-Warn perl-Test-Taint
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00154.html
+
+From: "W. Michael Petullo" <mike@flyn.org>
+Date: Sat, 2 Jul 2005 00:49:51 -0500
+Subject: roundup
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00158.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Mon, 04 Jul 2005 08:27:53 -0400
+Subject: binutils-mipsel
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00221.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Mon, 04 Jul 2005 11:01:15 -0500
+Subject: R-hdf5
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00234.html
+
+From: Luke Macken <lmacken@redhat.com>
+Date: Tue, 5 Jul 2005 11:29:55 -0400
+Subject: naim
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00281.html
+
+From: Orion Poplawski <orion@cora.nwra.com>
+Date: Tue, 05 Jul 2005 14:49:53 -0600
+Subject: pytz python-dateutil
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00286.html
+
+From: Orion Poplawski <orion@cora.nwra.com>
+Date: Tue, 05 Jul 2005 16:16:13 -0600
+Subject: kompose
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00289.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Tue, 05 Jul 2005 19:15:08 -0500
+Subject: opendap
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00290.html
+
+From: Ed Hill <ed@eh3.com>
+Date: Tue, 05 Jul 2005 21:39:04 -0400
+Subject: ncview
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00292.html
+
+From: Oliver Falk <oliver@linux-kernel.at>
+Date: Wed, 06 Jul 2005 09:18:24 +0200
+Subject: libstatgrab
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00294.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Wed, 6 Jul 2005 19:46:11 +0200 (CEST)
+Subject: dd_rescue ddrescue dd_rhelp
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00329.html
+
+From: Fredrik Tolf <fredrik@dolda2000.com>
+Date: Wed, 06 Jul 2005 22:44:27 +0200
+Subject: icmpdn
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00340.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Thu, 07 Jul 2005 15:33:08 -0500
+Subject: perl-Maypole libapreq2 perl-CGI-Simple perl-CGI-Untaint-date perl-CGI-Untaint perl-Class-Accessor-Chained perl-Class-Data-Inheritable perl-Class-DBI-AbstractSearch perl-Class-DBI-AsForm perl-Class-DBI-FromCGI perl-Class-DBI-Loader-Relationship perl-Class-DBI-Loader perl-Class-DBI-mysql perl-Class-DBI-Pager perl-Class-DBI-Pg perl-Class-DBI-Plugin-RetrieveAll perl-Class-DBI-Plugin perl-Class-DBI-Plugin-Type perl-Class-DBI perl-Class-DBI-SQLite perl-Class-Trigger perl-Class-Whitehole perl-Data-Page perl-DBD-SQLite2 perl-DBIx-ContextualFetch perl-Exporter-Lite perl-ExtUtils-XSBuilder perl-Ima-DBI perl-IO-CaptureOutput perl-IO-stringy perl-Lingua-EN-Inflect-Number perl-Lingua-EN-Inflect perl-Maypole perl-SQL-Abstract perl-Template-Plugin-Class perl-Template-Toolkit perl-Test-MockModule perl-Tie-DBI perl-UNIVERSAL-exports perl-UNIVERSAL-moniker
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00386.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Thu, 07 Jul 2005 16:50:39 -0400
+Subject: libifp
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00387.html
+
+From: Jeff Spaleta <jspaleta@gmail.com>
+Date: Thu, 7 Jul 2005 17:54:35 -0400
+Subject: glabels
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00393.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Thu, 07 Jul 2005 22:54:44 -0400
+Subject: gnome-applet-rhythmbox
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00402.html
+
+From: Oliver Falk <oliver@linux-kernel.at>
+Date: Fri, 08 Jul 2005 14:52:21 +0200
+Subject: libdnet
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00415.html
+
+From: Oliver Falk <oliver@linux-kernel.at>
+Date: Fri, 08 Jul 2005 14:56:41 +0200
+Subject: bwm-ng
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00416.html
+
+From: Michael Fleming <mfleming@enlartenment.com>
+Date: Fri, 8 Jul 2005 23:56:18 +1000
+Subject: mod_security
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00418.html
+
+From: Chris Grau <chris@chrisgrau.com>
+Date: Fri, 8 Jul 2005 10:24:25 -0700
+Subject: frotz
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00435.html
+
+From: joel reed <joelwreed@comcast.net>
+Date: Fri, 8 Jul 2005 13:20:58 -0400
+Subject: libxslt-plugin-regexp libxslt-plugin-dates-and-times
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00437.html
+
+From: Michael Thomas <wart@kobold.org>
+Date: Fri, 08 Jul 2005 11:38:50 -0700
+Subject: tcllib
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00446.html
+
+From: Enrico Scholz <enrico.scholz@informatik.tu-chemnitz.de>
+Date: Sat, 09 Jul 2005 10:25:01 +0200
+Subject: gif2png
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00461.html
+
+From: Enrico Scholz <enrico.scholz@informatik.tu-chemnitz.de>
+Date: Sat, 09 Jul 2005 19:19:49 +0200
+Subject: kismet
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00491.html
+
+From: Ville =?ISO-8859-1?Q?Skytt=E4?= <ville.skytta@iki.fi>
+Date: Sat, 09 Jul 2005 22:12:34 +0300
+Subject: perl-gettext
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00498.html
+
+From: Roland McGrath <roland@redhat.com>
+Date: Sun, 10 Jul 2005 12:16:09 -0700 (PDT)
+Subject: cogito
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00514.html
+
+From: Adrian Reber <adrian@lisas.de>
+Date: Sun, 10 Jul 2005 22:38:50 +0200
+Subject: unclutter
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00523.html
+
+From: Luke Macken <lmacken@redhat.com>
+Date: Sun, 10 Jul 2005 19:38:20 -0400
+Subject: nethack
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00527.html
+
+From: Alexander Dalloz <alex@dalloz.de>
+Date: Mon, 11 Jul 2005 18:42:33 +0200
+Subject: pam_abl
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00559.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Mon, 11 Jul 2005 19:17:36 -0400
+Subject: xmlstartlet
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00591.html
+
+From: Alexander Dalloz <alex@dalloz.de>
+Date: Tue, 12 Jul 2005 01:52:19 +0200
+Subject: keychain
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00593.html
+
+From: Alexander Dalloz <alex@dalloz.de>
+Date: Tue, 12 Jul 2005 05:46:11 +0200
+Subject: gyrus
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00599.html
+
+From: Matthias Saou
+Date: Tue, 12 Jul 2005 11:59:07 +0200
+Subject: gkrellm-aclock gkrellm-freq
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00609.html
+
+From: Steven Pritchard <steve@silug.org>
+Date: Tue, 12 Jul 2005 11:49:48 -0500
+Subject: perl-eperl
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00624.html
+
+From: Ville =?ISO-8859-1?Q?Skytt=E4?= <ville.skytta@iki.fi>
+Date: Tue, 12 Jul 2005 22:41:06 +0300
+Subject: gdome2
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00629.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Wed, 13 Jul 2005 02:00:59 +0200 (CEST)
+Subject: perl-Crypt-Blowfish perl-Crypt-CBC
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00633.html
+
+From: Matthias Saou
+Date: Wed, 13 Jul 2005 23:15:19 +0200
+Subject: gkrellm-bmp
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00703.html
+
+From: David Cary Hart <fedora@tqmcube.com>
+Date: Wed, 13 Jul 2005 18:30:04 -0400
+Subject: leafnode
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00710.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Thu, 14 Jul 2005 14:38:37 +0200 (CEST)
+Subject: qsynaptics
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00739.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Thu, 14 Jul 2005 18:10:46 +0200 (CEST)
+Subject:scmxx
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00757.html
+
+From: Orion Poplawski <orion@cora.nwra.com>
+Date: Fri, 15 Jul 2005 16:25:12 -0600
+Subject: hdf 
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00870.html
+
+From: "Shawn McCann" <mccann0011@hotmail.com>
+Date: Fri, 15 Jul 2005 21:38:59 -0700
+Subject: libgeotiff
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00884.html
+
+From: Rui Miguel Seabra <rms@1407.org>
+Date: Sat, 16 Jul 2005 18:33:56 +0100
+Subject: nautilus-open-terminal
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00895.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Sat, 16 Jul 2005 19:04:12 -0400
+Subject: pygame
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00898.html
+
+From: Menno Smits <menno-fedora@freshfoo.com>
+Date: Mon, 18 Jul 2005 21:37:33 +1000
+Subject: devilspie
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00944.html
+
+From: "Jan ONDREJ (SAL)" <ondrejj@salstar.sk>
+Date: Mon, 18 Jul 2005 17:31:06 +0200
+Subject: sagator
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00956.html
+
+From: Roland McGrath <roland@redhat.com>
+Date: Mon, 18 Jul 2005 15:44:09 -0700 (PDT)
+Subject: monotone
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00971.html
+
+From: Colin Charles <byte@aeon.com.my>
+Date: Tue, 19 Jul 2005 10:56:49 -0400
+Subject: ngrep
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg00989.html
+
+From: Quentin Spencer <qspencer@ieee.org>
+Date: Tue, 19 Jul 2005 16:30:52 -0500
+Subject: umfpack
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01027.html
+
+From: Jeff Spaleta <jspaleta@gmail.com>
+Date: Wed, 20 Jul 2005 17:20:42 -0400
+Subject: istanbul
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01063.html
+
+From: Joost van der Sluis <joost@cnoc.nl>
+Date: Thu, 21 Jul 2005 17:14:21 +0200
+Subject: lazarus fpc
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01109.html
+
+From: Jason L Tibbitts III <tibbs@math.uh.edu>
+Date: Thu, 21 Jul 2005 11:59:17 -0500
+Subject: denyhosts
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01111.html
+
+From: David Cary Hart <fedora@tqmcube.com>
+Date: Mon, 25 Jul 2005 17:23:19 -0400
+Subject: bld
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01257.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Tue, 26 Jul 2005 11:20:42 +0200 (CEST)
+Subject: simgear
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01272.html
+
+From: Ignacio Vazquez-Abrams <ivazquez@ivazquez.net>
+Date: Tue, 26 Jul 2005 07:31:31 -0400
+Subject: nautilus-search-tool
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01276.html
+
+From: Quentin Spencer <qspencer@ieee.org>
+Date: Tue, 26 Jul 2005 08:40:53 -0500
+Subject: glpk
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01280.html
+
+From: Jonathan Blandford <jrb@redhat.com>
+Date: 26 Jul 2005 23:42:56 -0400
+Subject: at-poke
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01301.html
+
+From: Dennis Gilmore <dennis@ausil.us>
+Date: Tue, 26 Jul 2005 22:47:24 -0500
+Subject: krecipes
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01302.html
+
+From: Dennis Gilmore <dennis@ausil.us>
+Date: Tue, 26 Jul 2005 22:51:27 -0500
+Subject: kmymoney2
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01304.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Wed, 27 Jul 2005 21:17:41 -0500
+Subject: alleyoop
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01364.html
+
+From: =?ISO-8859-1?Q?Nicol=E1s_Wolovick?= <nwolovick@gmail.com>
+Date: Thu, 28 Jul 2005 07:24:25 -0300
+Subject: gnome-applet-bubblemon
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01385.html
+
+From: Alexander Dalloz <alex@dalloz.de>
+Date: Thu, 28 Jul 2005 16:36:22 +0200
+Subject: lzo2
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01394.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Thu, 28 Jul 2005 22:05:06 -0500
+Subject: gxemul
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01435.html
+
+From: Christopher Aillon <caillon@redhat.com>
+Date: Fri, 29 Jul 2005 02:52:22 -0400
+Subject: libsvg
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01443.html
+
+From: Christopher Aillon <caillon@redhat.com>
+Date: Fri, 29 Jul 2005 02:52:24 -0400
+Subject: libsvg-cairo
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01444.html
+
+From: Christopher Aillon <caillon@redhat.com>
+Date: Fri, 29 Jul 2005 02:52:27 -0400
+Subject: svg2png
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01445.html
+
+From: Andreas Thienemann <andreas@bawue.net>
+Date: Fri, 29 Jul 2005 14:42:01 +0200 (CEST)
+Subject: icecast
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01457.html
+
+From: Zing <shishz@hotpop.com>
+Date: Fri, 29 Jul 2005 23:17:05 -0400
+Subject: snownews
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01493.html
+
+From: Steven Pritchard <steve@silug.org>
+Date: Sat, 30 Jul 2005 17:34:20 -0500
+Subject: perl-Mail-SPF-Query perl-Net-CIDR-Lite
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01508.html
+
+From: Steven Pritchard <steve@silug.org>
+Date: Sat, 30 Jul 2005 17:35:40 -0500
+Subject: perl-eperl
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01509.html
+
+From: Steven Pritchard <steve@silug.org>
+Date: Sat, 30 Jul 2005 17:43:22 -0500
+Subject: perl-BerkeleyDB
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01511.html
+
+From: Andreas Bierfert <andreas.bierfert@lowlatency.de>
+Date: Sun, 31 Jul 2005 11:44:17 +0200
+Subject: libetpan
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-July/msg01519.html
+
+From: Orion Poplawski <orion@cora.nwra.com>
+Date: Tue, 02 Aug 2005 15:28:42 -0600
+Subject: python-basemap python-numarray
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00055.html
+
+From: Rex Dieter <rdieter@math.unl.edu>
+Date: Wed, 03 Aug 2005 14:07:11 -0500
+Subject: gtk-qt-engine
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00109.html
+
+From: Rex Dieter <rdieter@math.unl.edu>
+Date: Wed, 03 Aug 2005 14:07:38 -0500
+Subject: gsview
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00110.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Wed, 03 Aug 2005 14:21:08 -0500
+Subject: tinyerp
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00113.html
+
+From: Ralf Ertzinger <fedora@camperquake.de>
+Date: Thu, 4 Aug 2005 00:00:55 +0200
+Subject: bmp-flac2
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00125.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Thu, 04 Aug 2005 14:00:23 -0500
+Subject: stripesnoop
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00169.html
+
+From: "Tom 'spot' Callaway" <tcallawa@redhat.com>
+Date: Thu, 04 Aug 2005 14:51:51 -0500
+Subject: perl-Image-ExifTool
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00170.html
+
+From: Oliver Falk <oliver@linux-kernel.at>
+Date: Fri, 05 Aug 2005 09:53:03 +0200
+Subject: scanssh
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00211.html
+
+From: Ryo Dairiki <ryo-dairiki@mbm.nifty.com>
+Date: Sat, 06 Aug 2005 19:50:55 +0900
+Subject: kasumi
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00266.html
+
+From: Oliver Falk <oliver@linux-kernel.at>
+Date: Wed, 10 Aug 2005 11:22:55 +0200
+Subject: perl-Unix-Statgrab
+RefMsg: https://www.redhat.com/archives/fedora-extras-list/2005-August/msg00478.html

@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+# $Id$
+use strict;
+
+local *IN;
+my %P;
+$/ = "\n\n";
+open IN, "REQUESTS_trim.txt" or die "couldn't open REQUESTS_trim.txt: $!";
+while ( <IN> ) {
+  my ($who) = $_ =~ /^From:\s*(.*\S)\s*$/m;
+  my ($date) = $_ =~ /^Date:\s*(.*\S)\s*$/m;
+  my ($plist) = $_ =~ /^Subject:\s*(.*\S)\s*$/m;
+  my ($ref) = $_ =~ /^RefMsg:\s*(.*\S)\s*$/m;
+  my @F = split / /, $plist;
+  foreach my $pkg (@F) {
+    if (defined $P{$pkg}) {
+      print STDERR "$pkg is submitted several times.\n";
+      next;
+    }
+    $P{$pkg} = [$who, $date, $ref, undef, undef, undef];
+  }
+}
+close IN;
+open IN, "APPROVED_trim.txt" or die "couldn't open APPROVED_trim.txt: $!";
+while ( <IN> ) {
+  my ($who) = $_ =~ /^From:\s*(.*\S)\s*$/m;
+  my ($date) = $_ =~ /^Date:\s*(.*\S)\s*$/m;
+  my ($plist) = $_ =~ /^Subject:\s*(.*\S)\s*$/m;
+  my ($ref) = $_ =~ /^RefMsg:\s*(.*\S)\s*$/m;
+  my @F = split / /, $plist;
+  foreach my $pkg (@F) {
+    if (defined $P{$pkg}) {
+      my $e = $P{$pkg};
+      if (defined $$e[3]) {
+	print STDERR "$pkg is approved several times.\n";
+	next;
+      }
+      $$e[3] = $who;
+      $$e[4] = $date;
+      $$e[5] = $ref;
+    } else {
+      $P{$pkg} = [undef, undef, undef, $who, $date, $ref];
+    }
+  }
+}
+close IN;
+foreach my $k (sort {uc($a) cmp uc($b)} (keys %P)) {
+  my $e = $P{$k};
+  print "$k\t", join("\t", @$e), "\n";
+}
+exit 0;
