@@ -52,8 +52,6 @@ class Owners(dict):
         accounts = self.__preseed_accounts()
 
         for line in ownersData.splitlines():
-            if line.startswith('Fedora Extras'):
-                print 'DEBUG:', line
             if line.startswith('#'):
                 continue
             line = line.strip()
@@ -92,17 +90,17 @@ class Owners(dict):
                     logging.warning('Set qacontact for %s to 0' % fields[1])
                     continue
                 accounts[fields[4]] = qacontact
-
+            
             # Parse the watchers into an array and check the accounts system
             # to see if they're there.
+            watcherIDs = []
             if fields[5]:
                 watchers = fields[5].split(',')
-                watcherIDs = []
                 for watcher in watchers:
                     if watcher in accounts:
                         if type(accounts[watcher]) == dict:
                             pass
-                            ### TODO: This one takes special handling.
+                            ### FIXME: This one takes special handling.
                             # Currently special handling is just for adding
                             # the watcher as a group instead of a person.
                             #
@@ -119,13 +117,12 @@ class Owners(dict):
                             continue
                         accounts[watcher] = watcherID
                         watcherIDs.append(watcherID)
-                        
-                self[fields[1]] = { 'collection' : collection,
-                        'summary' : fields[2],
-                        'owner' : ownerID,
-                        'qacontact' : qacontact,
-                        'watchers' : watcherIDs
-                        }
+            self[fields[1]] = { 'collection' : collection,
+                'summary' : fields[2],
+                'owner' : ownerID,
+                'qacontact' : qacontact,
+                'watchers' : watcherIDs
+            }
 
             # Record the collections this owners.list uses.  That way we can
             # check that we have all the necessary collections later.
