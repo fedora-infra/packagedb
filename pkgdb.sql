@@ -686,6 +686,19 @@ grant select, insert
     PackageBuildLog, PersonPackageACLLog, GroupPackageACLLog
   to pkgdbadmin;
 
+grant update
+  on collection_id_seq, grouppackageacl_id_seq, log_id_seq, package_id_seq,
+    packageacl_id_seq, packagebuild_id_seq, packagelisting_id_seq,
+    personpackageacl_id_seq
+  to pkgdbadmin;
+grant select
+  on StatusCode, StatusCodeTranslation, CollectionStatusCode,
+    PackageStatusCode, PackageLogStatusCode, PackageBuildStatusCode,
+    PackageBuildLogStatusCode, PackageListingStatusCode,
+    PackageListingLogStatusCode, PackageACLStatusCode,
+    PackageACLLogStatusCode
+  to pkgdbadmin;
+
 -- FIXME: In order to implement groups/categories/comps we need to have tables
 -- that list the subpackages per collection.
 --

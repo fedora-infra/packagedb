@@ -5,7 +5,7 @@ This program parses the owners.list file from a cvs checkout and constructs
 an sql file expressing package database relations.
 '''
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 dbName='pkgdb'
 dbHost='localhost'
@@ -20,6 +20,7 @@ import logging
 import psycopg2
 
 sys.path.append('/var/www/repo/fedora-accounts/')
+sys.path.append('/srv/bzr/fedora-accounts/')
 import website
 
 class AccountsDB(object):
@@ -51,6 +52,8 @@ class Owners(dict):
         accounts = self.__preseed_accounts()
 
         for line in ownersData.splitlines():
+            if line.startswith('Fedora Extras'):
+                print 'DEBUG:', line
             if line.startswith('#'):
                 continue
             line = line.strip()
@@ -170,14 +173,20 @@ class CVSError(Exception):
     pass
 
 class CVSReleases(dict):
-    def __init__(self, cvspath):
+    def __init__(self, cvspath=None):
         '''Pull information on releases from the cvs modules file.
         '''
+        self.releases = {'devel' : None}
+        # If cvspath does not exist, we'll return 'devel' for any packages
+        # on the fly.
+        if not cvspath:
+            return
+
+        ### FIXME: Need to pull in information for RHL and EPEL as well.
         modulesRE = re.compile(r'^RHL-9\s+&common.*-dir')
         branchRE = re.compile(r'^([^ ]+)-FC-([0-9]+)-dir\s')
         cvsFile = file(cvspath, 'r')
         records = cvsFile.readlines()
-        self.releases = {'devel' : None}
 
         match = modulesRE.search(records[-1])
         if not match:
@@ -234,6 +243,43 @@ class PackageDB(object):
                 user=dbUser, password=dbPass)
         self.dbCmd = self.db.cursor()
 
+    def _add_acl(self, pkgACLData):
+        '''Add and acl for a packageListing.
+        Use the data to set the ACL.
+
+        :pkgACLData: The information on the ACL to set.
+        '''
+        # Get ids for watchbugzilla and watchcommits ACLs
+        self.dbCmd.execute("select id from PackageACL as pa" \
+                " where pa.packageListingId = %(pkgList)s" \
+                " and pa.acl = %(acl)s",
+                pkgACLData)
+        pkgACL = self.dbCmd.fetchone()
+        if not pkgACL:
+            # Create the ACL
+            self.dbCmd.execute("insert into PackageACL" \
+                    " (PackageListingId, acl) values" \
+                    " (%(pkgList)s, %(acl)s)",
+                    pkgACLData)
+            self.dbCmd.execute("select pa.id from" \
+                    " PackageACL as pa" \
+                    " where pa.packageListingId = %(pkgList)s" \
+                    " and pa.acl = %(acl)s",
+                    pkgACLData)
+            pkgACL = self.dbCmd.fetchone()
+
+        # Save the ACL into the database
+        pkgACLData['pkgACL'] = pkgACL[0]
+
+        self.dbCmd.execute("insert into PersonPackageACL" \
+                " (packageaclid, userid, status) select" \
+                " %(pkgACL)s, %(watcher)s, pasc.statusCodeId from" \
+                " PackageACLStatusCode as pasc natural join" \
+                " StatusCodeTranslation as sct" \
+                " where sct.language = 'C'" \
+                " and sct.statusName = %(status)s",
+                pkgACLData)
+
     def import_data(self, owners, cvs, updatedb):
         '''Import data from owners and cvs into the DB.
 
@@ -250,25 +296,35 @@ class PackageDB(object):
         collectionNumbers = {}
         for collection in owners.collections.keys():
             for release in cvs.releases.keys():
+                collectionData = {'collection' : collection,
+                        'release' : release}
                 self.dbCmd.execute("select id from collection" \
-                        " where name = '%s' and version = '%s'" %
-                        (collection, release))
+                        " where name = %(collection)s" \
+                        " and version = %(release)s",
+                        collectionData)
                 collectionInfo = self.dbCmd.fetchone()
                 if not collectionInfo:
                     # This collection is not yet known, create it.  At least
                     # version, status, and owner should be changed before
                     # deployment. (100068 is toshio's account)
+                    collectionData.update({'status' : 'EOL', 'user' : 100068})
                     self.dbCmd.execute("insert into collection" \
                             " (name, version, status, owner)" \
-                            " values('%s', '%s', '%s', %s)" %
-                            (collection, release, 'EOL', 100068))
+                            " select %(collection)s, %(release)s," \
+                            " CollectionStatusCode.statusCodeId, %(user)s" \
+                            " from CollectionStatusCode" \
+                            " natural join StatusCodeTranslation as sct" \
+                            " where sct.language = 'C' " \
+                            " and sct.statusName = %(status)s",
+                            collectionData)
                     self.db.commit()
                     logging.warning('Created new collection %s.  Please' \
                             ' update version, status, and ownership' \
                             ' information for this release.' % collection)
                     self.dbCmd.execute("select id from collection" \
-                            " where name = '%s' and version = '%s'" %
-                            (collection, release))
+                            " where name = %(collection)s" \
+                            " and version = %(release)s",
+                            collectionData)
                     collectionInfo = self.dbCmd.fetchone()
                 if not collectionNumbers.has_key(collection):
                     collectionNumbers[collection] = {}
@@ -277,50 +333,74 @@ class PackageDB(object):
         # Import each package that was listed in the owners.list file.
         for pkg in owners.keys():
             # Add the packages into the database
+            pkgData = {'pkg' : pkg, 'summary': owners[pkg]['summary'],
+                    'status': 'Approved'}
             try:
-                self.dbCmd.execute("insert into package (name, summary, status) values(%s, %s, %s)", (pkg, owners[pkg]['summary'], 'approved'))
+                self.dbCmd.execute("insert into package" \
+                        " (name, summary, status)" \
+                        " select %(pkg)s, %(summary)s," \
+                        " PackageStatusCode.statusCodeId" \
+                        " from PackageStatusCode natural join" \
+                        " StatusCodeTranslation as sct where" \
+                        " sct.language = 'C' and sct.statusName = %(status)s",
+                        pkgData)
             except psycopg2.IntegrityError, e:
                 if e.pgcode != '23505':
                     raise e
                 self.db.rollback()
                 # This package is already in the database.
-                # If the user exlicitly asked to update the db with new data,
-                # do that, otherise, discard the duplicate packages.
+                # If the user explicitly asked to update the db with new data,
+                # do that, otherwise, discard the duplicate packages.
                 if updatedb:
                     # User wants to update
                     self.dbCmd.execute("update package" \
-                            " set summary='%s'" \
-                            " where name = '%s'" %
-                            (owners[pkg]['summary'], pkg))
-            
+                            " set summary = %(summary)s" \
+                            " where name = %(pkg)s",
+                            pkgData)
+           
             self.dbCmd.execute("select id from package" \
-                    " where name = '%s'" % pkg)
+                    " where name = %(pkg)s", pkgData)
             pkgId = self.dbCmd.fetchone()[0]
 
             # Associate the package with one or more collections
             pkgListNumbers = []
+            pkgListData = {'pkgId' : pkgId,
+                    'owner' : owners[pkg]['owner'],
+                    'status' : 'Approved'}
+            # Create a PackageListing entry for each release that the package
+            # is available.
             for release in cvs[pkg]:
-                ### FIXME: package_listing has a true primary key of two
-                # columns: package_id collection_id.  Since sqlobject doesn't
-                # support this, we can't depend on the database to catch this.
-                # 'tis a problem.
-                self.dbCmd.execute("insert into package_listing" \
-                        " (package_id, collection_id, owner, status)" \
-                        " values(%s, %s, %s, '%s')" % (pkgId,
-                            collectionNumbers[owners[pkg]['collection']][release],
-                            owners[pkg]['owner'], 'approved'))
-                self.dbCmd.execute("select id from package_listing" \
-                        " where package_id = '%s' and collection_id = '%s'" %
-                        (pkgId,
-                         collectionNumbers[owners[pkg]['collection']][release]))
-                pkgListNumbers.append(self.dbCmd.fetchone()[0])
+                pkgListData['collectId'] = collectionNumbers[owners[pkg]['collection']][release]
+                self.dbCmd.execute("select id from PackageListing" \
+                        " where packageId = %(pkgId)s and" \
+                        " collectionId = %(collectId)s", pkgListData)
+                pkgListNum = self.dbCmd.fetchone()
+                if not pkgListNum:
+                    self.dbCmd.execute("insert into PackageListing" \
+                            " (packageId, collectionId, owner, status)" \
+                            " select %(pkgId)s, %(collectId)s, %(owner)s," \
+                            " plsc.statusCodeId from" \
+                            " PackageListingStatusCode as plsc natural join" \
+                            " StatusCodeTranslation as sct" \
+                            " where sct.language = 'C' and" \
+                            " sct.statusName = %(status)s", pkgListData)
+                    self.dbCmd.execute("select id from PackageListing" \
+                            " where packageId = %(pkgId)s and" \
+                            " collectionId = %(collectId)s", pkgListData)
+                    pkgListNum = self.dbCmd.fetchone()
+                pkgListNumbers.append(pkgListNum[0])
+
             # Set up anyone who should be watching the package
             for watcher in owners[pkg]['watchers']:
+                pkgACLData = {'watcher' : watcher, 'status' : 'Approved'}
                 for pkgListing in pkgListNumbers:
-                    self.dbCmd.execute("insert into package_interest" \
-                            " (package_listing_id, status, role)" \
-                            " values(%s, '%s', '%s')" %
-                            (pkgListing, 'awaitingreview', 'comaintainer'))
+                    pkgACLData['pkgList'] = pkgListing
+                    # Save the watchbugzilla acl for this listing
+                    pkgACLData['acl'] = 'watchbugzilla'
+                    self._add_acl(pkgACLData)
+                    # Save the watchcommits acl for this listing
+                    pkgACLData['acl'] = 'watchcommits'
+                    self._add_acl(pkgACLData)
             self.db.commit()
 
 def parse_commandline():
@@ -335,7 +415,8 @@ def parse_commandline():
        access to the database server on which the packageDB will live.
 
        Note: this script only handles Fedora releases.  It does not handle RHL
-       releases.
+       releases or EPEL releases.  We need an up-to-date owners.epel.list to
+       do EPEL correctly.
        If [input-filename] is not specified, read from stdin''')
 
     parser.add_option('-f', '--file', dest='pickleFile',
@@ -416,7 +497,7 @@ if __name__ == '__main__':
     if options.cvsModule:
         cvsModule = CVSReleases(options.cvsModule)
     else:
-        cvsModule = None
+        cvsModule = CVSReleases()
 
     # Write the owner information into the database
     pkgdb = PackageDB()

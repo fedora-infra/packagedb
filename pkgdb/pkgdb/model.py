@@ -6,6 +6,8 @@ from turbogears.database import PackageHub
 hub = PackageHub('pkgdb')
 __connection__ = hub
 
+soClasses = ('Collection', 'Branch', 'Package', 'PackageListing', 'PackageVersion', 'PackageInterest', 'PackageInterestPerson', 'PackageInterestGroup', 'Log', 'PackageLog', 'PackageListingLog', 'PackageVersionLog', 'PackageInterestPersonLog', 'PackageInterestGroupLog')
+
 class Collection(SQLObject):
     '''Collection of packages.
     

@@ -141,13 +141,16 @@ Add Ons
 
 * RSS Feeds of package changes.
 
+* Second level notification: Tell package owners when a package they depend
+  on is updated.
+
 Ideas
 ~~~~~
 
 * Hidden branches (for security fixes) need to be integrated somehow.  We may
   want to include them in this interface but they are a bit more problematic
   due to the way they operate.
-* Maybe take more information from repomd so and subsume some of repoview's
+* Maybe take more information from repomd and subsume some of repoview's
   functionality?  This would take us into the realm of what Debian's web
   interface to their package browser does but it may be too many things for
   this project.
