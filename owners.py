@@ -166,7 +166,9 @@ class Owners(dict):
                 # karen-peare@uiowa.edu
                 'meme@daughtersoftiresias.org' : 100281,
                 # DavidHart@TQMcube.com
-                'davidhart@tqmcube.com' : 100211
+                'davidhart@tqmcube.com' : 100211,
+                # Typo: rvokal@redhat.com
+                'rvokal@eredhat.com' : 100088
                 }
 
 class CVSError(Exception):
