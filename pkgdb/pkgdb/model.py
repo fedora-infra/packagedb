@@ -33,8 +33,6 @@ collectionJoin = polymorphic_union (
 collectionMapper = assign_mapper(session.context, Collection, CollectionTable,
         select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
         polymorphic_identity='c')
-### FIXME: sqlalchemy <= 0.3.1 hack
-collectionMapper = class_mapper(Collection)
 
 assign_mapper(session.context, Branch, BranchTable, inherits=collectionMapper,
         inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
@@ -50,8 +48,6 @@ assign_mapper(session.context, PackageListing, PackageListingTable)
 # By and large we'll follow steps similar to the Collection/Branch example
 # above.
 # List of tables to map::
-# Package
-# PackageListing
 # StatusCode
 # StatusCodeTranslation
 # CollectionStatusCode
