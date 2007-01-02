@@ -1,1 +1,2 @@
-TurboGears >= 1.0b1
+TurboGears >= 1.0b2
+SQLAlchemy

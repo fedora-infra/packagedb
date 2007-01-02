@@ -60,24 +60,24 @@ h1,h2,h3,h4,h5,h6,#getting_started_steps {
 }
 
 h2 {
-  font-size:150%
+  font-size: 150%;
 }
 
 #getting_started_steps a {
-  text-decoration:none;
+  text-decoration: none;
 }
 
 #getting_started_steps a:hover {
-  text-decoration:underline;
+  text-decoration: underline;
 }
 
 #getting_started_steps li {
-  font-size:80%
+  font-size: 80%;
   margin-bottom: 0.5em;
 }
 
 #getting_started_steps h2 {
-  font-size:120%;
+  font-size: 120%;
 }
 
 #getting_started_steps p {
@@ -106,10 +106,10 @@ span.code {
 }
 
 #status_block {
-	margin: 0 auto 0.5em auto;
-	padding: 15px 10px 15px 55px;
+  margin: 0 auto 0.5em auto;
+  padding: 15px 10px 15px 55px;
   background: #cec URL('../images/ok.png') left center no-repeat;
-	border: 1px solid #9c9;
+  border: 1px solid #9c9;
   width: 450px;
   font-size: 120%;
   font-weight: bolder;

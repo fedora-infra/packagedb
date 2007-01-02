@@ -51,6 +51,40 @@ in the course of the release.
 
 In the future, the packageDB will manage the branches in the VCS Repository.
 
+Package Reviews (mailing list)
+------------------------------
+
+:Location: APPROVED_trim.txt REQUESTS_trim.txt
+:Data: URL, dates, and authors of package reviews
+:Duration: One-time
+:Priority: High
+
+In the early days, packages were approved via the fedora-extras mailing list.
+These approval messages have been abstracted to two files.  We need to enter
+this information into the packagedb so people know which packages need to be
+reviewed before being built for the combined Core + Extras.
+
+The URL goes into the package table.  The date and author go into the
+PackageLog.
+
+Package Reviews (bugzilla)
+--------------------------
+
+:Location: bugzilla
+:Data: URL, dates, and authors of package reviews
+:Duration: Ongoing
+:Priority: High
+
+Currently, packages are reviewed in bugzilla.  We need to pull information
+about packages which were formerly reviewed into the packagedb.  Then we need
+to set up a system that continues to sync against it.  Perhaps we could have
+a packagedb front end that opens up a bugzilla report for a new package in
+order to start the process.  The packagedb can periodically scan FE-REVIEW and
+FE-APPROVE tracker bugs to tell when a package changes state.
+
+The URL goes into the package table.  The date and author go into the
+PackageLog.
+
 comps-fcX.xml.in
 ----------------
 
@@ -112,25 +146,41 @@ Status
 TODO
 ----
 
-Stage 1
-~~~~~~~
+Version 0.1
+~~~~~~~~~~~
 
 * See the two "essentials" from Importing Data.
+  (owners.list is finished.  Retrieving RHL information from the cvs
+  modules file needs to be completed if we want records from RHL times.)
+  (EPEL is being put off.  It requires information from cvs and
+  owners.epel.list).
 * Finish filling in read-only pages that allow us to see what's in the database
   for each package.
-* Add comps group information to the database schema so we can generate comps
-  from here.
 
-Stage 2
-~~~~~~~
+Version 0.2
+~~~~~~~~~~~
 
+* Add the ability for authenticated users to change owners.list information:
+
+ - Add packages.
+ - Set themselves as owner for a package.
+ - Set a package as orphaned.
+ - Request to watch a package.
+
+Before F7
+~~~~~~~~~
+
+* Add the ability for owners to hand out permissions to other users.
 * Allow owners and trusted users to make changes to the packages listed here.
 * Send email notifications when things change.
 * Write out ACLs to the VCS.
 * Integrate with the accounts system.
 
-Add Ons
-~~~~~~~
+As time permits
+~~~~~~~~~~~~~~~
+
+* Add comps group information to the database schema so we can generate comps
+  from here.
 
 * Write admin functionality:
 

@@ -17,7 +17,8 @@ setup(
     #license=license,
     
     install_requires = [
-        "TurboGears >= 1.0b1",
+        "TurboGears >= 1.0b2",
+        "SQLAlchemy", 
     ],
     scripts = ["start-pkgdb.py"],
     zip_safe=False,

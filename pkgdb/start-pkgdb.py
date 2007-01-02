@@ -2,10 +2,9 @@
 import pkg_resources
 pkg_resources.require("TurboGears")
 
-import turbogears
+from turbogears import update_config, start_server
 import cherrypy
 cherrypy.lowercase_api = True
-
 from os.path import *
 import sys
 
@@ -14,15 +13,13 @@ import sys
 # look for setup.py in this directory. If it's not there, this script is
 # probably installed
 if len(sys.argv) > 1:
-    turbogears.update_config(configfile=sys.argv[1], 
+    update_config(configfile=sys.argv[1], 
         modulename="pkgdb.config")
 elif exists(join(dirname(__file__), "setup.py")):
-    turbogears.update_config(configfile="dev.cfg",
-        modulename="pkgdb.config")
+    update_config(configfile="dev.cfg",modulename="pkgdb.config")
 else:
-    turbogears.update_config(configfile="prod.cfg",
-        modulename="pkgdb.config")
+    update_config(configfile="prod.cfg",modulename="pkgdb.config")
 
 from pkgdb.controllers import Root
 
-turbogears.start_server(Root())
+start_server(Root())

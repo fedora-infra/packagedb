@@ -1,238 +1,166 @@
-# Version 0.2
-from sqlobject import *
-from sqlobject.inheritance import InheritableSQLObject
-from turbogears.database import PackageHub
+from datetime import datetime
+from turbogears.database import metadata, session, bind_meta_data
+from sqlalchemy import *
+from turbogears import identity, config
+from sqlalchemy.ext.assignmapper import assign_mapper
 
-hub = PackageHub('pkgdb')
-__connection__ = hub
+bind_meta_data()
 
-soClasses = ('Collection', 'Branch', 'Package', 'PackageListing', 'PackageVersion', 'PackageInterest', 'PackageInterestPerson', 'PackageInterestGroup', 'Log', 'PackageLog', 'PackageListingLog', 'PackageVersionLog', 'PackageInterestPersonLog', 'PackageInterestGroupLog')
+class Collection(object):
+    pass
+class Branch(Collection):
+    pass
+class Package(object):
+    pass
+class PackageListing(object):
+    pass
 
-class Collection(SQLObject):
-    '''Collection of packages.
-    
-    Collections are a set of packages.  They can represent the packages in a
-    distro, in a SIG, or on a CD.
+CollectionTable = Table('collection', metadata, autoload=True)
+BranchTable = Table('branch', metadata, autoload=True)
+collectionJoin = polymorphic_union (
+        {'b' : select((CollectionTable.join(
+            BranchTable, CollectionTable.c.id == BranchTable.c.collectionid),
+            column("'b'").label('kind'))),
+         'c' : select((CollectionTable, column("'c'").label('kind')),
+             not_(CollectionTable.c.id.in_(select(
+                 (CollectionTable.c.id,),
+                 CollectionTable.c.id == BranchTable.c.collectionid)
+             )))
+         },
+        None
+        )
 
-    Fields:
-    :name: "Fedora Core", "Fedora Extras", "Python", "GNOME" or whatever
-        names-for-groupings you want.  If this is for a grouping that a SIG is
-        interested in, the name should make this apparent.  If it is for one
-        of the distributions it should be the name for the Product that will
-        be used in Bugzilla as well.
-    :version: The release of the `Collection`.  If the `Collection` doesn't
-        have releases (for instance, SIGs), version should be 0.
-    :status: Is the collection being worked on or is it inactive.
-    :owner: Creator, QA Contact, or other account that is in charge of the
-        collection.
-    :summary: Brief description of the collection.
-    :description: Longer description of the collection.
-    '''
-    name = StringCol(length=128, notNone=True)
-    version = StringCol(length=128, notNone=True, default='0')
-    status = EnumCol(enumValues=('development', 'active', 'maintanence',
-        'EOL', 'rejected'), default='development', notNone=True)
-    owner = IntCol(notNone=True)
-    summary = UnicodeCol(length=128, notNone=False, default=None)
-    description = UnicodeCol(notNone=False, default=None)
+collectionMapper = assign_mapper(session.context, Collection, CollectionTable,
+        select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
+        polymorphic_identity='c')
+### FIXME: sqlalchemy <= 0.3.1 hack
+collectionMapper = class_mapper(Collection)
 
-    ### TODO:  There's an sqlmeta atribute that may be a better way to enable
-    # this.  Set a two column unique constraint and have a lookup function
-    # that looks up by name-version.
-    def byNameVersion(name, version='0'):
-        '''Return the `Collection` from its altenateID, name-version.
+assign_mapper(session.context, Branch, BranchTable, inherits=collectionMapper,
+        inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
+        polymorphic_identity='b')
 
-        SQLObject doesn't handle multiple column alternateID's (unique values).
-        We'll add a uniqueness constraint on the name-version into the database
-        manually and create the convenience function here to return the entry
-        by Name and Version.
+PackageTable = Table('package', metadata, autoload=True)
+PackageListingTable = Table('packagelisting', metadata, autoload=True)
 
-        Arguments:
-        :name: The `Collection`'s name.
-        :version: The `Collection`'s version.
+assign_mapper(session.context, Package, PackageTable)
+assign_mapper(session.context, PackageListing, PackageListingTable)
 
-        Returns:
-        '''
-        pass
+### FIXME: Create sqlalchemy schema.
+# By and large we'll follow steps similar to the Collection/Branch example
+# above.
+# List of tables to map::
+# Package
+# PackageListing
+# StatusCode
+# StatusCodeTranslation
+# CollectionStatusCode
+# PackageStatusCode
+# PackageLogStatusCode
+# PackageBuildStatusCode
+# PackageBuildLogStatusCode
+# PackageListingStatusCode
+# PackageListingLogStatusCode
+# PackageACLStatusCode
+# PackageACLLogStatusCode
+# CollectionSet
+# PackageBuild
+# PackageBuildListing
+# PackageACL
+# PersonPackageACL
+# GroupPackageACL
+# Log
+# PackageLog
+# PackageListingLog
+# PackageBuildLog
+# PersonPackageACLLog
+# GroupPackageACLLog
 
-class Branch(SQLObject):
-    '''`Collection`s with their own branch in the VCS have extra information.
+### FIXME: We don't want to use authentication from within the pkgdb.
+# Instead we need to hook into the identity system into the fedora account
+# system.  With the switch to ldap we may be able to use the ldapprovider from
+# TG to authenticate.  However, ldap does not include the visit functioality.
+# The present account system code does.  We'll have to decide how to use that
+# with TG.
+# The identity schema.
+visits_table = Table('visit', metadata,
+    Column('visit_key', String(40), primary_key=True),
+    Column('created', DateTime, nullable=False, default=datetime.now),
+    Column('expiry', DateTime)
+)
 
-    Fields:
-    :collection: `Collection` this branch provides information for.
-    :branchName: Name of the branch in the VCS ("FC-3", "devel")
-    :distTag: DistTag used in the buildsystem (".fc3", ".fc6")
-    :parent: Many collections are branches of other collections.  This field
-        records the parent collection to branch from.
-    '''
-    collection = ForeignKey('Collection')
-    branchName = StringCol(length=32, notNone=True)
-    distTag = StringCol(length=32, notNone = True)
-    parent = ForeignKey('Collection', notNone=False)
+visit_identity_table = Table('visit_identity', metadata,
+    Column('visit_key', String(40), primary_key=True),
+    Column('user_id', Integer, ForeignKey('tg_user.user_id'), index=True)
+)
 
-class Package(SQLObject):
-    '''Data associated with an individual package.
-   
-    Fields:
-    :name: Name of the package
-    :summary: Brief summary of what the package is
-    :description: Longer description of the package
-    :status: Is the package ready to be built, in review, or other?
-    '''
-    name = StringCol(length=128, alternateID=True, notNone=True)
-    summary = UnicodeCol(length=128, notNone=True)
-    description = UnicodeCol(notNone=False, default=None)
-    status = EnumCol(enumValues=('awaitingreview', 'underreview', 'approved',
-        'denied'), default='awaitingreview', notNone=True)
+groups_table = Table('tg_group', metadata,
+    Column('group_id', Integer, primary_key=True),
+    Column('group_name', Unicode(16), unique=True),
+    Column('display_name', Unicode(255)),
+    Column('created', DateTime, default=datetime.now)
+)
 
-class PackageListing(SQLObject):
-    '''Associates a `Package` with a `Collection`.
+users_table = Table('tg_user', metadata,
+    Column('user_id', Integer, primary_key=True),
+    Column('user_name', Unicode(16), unique=True),
+    Column('email_address', Unicode(255), unique=True),
+    Column('display_name', Unicode(255)),
+    Column('password', Unicode(40)),
+    Column('created', DateTime, default=datetime.now)
+)
 
-    Fields:
-    :package: `Package` id that is in this `Collection`.
-    :collection: A `Collection` that holds this `Package`.
-    :owner: id from the accountsDB for the owner of the `Package` in this
-        `Collection`.  There is a special orphaned account to use if you want
-        to orphan the package.
-    :qacontact: Initial bugzilla QA Contact for this package.
-    :status: Whether the `Package` was entered in the `Collection`.
-    '''
-    package = ForeignKey('Package', notNone=True)
-    collection = ForeignKey('Collection', notNone=True)
-    owner = IntCol(notNone=True)
-    qacontact = IntCol(notNone=False)
-    status = EnumCol(enumValues=('awaitingreview', 'awaitingbranch',
-        'approved', 'denied'), default='awaitingreview', notNone=True)
+permissions_table = Table('permission', metadata,
+    Column('permission_id', Integer, primary_key=True),
+    Column('permission_name', Unicode(16), unique=True),
+    Column('description', Unicode(255))
+)
 
-class PackageVersion(SQLObject):
-    '''Specific package version on a specific branch.
+user_group_table = Table('user_group', metadata,
+    Column('user_id', Integer, ForeignKey('tg_user.user_id')),
+    Column('group_id', Integer, ForeignKey('tg_group.group_id'))
+)
 
-    Fields:
-    :packageListing: `PackageListing` of the package within a collection.
-    :epoch: RPM Epoch for this release of the `Package`.
-    :version: RPM Version string.
-    :release: RPM Release string including any disttag value.
-    :status: What is happening with this particular version.
-    '''
-    packageListing = ForeignKey('PackageListing', notNone=True)
-    epoch = StringCol(length=32, notNone=False)
-    version = StringCol(length=32, notNone=True)
-    release = StringCol(length=128, notNone=True)
-    status = EnumCol(enumValues=('awaitingdevel', 'awaitingreview',
-        'awaitingqa', 'awaitingpublish', 'approved', 'denied', 'obsolete'),
-        default='awaitingdevel', notNone=True)
+group_permission_table = Table('group_permission', metadata,
+    Column('group_id', Integer, ForeignKey('tg_group.group_id')),
+    Column('permission_id', Integer, ForeignKey('permission.permission_id'))
+)
 
-class PackageInterest(InheritableSQLObject):
-    '''An entity that has an active or passive relation to the `PackageListing`.
-   
-    This is a base class meant to be inherited by people and group tables
-    which have a relation to the `PackageListing`.
 
-    `PackageInterestLog` assumes that records will never be removed from here.
-    Instead, set the status to 'obsolete'.  This also means that we shouldn't
-    change the role.  Instead, create a new PackageInterest record and mark
-    this one obsolete.
+class Visit(object):
+    def lookup_visit(cls, visit_key):
+        return Visit.get(visit_key)
+    lookup_visit = classmethod(lookup_visit)
 
-    Fields:
-    :packageListing: Package in a collection that the person is interested
-        in watching.
-    :status: Whether the person is allowed to watch the package at this level.
-    :role: Whether the watcher is a maintainer, co-maintainer, or watcher.
-        Used to authorize what the person can do to the package.
-    '''
-    packageListing = ForeignKey('PackageListing', notNone=True)
-    status = EnumCol(enumValues=('awaitingreview', 'approved', 'denied',
-        'obsolete'), default='awaitingreview', notNone=True)
-    role = EnumCol(enumValues=('comaintainer', 'commitonly', 'buildonly',
-        'watcher'), default='watcher', notNone=True)
+class VisitIdentity(object):
+    pass
 
-class PackageInterestPerson(PackageInterest):
-    '''A person that is interested in the `PackageListing`.
+class Group(object):
+    """
+    An ultra-simple group definition.
+    """
+    pass
 
-    Fields:
-    :userID: `Person` id from accounts db interested in this package.
-    '''
-    userID = IntCol(notNone=True)
-    
-class PackageInterestGroup(PackageInterest):
-    '''A group (usually a SIG) that is interested in the `PackageListing`.
-    
-    Fields:
-    :groupID: Group id from the accounts db interested in this package.
-    '''
-    groupID = IntCol(notNone=True)
-    
-class Log (InheritableSQLObject):
-    '''Keep track of changes made.
-   
-    This is a base class.  It is intended to be inherited by other classes
-    to keep a record of changes to `Package`s.
+class User(object):
+    """
+    Reasonably basic User definition. Probably would want additional
+    attributes.
+    """
+    def permissions(self):
+        perms = set()
+        for g in self.groups:
+            perms = perms | set(g.permissions)
+        return perms
+    permissions = property(permissions)
 
-    Fields:
-    :userID: `Person` id from accountsdb for user who made the change.
-    :changeTime: When the change was made.
-    '''
-    userID = IntCol(notNone=True)
-    changeTime = DateTimeCol(default=sqlbuilder.func.NOW(), notNone=True)
+class Permission(object):
+    pass
 
-class PackageLog(Log):
-    '''Records changes to packages.
-
-    Fields:
-    :package: `Package` that changed.
-    :action: What happened to the package.
-    :URL: reference to document the change
-	For older packages, those will be URLs to ml messages where the
-	review request and the approval were given.
-	For current packages, these should be URLs to the BZ ticket.
-	FIXME: should we add a maximum length to the string ?
-    '''
-    package = ForeignKey('Package', notNone=True)
-    action = EnumCol(enumValues=('added', 'removed', 'statuschanged',
-        'awaitingreview', 'underreview', 'approved', 'denied'), notNone=True)
-    URL = StringCol(notNone=False, default=None)
-
-class PackageListingLog(Log):
-    '''Records `Package`s moving in and out of `Collection`s.
-
-    Fields:
-    :packageListing: `PackageListing` that has changed.
-    :action: What happened to the package's status within the collection.
-    '''
-    packageListing = ForeignKey('PackageListing', notNone=True)
-    action = EnumCol(enumValues=('added', 'removed', 'awaitingreview',
-        'awaitingbranch', 'approved', 'denied'), notNone=True)
-
-class PackageVersionLog(Log):
-    '''Changes to the package's version.
-
-    Fields:
-    :packageVersion: `PackageVersion` that's changed.
-    :action: What happened to this version of the package.
-    '''
-    packageVersion = ForeignKey('PackageVersion', notNone=True)
-    action = EnumCol(enumValues=('added', 'awaitingdevel', 'awaitingreview',
-        'awaitingqa', 'awaitingpublish', 'approved', 'denied', 'obsolete'),
-        notNone=True)
-
-class PackageInterestPersonLog(Log):
-    '''History of who has watched the packages before.
-
-    Fields:
-    :packageInterest: The package/person pair that has changed.
-    :action: What has happened to it.
-    '''
-    packageInterest = ForeignKey('PackageInterestPerson', notNone=True)
-    action = EnumCol(enumValues=('added', 'awaitingreview', 'approved',
-        'denied', 'obsolete'), notNone=True)
-
-class PackageInterestGroupLog(Log):
-    '''History of what groups have watched the packages before.
-
-    Fields:
-    :packageInterest: The package/Group pair that has changed.
-    :action: What has happened to it.
-    '''
-    packageInterest = ForeignKey('PackageInterestGroup', notNone=True)
-    action = EnumCol(enumValues=('added', 'awaitingreview', 'approved',
-        'denied', 'obsolete'), notNone=True)
+assign_mapper(session.context, Visit, visits_table)
+assign_mapper(session.context, VisitIdentity, visit_identity_table,
+          properties=dict(users=relation(User, backref='visit_identity')))
+assign_mapper(session.context, User, users_table)
+assign_mapper(session.context, Group, groups_table,
+          properties=dict(users=relation(User,secondary=user_group_table, backref='groups')))
+assign_mapper(session.context, Permission, permissions_table,
+          properties=dict(groups=relation(Group,secondary=group_permission_table, backref='permissions')))

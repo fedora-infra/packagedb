@@ -30,13 +30,15 @@
             <a href="/logout">Logout</a>
         </span>
     </div>
-
+    <div id="header">&nbsp;</div>
+    <div id="main_content">
     <div py:if="tg_flash" class="flash" py:content="tg_flash"></div>
 
     <div py:replace="[item.text]+item[:]"/>
 
 	<!-- End of main_content -->
-<div id="footer"> <img src="/static/images/under_the_hood_blue.png" />
+	</div>
+<div id="footer"> <img src="/static/images/under_the_hood_blue.png" alt="TurboGears under the hood" />
   <p>TurboGears is a open source front-to-back web development
     framework written in Python</p>
   <p>Copyright &copy; 2006 Kevin Dangoor</p>

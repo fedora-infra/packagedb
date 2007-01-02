@@ -12,7 +12,6 @@ from turbogears import testutil, database
 # class TestUser(testutil.DBTest):
 #     def get_model(self):
 #         return User
-#
 #     def test_creation(self):
 #         "Object creation should set the name"
 #         obj = User(user_name = "creosote",
