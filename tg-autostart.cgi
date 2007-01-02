@@ -6,7 +6,7 @@ import urllib2
 import re
 
 portRE = re.compile(r'^[0-9]+$')
-fileRE = re.compile(r'^(/pkgs/bzr/fedora-packagedb/|/var/www/repo/fedora-packagedb/pkgdb/)[-_a-zA-Z0-9/]+[-_a-zA-Z0-9]\.py$')
+fileRE = re.compile(r'^(/srv/bzr/fedora-packagedb/pkgdb/|/var/www/repo/fedora-packagedb/pkgdb/)[-_a-zA-Z0-9/]+[-_a-zA-Z0-9]\.py$')
 
 print "Content-type: text/html\r\n\n"
 
