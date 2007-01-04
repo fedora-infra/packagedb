@@ -6,17 +6,64 @@ from sqlalchemy.ext.assignmapper import assign_mapper
 
 bind_meta_data()
 
+class StatusTranslation(object):
+    def __init__(self, statuscodeid, statusname, language=None,
+            description=None):
+        self.statuscodeid = statuscodeid
+        self.statusname = statusname
+        if language:
+            self.language
+        self.description = description or None
+
+class CollectionStatus(object):
+    def __init__(self, statuscodeid):
+        self.statuscodeid = statuscodeid
+
 class Collection(object):
-    pass
+    def __init__(self, name, version, status, owner, publishurltemplate=None,
+            pendingurltemplate=None, summary=None, description=None):
+        self.name = name
+        self.version = version
+        self.status = status
+        self.owner = owner
+        self.publishurltemplate = publishurltemplate
+        self.pendingurltemplate = pendingurltemplate
+        self.summary = summary
+        self.description = description
+
 class Branch(Collection):
-    pass
+    def __init__(self, collectionid, branchname, disttag, parentid, *args):
+        self.collectionid = collectionid
+        self.branchname = branchname
+        self.disttag = disttag
+        self.parentid = parentid
+        Collection.__init__(self, args)
+
 class Package(object):
-    pass
+    def __init__(self, name, summary, status, description=None, reviewurl=None):
+        self.name = name
+        self.summary = summary
+        self.status = status
+        self.description = description
+        self.reviewurl = reviewurl
+
 class PackageListing(object):
-    pass
+    def __init__(self, packageid, collectionid, owner, status, qacontact=None):
+        self.packageid = packageid
+        self.collectionid = collectionid
+        self.owner = owner
+        self.qacontact = qacontact
+        self.status = status
+
+CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
+assign_mapper(session.context, CollectionStatus, CollectionStatusTable)
+
+StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
+assign_mapper(session.context, StatusTranslation, StatusTranslationTable)
 
 CollectionTable = Table('collection', metadata, autoload=True)
 BranchTable = Table('branch', metadata, autoload=True)
+
 collectionJoin = polymorphic_union (
         {'b' : select((CollectionTable.join(
             BranchTable, CollectionTable.c.id == BranchTable.c.collectionid),
@@ -49,8 +96,6 @@ assign_mapper(session.context, PackageListing, PackageListingTable)
 # above.
 # List of tables to map::
 # StatusCode
-# StatusCodeTranslation
-# CollectionStatusCode
 # PackageStatusCode
 # PackageLogStatusCode
 # PackageBuildStatusCode

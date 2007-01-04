@@ -1,5 +1,6 @@
 <?python
 layout_params['displayNotes']=True
+TODO='Not yet implemented'
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml"
   xmlns:py="http://purl.org/kid/ns#"
@@ -7,6 +8,27 @@ layout_params['displayNotes']=True
 
 <div py:match="item.tag == 'content'">
   <h1 py:content="collection.name, ' ',  collection.version">Collection</h1>
+  <table border='0'>
+  <tr><td>
+  Status
+  </td><td py:content="collection.statusname">
+  </td></tr>
+  <tr><td>
+  Owner
+  </td><td py:content="collection.owner">
+  </td></tr>
+  <tr><td>
+  Creation Date
+  </td><td py:content="TODO">Fill in the Creation Date
+  </td></tr>
+  </table>
+  <p py:content="collection.summary">Summary</p>
+  <p py:content="collection.description">Description</p>
+
+  <ul py:for="pkg in packages">
+  <li><a href="${tg.url('/packages/id/' + str(pkg.packageid))}"
+    py:content="pkg.name"></a></li>
+  </ul>
   <p>Each collection page should have information about the Collection.
   <ul>
   <li>Date it was created</li>

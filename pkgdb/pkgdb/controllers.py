@@ -7,6 +7,9 @@ from pkgdb import json
 # import logging
 # log = logging.getLogger("pkgdb.controllers")
 
+# The Fedora Account System Module
+#import website
+
 appTitle = 'Fedora Package Database'
 
 class Test(controllers.RootController):
@@ -16,6 +19,10 @@ class Test(controllers.RootController):
         import time
         # log.debug("Happy TurboGears Controller Responding For Duty")
         return dict(now=time.ctime())
+
+    @expose(template="pkgdb.templates.try")
+    def test(self):
+        return dict(title='Test Page', rows=({'1': 'alligator', '2':'bat'},{'1':'avocado', '2':'bannana'}))
 
     @expose(template="pkgdb.templates.login")
     def login(self, forward_url=None, previous_url=None, *args, **kw):
@@ -75,13 +82,36 @@ class Collections(controllers.Controller):
             collectionId = int(collectionId)
         except ValueError:
             raise redirect('/collections/not_id')
-        collection = model.Collection.get_by(id=collectionId)
-        if not collection:
+        ### FIXME: Want to return additional info:
+        # date it was created (join log table: creation date)
+        ### FIXME: Have to extract better ownership information from the
+        # Fedora accounts system
+        collection = sqlalchemy.select((model.CollectionTable.c.name,
+            model.CollectionTable.c.version, model.CollectionTable.c.owner,
+            model.CollectionTable.c.summary, model.CollectionTable.c.description,
+            model.StatusTranslationTable.c.statusname),
+            sqlalchemy.and_(
+                model.CollectionTable.c.status==model.StatusTranslationTable.c.statuscodeid,
+                model.StatusTranslationTable.c.language=='C',
+                model.CollectionTable.c.id==collectionId), limit=1).execute()
+        if collection.rowcount <= 0:
             raise redirect('/collections/unknown',
                     redirect_params={'collectionId':collectionId})
-        collection=model.Collection.get_by(id=collectionId)
+        collection = collection.fetchone()
+
+        # Retrieve the packagelist for this collection
+        packages = sqlalchemy.select((model.PackageTable.c.name,
+            model.PackageListingTable.c.packageid),
+            sqlalchemy.and_(
+                model.PackageListingTable.c.collectionid == collectionId,
+                model.PackageListingTable.c.packageid==model.PackageTable.c.id),
+            order_by=(model.PackageTable.c.name,)).execute()
+        if packages.rowcount <= 0:
+            packages = tuple()
+        else:
+            packages = packages.fetchall()
         return dict(title='%s -- %s %s' % (appTitle, collection.name,
-            collection.version), collection=collection)
+            collection.version), collection=collection, packages=packages)
 
     @expose(template='pkgdb.templates.errors')
     def unknown(self, collectionId):
