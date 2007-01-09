@@ -8,7 +8,7 @@ from pkgdb import json
 # log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-#import website
+import website
 
 appTitle = 'Fedora Package Database'
 
@@ -98,6 +98,7 @@ class Collections(controllers.Controller):
             raise redirect('/collections/unknown',
                     redirect_params={'collectionId':collectionId})
         collection = collection.fetchone()
+        collection.owner = website.get_user_info(website.get_dbh(), collection.owner)['realname']
 
         # Retrieve the packagelist for this collection
         packages = sqlalchemy.select((model.PackageTable.c.name,

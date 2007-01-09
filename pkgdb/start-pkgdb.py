@@ -2,7 +2,7 @@
 import pkg_resources
 pkg_resources.require("TurboGears")
 
-from turbogears import update_config, start_server
+from turbogears import config, update_config, start_server
 import cherrypy
 cherrypy.lowercase_api = True
 from os.path import *
@@ -19,6 +19,8 @@ elif exists(join(dirname(__file__), "setup.py")):
     update_config(configfile="dev.cfg",modulename="pkgdb.config")
 else:
     update_config(configfile="prod.cfg",modulename="pkgdb.config")
+
+sys.path.append(config.get('fedora.accountspath'))
 
 from pkgdb.controllers import Root
 
