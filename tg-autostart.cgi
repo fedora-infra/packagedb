@@ -35,6 +35,7 @@ for row in records:
 pathcomponents = os.environ['REDIRECT_URL'].split('/')
 path = '/' + '/'.join(pathcomponents[2:])
 
+os.system('pkill -9 -f %s' % fileName)
 os.chdir(os.path.dirname(fileName))
 os.system('%s &>/tmp/output &' % fileName)
 trial = 0
