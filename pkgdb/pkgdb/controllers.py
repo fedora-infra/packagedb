@@ -8,13 +8,13 @@ from pkgdb import json
 # log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-#import website
+import website
 
 appTitle = 'Fedora Package Database'
 
 class Test(controllers.RootController):
     @expose(template="pkgdb.templates.welcome")
-    # @identity.require(identity.in_group("admin"))
+    @identity.require(identity.in_group("first1"))
     def index(self):
         import time
         # log.debug("Happy TurboGears Controller Responding For Duty")
@@ -23,37 +23,6 @@ class Test(controllers.RootController):
     @expose(template="pkgdb.templates.try")
     def test(self):
         return dict(title='Test Page', rows=({'1': 'alligator', '2':'bat'},{'1':'avocado', '2':'bannana'}))
-
-    @expose(template="pkgdb.templates.login")
-    def login(self, forward_url=None, previous_url=None, *args, **kw):
-
-        if not identity.current.anonymous \
-            and identity.was_login_attempted() \
-            and not identity.get_identity_errors():
-            raise redirect(forward_url)
-
-        forward_url=None
-        previous_url= request.path
-
-        if identity.was_login_attempted():
-            msg=_("The credentials you supplied were not correct or "
-                   "did not grant access to this resource.")
-        elif identity.get_identity_errors():
-            msg=_("You must provide your credentials before accessing "
-                   "this resource.")
-        else:
-            msg=_("Please log in.")
-            forward_url= request.headers.get("Referer", "/")
-            
-        response.status=403
-        return dict(message=msg, previous_url=previous_url, logging_in=True,
-                    original_parameters=request.params,
-                    forward_url=forward_url)
-
-    @expose()
-    def logout(self):
-        identity.current.logout()
-        raise redirect("/")
 
 class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionoverview')
@@ -84,8 +53,6 @@ class Collections(controllers.Controller):
             raise redirect('/collections/not_id')
         ### FIXME: Want to return additional info:
         # date it was created (join log table: creation date)
-        ### FIXME: Have to extract better ownership information from the
-        # Fedora accounts system
         collection = sqlalchemy.select((model.CollectionTable.c.name,
             model.CollectionTable.c.version, model.CollectionTable.c.owner,
             model.CollectionTable.c.summary, model.CollectionTable.c.description,
@@ -98,6 +65,9 @@ class Collections(controllers.Controller):
             raise redirect('/collections/unknown',
                     redirect_params={'collectionId':collectionId})
         collection = collection.fetchone()
+        ### FIXME: Have to extract better ownership information from the
+        # Fedora accounts system
+        collection.owner = website.get_user_info(website.get_dbh(), collection.owner)['realname']
 
         # Retrieve the packagelist for this collection
         packages = sqlalchemy.select((model.PackageTable.c.name,
@@ -144,3 +114,34 @@ class Root(controllers.RootController):
     @expose(template='pkgdb.templates.overview')
     def index(self):
         return dict(title=appTitle)
+
+    @expose(template="pkgdb.templates.login")
+    def login(self, forward_url=None, previous_url=None, *args, **kw):
+        if not identity.current.anonymous \
+            and identity.was_login_attempted() \
+            and not identity.get_identity_errors():
+            raise redirect(forward_url)
+
+        forward_url=None
+        previous_url= request.path
+
+        if identity.was_login_attempted():
+            msg=_("The credentials you supplied were not correct or "
+                   "did not grant access to this resource.")
+        elif identity.get_identity_errors():
+            msg=_("You must provide your credentials before accessing "
+                   "this resource.")
+        else:
+            msg=_("Please log in.")
+            forward_url= request.headers.get("Referer", "/")
+            
+        response.status=403
+        return dict(message=msg, previous_url=previous_url, logging_in=True,
+                    original_parameters=request.params,
+                    forward_url=forward_url)
+
+    @expose()
+    def logout(self):
+        identity.current.logout()
+        raise redirect("/")
+
