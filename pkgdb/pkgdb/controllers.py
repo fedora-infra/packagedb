@@ -1,5 +1,5 @@
 import sqlalchemy
-from turbogears import controllers, expose
+from turbogears import controllers, expose, config
 from pkgdb import model
 from turbogears import identity, redirect
 from cherrypy import request, response
@@ -12,7 +12,7 @@ import website
 
 appTitle = 'Fedora Package Database'
 
-class Test(controllers.RootController):
+class Test(controllers.Controller):
     @expose(template="pkgdb.templates.welcome")
     @identity.require(identity.in_group("first1"))
     def index(self):
@@ -97,7 +97,7 @@ class Collections(controllers.Controller):
                 ' fedoraproject.org website, please report it.'
         return dict(title=appTitle + ' -- Invalid Collection Id', msg=msg)
 
-class Packages(controllers.RootController):
+class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgoverview')
     def index(self):
         return dict(title=appTitle + ' -- Package Overview')
@@ -123,7 +123,7 @@ class Root(controllers.RootController):
             raise redirect(forward_url)
 
         forward_url=None
-        previous_url= request.path
+        previous_url= config.get('server.webpath', None) + request.path
 
         if identity.was_login_attempted():
             msg=_("The credentials you supplied were not correct or "
@@ -134,8 +134,9 @@ class Root(controllers.RootController):
         else:
             msg=_("Please log in.")
             forward_url= request.headers.get("Referer", "/")
-            
-        response.status=403
+
+        ### FIXME: Is it okay to get rid of this?
+        #response.status=403
         return dict(message=msg, previous_url=previous_url, logging_in=True,
                     original_parameters=request.params,
                     forward_url=forward_url)
