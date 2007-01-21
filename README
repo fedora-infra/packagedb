@@ -4,7 +4,7 @@ Next Steps
 
 :Author: Toshio Kuratomi
 :Contact: toshio-tiki-lounge-com
-:Date: Fri, 13 October, 2006
+:Date: Sunday, 21 January, 2007
 
 .. contents::
 
@@ -139,9 +139,11 @@ Status
 
 * A Turbo Gears skeleton has been constructed.
 * A database schema has been created that works with the
-  postgreSQL-SQLObject-TurboGears combination.
+  postgreSQL-SQLAlchemy-TurboGears combination.
 * Configured apache to pass requests on to the TurboGears instance
 * Wrote a CGI to autostart the TurboGears CGI when a request is made
+* Wrote a TurboGears identity layer to validate users against the Fedora
+  Account System.
 
 TODO
 ----

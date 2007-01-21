@@ -48,6 +48,8 @@ class Collections(controllers.Controller):
     def id(self, collectionId):
         '''Return a page with information on a particular Collection
         '''
+        ### FIXME: Once TG 1.0.1 is out we can use paginate to put the
+        # packagelist onto multiple pages.
         try:
             collectionId = int(collectionId)
         except ValueError:
@@ -101,11 +103,49 @@ class Collections(controllers.Controller):
 class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgoverview')
     def index(self):
+        ### FIXME: paginate for SQLAlchemy coming in 1.0.1
         return dict(title=appTitle + ' -- Package Overview')
 
     @expose(template='pkgdb.templates.pkgpage')
     def id(self, packageId):
-        return dict(title=appTitle)
+        # Return the information about a package.
+        package = sqlalchemy.select((model.PackageTable.c.name,
+            model.PackageTable.c.summary, model.PackageTable.c.description,
+            model.StatusTranslationTable.c.statusname),
+            sqlalchemy.and_(
+                model.PackageTable.c.status==model.StatusTranslationTable.c.statuscodeid,
+                model.StatusTranslationTable.c.language=='C',
+                model.PackageTable.c.id==packageId), limit=1).execute()
+        if package.rowcount <= 0:
+            raise redirect('/package/unknown',
+                    redirect_params={'packageId' : packageId})
+        package = package.fetchone()
+
+        # Fetch information about all the packageListings for this package
+        packageListings = sqlalchemy.select((model.PackageListingTable.c.owner,
+            model.PackageListingTable.c.qacontact,
+            model.PackageListingTable.c.collectionid,
+            model.CollectionTable.c.name, model.CollectionTable.c.version,
+            model.StatusTranslationTable.c.statusname),
+            sqlalchemy.and_(
+                model.PackageListingTable.c.status==model.StatusTranslationTable.c.statuscodeid,
+                model.StatusTranslationTable.c.language='C',
+                model.PackageListingTable.c.collectionid==model.CollectionTable.c.id,
+                model.PackageListingTable.c.packageid==packageid),
+                order_by=(model.CollectionTable.c.name,
+                    model.CollectionTable.c.version)).execute()
+        ### FIXME: Retrieve co-ownership information.
+        ### FIXME: Retrieve ownername and qacontactname from fas.
+
+        return dict(title='%s -- %s' % (appTitle, package.name),
+                package=package, packageid, packageListings)
+
+    @expose(template='pkgdb.templates.errors')
+    def unknown(self, pakageIdId):
+        msg = 'The packageId you were linked to, %s, does not exist.' \
+                ' If you received this error from a link on the' \
+                ' fedoraproject.org website, please report it.' % packageId
+        return dict(title=appTitle + ' -- Unknown Package', msg=msg)
 
 class Root(controllers.RootController):
     test = Test()
