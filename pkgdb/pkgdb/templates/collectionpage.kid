@@ -15,7 +15,7 @@ TODO='Not yet implemented'
   </td></tr>
   <tr><td>
   Owner
-  </td><td py:content="collection.owner">
+  </td><td py:content="collection.ownername">
   </td></tr>
   <tr><td>
   Creation Date

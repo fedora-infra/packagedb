@@ -15,7 +15,7 @@ fas = AccountSystem()
 
 class Test(controllers.Controller):
     @expose(template="pkgdb.templates.welcome")
-    @identity.require(identity.in_group("first1"))
+    @identity.require(identity.in_group("cvsextras"))
     def index(self):
         import time
         # log.debug("Happy TurboGears Controller Responding For Duty")
@@ -67,7 +67,8 @@ class Collections(controllers.Controller):
                     redirect_params={'collectionId':collectionId})
         collection = collection.fetchone()
         # Get real ownership information from the fas
-        collection.ownername = fas.get_user_info(collection.owner)['human_name']
+        (user, groups) = fas.get_user_info(collection.owner)
+        collection.ownername = user['human_name']
 
         # Retrieve the packagelist for this collection
         packages = sqlalchemy.select((model.PackageTable.c.name,
@@ -123,7 +124,7 @@ class Root(controllers.RootController):
             raise redirect(forward_url)
 
         forward_url=None
-        previous_url= config.get('server.webpath', None) + request.path
+        previous_url=request.path
 
         if identity.was_login_attempted():
             msg=_("The credentials you supplied were not correct or "
