@@ -1,6 +1,11 @@
 -- Fedora Package Database
 -- Version 0.4
 
+-- Note TG_RELNAME was changed to TG_TABLE_NAME in 8.2.  We'll have to
+-- update the following triggers when we upgrade our postgresql version:
+-- add_status_log()
+-- package_build_agreement()
+
 drop database pkgdb;
 create database pkgdb with encoding 'UTF8';
 \c pkgdb
@@ -124,12 +129,19 @@ commit;
 
 -- Create a trigger to update the available log actions depending on the
 -- available status codes for that table.
+-- Jan 20 2007 Tested:
+-- pgsql 8.1
+-- insert into packagestatuscode also added to packagelogstatuscode
+-- delete from packagestatuscode also deleted from packagelogstatuscode
+-- update packagestatuscode propagated to packagelogstatuscode
 create or replace function add_status_to_log() returns trigger AS $update_log$
 DECLARE
   cmd text;
   tableName text;
 BEGIN
-  tableName := regexp_replace(TG_TABLE_NAME, 'StatusCode$', 'LogStatusCode');
+  -- 8.2 uses a different name:
+  -- tableName := regexp_replace(TG_TABLE_NAME, 'statuscode$', 'logstatuscode');
+  tableName := regexp_replace(TG_RELNAME, 'statuscode$', 'logstatuscode');
   if (TG_OP = 'INSERT') then
     cmd := 'insert into ' || tableName || ' values (' || NEW.statusCodeId ||')';
     execute cmd;
@@ -160,6 +172,16 @@ begin;
   alter table CollectionStatusCode add foreign key (statusCodeId)
     references StatusCode(id) on delete cascade on update cascade;
 commit;
+begin;
+  create table CollectionLogStatusCode as
+    select StatusCodeId from CollectionStatusCode
+    union select StatusCodeId from StatusCodeTranslation
+    where statusName in ('Added', 'Removed');
+  alter table CollectionLogStatusCode add primary key (statusCodeId);
+commit;
+create trigger add_status_to_action after insert or delete or update
+  on CollectionStatusCode
+  for each row execute procedure add_status_to_log();
 
 begin;
   create table PackageStatusCode as select StatusCodeId 
@@ -454,7 +476,8 @@ DECLARE
   pkgList_pid integer;
   pkgBuild_pid integer;
 BEGIN
-  if (TG_TABLE_NAME = 'PackageBuildListing') then
+  -- if (TG_TABLE_NAME = 'PackageBuildListing') then
+  if (TG_RELNAME = 'PackageBuildListing') then
     -- Upon entering a new relationship between a Build and Listing, make sure
     -- they reference the same package.
     pkgList_pid := packageId from packageListing where id = NEW.packageListingId;
@@ -462,7 +485,8 @@ BEGIN
     if (pkgList_pid != pkgBuild_pid) then
       raise exception 'PackageBuild % and PackageListing % have to reference the same package', NEW.packageBuildId, NEW.packageListingId;
     end if;
-  elsif (TG_TABLE_NAME = 'PackageBuild') then
+  -- elsif (TG_TABLE_NAME = 'PackageBuild') then
+  elsif (TG_RELNAME = 'PackageBuild') then
     -- Disallow updating the packageId field of PackageBuild if it is
     -- associated with a PackageListing
     if (NEW.packageId != OLD.packageId) then
@@ -471,7 +495,8 @@ BEGIN
         raise exception 'Cannot update packageId when PackageBuild is referenced by a PackageListing';
       end if;
     end if;
-  elsif (TG_TABLE_NAME = 'PackageListing') then
+  -- elsif (TG_TABLE_NAME = 'PackageListing') then
+  elsif (TG_RELNAME = 'PackageListing') then
     -- Disallow updating the packageId field of PackageListing if it is
     -- associated with a PackageBuild
     if (NEW.packageId != OLD.packageId) then
@@ -481,7 +506,8 @@ BEGIN
       end if;
     end if;
   else
-    raise exception 'Triggering table % is not one of PackageBuild, PackageListing, or PackageBuildListing', TG_TABLE_NAME;
+    -- raise exception 'Triggering table % is not one of PackageBuild, PackageListing, or PackageBuildListing', TG_TABLE_NAME;
+    raise exception 'Triggering table % is not one of PackageBuild, PackageListing, or PackageBuildListing', TG_RELNAME;
   end if;
   return NEW;
 END;
@@ -519,6 +545,9 @@ create table PackageACL (
 
 -- Make the acl field non-updatable.  This prevents people from getting a
 -- permission and then changing the type of permission to a different one.
+-- 20 January 2007 Tested:
+-- [x] Was unable to update an acl field
+-- [x] Was able to update packagelistingid
 create or replace function no_acl_update() returns TRIGGER as $no_acl$
 BEGIN
   if (NEW.acl = OLD.acl) then
@@ -580,6 +609,24 @@ create table Log (
   userId integer not null,
   changeTime timestamp default now() not null,
   description text
+);
+
+-- Log a change made to the Collection table.
+--
+-- Fields:
+-- :logId: The id of the log entry.
+-- :collectionId: The collection that changed.
+-- :action: What happened to the collection.
+create table CollectionLog (
+  logId integer primary key,
+  packageId integer not null,
+  action integer not null,
+  foreign key (logId) references Log(id)
+    on delete cascade on update cascade,
+  foreign key (packageId) references Package(id)
+    on delete restrict on update cascade,
+  foreign key (action) references CollectionLogStatusCode (statusCodeId)
+    on delete restrict on update cascade
 );
 
 -- Log a change made to the Package table.
@@ -692,24 +739,53 @@ grant update
     personpackageacl_id_seq
   to pkgdbadmin;
 grant select
-  on StatusCode, StatusCodeTranslation, CollectionStatusCode,
+  on StatusCode, StatusCodeTranslation,
+    CollectionStatusCode, CollectionLogStatusCode
     PackageStatusCode, PackageLogStatusCode, PackageBuildStatusCode,
     PackageBuildLogStatusCode, PackageListingStatusCode,
     PackageListingLogStatusCode, PackageACLStatusCode,
     PackageACLLogStatusCode
   to pkgdbadmin;
 
--- FIXME: In order to implement groups/categories/comps we need to have tables
--- that list the subpackages per collection.
+-- FIXME: Implement groups/categories/comps
+-- Need to implement subpackages.
 --
 -- create table SubPackage (
+--   id integer primary key,
+--   name text,
+--   packageBuildId integer
 -- );
+--
 -- create table Category (
---   category text primary key
+--   id primary key
 -- );
--- create table BuiltPackageCategories (
+--
+-- create table CategoryTranslation (
+-- );
+--
+-- create table SubPackageCategory (
 --   category text references Category(category),
 --   builtPackageListingId references BuiltPackageListing(id),
 -- );
 --
--- FIXME: Add a CollectionLog table
+-- create table GroupTranslation (
+-- );
+-- create table Group (
+--   id integer primary key
+-- );
+--
+-- Group (
+--   groupid
+--   collectionid
+-- );
+-- GroupCategory (
+--   groupId
+--   categoryId
+--   exclude
+-- );
+-- GroupTranslation(
+--   groupId
+--   language
+--   name
+--   description
+-- );

@@ -4,13 +4,14 @@ from pkgdb import model
 from turbogears import identity, redirect
 from cherrypy import request, response
 from pkgdb import json
-# import logging
-# log = logging.getLogger("pkgdb.controllers")
+import logging
+log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-import website
+from fedora.accounts.fas import AccountSystem
 
 appTitle = 'Fedora Package Database'
+fas = AccountSystem()
 
 class Test(controllers.Controller):
     @expose(template="pkgdb.templates.welcome")
@@ -65,9 +66,8 @@ class Collections(controllers.Controller):
             raise redirect('/collections/unknown',
                     redirect_params={'collectionId':collectionId})
         collection = collection.fetchone()
-        ### FIXME: Have to extract better ownership information from the
-        # Fedora accounts system
-        collection.owner = website.get_user_info(website.get_dbh(), collection.owner)['realname']
+        # Get real ownership information from the fas
+        collection.ownername = fas.get_user_info(collection.owner)['human_name']
 
         # Retrieve the packagelist for this collection
         packages = sqlalchemy.select((model.PackageTable.c.name,
