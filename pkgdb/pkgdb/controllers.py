@@ -56,6 +56,7 @@ class Collections(controllers.Controller):
             raise redirect('/collections/not_id')
         ### FIXME: Want to return additional info:
         # date it was created (join log table: creation date)
+        # The initial import doesn't have this information, though.
         collection = sqlalchemy.select((model.CollectionTable.c.name,
             model.CollectionTable.c.version, model.CollectionTable.c.owner,
             model.CollectionTable.c.summary, model.CollectionTable.c.description,
@@ -70,7 +71,8 @@ class Collections(controllers.Controller):
         collection = collection.fetchone()
         # Get real ownership information from the fas
         (user, groups) = fas.get_user_info(collection.owner)
-        collection.ownername = user['human_name']
+        collection.ownername = '%s (%s)' % (user['human_name'],
+                user['username'])
 
         # Retrieve the packagelist for this collection
         packages = sqlalchemy.select((model.PackageTable.c.name,
@@ -109,36 +111,51 @@ class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgpage')
     def id(self, packageId):
         # Return the information about a package.
-        package = sqlalchemy.select((model.PackageTable.c.name,
+        pkgRow = sqlalchemy.select((model.PackageTable.c.name,
             model.PackageTable.c.summary, model.PackageTable.c.description,
             model.StatusTranslationTable.c.statusname),
             sqlalchemy.and_(
                 model.PackageTable.c.status==model.StatusTranslationTable.c.statuscodeid,
                 model.StatusTranslationTable.c.language=='C',
                 model.PackageTable.c.id==packageId), limit=1).execute()
-        if package.rowcount <= 0:
+        if pkgRow.rowcount <= 0:
             raise redirect('/package/unknown',
                     redirect_params={'packageId' : packageId})
-        package = package.fetchone()
+        package = pkgRow.fetchone()
 
         # Fetch information about all the packageListings for this package
-        packageListings = sqlalchemy.select((model.PackageListingTable.c.owner,
+        pkgListingRows = sqlalchemy.select((model.PackageListingTable.c.owner,
             model.PackageListingTable.c.qacontact,
             model.PackageListingTable.c.collectionid,
             model.CollectionTable.c.name, model.CollectionTable.c.version,
             model.StatusTranslationTable.c.statusname),
             sqlalchemy.and_(
                 model.PackageListingTable.c.status==model.StatusTranslationTable.c.statuscodeid,
-                model.StatusTranslationTable.c.language='C',
+                model.StatusTranslationTable.c.language=='C',
                 model.PackageListingTable.c.collectionid==model.CollectionTable.c.id,
-                model.PackageListingTable.c.packageid==packageid),
+                model.PackageListingTable.c.packageid==packageId),
                 order_by=(model.CollectionTable.c.name,
                     model.CollectionTable.c.version)).execute()
-        ### FIXME: Retrieve co-ownership information.
-        ### FIXME: Retrieve ownername and qacontactname from fas.
+
+        packageListings = pkgListingRows.fetchall()
+        for pkg in packageListings:
+            # Get real ownership information from the fas
+            (user, group) = fas.get_user_info(pkg.owner)
+            pkg.ownername = '%s (%s)' % (user['human_name'], user['username'])
+            if pkg.qacontact:
+                (user, group) = fas.get_user_info(pkg.qacontact)
+                pkg.qacontactname = '%s (%s)' % (user['human_name'],
+                        user['username'])
+            else:
+                pkg.qacontactname = ''
+
+            ### FIXME: Retrieve co-ownership information.
+            # Select on the packagelisting from the acl table
+            # 
 
         return dict(title='%s -- %s' % (appTitle, package.name),
-                package=package, packageid, packageListings)
+                package=package, packageid=packageId,
+                packageListings=packageListings)
 
     @expose(template='pkgdb.templates.errors')
     def unknown(self, pakageIdId):
