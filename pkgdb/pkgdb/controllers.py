@@ -1,7 +1,10 @@
 import sqlalchemy
-from turbogears import controllers, expose, config
-from pkgdb import model
+from sqlalchemy.ext.selectresults import SelectResults
+import sqlalchemy.mods.selectresults
+from turbogears import controllers, expose, paginate, config
 from turbogears import identity, redirect
+from turbogears.database import session
+from pkgdb import model
 from cherrypy import request, response
 from pkgdb import json
 import logging
@@ -45,11 +48,11 @@ class Collections(controllers.Controller):
                 collections=collections)
 
     @expose(template='pkgdb.templates.collectionpage')
+    @paginate('packages', default_order='name', limit=100,
+            allow_limit_override=True, max_pages=13)
     def id(self, collectionId):
         '''Return a page with information on a particular Collection
         '''
-        ### FIXME: Once TG 1.0.1 is out we can use paginate to put the
-        # packagelist onto multiple pages.
         try:
             collectionId = int(collectionId)
         except ValueError:
@@ -69,22 +72,17 @@ class Collections(controllers.Controller):
             raise redirect('/collections/unknown',
                     redirect_params={'collectionId':collectionId})
         collection = collection.fetchone()
+
         # Get real ownership information from the fas
         (user, groups) = fas.get_user_info(collection.owner)
         collection.ownername = '%s (%s)' % (user['human_name'],
                 user['username'])
 
         # Retrieve the packagelist for this collection
-        packages = sqlalchemy.select((model.PackageTable.c.name,
-            model.PackageListingTable.c.packageid),
-            sqlalchemy.and_(
-                model.PackageListingTable.c.collectionid == collectionId,
-                model.PackageListingTable.c.packageid==model.PackageTable.c.id),
-            order_by=(model.PackageTable.c.name,)).execute()
-        if packages.rowcount <= 0:
-            packages = tuple()
-        else:
-            packages = packages.fetchall()
+        packages = SelectResults(session.query(model.Package)).select(
+                sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
+                    model.PackageListing.c.packageid==model.Package.c.id)
+                )
         return dict(title='%s -- %s %s' % (appTitle, collection.name,
             collection.version), collection=collection, packages=packages)
 

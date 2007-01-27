@@ -25,14 +25,26 @@ TODO='Not yet implemented'
   <p py:content="collection.summary">Summary</p>
   <p py:content="collection.description">Description</p>
 
+  <a py:if="tg.paginate.current_page &gt; 1"
+    href="${tg.paginate.get_href(1)}">&lt;&lt;</a>
+  <a py:if="tg.paginate.current_page &gt; 1"
+    href="${tg.paginate.get_href(tg.paginate.current_page - 1)}">&lt;</a>
+  <span py:for="page in tg.paginate.pages">
+    <a py:if="page != tg.paginate.current_page" href="${tg.paginate.get_href(page)}">${page}</a>
+    <b py:if="page==tg.paginate.current_page">${page}</b>
+  </span>
+  <a py:if="tg.paginate.current_page &lt; tg.paginate.page_count"
+    href="${tg.paginate.get_href(tg.paginate.current_page + 1)}">&gt;</a>
+  <a py:if="tg.paginate.current_page &lt; tg.paginate.page_count"
+    href="${tg.paginate.get_href(tg.paginate.page_count)}">&gt;&gt;</a>
   <ul py:for="pkg in packages">
-  <li><a href="${tg.url('/packages/id/' + str(pkg.packageid))}"
-    py:content="pkg.name"></a></li>
+  <li><a href="${tg.url('/packages/id/' + str(pkg.id))}"
+    py:content="pkg.name"></a> --
+    <span py:replace="pkg.summary">Package Summary</span></li>
   </ul>
   <p>Each collection page should have information about the Collection.
   <ul>
   <li>Date it was created</li>
-  <li>Status (Is it active or EOL)</li>
   </ul>
   And it should have links to packages.  For the first cut we'll just have an
   alphabetical listing with [a-z] links at the top (and view all packages).

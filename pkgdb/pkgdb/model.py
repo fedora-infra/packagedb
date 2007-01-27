@@ -88,7 +88,8 @@ assign_mapper(session.context, Branch, BranchTable, inherits=collectionMapper,
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 
-assign_mapper(session.context, Package, PackageTable)
+assign_mapper(session.context, Package, PackageTable, properties =
+        {'listings':relation(PackageListing, backref='package')})
 assign_mapper(session.context, PackageListing, PackageListingTable)
 
 ### FIXME: Create sqlalchemy schema.
