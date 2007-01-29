@@ -100,11 +100,20 @@ class Collections(controllers.Controller):
                 ' fedoraproject.org website, please report it.'
         return dict(title=appTitle + ' -- Invalid Collection Id', msg=msg)
 
+class AclOwners(object):
+    '''Owners of package acls.'''
+    def __init__(self, name):
+        self.name = name
+        self.acls = []
+
 class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgoverview')
+    @paginate('packages', default_order='name', limit=100,
+            allow_limit_override=True, max_pages=13)
     def index(self):
-        ### FIXME: paginate for SQLAlchemy coming in 1.0.1
-        return dict(title=appTitle + ' -- Package Overview')
+        # Retrieve the complete list of packages
+        packages = SelectResults(session.query(model.Package))
+        return dict(title=appTitle + ' -- Package Overview', packages=packages)
 
     @expose(template='pkgdb.templates.pkgpage')
     def id(self, packageId):
@@ -122,7 +131,8 @@ class Packages(controllers.Controller):
         package = pkgRow.fetchone()
 
         # Fetch information about all the packageListings for this package
-        pkgListingRows = sqlalchemy.select((model.PackageListingTable.c.owner,
+        pkgListingRows = sqlalchemy.select((model.PackageListingTable.c.id,
+            model.PackageListingTable.c.owner,
             model.PackageListingTable.c.qacontact,
             model.PackageListingTable.c.collectionid,
             model.CollectionTable.c.name, model.CollectionTable.c.version,
@@ -141,16 +151,30 @@ class Packages(controllers.Controller):
             (user, group) = fas.get_user_info(pkg.owner)
             pkg.ownername = '%s (%s)' % (user['human_name'], user['username'])
             if pkg.qacontact:
-                (user, group) = fas.get_user_info(pkg.qacontact)
+                (user, groups) = fas.get_user_info(pkg.qacontact)
                 pkg.qacontactname = '%s (%s)' % (user['human_name'],
                         user['username'])
             else:
                 pkg.qacontactname = ''
 
-            ### FIXME: Retrieve co-ownership information.
-            # Select on the packagelisting from the acl table
-            # 
+            acls = model.PackageAcl.select((
+                model.PackageAcl.c.packagelistingid==pkg.id))
 
+            # Reformat the data so we have it stored per user
+            people = {}
+            for acl in acls:
+                for user in acl.people:
+                    if not people.has_key(user.userid):
+                        (person, groups) = fas.get_user_info(user.userid)
+                        people[user.userid] = AclOwners(person['human_name'])
+                    people[user.userid].acls.append({'aclname' : user.acl.acl,
+                            'status' : model.StatusTranslation.get_by(
+                                model.StatusTranslation.c.statuscodeid==user.status,
+                                    model.StatusTranslation.c.language=='C').statusname})
+
+            # Store the acl owners in the package
+            pkg.people = people
+            
         return dict(title='%s -- %s' % (appTitle, package.name),
                 package=package, packageid=packageId,
                 packageListings=packageListings)

@@ -55,6 +55,23 @@ class PackageListing(object):
         self.qacontact = qacontact
         self.status = status
 
+class PackageAcl(object):
+    def __init__(self, packagelistingid, acl):
+        self.packageid = packagelistingid
+        self.acl = acl
+
+class PersonPackageAcl(object):
+    def __init__(self, packagelistingid, acl, packageaclid, userid, status):
+        self.packageaclid = packageaclid
+        self.userid = userid
+        self.status = status
+
+class GroupPackageAcl(object):
+    def __init__(self, packagelistingid, acl, packageaclid, groupid, status):
+        self.packageaclid = packageaclid
+        self.groupid = groupid
+        self.status = status
+
 CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
 assign_mapper(session.context, CollectionStatus, CollectionStatusTable)
 
@@ -91,6 +108,16 @@ PackageListingTable = Table('packagelisting', metadata, autoload=True)
 assign_mapper(session.context, Package, PackageTable, properties =
         {'listings':relation(PackageListing, backref='package')})
 assign_mapper(session.context, PackageListing, PackageListingTable)
+
+PackageAclTable = Table('packageacl', metadata, autoload=True)
+PersonPackageAclTable = Table('personpackageacl', metadata, autoload=True)
+GroupPackageAclTable = Table('grouppackageacl', metadata, autoload=True)
+
+assign_mapper(session.context, PackageAcl, PackageAclTable,
+        properties={'people' : relation(PersonPackageAcl, backref='acl'),
+            'groups' : relation(GroupPackageAcl, backref='acl')})
+assign_mapper(session.context, PersonPackageAcl, PersonPackageAclTable)
+assign_mapper(session.context, GroupPackageAcl, GroupPackageAclTable)
 
 ### FIXME: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example

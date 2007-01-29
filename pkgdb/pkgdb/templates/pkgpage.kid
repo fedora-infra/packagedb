@@ -51,6 +51,17 @@ TODO='Not yet implemented'
       </td><td py:content="pkg.qacontactname">
       </td><td py:content="pkg.statusname">
       </td></tr>
+      <tr py:if="pkg.people"><td colspan="4">
+        <table border="0" py:for="person in pkg.people.values()">
+          <tr><td py:content="person.name">Name
+          </td>
+          <span py:for="acl in person.acls">
+          <td py:content="acl['aclname']"></td>
+          <td py:content="acl['status']"></td>
+          </span>
+          </tr>
+        </table>
+      </td></tr>
   </div>
   </table>
   <div id='Notes' py:if="layout_params['displayNotes']">
