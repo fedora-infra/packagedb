@@ -6,7 +6,14 @@
     @import url("http://fedora.redhat.com/css/layout.css");
     @import url("http://fedora.redhat.com/css/content.css");
     @import url("http://fedora.redhat.com/css/docbook.css");
+    @import url("${tg.url("/static/css/pkgdb.css")}");
   </style>
+    <style type="text/css">
+        #pageLogin
+        {
+            text-align: right;
+        }
+    </style>
   <meta name="MSSmartTagsPreventParsing" content="TRUE"/>
 </head>
 <body>
@@ -23,6 +30,16 @@
       <a href="/projects/"><img src="images/header-projects.png" alt=""/>Projects</a>
       <a href="/about/faq/"><img src="images/header-faq.png" alt=""/>FAQ</a></span> -->
       </span>
+    <div py:if="tg.config('identity.on',False) and not 'logging_in' in locals()"
+        id="pageLogin">
+        <span py:if="tg.identity.anonymous">
+            <a href="${tg.url('/login/')}">Login</a>
+        </span>
+        <span py:if="not tg.identity.anonymous">
+            Welcome ${tg.identity.user.display_name}.
+            <a href="${tg.url('/logout/')}">Logout</a>
+        </span>
+    </div>
     </div>
 
   </div>
@@ -36,11 +53,6 @@
     <ul id="fedora-side-nav">
       <li><strong><a href="https://admin.fedoraproject.org/accounts/">Accounts Home</a></strong></li>
       <li><a href="http://fedoraproject.org/wiki/Infrastructure/AccountSystem">Help</a></li>
-  <li class="TODO" style="color:#fff;" py:if="displayNotes">Also need a template for:
-    <ul>
-      <li>Login section/username somewhere</li>
-    </ul>
-  </li>
     </ul>
   </div>
   <!-- LeftNavBar END -->

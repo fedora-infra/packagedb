@@ -135,9 +135,6 @@ assign_mapper(session.context, GroupPackageAcl, GroupPackageAclTable)
 # CollectionSet
 # PackageBuild
 # PackageBuildListing
-# PackageACL
-# PersonPackageACL
-# GroupPackageACL
 # Log
 # PackageLog
 # PackageListingLog

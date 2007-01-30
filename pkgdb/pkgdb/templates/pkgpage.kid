@@ -1,11 +1,10 @@
 <?python
-layout_params['displayNotes']=False
+layout_params['displayNotes']=True
 TODO='Not yet implemented'
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml"
   xmlns:py="http://purl.org/kid/ns#"
   py:layout="'layout.kid'">
-
 <div py:match="item.tag == 'content'">
   <h1 py:content="package.name">Package</h1>
   <table border="0">
@@ -33,7 +32,7 @@ TODO='Not yet implemented'
       </a></li>
     </ul>
   </p>
-  <table>
+  <table class="pkglist" py:for="pkg in packageListings">
     <tr><th>
       Collection
     </th><th>
@@ -43,26 +42,28 @@ TODO='Not yet implemented'
     </th><th>
       Status
     </th></tr>
-    <div border="1" py:for="pkg in packageListings">
-      <tr id="${''.join((pkg.name, pkg.version)).replace(' ','')}">
+    <tr id="${''.join((pkg.name, pkg.version)).replace(' ','')}">
       <td><a href="${tg.url('/collections/id/' + str(pkg.collectionid))}"
         py:content="' '.join((pkg.name, pkg.version))"></a>
       </td><td py:content="pkg.ownername">
       </td><td py:content="pkg.qacontactname">
       </td><td py:content="pkg.statusname">
       </td></tr>
-      <tr py:if="pkg.people"><td colspan="4">
-        <table border="0" py:for="person in pkg.people.values()">
-          <tr><td py:content="person.name">Name
+    <tr py:if="pkg.people" colspan="4"><td colspan="4">
+      <table class="acl" width="100%">
+        <tr>
+          <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
+          </th>
+        </tr>
+        <tr py:for="person in pkg.people.values()">
+          <td py:content="person.name" class="aclcell">Name
           </td>
-          <span py:for="acl in person.acls">
-          <td py:content="acl['aclname']"></td>
-          <td py:content="acl['status']"></td>
+          <span py:for="acl in aclNames">
+            <td py:content="person.acls[acl]" class="aclcell"></td>
           </span>
-          </tr>
-        </table>
-      </td></tr>
-  </div>
+        </tr>
+      </table>
+    </td></tr>
   </table>
   <div id='Notes' py:if="layout_params['displayNotes']">
   <p>

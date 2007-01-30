@@ -10,14 +10,14 @@ drop database pkgdb;
 create database pkgdb with encoding 'UTF8';
 \c pkgdb
 
--- create function plpgsql_call_handler() returns language_handler as
--- '$libdir/plpgsql' language C;
--- create function plpgsql_validator(oid) returns void as '$libdir/plpgsql'
--- language C;
+create function plpgsql_call_handler() returns language_handler as
+'$libdir/plpgsql' language C;
+create function plpgsql_validator(oid) returns void as '$libdir/plpgsql'
+language C;
 
--- create trusted procedural language plpgsql
---  handler plpgsql_call_handler
---  validator plpgsql_validator;
+create trusted procedural language plpgsql
+ handler plpgsql_call_handler
+ validator plpgsql_validator;
 
 -- Status of the various components.
 --

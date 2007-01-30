@@ -56,7 +56,7 @@ class Collections(controllers.Controller):
         try:
             collectionId = int(collectionId)
         except ValueError:
-            raise redirect('/collections/not_id')
+            raise redirect(config.get('base_url_filter.base_url') + '/collections/not_id')
         ### FIXME: Want to return additional info:
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
@@ -69,7 +69,7 @@ class Collections(controllers.Controller):
                 model.StatusTranslationTable.c.language=='C',
                 model.CollectionTable.c.id==collectionId), limit=1).execute()
         if collection.rowcount <= 0:
-            raise redirect('/collections/unknown',
+            raise redirect(config.get('base_url_filter.base_url') + '/collections/unknown',
                     redirect_params={'collectionId':collectionId})
         collection = collection.fetchone()
 
@@ -88,6 +88,7 @@ class Collections(controllers.Controller):
 
     @expose(template='pkgdb.templates.errors')
     def unknown(self, collectionId):
+        print 'Unknown collection'
         msg = 'The collectionId you were linked to, %s, does not exist.' \
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.' % collectionId
@@ -95,6 +96,7 @@ class Collections(controllers.Controller):
 
     @expose(template='pkgdb.templates.errors')
     def not_id(self):
+        print 'not a collection id'
         msg = 'The collectionId you were linked to is not a valid id.' \
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.'
@@ -102,9 +104,11 @@ class Collections(controllers.Controller):
 
 class AclOwners(object):
     '''Owners of package acls.'''
-    def __init__(self, name):
+    def __init__(self, name, acls):
         self.name = name
-        self.acls = []
+        self.acls = {}
+        for aclName in acls:
+            self.acls[aclName] = None
 
 class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgoverview')
@@ -117,6 +121,10 @@ class Packages(controllers.Controller):
 
     @expose(template='pkgdb.templates.pkgpage')
     def id(self, packageId):
+        try:
+            packageId = int(packageId)
+        except ValueError:
+            raise redirect(config.get('base_url_filter.base_url') + '/packages/not_id')
         # Return the information about a package.
         pkgRow = sqlalchemy.select((model.PackageTable.c.name,
             model.PackageTable.c.summary, model.PackageTable.c.description,
@@ -126,8 +134,8 @@ class Packages(controllers.Controller):
                 model.StatusTranslationTable.c.language=='C',
                 model.PackageTable.c.id==packageId), limit=1).execute()
         if pkgRow.rowcount <= 0:
-            raise redirect('/package/unknown',
-                    redirect_params={'packageId' : packageId})
+            raise redirect(config.get('base_url_filter.base_url') + '/packages/unknown',
+                redirect_params={'packageId' : packageId})
         package = pkgRow.fetchone()
 
         # Fetch information about all the packageListings for this package
@@ -157,6 +165,8 @@ class Packages(controllers.Controller):
             else:
                 pkg.qacontactname = ''
 
+            aclNames = ('checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls')
+
             acls = model.PackageAcl.select((
                 model.PackageAcl.c.packagelistingid==pkg.id))
 
@@ -166,25 +176,34 @@ class Packages(controllers.Controller):
                 for user in acl.people:
                     if not people.has_key(user.userid):
                         (person, groups) = fas.get_user_info(user.userid)
-                        people[user.userid] = AclOwners(person['human_name'])
-                    people[user.userid].acls.append({'aclname' : user.acl.acl,
-                            'status' : model.StatusTranslation.get_by(
+                        people[user.userid] = AclOwners(
+                                person['human_name'], aclNames)
+
+                    people[user.userid].acls[user.acl.acl] = \
+                            model.StatusTranslation.get_by(
                                 model.StatusTranslation.c.statuscodeid==user.status,
-                                    model.StatusTranslation.c.language=='C').statusname})
+                                model.StatusTranslation.c.language=='C').statusname
 
             # Store the acl owners in the package
             pkg.people = people
             
         return dict(title='%s -- %s' % (appTitle, package.name),
                 package=package, packageid=packageId,
-                packageListings=packageListings)
+                packageListings=packageListings, aclNames=aclNames)
 
     @expose(template='pkgdb.templates.errors')
-    def unknown(self, pakageIdId):
+    def unknown(self, packageId):
         msg = 'The packageId you were linked to, %s, does not exist.' \
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.' % packageId
         return dict(title=appTitle + ' -- Unknown Package', msg=msg)
+
+    @expose(template='pkgdb.templates.errors')
+    def not_id(self):
+        msg = 'The collectionId you were linked to is not a valid id.' \
+                ' If you received this error from a link on the' \
+                ' fedoraproject.org website, please report it.'
+        return dict(title=appTitle + ' -- Invalid Collection Id', msg=msg)
 
 class Root(controllers.RootController):
     test = Test()
@@ -219,10 +238,10 @@ class Root(controllers.RootController):
         #response.status=403
         return dict(message=msg, previous_url=previous_url, logging_in=True,
                     original_parameters=request.params,
-                    forward_url=forward_url)
+                    forward_url=forward_url, title='Fedora Account System Login')
 
     @expose()
     def logout(self):
         identity.current.logout()
-        raise redirect("/")
+        raise redirect(request.headers.get("Referer","/"))
 
