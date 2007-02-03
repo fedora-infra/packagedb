@@ -88,7 +88,6 @@ class Collections(controllers.Controller):
 
     @expose(template='pkgdb.templates.errors')
     def unknown(self, collectionId):
-        print 'Unknown collection'
         msg = 'The collectionId you were linked to, %s, does not exist.' \
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.' % collectionId
@@ -96,7 +95,6 @@ class Collections(controllers.Controller):
 
     @expose(template='pkgdb.templates.errors')
     def not_id(self):
-        print 'not a collection id'
         msg = 'The collectionId you were linked to is not a valid id.' \
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.'
@@ -200,10 +198,10 @@ class Packages(controllers.Controller):
 
     @expose(template='pkgdb.templates.errors')
     def not_id(self):
-        msg = 'The collectionId you were linked to is not a valid id.' \
+        msg = 'The packageId you were linked to is not a valid id.' \
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.'
-        return dict(title=appTitle + ' -- Invalid Collection Id', msg=msg)
+        return dict(title=appTitle + ' -- Invalid Package Id', msg=msg)
 
 class Root(controllers.RootController):
     test = Test()
