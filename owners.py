@@ -139,7 +139,7 @@ class Owners(dict):
         return {'extras-qa@fedoraproject.org' : None,
                 # 100068 is toshio's account.  Use this for now.  Long term,
                 # create an extras-orphan account to set this to.
-                'extras-orphan@fedoraproject.org' : 100068,
+                #'extras-orphan@fedoraproject.org' : 100068,
                 'fedora-perl-devel-list@redhat.com' : {'group' : 100002},
                 'byte@fedoraproject.org' : 100014,
                 'icon@fedoraproject.org': 100029,

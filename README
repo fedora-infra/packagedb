@@ -21,6 +21,8 @@ owners.list
 :Data: Package names, summary, owner, qacontact, watchers
 :Duration: One-time; Obsoletes
 :Priority: Essential
+:Status: Information is largely imported.  Need to perform a similar step for
+  owners.epel.list.  A few people in initialcc do not have Fedora accounts.
 
 owners.list contains the bulk of new information that we are interested in.
 This file should contain information on all packages whether they are current
@@ -30,6 +32,9 @@ This importer is almost complete.  A bit more work needs to be done to combine
 the information here with information from the CVS Repository.  With a
 combination of these we should have all the basic information necessary for
 the first stage of the package DB.
+
+We are not currently retrieving any information for RHL releases and do not
+plan to.
 
 CVS Repository
 --------------
@@ -48,6 +53,10 @@ Unique to the CVS repository is knowledge of what packages are present in which
 collections -- FC-{1,2,3,4,5,devel} and FE-{1,2,3,4,5,devel}. RH-{9}, and soon
 EL-{4,5}.  Regardless of whether they were obsoleted or otherwise, disappeared
 in the course of the release.
+
+The cvs repository is also gaining ACL knowledge shortly.  We could pull this
+information either from the files within the cvs tree or from the CVSROOT/avail
+file.
 
 In the future, the packageDB will manage the branches in the VCS Repository.
 
@@ -101,7 +110,7 @@ In the future, comps-fcX.xml.in could be generated from the packageDB.
 Download Repository
 -------------------
 
-:Location: http://download.fedoraproject.org/pub/fedora/linux/extras/$release/repodata/repomd.xml
+:Location: http://download.fedora.redhat.com/pub/fedora/linux/extras/$release/repodata/repomd.xml
 :Data: RPM Metadata extracted into an xml file.  License, URL, upstream, present package EVR.
 :Duration: Ongoing
 :Priority: Add-on
@@ -152,8 +161,8 @@ Version 0.1
 ~~~~~~~~~~~
 
 * See the two "essentials" from Importing Data.
-  (owners.list is finished.  Retrieving RHL information from the cvs
-  modules file needs to be completed if we want records from RHL times.)
+  (owners.list is finished.
+  (ACLs are not ready yet.)
   (EPEL is being put off.  It requires information from cvs and
   owners.epel.list).
 * Finish filling in read-only pages that allow us to see what's in the database
@@ -175,11 +184,15 @@ Before F7
 * Add the ability for owners to hand out permissions to other users.
 * Allow owners and trusted users to make changes to the packages listed here.
 * Send email notifications when things change.
-* Write out ACLs to the VCS.
+* Write a backend for the cvs repository to pull ACLs from the packageDB.
 * Integrate with the accounts system.
 
 As time permits
 ~~~~~~~~~~~~~~~
+
+* Make ACLs a push technology instead of pull.  The first generation of code
+  will have a cron job that pulls ACLs from the packagedb to the CVS acls file.
+  The next generation should have the packageDB set the ACLs in CVS instead.
 
 * Add comps group information to the database schema so we can generate comps
   from here.

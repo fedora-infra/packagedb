@@ -477,7 +477,7 @@ DECLARE
   pkgBuild_pid integer;
 BEGIN
   -- if (TG_TABLE_NAME = 'PackageBuildListing') then
-  if (TG_RELNAME = 'PackageBuildListing') then
+  if (TG_RELNAME = 'packagebuildlisting') then
     -- Upon entering a new relationship between a Build and Listing, make sure
     -- they reference the same package.
     pkgList_pid := packageId from packageListing where id = NEW.packageListingId;
@@ -486,7 +486,7 @@ BEGIN
       raise exception 'PackageBuild % and PackageListing % have to reference the same package', NEW.packageBuildId, NEW.packageListingId;
     end if;
   -- elsif (TG_TABLE_NAME = 'PackageBuild') then
-  elsif (TG_RELNAME = 'PackageBuild') then
+  elsif (TG_RELNAME = 'packagebuild') then
     -- Disallow updating the packageId field of PackageBuild if it is
     -- associated with a PackageListing
     if (NEW.packageId != OLD.packageId) then
@@ -496,7 +496,7 @@ BEGIN
       end if;
     end if;
   -- elsif (TG_TABLE_NAME = 'PackageListing') then
-  elsif (TG_RELNAME = 'PackageListing') then
+  elsif (TG_RELNAME = 'packagelisting') then
     -- Disallow updating the packageId field of PackageListing if it is
     -- associated with a PackageBuild
     if (NEW.packageId != OLD.packageId) then
