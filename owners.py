@@ -501,4 +501,37 @@ if __name__ == '__main__':
     # Write the owner information into the database
     pkgdb = PackageDB()
     pkgdb.import_data(owners, cvsModule, options.updatedb)
+
+    # And a few cleanup items.  Since these are just pieces of information I
+    # know rather than in any file I'm keeping them in separate functions.
+    pkgdb.set_collection_status()
+    pkgdb.set_collection_owner()
     exit(0)
+    def set_collection_status(self):
+        '''Set the collection status fields.
+
+        Collections are initialized to EOL.  We want to set certain one to be
+        active instead.
+
+        This is not being retrieved from any canonical data source, it's just
+        knowledge about certain collections that we know about.
+        '''
+        self.dbCmd.execute("update collection set status=("
+                " select csc.statusCodeId from CollectionStatusCode as csc"
+                " natural join StatusCodeTranslation as sct"
+                " where sct.language = 'C'"
+                " and sct.statusName ='Under Development')"
+                " where name = 'Fedora Extras' and version='devel'")
+        self.dbCmd.execute("update collection set status=("
+                " select csc.statusCodeId from CollectionStatusCode as csc"
+                " natural join StatusCodeTranslation as sct"
+                " where sct.language = 'C'"
+                " and sct.statusName ='Active')"
+                " where name='Fedora Extras' and version in ('5', '6')")
+
+    def set_collection_owner(self):
+        '''Set the collection owner.
+        
+        This information needs to be filled out.
+        '''
+        pass

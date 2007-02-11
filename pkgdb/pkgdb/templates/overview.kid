@@ -7,11 +7,28 @@ layout_params['displayNotes']=False
 
 <div py:match="item.tag == 'content'">
 
-  <p>This should be a general overview of the Fedora Package Database.  The
-  first incarnation will be develper-centric with administrative functions
-  such as ownership information, ability to watch a package, sign up to be
-  a comaintainer, etc.</p>
-  <p>As we have time, we will add more end-user content like:
+<h1>Fedora Package Database -- Version 0.1</h1>
+<h2>Overview</h2>
+<p>The Package Database is a central repository of package information in
+Fedora.  You will eventually be able to find ad change all the metainformation
+about a package by searching the database.  The current implementation is
+focused on the data that package developers and release engineers need to
+create packages and spin them into a distribution.
+</p>
+<h2>Browse Packages</h2>
+  <ul>
+  <li><a href="${tg.url('/collections/')}">View Packages by Collection</a></li>
+  <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
+  </ul>
+
+<h2 id="notes">Notes</h2>
+  <p>Version 0.1 is a read-only interface tothe information that was stored in
+  owners.list and the Fedora cvs archive.
+  </p>
+  <p>Version 0.2 plans to add the ability ot make changes to the acl information
+  stored in the database.
+  </p>
+  <p>As we have time, we may add more end-user content like:
   <ul>
     <li>
     <a href="http://fedoraproject.org/extras/6/i386/repodata/">Fedora Extras
@@ -31,13 +48,7 @@ layout_params['displayNotes']=False
   If the user is logged in, they have access ot more information and have the
   ability to make changes to the database.
   </p>
-
-  <p>This front page should contain a broad overview of packages,and collections
-  and how they relate to Fedora.
-  </p>
-  <ul>
-  <li><a href="${tg.url('/collections/')}">View Packages by Collection</a></li>
-  <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
-  </ul>
+  <p>More complete plans for moving forward are available in the
+  <a href="http://www.fedoraproject.org/wiki/Infrastructure/PackageDatabase/RoadMap">README</a>.</p>
 </div>
 </html>
