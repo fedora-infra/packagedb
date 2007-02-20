@@ -6,6 +6,9 @@ from sqlalchemy.ext.assignmapper import assign_mapper
 
 bind_meta_data()
 
+#
+# Python classes
+#
 class StatusTranslation(object):
     def __init__(self, statuscodeid, statusname, language=None,
             description=None):
@@ -16,6 +19,14 @@ class StatusTranslation(object):
         self.description = description or None
 
 class CollectionStatus(object):
+    def __init__(self, statuscodeid):
+        self.statuscodeid = statuscodeid
+
+class PackageListingStatus(object):
+    def __init__(self, statuscodeid):
+        self.statuscodeid = statuscodeid
+
+class PackageAclStatus(object):
     def __init__(self, statuscodeid):
         self.statuscodeid = statuscodeid
 
@@ -72,11 +83,23 @@ class GroupPackageAcl(object):
         self.groupid = groupid
         self.status = status
 
-CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
-assign_mapper(session.context, CollectionStatus, CollectionStatusTable)
-
+# Mapping status tables
+# These are a bit convoluted as we have a 1:1:N relation between
+# SpecificStatusTable:StatusCodeTable:StatusTranslationTable
 StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
 assign_mapper(session.context, StatusTranslation, StatusTranslationTable)
+
+CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
+assign_mapper(session.context, CollectionStatus, CollectionStatusTable,
+        properties={'collections' : relation(Collection, backref='statuscode'),
+            'translations': relation(StatusTranslation,
+                order_by=StatusTranslationTable.c.language,
+                primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid,
+                foreignkey=StatusTranslationTable.c.statuscodeid,
+                backref=backref('cstatuscode',
+                    foreignkey=CollectionStatusTable.c.statuscodeid,
+                    primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid),
+                )})
 
 CollectionTable = Table('collection', metadata, autoload=True)
 BranchTable = Table('branch', metadata, autoload=True)
@@ -96,7 +119,8 @@ collectionJoin = polymorphic_union (
 
 collectionMapper = assign_mapper(session.context, Collection, CollectionTable,
         select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
-        polymorphic_identity='c')
+        polymorphic_identity='c',
+        properties={'listings': relation(PackageListing, backref='collection')})
 
 assign_mapper(session.context, Branch, BranchTable, inherits=collectionMapper,
         inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
@@ -107,7 +131,20 @@ PackageListingTable = Table('packagelisting', metadata, autoload=True)
 
 assign_mapper(session.context, Package, PackageTable, properties =
         {'listings':relation(PackageListing, backref='package')})
-assign_mapper(session.context, PackageListing, PackageListingTable)
+assign_mapper(session.context, PackageListing, PackageListingTable,
+        properties={'acls' : relation(PackageAcl, backref='packagelisting')})
+
+PackageListingStatusTable = Table('packagelistingstatuscode', metadata, autoload=True)
+assign_mapper(session.context, PackageListingStatus, PackageListingStatusTable,
+        properties={'listings' : relation(PackageListing, backref='statuscode'),
+            'translations' : relation(StatusTranslation,
+                order_by=StatusTranslationTable.c.language,
+                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid,
+                foreignkey=StatusTranslationTable.c.statuscodeid,
+                backref=backref('plstatuscode',
+                    foreignkey=PackageListingStatusTable.c.statuscodeid,
+                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid)
+                )})
 
 PackageAclTable = Table('packageacl', metadata, autoload=True)
 PersonPackageAclTable = Table('personpackageacl', metadata, autoload=True)
@@ -119,6 +156,19 @@ assign_mapper(session.context, PackageAcl, PackageAclTable,
 assign_mapper(session.context, PersonPackageAcl, PersonPackageAclTable)
 assign_mapper(session.context, GroupPackageAcl, GroupPackageAclTable)
 
+PackageAclStatusTable = Table('packageaclstatuscode', metadata, autoload=True)
+assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
+        properties={'pacls' : relation(PersonPackageAcl, backref='statuscode'),
+            'gacls' : relation(GroupPackageAcl, backref='statuscode'),
+            'translations' : relation(StatusTranslation,
+                order_by=StatusTranslationTable.c.language,
+                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid,
+                foreignkey=StatusTranslationTable.c.statuscodeid,
+                backref=backref('pastatuscode',
+                    foreignkey=PackageAclStatusTable.c.statuscodeid,
+                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid)
+                )})
+
 ### FIXME: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example
 # above.
@@ -128,7 +178,6 @@ assign_mapper(session.context, GroupPackageAcl, GroupPackageAclTable)
 # PackageLogStatusCode
 # PackageBuildStatusCode
 # PackageBuildLogStatusCode
-# PackageListingStatusCode
 # PackageListingLogStatusCode
 # PackageACLStatusCode
 # PackageACLLogStatusCode

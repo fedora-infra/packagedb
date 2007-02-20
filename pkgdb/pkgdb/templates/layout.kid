@@ -15,6 +15,7 @@
         }
     </style>
   <meta name="MSSmartTagsPreventParsing" content="TRUE"/>
+  <script src="${tg.tg_js}/MochiKit.js"></script>
 </head>
 <body>
   <!-- Header BEGIN -->

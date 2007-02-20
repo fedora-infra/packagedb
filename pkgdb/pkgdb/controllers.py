@@ -16,6 +16,8 @@ from fedora.accounts.fas import AccountSystem
 appTitle = 'Fedora Package Database'
 fas = AccountSystem()
 
+ORPHAN_ID=9900
+
 class Test(controllers.Controller):
     @expose(template="pkgdb.templates.welcome")
     @identity.require(identity.in_group("cvsextras"))
@@ -108,7 +110,64 @@ class AclOwners(object):
         for aclName in acls:
             self.acls[aclName] = None
 
+class PackageDispatcher(controllers.Controller):
+    def __init__(self):
+        controllers.Controller.__init__(self)
+        # We want to expose a list of public methods to the outside world so
+        # they know what RPC's they can make
+        ### FIXME: It seems like there should be a better way.
+        self.methods = [ m for m in dir(self) if
+                hasattr(getattr(self, m), 'exposed') and 
+                getattr(self, m).exposed]
+
+    @expose('json')
+    def index(self):
+        return dict(methods=self.methods)
+
+    @expose('json')
+    # Check that the tg.identity is allowed to set themselves as owner
+    @identity.require(identity.in_group("cvsextras"))
+    ### FIXME: Rewrite as toggle_owner
+    # If ownership == orphan, set owner to person
+    # else if ownership == person, set owner to orphan
+    # else if ownership == other person and person == "admin" allow setting
+    # to orphan.
+    # else: error, must have owner release ownership first.
+    def toggle_owner(self, containerId):
+        
+        # Check that the pkgid is orphaned
+        pkg = model.PackageListing.get_by(id=containerId)
+        if not pkg:
+            return dict(status=False, message='No such package %s' % containerId)
+        if pkg.owner == identity.current.user.user_id:
+            # Release ownership
+            pkg.owner = ORPHAN_ID
+            ownerName = 'Orphaned Package (orphan)'
+        elif pkg.owner == ORPHAN_ID:
+            # Take ownership
+            pkg.owner = identity.current.user.user_id
+            ownerName = '%s (%s)' % (identity.current.user.display_name,
+                    identity.current.user_name)
+        else:
+            return dict(status=False, message='Package %s not available for taking' % containerId)
+
+        return dict(status=True, ownerId=pkg.owner, ownerName=ownerName)
+
+    @expose('json')
+    # Check that the requestor is in a group that can approve ACLs
+    @identity.require(identity.in_group("cvsextras"))
+    def set_acl_status(self):
+        pass
+
+    @expose('json')
+    # Check that we have a tg.identity, otherwise you can't set any acls.
+    @identity.require(identity.not_anonymous())
+    def toggle_acl_request(self):
+        pass
+
 class Packages(controllers.Controller):
+    dispatcher = PackageDispatcher()
+
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
@@ -137,25 +196,15 @@ class Packages(controllers.Controller):
         package = pkgRow.fetchone()
 
         # Fetch information about all the packageListings for this package
-        pkgListingRows = sqlalchemy.select((model.PackageListingTable.c.id,
-            model.PackageListingTable.c.owner,
-            model.PackageListingTable.c.qacontact,
-            model.PackageListingTable.c.collectionid,
-            model.CollectionTable.c.name, model.CollectionTable.c.version,
-            model.StatusTranslationTable.c.statusname),
-            sqlalchemy.and_(
-                model.PackageListingTable.c.status==model.StatusTranslationTable.c.statuscodeid,
-                model.StatusTranslationTable.c.language=='C',
-                model.PackageListingTable.c.collectionid==model.CollectionTable.c.id,
-                model.PackageListingTable.c.packageid==packageId),
-                order_by=(model.CollectionTable.c.name,
-                    model.CollectionTable.c.version)).execute()
-
-        packageListings = pkgListingRows.fetchall()
-        for pkg in packageListings:
+        pkgListings = SelectResults(session.query(model.PackageListing)).select(
+                model.PackageListingTable.c.packageid==packageId
+                )
+        for pkg in pkgListings:
             # Get real ownership information from the fas
             (user, group) = fas.get_user_info(pkg.owner)
+            ### FIXME: Handle the case where the owner is unknown
             pkg.ownername = '%s (%s)' % (user['human_name'], user['username'])
+            pkg.ownerid = user['id']
             if pkg.qacontact:
                 (user, groups) = fas.get_user_info(pkg.qacontact)
                 pkg.qacontactname = '%s (%s)' % (user['human_name'],
@@ -164,7 +213,12 @@ class Packages(controllers.Controller):
                 pkg.qacontactname = ''
 
             aclNames = ('checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls')
+            ### FIXME: Finish pulling the possible acls
+            # Possible statuses for acls:
+            aclStatus = SelectResults(session.query(model.PackageAclStatus))
 
+            ### FIXME: Reevaluate this as we've added a relation/backref
+            # To access acls
             acls = model.PackageAcl.select((
                 model.PackageAcl.c.packagelistingid==pkg.id))
 
@@ -175,7 +229,8 @@ class Packages(controllers.Controller):
                     if not people.has_key(user.userid):
                         (person, groups) = fas.get_user_info(user.userid)
                         people[user.userid] = AclOwners(
-                                person['human_name'], aclNames)
+                                '%s (%s)' % (person['human_name'],
+                                    person['username']), aclNames)
 
                     people[user.userid].acls[user.acl.acl] = \
                             model.StatusTranslation.get_by(
@@ -187,7 +242,8 @@ class Packages(controllers.Controller):
             
         return dict(title='%s -- %s' % (appTitle, package.name),
                 package=package, packageid=packageId,
-                packageListings=packageListings, aclNames=aclNames)
+                packageListings=pkgListings, aclNames=aclNames,
+                aclStatus=aclStatus)
 
     @expose(template='pkgdb.templates.errors')
     def unknown(self, packageId):
