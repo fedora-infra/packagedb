@@ -146,7 +146,20 @@ class PackageDispatcher(controllers.Controller):
         else:
             return dict(status=False, message='Package %s not available for taking' % containerId)
 
-        return dict(status=True, ownerId=pkg.owner, ownerName=ownerName)
+        ### FIXME: This is happening in two places: Here and in packages::id().
+        # We should eventually only pass it in packages::id() but translating
+        # from python to javascript makes this hard.
+
+        # Possible statuses for acls:
+        aclStatus = SelectResults(session.query(model.PackageAclStatus))
+        aclStatusTranslations=['']
+        for status in aclStatus:
+            ### FIXME: At some point, we have to pull other translations out,
+            # not just C
+            aclStatusTranslations.append(status.translations[0].statusname)
+
+        return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
+                aclStatusFields=aclStatusTranslations)
 
     @expose('json')
     # Check that the requestor is in a group that can approve ACLs
@@ -192,9 +205,13 @@ class Packages(controllers.Controller):
 
         # Possible ACLs
         aclNames = ('checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls')
-        ### FIXME: Finish pulling the possible acls
         # Possible statuses for acls:
         aclStatus = SelectResults(session.query(model.PackageAclStatus))
+        aclStatusTranslations=['']
+        for status in aclStatus:
+            ### FIXME: At some point, we have to pull other translations out,
+            # not just C
+            aclStatusTranslations.append(status.translations[0].statusname)
 
         # Fetch information about all the packageListings for this package
         pkgListings = SelectResults(session.query(model.PackageListing)).select(
@@ -236,11 +253,10 @@ class Packages(controllers.Controller):
 
             # Store the acl owners in the package
             pkg.people = people
-            
         return dict(title='%s -- %s' % (appTitle, package.name),
                 package=package, packageid=packageId,
                 packageListings=pkgListings, aclNames=aclNames,
-                aclStatus=aclStatus)
+                aclStatus=aclStatusTranslations)
 
     @expose(template='pkgdb.templates.errors')
     def unknown(self, packageId):
