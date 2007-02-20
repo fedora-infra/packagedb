@@ -77,13 +77,13 @@ TODO='Not yet implemented'
   If owner || approveacls, allow you to make changes to the ACLs
   -->
     <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
-      <table class="acl" width="100%">
+      <table class="acls" width="100%">
         <tr>
           <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
           </th>
         </tr>
         <tr py:for="person in pkg.people.items()">
-          <td py:content="person[1].name" class="aclcell">Name
+          <td py:content="person[1].name" class="acluser">Name
           </td>
           <td py:for="acl in aclNames" class="aclcell">
             <!-- If the logged in user is this row, add a checkbox to set it -->
@@ -94,36 +94,35 @@ TODO='Not yet implemented'
               py:if="not person[1].acls[acl]"/>
             </span>
             <!-- If the user can set acls, give drop downs for status -->
-            <span py:if="not tg.identity.anonymous and (
+            <select py:if="not tg.identity.anonymous and (
               tg.identity.user.user_id==pkg.ownerid or
               (tg.identity.user.user_id in pkg.people and 
-                pkg.people[tg.identity.user.user_id].acls['approveacls']=='Approved'))">
-              <select py:attrs="{'name': acl}">
+                pkg.people[tg.identity.user.user_id].acls['approveacls']=='Approved'))"
+              py:attrs="{'name': acl}" class='aclStatus'>
               <span py:for="status in aclStatus">
-                <!-- FIXME: Have to mark where the acl is at.  If nothing is
-                  set, then the acl must select blank.  Else, select the one
-                  that's set. 
-                  * Probably can do this by making the first acl in the list ""
-                  -->
-                <option selected="selected"
-                  py:if="person[1].acls[acl]==status.translations[0].statusname"
-                  py:content="status.translations[0].statusname"
-                  py:attrs="{'value': 'aclStatus[status]',
-                  'name': 'aclStatus[status]'}"></option>
-                <option py:if="not person[1].acls[acl]==status.translations[0].statusname"
-                  py:content="status.translations[0].statusname"
-                  py:attrs="{'value': 'aclStatus[status]',
-                  'name': 'aclStatus[status]'}"></option>
+                <option selected="true"
+                  py:if="person[1].acls[acl]==status"
+                  py:content="status"
+                  py:attrs="{'value': status,
+                  'name': status}"></option>
+                <option py:if="not person[1].acls[acl]==status"
+                  py:content="status"
+                  py:attrs="{'value': status,
+                  'name': status}"></option>
               </span>
-              </select>
-            </span>
-            <span py:content="person[1].acls[acl]" class="aclcell"></span>
+            </select>
+            <span py:if="tg.identity.anonymous or
+              (tg.identity.user.user_id != pkg.ownerid and
+              (tg.identity.user.user_id not in pkg.people or
+                pkg.people[tg.identity.user.user_id].acls['approveacls']!='Approved'))"
+              py:content="person[1].acls[acl]" 
+              py:attrs="{'name' : acl}" class="aclStatus"></span>
           </td>
         </tr>
 
         <tr py:if="not tg.identity.anonymous and
           tg.identity.user.user_id not in pkg.people">
-          <td class="aclcell" py:attrs="{'colspan' : str(len(aclNames)+1)}">
+          <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
               + ':' + str(tg.identity.user.user_id)}"
               value="Add myself to package"/>

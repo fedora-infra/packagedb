@@ -5,13 +5,25 @@
 	margin: 0.3em;
 	text-align: center;
 }
-.acl {
+.acls {
 	border-style: solid;
 	border-width: 1px;
 	border-collapse: collapse;
 }
 .aclcell {
  	border-style: solid;
+	border-width: 1px;
+	border-collapse: collapse;
+}
+
+.acluser {
+	border-style: solid;
+	border-width: 1px;
+	border-collapse: collapse;
+}
+
+.acladd {
+	border-style: solid;
 	border-width: 1px;
 	border-collapse: collapse;
 }

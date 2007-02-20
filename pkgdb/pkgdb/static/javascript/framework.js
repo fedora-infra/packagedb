@@ -86,29 +86,85 @@ logDebug('in unbusy');
 logDebug(elem);
 }
 
+/*
+ * Create select lists for approving acls
+ */
+function set_acl_approval_box(aclTable, add, aclStatusFields) {
+    var aclFields = getElementsByTagAndClassName('td', 'aclcell', aclTable);
+    var aclStatus = null;
+    for (var aclFieldNum in aclFields) {
+        aclStatus = getElementsByTagAndClassName(null, 'aclStatus',
+                aclFields[aclFieldNum])[0];
+        
+        if (add) {
+            if (aclStatus['nodeName']=='SELECT') {
+                continue;
+            } else {
+                var aclName = aclStatus.getAttribute('name');
+                var aclStatusName = scrapeText(aclStatus);
+                var newAclStatus = SELECT({'name': aclName,
+                        'class' : 'aclStatus'});
+                for (var aclNum in aclStatusFields) {
+                    if (aclStatusName === aclStatusFields[aclNum]) {
+                        aclOption = OPTION({'selected' : 'true'},
+                                aclStatusFields[aclNum]);
+                    } else {
+                        aclOption = OPTION(null, aclStatusFields[aclNum]);
+                    }
+                    appendChildNodes(newAclStatus, aclOption);
+                }
+                replaceChildNodes(aclFields[aclFieldNum], newAclStatus);
+            }
+        } else {
+            /* Remove selects and create a span label instead */
+            if (aclStatus['nodeName']==='SELECT') {
+                var aclName = aclStatus.getAttribute('name');
+                var aclStatusName = '';
+                var aclOptions = getElementsByTagAndClassName('option', null,
+                        aclStatus);
+                for (var aclOptionNum in aclOptions) {
+                    if (aclOptions[aclOptionNum].getAttribute('selected')) {
+                        var aclStatusName = scrapeText(aclOptions[aclOptionNum])
+                    }
+                }
+                var newAclStatus = SPAN({'name' : aclName,
+                        'class' : 'aclStatus'}, aclStatusName);
+                replaceChildNodes(aclFields[aclFieldNum], newAclStatus);
+            } else {
+                continue;
+            }
+        }
+    }
+}
+
 function toggle_owner(ownerDiv, data) {
     logDebug('in toggle_owner');
     if (! data.status) {
         display_error(data);
         return;
     }
-    ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
+    var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
             ownerDiv)[0];
+    var aclTable = getElementsByTagAndClassName('table', 'acls',
+            getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist'))[0];
     if (data['ownerId'] === 9900) {
         /* Reflect the fact that the package is now orphaned */
         swapElementClass(ownerDiv, 'owned', 'orphaned');
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
         ownerButton.setAttribute('value', 'Take Ownership');
+        set_acl_approval_box(aclTable, false);
     } else {
         /* Show the new owner information */
         swapElementClass(ownerDiv, 'orphaned', 'owned');
         swapElementClass(ownerButton, 'unorphanButton', 'orphanButton');
         ownerButton.setAttribute('value', 'Release Ownership');
+        set_acl_approval_box(aclTable, true, data['aclStatusFields']);
     }
-    ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
-    newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
+    var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
+    var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
     insertSiblingNodesBefore(ownerName, newOwnerName);
     removeElement(ownerName);
+
     logDebug('Exit toggle_owner');
 }
 
@@ -123,13 +179,13 @@ function revert_acl_status(statusDiv, data) {
 }
 
 /*
- * Show that an acl can be requested or dropped at this time.
+ * Show whether an acl is currently requested for this package listing.
  */
 function toggle_acl_request(aclBoxDiv, data) {
 }
 
 function display_error(container, data) {
-    logDebug('in displap_error');
+    logDebug('in display_error');
     logDebug('data:',data);
 
     if (data.message) {
