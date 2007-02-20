@@ -127,18 +127,13 @@ class PackageDispatcher(controllers.Controller):
     @expose('json')
     # Check that the tg.identity is allowed to set themselves as owner
     @identity.require(identity.in_group("cvsextras"))
-    ### FIXME: Rewrite as toggle_owner
-    # If ownership == orphan, set owner to person
-    # else if ownership == person, set owner to orphan
-    # else if ownership == other person and person == "admin" allow setting
-    # to orphan.
-    # else: error, must have owner release ownership first.
     def toggle_owner(self, containerId):
         
         # Check that the pkgid is orphaned
         pkg = model.PackageListing.get_by(id=containerId)
         if not pkg:
             return dict(status=False, message='No such package %s' % containerId)
+        ### FIXME: We want to allow "admin" users to set orphan status as well.
         if pkg.owner == identity.current.user.user_id:
             # Release ownership
             pkg.owner = ORPHAN_ID
@@ -195,10 +190,17 @@ class Packages(controllers.Controller):
                 redirect_params={'packageId' : packageId})
         package = pkgRow.fetchone()
 
+        # Possible ACLs
+        aclNames = ('checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls')
+        ### FIXME: Finish pulling the possible acls
+        # Possible statuses for acls:
+        aclStatus = SelectResults(session.query(model.PackageAclStatus))
+
         # Fetch information about all the packageListings for this package
         pkgListings = SelectResults(session.query(model.PackageListing)).select(
                 model.PackageListingTable.c.packageid==packageId
                 )
+
         for pkg in pkgListings:
             # Get real ownership information from the fas
             (user, group) = fas.get_user_info(pkg.owner)
@@ -211,11 +213,6 @@ class Packages(controllers.Controller):
                         user['username'])
             else:
                 pkg.qacontactname = ''
-
-            aclNames = ('checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls')
-            ### FIXME: Finish pulling the possible acls
-            # Possible statuses for acls:
-            aclStatus = SelectResults(session.query(model.PackageAclStatus))
 
             ### FIXME: Reevaluate this as we've added a relation/backref
             # To access acls
