@@ -253,7 +253,6 @@ class Packages(controllers.Controller):
 
             # Store the acl owners in the package
             pkg.people = people
-        print 'DEBUG:',aclStatusTranslations,':' 
         return dict(title='%s -- %s' % (appTitle, package.name),
                 package=package, packageid=packageId,
                 packageListings=pkgListings, aclNames=aclNames,
