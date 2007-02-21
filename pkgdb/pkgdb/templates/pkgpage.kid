@@ -74,9 +74,6 @@ TODO='Not yet implemented'
       </td><td py:content="pkg.qacontactname">
       </td><td py:content="pkg.statuscode.translations[0].statusname">
       </td></tr>
-<!-- Notes 
-  If owner || approveacls, allow you to make changes to the ACLs
-  -->
     <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
       <table class="acls" width="100%">
         <tr>
@@ -84,7 +81,9 @@ TODO='Not yet implemented'
           </th>
         </tr>
         <tr py:for="person in pkg.people.items()">
-          <td py:content="person[1].name" class="acluser">Name
+          <td py:content="person[1].name" class="acluser"
+            py:attrs="{'name': str(pkg.id) + ':' + str(person[0])}">
+            Name
           </td>
           <td py:for="acl in aclNames" class="aclcell">
             <!-- If the logged in user is this row, add a checkbox to set it -->
