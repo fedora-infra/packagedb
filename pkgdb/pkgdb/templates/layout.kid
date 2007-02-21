@@ -16,6 +16,10 @@
     </style>
   <meta name="MSSmartTagsPreventParsing" content="TRUE"/>
   <script src="${tg.tg_js}/MochiKit.js"></script>
+  <script type='text/javascript' py:if="not tg.identity.anonymous">
+    tgUserDisplayName = "${tg.identity.user.display_name}";
+    tgUserUserName = "${tg.identity.user.user_name}";
+  </script>
 </head>
 <body>
   <!-- Header BEGIN -->

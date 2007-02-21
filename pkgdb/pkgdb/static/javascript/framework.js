@@ -259,6 +259,35 @@ function make_request(action, callback, errback, event) {
     logDebug(base+action+'?'+queryString({'containerId': requestContainer.getAttribute('name')}));
 }
 
+function request_acl_gui(event) {
+    // FIXME: We should have the acls handed over in a JSON array in the
+    // template so that we could operate on it as javascript now.  But we
+    // don't.
+    acls = ['checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build',
+            'approveacls'];
+    var buttonRow = getFirstParentByTagAndClassName(event.target(), 'tr');
+    var pkgListTable = getFirstParentByTagAndClassName(buttonRow, 'table',
+            'pkglist');
+    var newAclRow = TR(null,
+            TD({'class' : 'acluser'},
+                tgUserDisplayName + ' (' + tgUserUserName + ')'
+            ))
+    for (var aclNum in acls) {
+        var aclReqBox = INPUT({'type' : 'checkbox', 'class' : 'aclPresentBox'})
+        connect(aclReqBox, 'onclick', request_add_drop_acl);
+        var newAclCell = TD({'class' : 'aclcell'},
+                DIV({'name' : pkgListTable.getAttribute('name') + ':' + acls[aclNum],
+                    'class' : 'requestContainer aclPresent'},
+                    aclReqBox
+                   )
+                // FIXME: If the user is also the owner, create a select list
+                // for them to approve acls for themselves.
+                );
+        appendChildNodes(newAclRow, newAclCell);
+    }
+    insertSiblingNodesBefore(buttonRow, newAclRow);
+}
+
 /*
  * Callback for clicking on the acl request checkboxes
  */
@@ -291,6 +320,12 @@ function init(event) {
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
     for (var aclReqNum in aclReqBoxes) {
         connect(aclReqBoxes[aclReqNum], 'onclick', request_add_drop_acl);
+    }
+
+    /* This one's unique in that it doesn't have to talk to the server */
+    var addMyselfButtons = getElementsByTagAndClassName('input', 'addMyselfButton');
+    for (var addButtonNum in addMyselfButtons) {
+        connect(addMyselfButtons[addButtonNum], 'onclick', request_acl_gui);
     }
 }
 

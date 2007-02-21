@@ -34,7 +34,8 @@ TODO='Not yet implemented'
     </ul>
   </p>
   <form action="${tg.url('/packages/dispatcher/')}" method="POST">
-  <table class="pkglist" py:for="pkg in packageListings">
+  <table class="pkglist" py:for="pkg in packageListings"
+    py:attrs="{'name': str(pkg.id)}">
     <tr><th>
       Collection
     </th><th>
@@ -128,6 +129,7 @@ TODO='Not yet implemented'
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
               + ':' + str(tg.identity.user.user_id)}"
+              class="addMyselfButton"
               value="Add myself to package"/>
           </td>
         </tr>

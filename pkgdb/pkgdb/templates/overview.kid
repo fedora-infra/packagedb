@@ -7,7 +7,32 @@ layout_params['displayNotes']=False
 
 <div py:match="item.tag == 'content'">
 
-<h1>Fedora Package Database -- Version 0.1.90</h1>
+<h1>Fedora Package Database -- Version 0.1.91</h1>
+<h2>News</h2>
+<ul>
+<li>You can now log in to the database using your Fedora Account System Username
+and Password</li>
+<li>While logged in, you can take ownership of orphaned packages or orphan
+packages that you own</li>
+<li>Sign up to watch or comaintain packages</li>
+</ul>
+
+<h2>Soon</h2>
+<ul>
+<li>If you are a maintainer or co-maintainer, approve privileges for other people.</li>
+</ul>
+<h2>ASAP</h2>
+<ul>
+<li>Tie the information in the database into what actually exists on the system.
+</li>
+<li>Make sure we import everything important from owners.list and cvs:
+<ul>
+<li>Current sync of owners.list/owners.epel.list</li>
+<li>Package ACLs</li>
+</ul>
+</li>
+</ul>
+
 <h2>Overview</h2>
 <p>The Package Database is a central repository of package information in
 Fedora.  You will eventually be able to find ad change all the metainformation
