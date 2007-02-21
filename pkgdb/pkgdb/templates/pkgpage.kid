@@ -87,12 +87,15 @@ TODO='Not yet implemented'
           </td>
           <td py:for="acl in aclNames" class="aclcell">
             <!-- If the logged in user is this row, add a checkbox to set it -->
-            <span py:if="not tg.identity.anonymous and person[0] == tg.identity.user.user_id">
-            <input type="checkbox" py:attrs="{'value' : acl}" checked="checked"
-              py:if="person[1].acls[acl]"/>
-            <input type="checkbox" py:attrs="{'value' : acl}"
-              py:if="not person[1].acls[acl]"/>
-            </span>
+            <div py:if="not tg.identity.anonymous and
+              person[0]==tg.identity.user.user_id"
+              py:attrs="{'name' : str(pkg.id) + ':' + acl}"
+              class="requestContainer aclPresent">
+              <input type="checkbox" checked="true" class="aclPresentBox"
+                py:if="person[1].acls[acl]"/>
+              <input type="checkbox" class="aclPresentBox"
+                py:if="not person[1].acls[acl]"/>
+            </div>
             <!-- If the user can set acls, give drop downs for status -->
             <select py:if="not tg.identity.anonymous and (
               tg.identity.user.user_id==pkg.ownerid or

@@ -120,6 +120,22 @@ class PackageDispatcher(controllers.Controller):
                 hasattr(getattr(self, m), 'exposed') and 
                 getattr(self, m).exposed]
 
+        ### FIXME: This is happening in two places: Here and in packages::id().
+        # We should eventually only pass it in packages::id() but translating
+        # from python to javascript makes this hard.
+
+        # Possible statuses for acls:
+        aclStatus = SelectResults(session.query(model.PackageAclStatus))
+        self.aclStatusTranslations=['']
+        self.aclStatusMap = {}
+        for status in aclStatus:
+            ### FIXME: At some point, we have to pull other translations out,
+            # not just C
+            if status.translations[0].statusname != 'Obsolete':
+                self.aclStatusTranslations.append(status.translations[0].statusname)
+            self.aclStatusMap[status.translations[0].statusname] = status
+
+
     @expose('json')
     def index(self):
         return dict(methods=self.methods)
@@ -146,20 +162,8 @@ class PackageDispatcher(controllers.Controller):
         else:
             return dict(status=False, message='Package %s not available for taking' % containerId)
 
-        ### FIXME: This is happening in two places: Here and in packages::id().
-        # We should eventually only pass it in packages::id() but translating
-        # from python to javascript makes this hard.
-
-        # Possible statuses for acls:
-        aclStatus = SelectResults(session.query(model.PackageAclStatus))
-        aclStatusTranslations=['']
-        for status in aclStatus:
-            ### FIXME: At some point, we have to pull other translations out,
-            # not just C
-            aclStatusTranslations.append(status.translations[0].statusname)
-
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
-                aclStatusFields=aclStatusTranslations)
+                aclStatusFields=self.aclStatusTranslations)
 
     @expose('json')
     # Check that the requestor is in a group that can approve ACLs
@@ -170,8 +174,54 @@ class PackageDispatcher(controllers.Controller):
     @expose('json')
     # Check that we have a tg.identity, otherwise you can't set any acls.
     @identity.require(identity.not_anonymous())
-    def toggle_acl_request(self):
-        pass
+    def toggle_acl_request(self, containerId):
+        # Make sure package exists
+        pkgListId, aclName = containerId.split(':')
+        pkgListing = model.PackageListing.get_by(id=pkgListId)
+        if not pkgListing:
+            return dict(status=False, message='No such package listing %s' % pkgListId)
+
+        # See if the ACL already exists
+        pkgList = SelectResults(session.query(model.PackageAcl)).select(
+                sqlalchemy.and_(model.PackageAcl.c.packagelistingid==pkgListId,
+                    model.PackageAcl.c.acl==aclName))
+        if not pkgList.count():
+            # Create the acl
+            packageAcl = model.PackageAcl(pkgListId, aclName)
+            try:
+                session.flush()
+            except SQLError, e:
+                # Probably the acl is mispelled
+                return dict(status=False,
+                        message='Not able to create acl %s on %s' %
+                            (aclName, pkgListId))
+
+        # See if there's already an acl for this person 
+        personPkgList = pkgList.join_to('people').select(
+                model.PersonPackageAcl.c.userid ==
+                identity.current.user.user_id)
+        if (personPkgList.count()):
+            # An Acl already exists.  Build on that
+            for person in personPkgList[0].people:
+                if person.userid == identity.current.user.user_id:
+                    personAcl = person
+                    break
+            if personAcl.status == self.aclStatusMap['Obsolete'].statuscodeid:
+                # If the Acl status is obsolete, change to awaiting review
+                personAcl.status = self.aclStatusMap['Awaiting Review'].statuscodeid
+            else:
+                # Set it to obsolete
+                personAcl.status = self.aclStatusMap['Obsolete'].statuscodeid
+        else:
+            # No ACL yet, create acl
+            awaitingStatus = model.PackageAclStatus.get_by()
+            personAcl = model.PersonPackageAcl(pkgList[0].id,
+                    identity.current.user.user_id,
+                    status=self.aclStatusMap['Awaiting Review'].statuscodeid)
+
+        # Return the new value
+        return dict(status=True, personId=identity.current.user.user_id,
+                aclStatusFields=self.aclStatusTranslations)
 
 class Packages(controllers.Controller):
     dispatcher = PackageDispatcher()
@@ -211,7 +261,8 @@ class Packages(controllers.Controller):
         for status in aclStatus:
             ### FIXME: At some point, we have to pull other translations out,
             # not just C
-            aclStatusTranslations.append(status.translations[0].statusname)
+            if aclStatusTranslations != 'Obsolete':
+                aclStatusTranslations.append(status.translations[0].statusname)
 
         # Fetch information about all the packageListings for this package
         pkgListings = SelectResults(session.query(model.PackageListing)).select(
@@ -250,6 +301,8 @@ class Packages(controllers.Controller):
                             model.StatusTranslation.get_by(
                                 model.StatusTranslation.c.statuscodeid==user.status,
                                 model.StatusTranslation.c.language=='C').statusname
+                    if people[user.userid].acls[user.acl.acl] == 'Obsolete':
+                        people[user.userid].acls[user.acl.acl] = ''
 
             # Store the acl owners in the package
             pkg.people = people

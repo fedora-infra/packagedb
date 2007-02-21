@@ -140,7 +140,7 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
 function toggle_owner(ownerDiv, data) {
     logDebug('in toggle_owner');
     if (! data.status) {
-        display_error(data);
+        display_error(null, data);
         return;
     }
     var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
@@ -168,6 +168,14 @@ function toggle_owner(ownerDiv, data) {
     logDebug('Exit toggle_owner');
 }
 
+function check_acl_status(statusDiv, data) {
+    /* The only thing we have to do is check that there weren't any errors */
+    if (! data.status) {
+        revert_acl_request(aclBoxDiv, data);
+        display_error(null, data);
+        return;
+    }
+}
 
 /*
  * Revert an aclStatus dropdown to its previous value.  This can happen when
@@ -181,7 +189,35 @@ function revert_acl_status(statusDiv, data) {
 /*
  * Show whether an acl is currently requested for this package listing.
  */
-function toggle_acl_request(aclBoxDiv, data) {
+function check_acl_request(aclBoxDiv, data) {
+    logDebug('in check_acl_request');
+    /* If an error occurred, toggle it back */
+    if (! data.status) {
+        logDebug('sending to rever_acl_request');
+        revert_acl_request(aclBoxDiv, data);
+        display_error(null, data);
+        return;
+    }
+    /* No error, so update the status to reflect the pending state. */
+    // FIXME: Add a label that reflects the current status.
+}
+
+function revert_acl_request(aclBoxDiv, data) {
+    logDebug('in rever_acl_request');
+    var aclBox = getElementsByTagAndClassName('input', 'aclPresentBox', aclBoxDiv)[0];
+    /* The browser doesn't let us change the toggle status so we have to
+     * create a new checkbox
+     */
+    /* Since this is a simple toggle, just toggle it back */
+    if (aclBox.hasAttribute('checked')) {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'aclPresentBox',
+                'checked' : 'true'});
+    } else {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'aclPresentBox'});
+        newAclBox.removeAttribute('checked');
+    }
+    connect(newAclBox, 'onclick', request_add_drop_acl);
+    replaceChildNodes(aclBoxDiv, newAclBox);
 }
 
 function display_error(container, data) {
@@ -223,6 +259,12 @@ function make_request(action, callback, errback, event) {
     logDebug(base+action+'?'+queryString({'containerId': requestContainer.getAttribute('name')}));
 }
 
+/*
+ * Callback for clicking on the acl request checkboxes
+ */
+request_add_drop_acl = partial(make_request, '/toggle_acl_request',
+        check_acl_request, revert_acl_request);
+
 function init(event) {
     /* Global commits hash.  When a change from the user is anticipated, add
      * relevant information to this hash.  After the change is committed or
@@ -241,15 +283,13 @@ function init(event) {
     var statusBoxes = getElementsByTagAndClassName('select', 'aclStatusList');
     for (var statusNum in  statusBoxes) {
         var request_status_change = partial(make_request, '/set_acl_status',
-                null, revert_acl_status);
+                check_acl_status, revert_acl_status);
         connect(statusBoxes[statusNum], 'onclick', request_status_change);
         connect(statusBoxes[statusNum], 'onfocus', save_status);
     }
 
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
     for (var aclReqNum in aclReqBoxes) {
-        var request_add_drop_acl = partial(make_request, '/toggle_acl_request',
-            toggle_acl_request, null);
         connect(aclReqBoxes[aclReqNum], 'onclick', request_add_drop_acl);
     }
 }

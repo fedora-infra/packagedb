@@ -726,10 +726,10 @@ create table GroupPackageACLLog (
 grant select, insert, update, delete on PackageBuildListing to pkgdbadmin;
 grant select, insert, update 
   on Collection, Branch, CollectionSet, Package, PackageBuild,
-    PackageListing, PackageACL
+    PackageListing, PackageACL, PersonPackageACL, GroupPackageACL
   to pkgdbadmin;
 grant select, insert
-  on PersonPackageACL, GroupPackageACL, Log, PackageLog, PackageListingLog,
+  on Log, PackageLog, PackageListingLog,
     PackageBuildLog, PersonPackageACLLog, GroupPackageACLLog
   to pkgdbadmin;
 
