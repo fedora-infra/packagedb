@@ -19,6 +19,7 @@
   <script type='text/javascript' py:if="not tg.identity.anonymous">
     tgUserDisplayName = "${tg.identity.user.display_name}";
     tgUserUserName = "${tg.identity.user.user_name}";
+    tgUserUserId = "${tg.identity.user.user_id}";
   </script>
 </head>
 <body>

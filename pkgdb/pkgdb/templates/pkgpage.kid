@@ -80,7 +80,7 @@ TODO='Not yet implemented'
           <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
           </th>
         </tr>
-        <tr py:for="person in pkg.people.items()">
+        <tr py:for="person in pkg.people.items()" class="aclrow">
           <td py:content="person[1].name" class="acluser"
             py:attrs="{'name': str(pkg.id) + ':' + str(person[0])}">
             Name
