@@ -34,7 +34,8 @@ TODO='Not yet implemented'
     </ul>
   </p>
   <form action="${tg.url('/packages/dispatcher/')}" method="POST">
-  <table class="pkglist" py:for="pkg in packageListings">
+  <table class="pkglist" py:for="pkg in packageListings"
+    py:attrs="{'name': str(pkg.id)}">
     <tr><th>
       Collection
     </th><th>
@@ -73,26 +74,28 @@ TODO='Not yet implemented'
       </td><td py:content="pkg.qacontactname">
       </td><td py:content="pkg.statuscode.translations[0].statusname">
       </td></tr>
-<!-- Notes 
-  If owner || approveacls, allow you to make changes to the ACLs
-  -->
     <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
       <table class="acls" width="100%">
         <tr>
           <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
           </th>
         </tr>
-        <tr py:for="person in pkg.people.items()">
-          <td py:content="person[1].name" class="acluser">Name
+        <tr py:for="person in pkg.people.items()" class="aclrow">
+          <td py:content="person[1].name" class="acluser"
+            py:attrs="{'name': str(pkg.id) + ':' + str(person[0])}">
+            Name
           </td>
           <td py:for="acl in aclNames" class="aclcell">
             <!-- If the logged in user is this row, add a checkbox to set it -->
-            <span py:if="not tg.identity.anonymous and person[0] == tg.identity.user.user_id">
-            <input type="checkbox" py:attrs="{'value' : acl}" checked="checked"
-              py:if="person[1].acls[acl]"/>
-            <input type="checkbox" py:attrs="{'value' : acl}"
-              py:if="not person[1].acls[acl]"/>
-            </span>
+            <div py:if="not tg.identity.anonymous and
+              person[0]==tg.identity.user.user_id"
+              py:attrs="{'name' : str(pkg.id) + ':' + acl}"
+              class="requestContainer aclPresent">
+              <input type="checkbox" checked="true" class="aclPresentBox"
+                py:if="person[1].acls[acl]"/>
+              <input type="checkbox" class="aclPresentBox"
+                py:if="not person[1].acls[acl]"/>
+            </div>
             <!-- If the user can set acls, give drop downs for status -->
             <select py:if="not tg.identity.anonymous and (
               tg.identity.user.user_id==pkg.ownerid or
@@ -125,6 +128,7 @@ TODO='Not yet implemented'
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
               + ':' + str(tg.identity.user.user_id)}"
+              class="addMyselfButton"
               value="Add myself to package"/>
           </td>
         </tr>

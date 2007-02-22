@@ -68,11 +68,11 @@ class PackageListing(object):
 
 class PackageAcl(object):
     def __init__(self, packagelistingid, acl):
-        self.packageid = packagelistingid
+        self.packagelistingid = packagelistingid
         self.acl = acl
 
 class PersonPackageAcl(object):
-    def __init__(self, packagelistingid, acl, packageaclid, userid, status):
+    def __init__(self, packageaclid, userid, status):
         self.packageaclid = packageaclid
         self.userid = userid
         self.status = status
