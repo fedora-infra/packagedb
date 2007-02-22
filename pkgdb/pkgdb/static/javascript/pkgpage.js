@@ -160,7 +160,6 @@ function save_status(event) {
 function check_acl_request(aclBoxDiv, data) {
     logDebug('in check_acl_request');
     /* If an error occurred, toggle it back */
-    logDebug('data.status',data.status);
     if (! data.status) {
         logDebug('sending to rever_acl_request');
         revert_acl_request(aclBoxDiv, data);

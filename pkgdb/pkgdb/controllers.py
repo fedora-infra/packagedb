@@ -293,18 +293,17 @@ class Packages(controllers.Controller):
             people = {}
             for acl in acls:
                 for user in acl.people:
+                    personAcl = model.StatusTranslation.get_by(
+                            model.StatusTranslation.c.statuscodeid==user.status,
+                            model.StatusTranslation.c.language=='C').statusname
+                    if personAcl == 'Obsolete':
+                        continue
                     if not people.has_key(user.userid):
                         (person, groups) = fas.get_user_info(user.userid)
                         people[user.userid] = AclOwners(
                                 '%s (%s)' % (person['human_name'],
                                     person['username']), aclNames)
-
-                    people[user.userid].acls[user.acl.acl] = \
-                            model.StatusTranslation.get_by(
-                                model.StatusTranslation.c.statuscodeid==user.status,
-                                model.StatusTranslation.c.language=='C').statusname
-                    if people[user.userid].acls[user.acl.acl] == 'Obsolete':
-                        people[user.userid].acls[user.acl.acl] = ''
+                    people[user.userid].acls[user.acl.acl] = personAcl
 
             # Store the acl owners in the package
             pkg.people = people
