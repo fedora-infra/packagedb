@@ -209,19 +209,21 @@ class PackageDispatcher(controllers.Controller):
             if personAcl.status == self.aclStatusMap['Obsolete'].statuscodeid:
                 # If the Acl status is obsolete, change to awaiting review
                 personAcl.status = self.aclStatusMap['Awaiting Review'].statuscodeid
+                aclStatus = 'Awaiting Review'
             else:
                 # Set it to obsolete
                 personAcl.status = self.aclStatusMap['Obsolete'].statuscodeid
+                aclStatus = ''
         else:
             # No ACL yet, create acl
-            awaitingStatus = model.PackageAclStatus.get_by()
             personAcl = model.PersonPackageAcl(pkgList[0].id,
                     identity.current.user.user_id,
                     status=self.aclStatusMap['Awaiting Review'].statuscodeid)
+            aclStatus = 'Awaiting Review'
 
         # Return the new value
         return dict(status=True, personId=identity.current.user.user_id,
-                aclStatusFields=self.aclStatusTranslations)
+                aclStatusFields=self.aclStatusTranslations, aclStatus=aclStatus)
 
 class Packages(controllers.Controller):
     dispatcher = PackageDispatcher()

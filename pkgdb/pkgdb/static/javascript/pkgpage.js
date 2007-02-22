@@ -160,14 +160,24 @@ function save_status(event) {
 function check_acl_request(aclBoxDiv, data) {
     logDebug('in check_acl_request');
     /* If an error occurred, toggle it back */
+    logDebug('data.status',data.status);
     if (! data.status) {
         logDebug('sending to rever_acl_request');
         revert_acl_request(aclBoxDiv, data);
         display_error(null, data);
         return;
     }
-    /* No error, so update the status to reflect the pending state. */
-    // FIXME: Add a label that reflects the current status.
+    /* No error, so update the status to reflect the acl status. */
+    var aclCell = getFirstParentByTagAndClassName(aclBoxDiv, 'td',  'aclcell');
+    var oldAclStatus = getElementsByTagAndClassName('span', 'aclStatus',
+            aclCell);
+    for (aclStatusNum in oldAclStatus) {
+        removeElement(oldAclStatus[aclStatusNum]);
+    }
+    var aclBoxId = aclBoxDiv.getAttribute('name').split(':');
+    var aclStatus = SPAN({'name' : aclBoxId[0], 'class' : 'aclStatus'},
+            data.aclStatus);
+    appendChildNodes(aclBoxDiv, aclStatus);
 }
 
 function revert_acl_request(aclBoxDiv, data) {
