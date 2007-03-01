@@ -78,7 +78,7 @@ class PersonPackageAcl(object):
         self.status = status
 
 class GroupPackageAcl(object):
-    def __init__(self, packagelistingid, acl, packageaclid, groupid, status):
+    def __init__(self, packageaclid, groupid, status):
         self.packageaclid = packageaclid
         self.groupid = groupid
         self.status = status
