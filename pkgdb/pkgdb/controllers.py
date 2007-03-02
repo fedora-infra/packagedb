@@ -11,7 +11,7 @@ import logging
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-from fedora.accounts.fas import AccountSystem
+from fedora.accounts.fas import AccountSystem, AuthError
 
 appTitle = 'Fedora Package Database'
 fas = AccountSystem()
@@ -128,6 +128,7 @@ class PackageDispatcher(controllers.Controller):
         aclStatus = SelectResults(session.query(model.PackageAclStatus))
         self.aclStatusTranslations=['']
         self.aclStatusMap = {}
+        # Create a mapping from status name => statuscode
         for status in aclStatus:
             ### FIXME: At some point, we have to pull other translations out,
             # not just C
@@ -166,10 +167,81 @@ class PackageDispatcher(controllers.Controller):
                 aclStatusFields=self.aclStatusTranslations)
 
     @expose('json')
-    # Check that the requestor is in a group that can approve ACLs
+    # Check that the requestor is in a group that could potentially set ACLs.
     @identity.require(identity.in_group("cvsextras"))
-    def set_acl_status(self):
-        pass
+    def set_acl_status(self, pkgid, personid, newAcl, status):
+        ### FIXME: Changing Obsolete into "" sounds like it should be
+        # Pushed out to the view (template) instead of being handled in the
+        # controller.
+
+        # We are making Obsolete into "" for our interface.  Need to reverse
+        # that here.
+        if not status or not status.strip():
+            status = 'Obsolete'
+
+        # Change strings into numbers because we do some comparisons later on
+        pkgid = int(pkgid)
+        personid = int(personid)
+
+        # Make sure the package listing exists
+        pkg = model.PackageListing.get_by(
+                model.PackageListing.c.id==pkgid)
+        if not pkg:
+            return dict(status=False,
+                    message='Package Listing %s does not exist' % pkgid)
+
+        # Make sure the person we're setting the acl for exists
+        try:
+            fas.verify_user_pass(personid, '')
+        except AuthError, e:
+            if str(e).startswith('No such user: '):
+                return dict(status=False,
+                        message=str(e))
+            else:
+                raise
+
+        # Make sure the current tg user has permission to set acls
+        acls = SelectResults(session.query(model.PackageAcl)).select(
+                model.PackageAcl.c.packagelistingid==pkgid)
+        if identity.current.user.user_id != pkg.owner:
+            # Wasn't the owner, see if they have been granted permission
+            comaintAcls = acls.select(
+                    model.PackageAcl.c.acl=='approveacls').join_to(
+                            'people').select(sqlalchemy.and_(
+                                model.PersonPackageAcl.c.userid==identity.current.user.user_id,
+                                model.PersonPackageAcl.c.status==self.aclStatusMap['Approved']))
+            if not comaintAcls.count():
+                return dict(status=False, message='%s is not allowed to approve Package ACLs' % identity.current.user.display_name)
+       
+        # Look for the acl to change
+        acl = acls.select(model.PackageAcl.c.acl==newAcl)
+        if not acl.count():
+            # Have to create the acl
+            packageAcl = model.PackageAcl(pkgid, newAcl)
+            personAcl = model.PersonPackageAcl(packageAcl.id,
+                personid, self.aclStatusMap[status].statuscodeid)
+        else:
+            # Look for an acl for the person
+            personAcl = None
+            for person in acl[0].people:
+                if person.userid == personid:
+                    personAcl = person
+                    person.status = self.aclStatusMap[status].statuscodeid
+                    break
+            # personAcl wasn't found; create it
+            if not personAcl:
+                personAcl = model.PersonPackageAcl(acl[0].id,
+                        personid,
+                        self.aclStatusMap[status].statuscodeid)
+        try:
+            session.flush()
+        except sqlalchemy.exceptions.SQLError, e:
+            # An error was generated
+            return dict(status=False,
+                    message='Not able to create acl %s on %s with status %s' \
+                            % (newAcl, pkgid, status))
+
+        return dict(status=True)
 
     @expose('json')
     # Check that we have a tg.identity, otherwise you can't set any acls.
@@ -190,7 +262,7 @@ class PackageDispatcher(controllers.Controller):
             packageAcl = model.PackageAcl(pkgListId, aclName)
             try:
                 session.flush()
-            except SQLError, e:
+            except sqlalchemy.exceptions.SQLError, e:
                 # Probably the acl is mispelled
                 return dict(status=False,
                         message='Not able to create acl %s on %s' %
@@ -218,7 +290,7 @@ class PackageDispatcher(controllers.Controller):
             # No ACL yet, create acl
             personAcl = model.PersonPackageAcl(pkgList[0].id,
                     identity.current.user.user_id,
-                    status=self.aclStatusMap['Awaiting Review'].statuscodeid)
+                    self.aclStatusMap['Awaiting Review'].statuscodeid)
             aclStatus = 'Awaiting Review'
 
         # Return the new value
