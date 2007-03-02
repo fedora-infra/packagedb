@@ -97,23 +97,26 @@ TODO='Not yet implemented'
                 py:if="not person[1].acls[acl]"/>
             </div>
             <!-- If the user can set acls, give drop downs for status -->
-            <select py:if="not tg.identity.anonymous and (
+            <div py:if="not tg.identity.anonymous and (
               tg.identity.user.user_id==pkg.ownerid or
               (tg.identity.user.user_id in pkg.people and 
                 pkg.people[tg.identity.user.user_id].acls['approveacls']=='Approved'))"
-              py:attrs="{'name': acl}" class='aclStatus'>
-              <span py:for="status in aclStatus">
-                <option selected="true"
-                  py:if="person[1].acls[acl]==status"
-                  py:content="status"
-                  py:attrs="{'value': status,
-                  'name': status}"></option>
-                <option py:if="not person[1].acls[acl]==status"
-                  py:content="status"
-                  py:attrs="{'value': status,
-                  'name': status}"></option>
-              </span>
-            </select>
+              py:attrs="{'name': str(pkg.id) + ':' + acl}"
+                class='aclStatus requestContainer'>
+              <select class="aclStatusList">
+                <span py:for="status in aclStatus">
+                  <option selected="true"
+                    py:if="person[1].acls[acl]==status"
+                    py:content="status"
+                    py:attrs="{'value': status,
+                    'name': status}"></option>
+                  <option py:if="not person[1].acls[acl]==status"
+                    py:content="status"
+                    py:attrs="{'value': status,
+                    'name': status}"></option>
+                </span>
+              </select>
+            </div>
             <span py:if="tg.identity.anonymous or
               (tg.identity.user.user_id != pkg.ownerid and
               (tg.identity.user.user_id not in pkg.people or

@@ -11,7 +11,7 @@ import logging
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-from fedora.accounts.fas import AccountSystem
+from fedora.accounts.fas import AccountSystem, AuthError
 
 appTitle = 'Fedora Package Database'
 fas = AccountSystem()
@@ -170,19 +170,34 @@ class PackageDispatcher(controllers.Controller):
     # Check that the requestor is in a group that could potentially set ACLs.
     @identity.require(identity.in_group("cvsextras"))
     def set_acl_status(self, pkgid, personid, newAcl, status):
+        ### FIXME: Changing Obsolete into "" sounds like it should be
+        # Pushed out to the view (template) instead of being handled in the
+        # controller.
+
+        # We are making Obsolete into "" for our interface.  Need to reverse
+        # that here.
+        if not status or not status.strip():
+            status = 'Obsolete'
+
+        # Change strings into numbers because we do some comparisons later on
+        pkgid = int(pkgid)
+        personid = int(personid)
+
         # Make sure the package listing exists
-        pkg = model.PackageListing.get_by(model.PackageListing.c.pkgid==pkgid)
+        pkg = model.PackageListing.get_by(
+                model.PackageListing.c.id==pkgid)
         if not pkg:
             return dict(status=False,
                     message='Package Listing %s does not exist' % pkgid)
 
         # Make sure the person we're setting the acl for exists
         try:
-            fas.verify_user_pass(personid, '')
+            fas.verify_user_pass(int(personid), '')
         except AuthError, e:
-            if e.startswith('No such user: '):
+            print str(e)
+            if str(e).startswith('No such user: '):
                 return dict(status=False,
-                        message=e)
+                        message=str(e))
             else:
                 raise
 
@@ -221,11 +236,11 @@ class PackageDispatcher(controllers.Controller):
                         self.aclStatusMap[status].statuscodeid)
         try:
             session.flush()
-        except SQLError, e:
+        except sqlalchemy.exceptions.SQLError, e:
             # An error was generated
             return dict(status=False,
                     message='Not able to create acl %s on %s with status %s' \
-                            % (aclName, pkgListId))
+                            % (newAcl, pkgid, status))
 
         return dict(status=True)
 
@@ -248,7 +263,7 @@ class PackageDispatcher(controllers.Controller):
             packageAcl = model.PackageAcl(pkgListId, aclName)
             try:
                 session.flush()
-            except SQLError, e:
+            except sqlalchemy.exceptions.SQLError, e:
                 # Probably the acl is mispelled
                 return dict(status=False,
                         message='Not able to create acl %s on %s' %
