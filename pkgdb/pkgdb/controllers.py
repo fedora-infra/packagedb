@@ -192,9 +192,8 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure the person we're setting the acl for exists
         try:
-            fas.verify_user_pass(int(personid), '')
+            fas.verify_user_pass(personid, '')
         except AuthError, e:
-            print str(e)
             if str(e).startswith('No such user: '):
                 return dict(status=False,
                         message=str(e))

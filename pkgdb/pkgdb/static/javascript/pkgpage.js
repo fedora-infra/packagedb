@@ -136,11 +136,11 @@ function toggle_owner(ownerDiv, data) {
 function check_acl_status(statusDiv, data) {
     /* The only thing we have to do is check that there weren't any errors */
     if (! data.status) {
-        revert_acl_request(aclBoxDiv, data);
+        revert_acl_status(statusDiv, data);
         display_error(null, data);
         return;
     }
-    // FIXME: remove the acl from the commits list
+    delete(commits[statusDiv])
 }
 
 /*
@@ -148,10 +148,15 @@ function check_acl_status(statusDiv, data) {
  * the user requests a change but the server throws an error.
  */
 function revert_acl_status(statusDiv, data) {
-    // Retrieve the former acl from commits[]
-    // Set the dropdown to it
-    // FIXME: Have to make sure we pass in the TARGET
-    //delete(commits[TARGET]);
+    /* Retrieve the select list */
+    var aclStatus = getElementsByTagAndClassName('select', 'aclStatusList',
+            statusDiv)[0];
+    
+    /* Set it to the previous value */
+    aclStatus.value = commits[statusDiv];
+
+    /* Remove the entry from the commits list */
+    delete(commits[statusDiv]);
 }
 
 /*
@@ -159,7 +164,12 @@ function revert_acl_status(statusDiv, data) {
  * necessary.
  */
 function save_status(event) {
-    commits[event.target().id] = event.target().value;
+    /* Get the requestContainer */
+    var requestContainer = getFirstParentByTagAndClassName(event.target(),
+            'div', 'requestContainer');
+    /* Save the old value keyed by the requestContainer */
+    commits[requestContainer] = event.target().value
+        event.target().value;
 }
 
 /*
@@ -169,7 +179,6 @@ function check_acl_request(aclBoxDiv, data) {
     logDebug('in check_acl_request');
     /* If an error occurred, toggle it back */
     if (! data.status) {
-        logDebug('sending to rever_acl_request');
         revert_acl_request(aclBoxDiv, data);
         display_error(null, data);
         return;
