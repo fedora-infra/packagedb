@@ -9,11 +9,11 @@ layout_params['displayNotes']=False
 
 <h1>Fedora Package Database -- Version 0.1.92</h1>
 <h2>News</h2>
-<h3>0.91.2</h3>
+<h3>0.1.92</h3>
 <ul>
 <li>If you are a maintainer or co-maintainer, approve privileges for other people.</li>
 </ul>
-<h3>0.91.1</h3>
+<h3>0.1.91</h3>
 <ul>
 <li>You can now log in to the database using your Fedora Account System Username
 and Password</li>
