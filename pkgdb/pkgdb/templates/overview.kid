@@ -57,6 +57,9 @@ account for the new owners.list format</li>
 <li>Modify tg_paginate to display entries alphabetically instead of as pages
 of 100 entries</li>
 <li>Tie into koji for build ACLs</li>
+<li>Make branch requests through the pkgdb.  Some requests are automatically
+approved and changes made to cvs, others are sent to cvsadmins for approval.</li>
+<li>Restore the ability for contributors to import new packages into the tree after approval.</li>
 </ul>
 
 <h2>Overview</h2>
