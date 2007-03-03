@@ -209,7 +209,7 @@ class PackageDispatcher(controllers.Controller):
                     model.PackageAcl.c.acl=='approveacls').join_to(
                             'people').select(sqlalchemy.and_(
                                 model.PersonPackageAcl.c.userid==identity.current.user.user_id,
-                                model.PersonPackageAcl.c.status==self.aclStatusMap['Approved']))
+                                model.PersonPackageAcl.c.status==self.aclStatusMap['Approved'].statuscodeid))
             if not comaintAcls.count():
                 return dict(status=False, message='%s is not allowed to approve Package ACLs' % identity.current.user.display_name)
        

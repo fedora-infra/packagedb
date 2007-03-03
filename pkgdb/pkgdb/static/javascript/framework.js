@@ -69,26 +69,103 @@ getFirstParentByTagAndClassName = function (elem, tagName, className) {
 /* End from MochiKit 1.4.1 */
 
 /*
+ * Create a spinner to show that the element is busy processing.
+ */
+function create_spinner(initialImage) {
+    return DIV({'class': 'spinner', 'border': 0},
+            IMG({'src': initialImage, 'class': 'spinnerImage'}));
+}
+
+/*
+ * Make the spinner turn.
+ */
+function spin_spinner(timeout, seqNum) {
+  logDebug('Invoked spin_spinner');
+  /* Only one image so we don't need to run this function. */
+  if (spinnerImages.length <= 1) {
+    return;
+  }
+
+  /* Select the next image in the cycle */
+  var imageNum = seqNum +1;
+  if (imageNum >= spinnerImages.length) {
+    imageNum = 0;
+  }
+
+  /* Find all the spinners on the page */
+  var spinners = getElementsByTagAndClassName('div', 'spinner');
+  for (var spinnerNum in spinners) {
+    /* Update all of them to the next image */
+    replaceChildNodes(spinners[spinnerNum], IMG (
+      {'src': spinnerImages[imageNum], 'alt' : 'spinner',
+      class : 'spinnerImage'}
+    ));
+  }
+
+  /* As long as there are active spinners, reinvoke */
+  logDebug(spinners.length);
+  if (spinners.length > 0) {
+    logDebug('setup next iteration:', imageNum);
+    window.setTimeout(spin_spinner,
+      timeout*1000, timeout, imageNum);
+  } else {
+    spinnerCount = 0;
+  }
+  logDebug('Exit spinner_timeout');
+}
+
+/*
  * Show that an element is being processed.
  * Do this by 1) Disabling changes
  * 2) Put a spinner on the element.
  */
 function busy(elem) {
-    // Pop up a small animated image that fits over the widget.
-    // FIXME: Walk the tree and set everything to disabled
     logDebug('in busy');
-logDebug(elem);
+    /* Create a spinner */
+    var spinner = create_spinner(spinnerImages[0]);
+   
+    /* Display it over the widget */ 
+    // MochiKit 1.4 has a getElementPosition() function instead
+    var pos = elementPosition(elem);
+    spinner.style.position = 'absolute';
+    setElementPosition(spinner, pos);
+    appendChildNodes(elem, spinner);
+    elem.spinner = spinner;
 
+    /* If the spinner isn't spinning, get it started */
+    spinnerCount = spinnerCount + 1;
+    if (spinnerCount <= 1) {
+        spin_spinner(spinnerTimeout, 0);
+    }
+      
+    /* Walk the tree and set everything to disabled */
+    nodes = getElementsByTagAndClassName(null, null, elem);
+    for (nodeNum in nodes) {
+        nodes[nodeNum].setAttribute('disabled', 'true');
+    }
 }
 
 /*
  * Set the element and children to accept input again.
  */
 function unbusy(elem) {
-    //FIXME: Walk the tree and remove disabled from everything
-    // Remove the spinner
-logDebug('in unbusy');
-logDebug(elem);
+    logDebug('in unbusy');
+    /* Remove the spinner */
+    spinners = getElementsByTagAndClassName('div', 'spinner', elem);
+    for (spinnerNum in spinners) {
+        removeElement(spinners[spinnerNum]);
+        delete(spinners[spinnerNum]);
+        spinnerCount = spinnerCount - 1;
+    }
+    if (spinnerCount <= 0) {
+        spinnerCount = 0;
+    }
+
+    /* Walk the tree and remove disabled from everything */
+    nodes = getElementsByTagAndClassName(null, null, elem);
+    for (nodeNum in nodes) {
+        nodes[nodeNum].removeAttribute('disabled');
+    }
 }
 
 /*
@@ -134,3 +211,10 @@ function make_request(action, callback, errback, event) {
     logDebug(base+action+'?'+queryString({'containerId': requestContainer.getAttribute('name')}));
 }
 
+/* Initialize the spinner */
+spinnerImages = ['/pkgdb-dev/static/images/spinner2.png',
+              '/pkgdb-dev/static/images/spinner3.png',
+              '/pkgdb-dev/static/images/spinner4.png',
+              '/pkgdb-dev/static/images/spinner1.png'];
+spinnerTimeout = 1;
+spinnerCount = 0;
