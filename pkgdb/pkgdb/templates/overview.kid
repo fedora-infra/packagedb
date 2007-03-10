@@ -7,6 +7,20 @@ layout_params['displayNotes']=False
 
 <div py:match="item.tag == 'content'">
 
+<h2>Overview</h2>
+<p>The Package Database is a central repository of package information in
+Fedora.  You will eventually be able to find ad change all the metainformation
+about a package by searching the database.  The current implementation is
+focused on the data that package developers and release engineers need to
+create packages and spin them into a distribution.
+</p>
+
+<h2>Browse Packages</h2>
+  <ul>
+  <li><a href="${tg.url('/collections/')}">View Packages by Collection</a></li>
+  <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
+  </ul>
+
 <h1>Fedora Package Database -- Version 0.1.92</h1>
 <h2>News</h2>
 <h3>0.1.92</h3>
@@ -58,19 +72,6 @@ account for the new owners.list format</li>
 of 100 entries</li>
 <li>Tie into koji for build ACLs</li>
 </ul>
-
-<h2>Overview</h2>
-<p>The Package Database is a central repository of package information in
-Fedora.  You will eventually be able to find ad change all the metainformation
-about a package by searching the database.  The current implementation is
-focused on the data that package developers and release engineers need to
-create packages and spin them into a distribution.
-</p>
-<h2>Browse Packages</h2>
-  <ul>
-  <li><a href="${tg.url('/collections/')}">View Packages by Collection</a></li>
-  <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
-  </ul>
 
 <h2 id="notes">Notes</h2>
   <p>Version 0.1 is a read-only interface to the information that was stored in

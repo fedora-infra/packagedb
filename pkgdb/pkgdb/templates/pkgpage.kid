@@ -126,6 +126,24 @@ TODO='Not yet implemented'
           </td>
         </tr>
 
+        <tr py:for="group in pkg.groups.items()" class="aclgrouprow">
+          <td py:content="group[1].name" class="aclgroup"
+            py:attrs="{'name': str(pkg.id) + ':' + str(group[0])}">
+            Name
+          </td>
+          <td class="acell" py:attrs="{'colspan' : str(len(aclNames))}">
+            <div py:if="not tg.identity.anonymous and
+              pkg.ownerid==tg.identity.user.user_id"
+              py:attrs="{'name' : str(pkg.id) + ':groupcommit'}"
+              class="requestContainer groupAclPresent">
+              <input type="checkbox" checked="true" class="groupAclPresentBox"
+                py:if="group[1].acls['commit']"/>
+              <input type="checkbox" class="aclPresentBox"
+                py:if="not group[1].acls['commit']"/>
+            </div>
+            Allow anyone in this group to commit
+          </td>
+        </tr>
         <tr py:if="not tg.identity.anonymous and
           tg.identity.user.user_id not in pkg.people">
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">

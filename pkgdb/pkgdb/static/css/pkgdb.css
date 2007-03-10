@@ -16,7 +16,13 @@
 	border-collapse: collapse;
 }
 
-.acluser {
+.acluser, .aclgroup {
+	border-style: solid;
+	border-width: 1px;
+	border-collapse: collapse;
+}
+
+.aclgroup {
 	border-style: solid;
 	border-width: 1px;
 	border-collapse: collapse;
