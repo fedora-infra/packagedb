@@ -209,6 +209,10 @@ As time permits
 * Second level notification: Tell package owners when a package they depend
   on is updated.
 
+* Bugzilla syncing.  Bugzilla can be slow sometimes so it would be best to
+  keep this as an async process (cron job.)  Could implement queued changes,
+  though.
+
 Ideas
 ~~~~~
 

@@ -21,10 +21,10 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                 /* Create the new select list */
                 var aclName = aclStatus.getAttribute('name');
                 var aclStatusName = scrapeText(aclStatus);
-                var newAclStatus = SELECT({'name': aclName,
-                        'class' : 'aclStatus'});
-                connect(newAclStatus, 'onclick', request_status_change);
-                connect(newAclStatus, 'onfocus', save_status);
+                var newAclStatusList = SELECT({'name': aclName,
+                        'class' : 'aclStatusList'});
+                connect(newAclStatusList, 'onchange', request_status_change);
+                connect(newAclStatusList, 'onfocus', save_status);
 
                 /* Populate it with options */
                 for (var aclNum in aclStatusFields) {
@@ -34,8 +34,13 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                     } else {
                         aclOption = OPTION(null, aclStatusFields[aclNum]);
                     }
-                    appendChildNodes(newAclStatus, aclOption);
+                    appendChildNodes(newAclStatusList, aclOption);
                 }
+
+                /* Create the requestContainer that holds the statusList */
+                var newAclStatus = DIV({'name': aclName,
+                        'class' : 'requestContainer aclStatus'},
+                        newAclStatusList);
                 /* Replace the span */
                 replaceChildNodes(aclFields[aclFieldNum], newAclStatus);
             }
@@ -131,10 +136,11 @@ function toggle_owner(ownerDiv, data) {
 function check_acl_status(statusDiv, data) {
     /* The only thing we have to do is check that there weren't any errors */
     if (! data.status) {
-        revert_acl_request(aclBoxDiv, data);
+        revert_acl_status(statusDiv, data);
         display_error(null, data);
         return;
     }
+    delete(commits[statusDiv])
 }
 
 /*
@@ -142,8 +148,15 @@ function check_acl_status(statusDiv, data) {
  * the user requests a change but the server throws an error.
  */
 function revert_acl_status(statusDiv, data) {
-    // FIXME: Have to make sure we pass in the TARGET
-    delete(commits[TARGET]);
+    /* Retrieve the select list */
+    var aclStatus = getElementsByTagAndClassName('select', 'aclStatusList',
+            statusDiv)[0];
+    
+    /* Set it to the previous value */
+    aclStatus.value = commits[statusDiv];
+
+    /* Remove the entry from the commits list */
+    delete(commits[statusDiv]);
 }
 
 /*
@@ -151,7 +164,12 @@ function revert_acl_status(statusDiv, data) {
  * necessary.
  */
 function save_status(event) {
-    commits[event.target().id] = event.target().value;
+    /* Get the requestContainer */
+    var requestContainer = getFirstParentByTagAndClassName(event.target(),
+            'div', 'requestContainer');
+    /* Save the old value keyed by the requestContainer */
+    commits[requestContainer] = event.target().value
+        event.target().value;
 }
 
 /*
@@ -161,7 +179,6 @@ function check_acl_request(aclBoxDiv, data) {
     logDebug('in check_acl_request');
     /* If an error occurred, toggle it back */
     if (! data.status) {
-        logDebug('sending to rever_acl_request');
         revert_acl_request(aclBoxDiv, data);
         display_error(null, data);
         return;
@@ -250,9 +267,41 @@ request_add_drop_acl = partial(make_request, '/toggle_acl_request',
 
 /*
  * Callback for selecting a new acl status from an option list.
+ *
+ * This can't use the generic make_request as we have to pass special
+ * more information in the request.
  */
-request_status_change = partial(make_request, '/set_acl_status',
-        check_acl_status, revert_acl_status);
+function request_status_change(event) {
+    logDebug('in request_status_change');
+    var requestContainer = getFirstParentByTagAndClassName(event.target(),
+            'div', 'requestContainer');
+    busy(requestContainer);
+    var form = getFirstParentByTagAndClassName(requestContainer, 'form');
+    var base = form.action;
+    
+    /* Retrieve person to make the change for. */
+    var aclRow = getFirstParentByTagAndClassName(requestContainer, 'tr',
+            'aclrow');
+    var aclUser = getElementsByTagAndClassName('td', 'acluser', aclRow)[0];
+    var personid = aclUser.getAttribute('name').split(':')[1];
+
+    /* Retrieve the status to change to for this acl */
+    var selectElement = getElementsByTagAndClassName('select', 'aclStatusList',
+            requestContainer)[0];
+    var aclStatus = selectElement.value;
+
+    /* Retrieve pkgid and aclName */
+    var idParts = requestContainer.getAttribute('name').split(':');
+
+    var req = loadJSONDoc(base + '/set_acl_status', {'pkgid': idParts[0],
+            'personid': personid, 'newAcl': idParts[1], 'status': aclStatus});
+    req.addCallback(partial(check_acl_status, requestContainer));
+    req.addErrback(partial(revert_acl_status, requestContainer));
+    req.addErrback(partial(display_error, requestContainer));
+    req.addBoth(unbusy, requestContainer);
+
+    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'newAcl':idParts[1],'status':aclStatus}));
+}
 
 /*
  * Initialize the web page.
@@ -275,9 +324,9 @@ function init(event) {
         connect(ownerButtons[buttonNum], 'onclick', request_owner_change);
     }
 
-    var statusBoxes = getElementsByTagAndClassName('select', 'aclStatus');
+    var statusBoxes = getElementsByTagAndClassName('select', 'aclStatusList');
     for (var statusNum in  statusBoxes) {
-        connect(statusBoxes[statusNum], 'onclick', request_status_change);
+        connect(statusBoxes[statusNum], 'onchange', request_status_change);
         connect(statusBoxes[statusNum], 'onfocus', save_status);
     }
 

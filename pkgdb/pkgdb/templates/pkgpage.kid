@@ -97,23 +97,26 @@ TODO='Not yet implemented'
                 py:if="not person[1].acls[acl]"/>
             </div>
             <!-- If the user can set acls, give drop downs for status -->
-            <select py:if="not tg.identity.anonymous and (
+            <div py:if="not tg.identity.anonymous and (
               tg.identity.user.user_id==pkg.ownerid or
               (tg.identity.user.user_id in pkg.people and 
                 pkg.people[tg.identity.user.user_id].acls['approveacls']=='Approved'))"
-              py:attrs="{'name': acl}" class='aclStatus'>
-              <span py:for="status in aclStatus">
-                <option selected="true"
-                  py:if="person[1].acls[acl]==status"
-                  py:content="status"
-                  py:attrs="{'value': status,
-                  'name': status}"></option>
-                <option py:if="not person[1].acls[acl]==status"
-                  py:content="status"
-                  py:attrs="{'value': status,
-                  'name': status}"></option>
-              </span>
-            </select>
+              py:attrs="{'name': str(pkg.id) + ':' + acl}"
+                class='aclStatus requestContainer'>
+              <select class="aclStatusList">
+                <span py:for="status in aclStatus">
+                  <option selected="true"
+                    py:if="person[1].acls[acl]==status"
+                    py:content="status"
+                    py:attrs="{'value': status,
+                    'name': status}"></option>
+                  <option py:if="not person[1].acls[acl]==status"
+                    py:content="status"
+                    py:attrs="{'value': status,
+                    'name': status}"></option>
+                </span>
+              </select>
+            </div>
             <span py:if="tg.identity.anonymous or
               (tg.identity.user.user_id != pkg.ownerid and
               (tg.identity.user.user_id not in pkg.people or
@@ -123,6 +126,24 @@ TODO='Not yet implemented'
           </td>
         </tr>
 
+        <tr py:for="group in pkg.groups.items()" class="aclgrouprow">
+          <td py:content="group[1].name" class="aclgroup"
+            py:attrs="{'name': str(pkg.id) + ':' + str(group[0])}">
+            Name
+          </td>
+          <td class="acell" py:attrs="{'colspan' : str(len(aclNames))}">
+            <div py:if="not tg.identity.anonymous and
+              pkg.ownerid==tg.identity.user.user_id"
+              py:attrs="{'name' : str(pkg.id) + ':groupcommit'}"
+              class="requestContainer groupAclPresent">
+              <input type="checkbox" checked="true" class="groupAclPresentBox"
+                py:if="group[1].acls['commit']"/>
+              <input type="checkbox" class="aclPresentBox"
+                py:if="not group[1].acls['commit']"/>
+            </div>
+            Allow anyone in this group to commit
+          </td>
+        </tr>
         <tr py:if="not tg.identity.anonymous and
           tg.identity.user.user_id not in pkg.people">
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
