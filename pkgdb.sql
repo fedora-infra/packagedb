@@ -273,7 +273,7 @@ create trigger add_status_to_action after insert or delete or update
 --   be used in Bugzilla as well.
 -- :version: The release of the `Collection`.  If the `Collection` doesn't
 --   have releases (for instance, SIGs), version should be 0.
--- :status: Is the collection being worked on or is it inactive.
+-- :statuscode: Is the collection being worked on or is it inactive.
 -- :owner: Creator, QA Contact, or other account that is in charge of the
 --   collection.  This is a foreign key to an account id number.  (Since the
 --   accounts live in a separate db we can't have the db enforce validity.)
@@ -289,13 +289,13 @@ create table Collection (
   id serial primary key,
   name text not null,
   version text not null,
-  status integer not null,
+  statuscode integer not null,
   owner integer not null,
   publishURLTemplate text,
   pendingURLTemplate text,
   summary text,
   description text,
-  foreign key (status) references CollectionStatusCode (statusCodeId)
+  foreign key (statuscode) references CollectionStatusCode (statusCodeId)
     on delete restrict on update cascade,
   unique (name, version)
 );
@@ -387,15 +387,15 @@ create table CollectionSet (
 -- :summary: Brief summary of what the package is
 -- :description: Longer description of the package
 -- :reviewURL: URL for the review ticket for this package
--- :status: Is the package ready to be built, in review, or other?
+-- :statuscode: Is the package ready to be built, in review, or other?
 create table Package (
   id serial primary key,
   name text not null unique,
   summary text not null,
   description text,
   reviewURL text,
-  status integer not null,
-  foreign key (status) references PackageStatusCode(statusCodeId)
+  statuscode integer not null,
+  foreign key (statuscode) references PackageStatusCode(statusCodeId)
     on delete restrict on update cascade
 );
 
@@ -409,20 +409,20 @@ create table Package (
 --    `Collection`.  There is a special orphaned account to use if you want
 --    to orphan the package.
 -- :qacontact: Initial bugzilla QA Contact for this package.
--- :status: Whether the `Package` was entered in the `Collection`.
+-- :statuscode: Whether the `Package` was entered in the `Collection`.
 create table PackageListing (
   id serial primary key,
   packageId integer not null,
   collectionId integer not null,
   owner integer not null,
   qacontact integer,
-  status integer not null,
+  statuscode integer not null,
   unique(packageId, collectionId),
   foreign key (packageId) references Package(id)
     on delete cascade on update cascade,
   foreign key (collectionId) references Collection(id)
     on delete cascade on update cascade,
-  foreign key (status) references PackageListingStatusCode(statusCodeId)
+  foreign key (statuscode) references PackageListingStatusCode(statusCodeId)
     on delete restrict on update cascade
 );
 
@@ -434,18 +434,18 @@ create table PackageListing (
 -- :epoch: RPM Epoch for this release of the `Package`.
 -- :version: RPM Version string.
 -- :release: RPM Release string including any disttag value.
--- :status: What is happening with this particular version.
+-- :statuscode: What is happening with this particular version.
 create table PackageBuild (
   id serial not null primary key,
   packageId integer not null,
   epoch text,
   version text not null,
   release text not null,
-  status integer not null,
+  statuscode integer not null,
   unique (packageId, epoch, version, release),
   foreign key (packageId) references Package(id)
     on delete restrict on update cascade,
-  foreign key (status) references PackageBuildStatusCode(StatusCodeId)
+  foreign key (statuscode) references PackageBuildStatusCode(StatusCodeId)
     on delete restrict on update cascade
 );
 
@@ -525,22 +525,77 @@ create trigger package_build_agreement_trigger before update
   on PackageBuild
   for each row execute procedure package_build_agreement();
 
--- Permissions for who can make various changes to the code.
--- We want to limit the access that a given person may have to edit the package
+-- Who is interested in this package.
 --
 -- Fields:
 -- :id: Primary key
--- :pkgListId: What package in what collection has this value.
--- :acl: The permission being set.
-create table PackageACL (
+-- :packageListingId: What package in what collection has this value.
+-- :userId: User id from the account system.
+create table PersonPackageListing (
   id serial primary key,
+  userid integer not null,
   packageListingId integer not null,
-  acl text not null,
-  unique (packageListingId, acl),
   foreign key (packageListingId) references PackageListing(id)
     on delete cascade on update cascade,
+  unique(userid, packageListingId)
+);
+--
+-- Group that's interested in the package.
+--
+-- Fields:
+-- :id: Primary key
+-- :packageListingId: What package in what collection has this value.
+-- :groupId: User id from the account system.
+create table GroupPackageListing (
+  id serial primary key,
+  groupid integer not null,
+  packageListingId integer not null,
+  foreign key (packageListingId) references PackageListing(id)
+    on delete cascade on update cascade,
+  unique(groupid, packageListingId)
+);
+
+-- List the Acls that belong to a personPkgListing
+--
+-- Fields:
+-- :id: Primary key
+-- :personPackageListingId: The person-packagelisting combination that this
+--   acl was made for.
+-- :acl: Permission being granted to this person.
+-- :statuscode: Status of the acl.  Whether approved or not.
+create table PersonPackageListingAcl (
+  id serial primary key,
+  personPackageListingId integer not null,
+  acl text not null,
+  statuscode integer not null,
   check (acl in ('commit', 'build', 'watchbugzilla', 'watchcommits',
-      'approveacls', 'checkout'))
+     'approveacls', 'checkout')),
+  unique (personPackageListingId, acl),
+  foreign key (personPackageListingId) references PersonPackageListing (id)
+    on delete cascade on update cascade,
+  foreign key (statuscode) references PackageACLStatusCode(statusCodeId)
+    on delete restrict on update cascade
+);
+
+-- List the Acls that belong to a groupPkgListing.
+-- Fields:
+-- :id: Primary key
+-- :groupPackageListingId: The person-packagelisting combination that this
+--   acl was made for.
+-- :acl: Permission being granted to this person.
+-- :statuscode: Status of the acl.  Whether approved or not.
+create table GroupPackageListingAcl (
+  id serial primary key,
+  groupPackageListingId integer not null,
+  acl text not null,
+  statuscode integer not null,
+  check (acl in ('commit', 'build', 'watchbugzilla', 'watchcommits',
+     'approveacls', 'checkout')),
+  unique (groupPackageListingId, acl),
+  foreign key (groupPackageListingId) references GroupPackageListing (id)
+    on delete cascade on update cascade,
+  foreign key (statuscode) references PackageACLStatusCode(statusCodeId)
+    on delete restrict on update cascade
 );
 
 -- Make the acl field non-updatable.  This prevents people from getting a
@@ -558,45 +613,12 @@ BEGIN
   return NULL;
 END;
 $no_acl$ LANGUAGE plpgsql;
-create trigger no_acl_update_trigger before update on PackageACL
-  for each row execute procedure no_acl_update();
 
--- ACLs that allow a person to do something
---
--- Fields:
--- :packageACLId: Inherit from an ACL record.
--- :userId: User id from the account system.
--- :status: Whether this permission is active.
-create table PersonPackageACL (
-  id serial primary key,
-  packageACLId integer not null,
-  userId integer not null,
-  status integer not null,
-  unique (packageACLId, userId),
-  foreign key (packageACLId) references PackageACL (id)
-    on delete cascade on update cascade,
-  foreign key (status) references PackageACLStatusCode(statusCodeId)
-    on delete restrict on update cascade
-);
+create trigger no_group_acl_update_trigger before update on 
+  GroupPackageListingACL for each row execute procedure no_acl_update();
+create trigger no_person_acl_update_trigger before update on
+  PersonPackageListingACL for each row execute procedure no_acl_update();
 
--- ACLs that allow a group to do something
---
--- Fields:
--- :packageACLId: Inherit from an ACL record.
--- :groupId: Group id from the account system.
--- :status: Whether this permission is active.
-create table GroupPackageACL (
-  id serial primary key,
-  packageACLId integer not null,
-  groupId integer not null,
-  status integer not null,
-  unique (packageACLId, groupId),
-  foreign key (PackageACLId) references PackageACL (id)
-    on delete cascade on update cascade,
-  foreign key (status) references PackageACLStatusCode(statusCodeId)
-    on delete restrict on update cascade
-);
-  
 -- Log a change to the packageDB.
 --
 -- Fields:
@@ -689,15 +711,15 @@ create table PackageBuildLog (
 -- :logId: The id of the log entry.
 -- :packageBuildId: The `PackageACL` that changed.
 -- :action: What happened to the ACLs for the package.
-create table PersonPackageACLLog (
+create table PersonPackageListingAclLog (
   logId integer primary key,
-  personPackageACLId integer not null,
+  personPackageListingAclId integer not null,
   action integer not null,
   foreign key (action) references PackageACLLogStatusCode(statusCodeId)
     on delete cascade on update cascade,
   foreign key (logId) references Log (id)
     on delete restrict on update cascade,
-  foreign key (personPackageACLId) references PersonPackageACL(id)
+  foreign key (personPackageListingAclId) references PersonPackageListingAcl(id)
     on delete restrict on update cascade
 );
 
@@ -707,15 +729,15 @@ create table PersonPackageACLLog (
 -- :logId: The id of the log entry.
 -- :packageBuildId: The `PackageACL` that changed.
 -- :action: What happened to the ACLs for the package.
-create table GroupPackageACLLog (
+create table GroupPackageListingACLLog (
   logId integer primary key,
-  groupPackageACLId integer not null,
+  groupPackageListingAclId integer not null,
   action integer not null,
   foreign key (action) references PackageACLLogStatusCode(statusCodeId)
     on delete cascade on update cascade,
   foreign key (logId) references Log (id)
     on delete restrict on update cascade,
-  foreign key (groupPackageACLId) references groupPackageACL(id)
+  foreign key (groupPackageListingAclId) references GroupPackageListingACL(id)
     on delete restrict on update cascade
 );
 
@@ -726,17 +748,19 @@ create table GroupPackageACLLog (
 grant select, insert, update, delete on PackageBuildListing to pkgdbadmin;
 grant select, insert, update 
   on Collection, Branch, CollectionSet, Package, PackageBuild,
-    PackageListing, PersonPackageACL, GroupPackageACL
+    PackageListing, PersonPackageListing, GroupPackageListing,
+    PersonPackageListingAcl, GroupPackageListingAcl
   to pkgdbadmin;
 grant select, insert
-  on Log, PackageLog, PackageListingLog, PackageACL,
-    PackageBuildLog, PersonPackageACLLog, GroupPackageACLLog
+  on Log, PackageLog, PackageListingLog, PackageBuildLog,
+    PersonPackageListingAclLog, GroupPackageListingAclLog
   to pkgdbadmin;
 
 grant update
-  on collection_id_seq, grouppackageacl_id_seq, log_id_seq, package_id_seq,
-    packageacl_id_seq, packagebuild_id_seq, packagelisting_id_seq,
-    personpackageacl_id_seq
+  on collection_id_seq, personpackagelisting_id_seq,
+    grouppackagelisting_id_seq, personpackagelistingacl_id_seq,
+    grouppackagelistingacl_id_seq, log_id_seq, package_id_seq,
+    packagebuild_id_seq, packagelisting_id_seq
   to pkgdbadmin;
 grant select
   on StatusCode, StatusCodeTranslation,
@@ -748,133 +772,34 @@ grant select
   to pkgdbadmin;
 
 -- FIXME: Rearrange Acls
--- Ananlyzing the code we're writing, the way we have Acls currently laid out
+-- Analyzing the code we're writing, the way we have Acls currently laid out
 -- makes little sense.  We seem to be making this conversion in code everytime
 -- we use it:
 --   Instead of PkgListing=>Acl=>(Person|Group)
 --   PkgListing=>(Person|Group)=>Acl
 --
--- So we need to convert our tables to reflect that::
+-- If we need to move the data instead of doing a clean resync:
 -- 
--- Who is interested in this package.
+-- insert into personpackagelisting (userid, packagelistingid) select distinct
+-- ppa.userid, pa.packageListingId from packageacl as pa, personpackageacl as
+-- ppa where pa.id = ppa.packageaclid;
 --
--- Fields:
--- :id: Primary key
--- :packageListingId: What package in what collection has this value.
--- :userId: User id from the account system.
--- create table PersonPackageListing (
---   id serial primary key,
---   userid integer not null,
---   packageListingId integer not null,
---   foreign key packageListingId references PackageListing(id)
---     on delete cascade on update cascade,
---   unique(userid, packageListingId),
--- );
+-- insert into personpackagelistingacl (personpackagelistingid, acl,
+-- statuscode) select pp.id, pa.acl, ppa.status from personpackagelisting as
+-- pp, packageacl as pa, personpackageacl as ppa where pp.userid = ppa.userid
+-- and pp.packagelistingid = pa.packagelistingid and pa.id = ppa.packageaclid;
 --
--- Group that's interested in the package.
+-- Groups would be the same but we haven't filled any data for them.
+-- insert into grouppackagelisting (groupid, packagelistingid) select distinct
+-- gpa.groupid, pa.packageListingId from packageacl as pa, grouppackageacl as
+-- gpa where pa.id = gpa.packageaclid;
 --
--- Fields:
--- :id: Primary key
--- :packageListingId: What package in what collection has this value.
--- :groupId: User id from the account system.
--- create table GroupPackageListing (
---   id serial primary key,
---   groupid integer not null,
---   packageListingId integer not null,
---   foreign key packageListingId references PackageListing(id)
---     on delete cascade on update cascade,
---   unique(userid, packageListingId),
--- );
+-- And the logs are currently empty.
 --
--- List the Acls that belong to a personPkgListing
---
--- Fields:
--- :id: Primary key
--- :personPackageListingId: The person-packagelisting combination that this
---   acl was made for.
--- :acl: Permission being granted to this person.
--- :statuscode: Status of the acl.  Whether approved or not.
--- create table PersonPackageListingAcl (
---   id serial primary key,
---   personPackageListingId integer not null,
---   acl text not null,
---   statuscode integer not null,
---   check (acl in ('commit', 'build', 'watchbugzilla', 'watchcommits',
---      'approveacls', 'checkout'))
---   unique (personPackageListingId, acl),
---   foreign key (personPackageListingId) references PersonPackageListing (id)
---     on delete cascade on update cascade,
---   foreign key (statuscode) references PackageACLStatusCode(statusCodeId)
---     on delete restrict on update cascade
--- );
---
--- Fields:
--- :id: Primary key
--- :groupPackageListingId: The person-packagelisting combination that this
---   acl was made for.
--- :acl: Permission being granted to this person.
--- :statuscode: Status of the acl.  Whether approved or not.
--- create table GroupPackageListingAcl (
---   id serial primary key,
---   groupPackageListingId integer not null,
---   acl text not null,
---   statuscode integer not null,
---   check (acl in ('commit', 'build', 'watchbugzilla', 'watchcommits',
---      'approveacls', 'checkout'))
---   unique (groupPackageListingId, acl),
---   foreign key (groupPackageListingId) references GroupPackageListing (id)
---     on delete cascade on update cascade,
---   foreign key (statuscode) references PackageACLStatusCode(statusCodeId)
---     on delete restrict on update cascade
--- );
---
--- Log changes to built package ACLs.
---
--- Fields:
--- :logId: The id of the log entry.
--- :packageBuildId: The `PackageACL` that changed.
--- :action: What happened to the ACLs for the package.
--- create table PersonPackageACLLog (
---   logId integer primary key,
---   personPackageACLId integer not null,
---   action integer not null,
---   foreign key (action) references PackageACLLogStatusCode(statusCodeId)
---     on delete cascade on update cascade,
---   foreign key (logId) references Log (id)
---     on delete restrict on update cascade,
---   foreign key (personPackageACLId) references PersonPackageACL(id)
---     on delete restrict on update cascade
--- );
--- 
--- Log changes to built package ACLs.
---
--- Fields:
--- :logId: The id of the log entry.
--- :packageBuildId: The `PackageACL` that changed.
--- :action: What happened to the ACLs for the package.
--- create table GroupPackageACLLog (
---   logId integer primary key,
---   groupPackageACLId integer not null,
---   action integer not null,
---   foreign key (action) references PackageACLLogStatusCode(statusCodeId)
---     on delete cascade on update cascade,
---   foreign key (logId) references Log (id)
---     on delete restrict on update cascade,
---   foreign key (groupPackageACLId) references groupPackageACL(id)
---     on delete restrict on update cascade
--- );
--- create trigger no_group_acl_update_trigger before update on 
---   GroupPackageListingACL for each row execute procedure no_acl_update();
--- create trigger no_person_acl_update_trigger before update on
---   PersonPackageListingACL for each row execute procedure no_acl_update();
---
--- grant select, insert, update on 
---   PersonPackageListing GroupPackageListing
---   to pkgdbadmin;
--- grant select, insert on
---   PersonPackageACLLog, GroupPackageACLLog, PersonPackageListingAcl,
---   GroupPackageListingAcl 
---   to pkgdbadmin;
+-- drop table packageacl cascade;
+-- drop table personpackageacl cascade;
+-- drop table grouppackageacl cascade;
+
 
 -- FIXME: Implement groups/categories/comps
 -- Need to implement subpackages.
