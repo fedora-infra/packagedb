@@ -102,14 +102,6 @@ class Collections(controllers.Controller):
                 ' fedoraproject.org website, please report it.'
         return dict(title=appTitle + ' -- Invalid Collection Id', msg=msg)
 
-class AclOwners(object):
-    '''Owners of package acls.'''
-    def __init__(self, name, acls):
-        self.name = name
-        self.acls = {}
-        for aclName in acls:
-            self.acls[aclName] = None
-
 class PackageDispatcher(controllers.Controller):
     def __init__(self):
         controllers.Controller.__init__(self)
@@ -367,6 +359,12 @@ class Packages(controllers.Controller):
                         user['username'])
             else:
                 pkg.qacontactname = ''
+
+            # Retrieve info from the FAS about the people watching the pkg
+            for person in pkg.people:
+                (fasPerson, groups) = fas.get_user_info(person.userid)
+                person.name = '%s (%s)' % (fasPerson['human_name'],
+                        fasPerson['username'])
 
         return dict(title='%s -- %s' % (appTitle, package.name),
                 package=package, packageid=packageId,
