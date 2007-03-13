@@ -201,38 +201,52 @@ class PackageDispatcher(controllers.Controller):
                 raise
 
         # Make sure the current tg user has permission to set acls
-        acls = SelectResults(session.query(model.PackageAcl)).select(
-                model.PackageAcl.c.packagelistingid==pkgid)
-        if identity.current.user.user_id != pkg.owner:
-            # Wasn't the owner, see if they have been granted permission
-            comaintAcls = acls.select(
-                    model.PackageAcl.c.acl=='approveacls').join_to(
-                            'people').select(sqlalchemy.and_(
-                                model.PersonPackageAcl.c.userid==identity.current.user.user_id,
-                                model.PersonPackageAcl.c.statuscode==self.aclStatusMap['Approved'].statuscodeid))
-            if not comaintAcls.count():
-                return dict(status=False, message='%s is not allowed to approve Package ACLs' % identity.current.user.display_name)
-       
-        # Look for the acl to change
-        acl = acls.select(model.PackageAcl.c.acl==newAcl)
-        if not acl.count():
-            # Have to create the acl
-            packageAcl = model.PackageAcl(pkgid, newAcl)
-            personAcl = model.PersonPackageAcl(packageAcl.id,
-                personid, self.aclStatusMap[status].statuscodeid)
+        approved = False
+        changePerson = None
+        if identity.current.user.user_id == pkg.owner:
+            # We're talking to the owner
+            approved = True
+        # Wasn't the owner.  See if they have been granted permission
+        for person in pkg.people:
+            # While we're at it, check for the person who's acl we're
+            # setting
+            if person.userid == personid:
+                changePerson = person
+                if approved:
+                    break
+            if person.userid == identity.current.user.user_id:
+                # Check each acl that this person has on the package.
+                for acl in person.acls:
+                    if (acl.acl == 'approveacls' and acl.statuscode
+                            == self.aclStatusMap['Approved'].statuscodeid):
+                        approved = True
+                        break
+                if changePerson:
+                    break
+        if not approved:
+            return dict(status=False, message=
+                    '%s is not allowed to approve Package ACLs' %
+                    identity.current.user.display_name)
+
+        # Create the ACL
+        if not changePerson:
+            # Person has no ACLs on this Package yet.  Create a record
+            personPackage = model.PersonPackageListing(personid, pkgid)
+            personAcl = model.PersonPackageListingAcl(personPackage.id,
+                newAcl, self.aclStatusMap[status].statuscodeid)
         else:
             # Look for an acl for the person
             personAcl = None
-            for person in acl[0].people:
-                if person.userid == personid:
-                    personAcl = person
-                    person.statuscode = self.aclStatusMap[status].statuscodeid
+            for acl in changePerson.acls:
+                if acl.acl == newAcl:
+                    # Found the acl, change its status
+                    personAcl = acl
+                    acl.statuscode = self.aclStatusMap[status].statuscodeid
                     break
-            # personAcl wasn't found; create it
             if not personAcl:
-                personAcl = model.PersonPackageAcl(acl[0].id,
-                        personid,
-                        self.aclStatusMap[status].statuscodeid)
+                # Acl was not found.  Create one.
+                personAcl = model.PersonPackageListingAcl(changePerson.id,
+                    newAcl, self.aclStatusMap[status].statuscodeid)
         try:
             session.flush()
         except sqlalchemy.exceptions.SQLError, e:
