@@ -267,45 +267,42 @@ class PackageDispatcher(controllers.Controller):
         if not pkgListing:
             return dict(status=False, message='No such package listing %s' % pkgListId)
 
-        # See if the ACL already exists
-        pkgList = SelectResults(session.query(model.PackageAcl)).select(
-                sqlalchemy.and_(model.PackageAcl.c.packagelistingid==pkgListId,
-                    model.PackageAcl.c.acl==aclName))
-        if not pkgList.count():
-            # Create the acl
-            packageAcl = model.PackageAcl(pkgListId, aclName)
-            try:
-                session.flush()
-            except sqlalchemy.exceptions.SQLError, e:
-                # Probably the acl is mispelled
-                return dict(status=False,
-                        message='Not able to create acl %s on %s' %
-                            (aclName, pkgListId))
-
-        # See if there's already an acl for this person 
-        personPkgList = pkgList.join_to('people').select(
-                model.PersonPackageAcl.c.userid ==
-                identity.current.user.user_id)
-        if (personPkgList.count()):
-            # An Acl already exists.  Build on that
-            for person in personPkgList[0].people:
-                if person.userid == identity.current.user.user_id:
-                    personAcl = person
-                    break
-            if personAcl.statuscode == self.aclStatusMap['Obsolete'].statuscodeid:
-                # If the Acl status is obsolete, change to awaiting review
-                personAcl.statuscode = self.aclStatusMap['Awaiting Review'].statuscodeid
-                aclStatus = 'Awaiting Review'
-            else:
-                # Set it to obsolete
-                personAcl.statuscode = self.aclStatusMap['Obsolete'].statuscodeid
-                aclStatus = ''
+        # See if the Person is already associated with the pkglisting.
+        person = model.PersonPackageListing.get_by(sqlalchemy.and_(
+                model.PersonPackageListing.c.packagelistingid==pkgListId,
+                model.PersonPackageListing.c.userid==
+                    identity.current.user.user_id))
+        if not person:
+            # There was no association, create it.
+            person = model.PersonPackageListing(
+                identity.current.user.user_id, pkgListId)
+            personAcl = model.PersonPackageListingAcl(person.id, aclName,
+                self.aclStatusMap['Awaiting Review'].statuscodeid)
         else:
-            # No ACL yet, create acl
-            personAcl = model.PersonPackageAcl(pkgList[0].id,
-                    identity.current.user.user_id,
-                    self.aclStatusMap['Awaiting Review'].statuscodeid)
-            aclStatus = 'Awaiting Review'
+            # Check whether the person already has this acl
+            aclSet = False
+            for acl in person.acls:
+                if acl.acl == aclName:
+                    # Acl already exists, set the status
+                    if self.aclStatusMap['Obsolete'].statuscodeid == acl.statuscode:
+                        acl.statuscode = self.aclStatusMap['Awaiting Review'].statuscodeid
+                    else:
+                        acl.statuscode = self.aclStatusMap['Obsolete'].statuscodeid
+                    aclSet = True
+                    break
+            if not aclSet:
+                # Create a new acl
+                acl = model.PersonPackageListingAcl(person.id, aclName,
+                        self.aclStatusMap['Awaiting Review'])
+
+        try:
+            session.flush()
+        except sqlalchemy.exceptions.SQLError, e:
+            # Probably the acl is mispelled
+            return dict(status=False,
+                    message='Not able to create acl %s for %s on %s' %
+                        (aclName, identity.current.user.user_id,
+                        pkgListId))
 
         # Return the new value
         return dict(status=True, personId=identity.current.user.user_id,
