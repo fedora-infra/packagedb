@@ -280,16 +280,6 @@ assign_mapper(session.context, PersonPackageListingAcl,
 assign_mapper(session.context, GroupPackageListingAcl,
         GroupPackageListingAclTable)
 
-#PackageAclTable = Table('packageacl', metadata, autoload=True)
-#PersonPackageAclTable = Table('personpackageacl', metadata, autoload=True)
-#GroupPackageAclTable = Table('grouppackageacl', metadata, autoload=True)
-#
-#assign_mapper(session.context, PackageAcl, PackageAclTable,
-#        properties={'people' : relation(PersonPackageAcl, backref='acl'),
-#            'groups' : relation(GroupPackageAcl, backref='acl')})
-#assign_mapper(session.context, PersonPackageAcl, PersonPackageAclTable)
-#assign_mapper(session.context, GroupPackageAcl, GroupPackageAclTable)
-
 PackageAclStatusTable = Table('packageaclstatuscode', metadata, autoload=True)
 assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
         properties={'pacls' : relation(PersonPackageListingAcl,

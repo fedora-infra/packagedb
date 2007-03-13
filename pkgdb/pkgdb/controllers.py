@@ -67,7 +67,7 @@ class Collections(controllers.Controller):
             model.CollectionTable.c.summary, model.CollectionTable.c.description,
             model.StatusTranslationTable.c.statusname),
             sqlalchemy.and_(
-                model.CollectionTable.c.status==model.StatusTranslationTable.c.statuscodeid,
+                model.CollectionTable.c.statuscode==model.StatusTranslationTable.c.statuscodeid,
                 model.StatusTranslationTable.c.language=='C',
                 model.CollectionTable.c.id==collectionId), limit=1).execute()
         if collection.rowcount <= 0:
@@ -209,7 +209,7 @@ class PackageDispatcher(controllers.Controller):
                     model.PackageAcl.c.acl=='approveacls').join_to(
                             'people').select(sqlalchemy.and_(
                                 model.PersonPackageAcl.c.userid==identity.current.user.user_id,
-                                model.PersonPackageAcl.c.status==self.aclStatusMap['Approved'].statuscodeid))
+                                model.PersonPackageAcl.c.statuscode==self.aclStatusMap['Approved'].statuscodeid))
             if not comaintAcls.count():
                 return dict(status=False, message='%s is not allowed to approve Package ACLs' % identity.current.user.display_name)
        
@@ -226,7 +226,7 @@ class PackageDispatcher(controllers.Controller):
             for person in acl[0].people:
                 if person.userid == personid:
                     personAcl = person
-                    person.status = self.aclStatusMap[status].statuscodeid
+                    person.statuscode = self.aclStatusMap[status].statuscodeid
                     break
             # personAcl wasn't found; create it
             if not personAcl:
@@ -278,13 +278,13 @@ class PackageDispatcher(controllers.Controller):
                 if person.userid == identity.current.user.user_id:
                     personAcl = person
                     break
-            if personAcl.status == self.aclStatusMap['Obsolete'].statuscodeid:
+            if personAcl.statuscode == self.aclStatusMap['Obsolete'].statuscodeid:
                 # If the Acl status is obsolete, change to awaiting review
-                personAcl.status = self.aclStatusMap['Awaiting Review'].statuscodeid
+                personAcl.statuscode = self.aclStatusMap['Awaiting Review'].statuscodeid
                 aclStatus = 'Awaiting Review'
             else:
                 # Set it to obsolete
-                personAcl.status = self.aclStatusMap['Obsolete'].statuscodeid
+                personAcl.statuscode = self.aclStatusMap['Obsolete'].statuscodeid
                 aclStatus = ''
         else:
             # No ACL yet, create acl
@@ -319,7 +319,8 @@ class Packages(controllers.Controller):
             model.PackageTable.c.summary, model.PackageTable.c.description,
             model.StatusTranslationTable.c.statusname),
             sqlalchemy.and_(
-                model.PackageTable.c.status==model.StatusTranslationTable.c.statuscodeid,
+                model.PackageTable.c.statuscode ==
+                    model.StatusTranslationTable.c.statuscodeid,
                 model.StatusTranslationTable.c.language=='C',
                 model.PackageTable.c.id==packageId), limit=1).execute()
         if pkgRow.rowcount <= 0:
