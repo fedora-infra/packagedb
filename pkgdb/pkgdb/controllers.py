@@ -368,29 +368,6 @@ class Packages(controllers.Controller):
             else:
                 pkg.qacontactname = ''
 
-            ### FIXME: Reevaluate this as we've added a relation/backref
-            # To access acls
-            acls = model.PackageAcl.select((
-                model.PackageAcl.c.packagelistingid==pkg.id))
-
-            # Reformat the data so we have it stored per user
-            people = {}
-            for acl in acls:
-                for user in acl.people:
-                    personAcl = model.StatusTranslation.get_by(
-                            model.StatusTranslation.c.statuscodeid==user.status,
-                            model.StatusTranslation.c.language=='C').statusname
-                    if personAcl == 'Obsolete':
-                        continue
-                    if not people.has_key(user.userid):
-                        (person, groups) = fas.get_user_info(user.userid)
-                        people[user.userid] = AclOwners(
-                                '%s (%s)' % (person['human_name'],
-                                    person['username']), aclNames)
-                    people[user.userid].acls[user.acl.acl] = personAcl
-
-            # Store the acl owners in the package
-            pkg.people = people
         return dict(title='%s -- %s' % (appTitle, package.name),
                 package=package, packageid=packageId,
                 packageListings=pkgListings, aclNames=aclNames,
