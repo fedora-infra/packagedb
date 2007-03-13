@@ -340,7 +340,7 @@ class Packages(controllers.Controller):
         package = pkgRow.fetchone()
 
         # Possible ACLs
-        aclNames = ('checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls')
+        aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # Possible statuses for acls:
         aclStatus = SelectResults(session.query(model.PackageAclStatus))
         aclStatusTranslations=['']
