@@ -360,11 +360,28 @@ class Packages(controllers.Controller):
             else:
                 pkg.qacontactname = ''
 
-            # Retrieve info from the FAS about the people watching the pkg
             for person in pkg.people:
+                # Retrieve info from the FAS about the people watching the pkg
                 (fasPerson, groups) = fas.get_user_info(person.userid)
                 person.name = '%s (%s)' % (fasPerson['human_name'],
                         fasPerson['username'])
+                # Setup acls to be accessible via aclName
+                person.aclOrder = {}
+                for acl in aclNames:
+                    person.aclOrder[acl] = None
+                for acl in person.acls:
+                    person.aclOrder[acl.acl] = acl
+
+            for group in pkg.groups:
+                # Retrieve info from the FAS about a group
+                fasGroup = fas.get_group_info(group.groupid)
+                group.name = fasGroup['name']
+                # Setup acls to be accessible via aclName
+                group.aclOrder = {}
+                for acl in aclNames:
+                    group.aclOrder[acl] = None
+                for acl in group.acls:
+                    group.aclOrder[acl.acl] = acl
 
         return dict(title='%s -- %s' % (appTitle, package.name),
                 package=package, packageid=packageId,

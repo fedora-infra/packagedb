@@ -80,37 +80,38 @@ TODO='Not yet implemented'
           <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
           </th>
         </tr>
-        <tr py:for="person in pkg.people.items()" class="aclrow">
-          <td py:content="person[1].name" class="acluser"
-            py:attrs="{'name': str(pkg.id) + ':' + str(person[0])}">
+        <tr py:for="person in pkg.people" class="aclrow">
+          <td py:content="person.name" class="acluser"
+            py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
             Name
           </td>
           <td py:for="acl in aclNames" class="aclcell">
             <!-- If the logged in user is this row, add a checkbox to set it -->
             <div py:if="not tg.identity.anonymous and
-              person[0]==tg.identity.user.user_id"
+              person.userid==tg.identity.user.user_id"
               py:attrs="{'name' : str(pkg.id) + ':' + acl}"
               class="requestContainer aclPresent">
               <input type="checkbox" checked="true" class="aclPresentBox"
-                py:if="person[1].acls[acl]"/>
+                py:if="person.aclOrder[acl]"/>
               <input type="checkbox" class="aclPresentBox"
-                py:if="not person[1].acls[acl]"/>
+                py:if="not person.aclOrder[acl]"/>
             </div>
             <!-- If the user can set acls, give drop downs for status -->
             <div py:if="not tg.identity.anonymous and (
               tg.identity.user.user_id==pkg.ownerid or
               (tg.identity.user.user_id in pkg.people and 
-                pkg.people[tg.identity.user.user_id].acls['approveacls']=='Approved'))"
+                pkg.people[tg.identity.user.user_id].aclOrder.has_key('approveacls')
+                and pkg.people[tg.identity.user.user_id].aclOrder['approveacls'].translations[0].statusname=='Approved'))"
               py:attrs="{'name': str(pkg.id) + ':' + acl}"
                 class='aclStatus requestContainer'>
               <select class="aclStatusList">
                 <span py:for="status in aclStatus">
                   <option selected="true"
-                    py:if="person[1].acls[acl]==status"
+                    py:if="person.aclOrder[acl].translations[0].statusname==status"
                     py:content="status"
                     py:attrs="{'value': status,
                     'name': status}"></option>
-                  <option py:if="not person[1].acls[acl]==status"
+                  <option py:if="not person.aclOrder[acl].translations[0].statusname==status"
                     py:content="status"
                     py:attrs="{'value': status,
                     'name': status}"></option>
@@ -120,28 +121,37 @@ TODO='Not yet implemented'
             <span py:if="tg.identity.anonymous or
               (tg.identity.user.user_id != pkg.ownerid and
               (tg.identity.user.user_id not in pkg.people or
-                pkg.people[tg.identity.user.user_id].acls['approveacls']!='Approved'))"
+                pkg.people[tg.identity.user.user_id].aclOrder['approveacls'].translations[0].statusname!='Approved'))"
               py:content="person[1].acls[acl]" 
               py:attrs="{'name' : acl}" class="aclStatus"></span>
           </td>
         </tr>
 
-        <tr py:for="group in pkg.groups.items()" class="aclgrouprow">
-          <td py:content="group[1].name" class="aclgroup"
-            py:attrs="{'name': str(pkg.id) + ':' + str(group[0])}">
+        <tr py:for="group in pkg.groups" class="aclgrouprow">
+          <td py:content="group.name" class="aclgroup"
+            py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
             Name
           </td>
+          <!-- If the user has permission to edit the acls, give them a
+               checkbox to edit this
+            -->
           <td class="acell" py:attrs="{'colspan' : str(len(aclNames))}">
             <div py:if="not tg.identity.anonymous and
               pkg.ownerid==tg.identity.user.user_id"
               py:attrs="{'name' : str(pkg.id) + ':groupcommit'}"
               class="requestContainer groupAclPresent">
               <input type="checkbox" checked="true" class="groupAclPresentBox"
-                py:if="group[1].acls['commit']"/>
+                py:if="group.aclOrder['commit'].translations[0].statusname='Approved'"/>
               <input type="checkbox" class="aclPresentBox"
-                py:if="not group[1].acls['commit']"/>
-            </div>
+                py:if="not group.aclOrder['commit'].translations[0].statusname!='Approved'"/>
             Allow anyone in this group to commit
+            </div>
+            <span py:if="tg.identity.anonymous or
+              (tg.identity.user.user_id != pkg.ownerid and
+              (tg.identity.user.user_id not in pkg.people or
+                pkg.people[tg.identity.user.user_id].aclOrder['approveacls'].translations[0].statusname!='Approved'))"
+              py:content="person[1].acls[acl]" 
+              py:attrs="{'name' : acl}" class="aclStatus"></span>
           </td>
         </tr>
         <tr py:if="not tg.identity.anonymous and
