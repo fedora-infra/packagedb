@@ -54,7 +54,7 @@ TODO='Not yet implemented'
           class="requestContainer owner orphaned">
           <span class="ownerName">${pkg.ownername}</span>
         <span py:if="pkg.ownerid == 9900">
-          <span py:if="'cvsextras' in tg.identity.groups and pkg.collection.statuscode.translations[0].statusname!='EOL'">
+          <span py:if="'cvsextras' in tg.identity.groups and pkg.collection.status.translations[0].statusname!='EOL'">
             <input type="button" name="unorphan"
               class="ownerButton unorphanButton"
               value="Take Ownership"></input>
@@ -72,7 +72,7 @@ TODO='Not yet implemented'
         </span>
         </div>
       </td><td py:content="pkg.qacontactname">
-      </td><td py:content="pkg.statuscode.translations[0].statusname">
+      </td><td py:content="pkg.status.translations[0].statusname">
       </td></tr>
     <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
       <table class="acls" width="100%">
@@ -85,8 +85,12 @@ TODO='Not yet implemented'
             py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
             Name
           </td>
+        </tr>
+<!--
           <td py:for="acl in aclNames" class="aclcell">
+-->
             <!-- If the logged in user is this row, add a checkbox to set it -->
+<!--
             <div py:if="not tg.identity.anonymous and
               person.userid==tg.identity.user.user_id"
               py:attrs="{'name' : str(pkg.id) + ':' + acl}"
@@ -96,7 +100,9 @@ TODO='Not yet implemented'
               <input type="checkbox" class="aclPresentBox"
                 py:if="not person.aclOrder[acl]"/>
             </div>
+-->
             <!-- If the user can set acls, give drop downs for status -->
+<!--
             <div py:if="not tg.identity.anonymous and (
               tg.identity.user.user_id==pkg.ownerid or
               (tg.identity.user.user_id in pkg.people and 
@@ -132,16 +138,18 @@ TODO='Not yet implemented'
             py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
             Name
           </td>
+-->
           <!-- If the user has permission to edit the acls, give them a
                checkbox to edit this
             -->
+<!--
           <td class="acell" py:attrs="{'colspan' : str(len(aclNames))}">
             <div py:if="not tg.identity.anonymous and
               pkg.ownerid==tg.identity.user.user_id"
               py:attrs="{'name' : str(pkg.id) + ':groupcommit'}"
               class="requestContainer groupAclPresent">
               <input type="checkbox" checked="true" class="groupAclPresentBox"
-                py:if="group.aclOrder['commit'].translations[0].statusname='Approved'"/>
+                py:if="group.aclOrder['commit'].translations[0].statusname=='Approved'"/>
               <input type="checkbox" class="aclPresentBox"
                 py:if="not group.aclOrder['commit'].translations[0].statusname!='Approved'"/>
             Allow anyone in this group to commit
@@ -163,6 +171,7 @@ TODO='Not yet implemented'
               value="Add myself to package"/>
           </td>
         </tr>
+-->
       </table>
     </td></tr>
   </table>

@@ -799,6 +799,14 @@ grant select
 -- drop table packageacl cascade;
 -- drop table personpackageacl cascade;
 -- drop table grouppackageacl cascade;
+--
+-- Also have to change status to statuscode
+-- alter table collection rename column status to statuscode;
+-- alter table package rename column status to statuscode;
+-- alter table packagebuild rename column status to statuscode;
+-- alter table packagelisting rename column status to statuscode;
+--
+--
 
 
 -- FIXME: Implement groups/categories/comps
