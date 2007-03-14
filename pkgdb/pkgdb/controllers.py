@@ -278,14 +278,17 @@ class PackageDispatcher(controllers.Controller):
                     # Acl already exists, set the status
                     if self.aclStatusMap['Obsolete'].statuscodeid == acl.statuscode:
                         acl.statuscode = self.aclStatusMap['Awaiting Review'].statuscodeid
+                        aclStatus = 'Awaiting Review'
                     else:
                         acl.statuscode = self.aclStatusMap['Obsolete'].statuscodeid
+                        aclStatus = ''
                     aclSet = True
                     break
             if not aclSet:
                 # Create a new acl
                 acl = model.PersonPackageListingAcl(person.id, aclName,
-                        self.aclStatusMap['Awaiting Review'])
+                        self.aclStatusMap['Awaiting Review'].statuscodeid)
+                aclStatus = 'Awaiting Review'
 
         try:
             session.flush()

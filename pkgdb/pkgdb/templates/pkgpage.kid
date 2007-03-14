@@ -85,12 +85,8 @@ TODO='Not yet implemented'
             py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
             Name
           </td>
-        </tr>
-<!--
           <td py:for="acl in aclNames" class="aclcell">
--->
             <!-- If the logged in user is this row, add a checkbox to set it -->
-<!--
             <div py:if="not tg.identity.anonymous and
               person.userid==tg.identity.user.user_id"
               py:attrs="{'name' : str(pkg.id) + ':' + acl}"
@@ -100,6 +96,9 @@ TODO='Not yet implemented'
               <input type="checkbox" class="aclPresentBox"
                 py:if="not person.aclOrder[acl]"/>
             </div>
+          </td>
+        </tr>
+<!--
 -->
             <!-- If the user can set acls, give drop downs for status -->
 <!--
