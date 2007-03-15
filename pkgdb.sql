@@ -805,6 +805,15 @@ grant select
 -- alter table package rename column status to statuscode;
 -- alter table packagebuild rename column status to statuscode;
 -- alter table packagelisting rename column status to statuscode;
+-- 
+-- To populate group information in our test database:
+-- 100300 is the id for cvsextras
+-- insert into grouppackagelisting (groupid, packagelistingid) select 100300,
+-- id from packagelisting;
+-- 10 is the statuscode for denied.  This populates our test db with no one in
+-- cvsextras able to commit.  Change to 3 (approved) to open it up
+-- insert into grouppackagelistingacl (grouppackagelistingid, acl, statuscode)
+-- select id, 'commit', 10 from grouppackagelisting;
 --
 --
 

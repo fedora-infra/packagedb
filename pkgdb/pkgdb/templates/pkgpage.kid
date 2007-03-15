@@ -36,6 +36,24 @@ TODO='Not yet implemented'
   <form action="${tg.url('/packages/dispatcher/')}" method="POST">
   <table class="pkglist" py:for="pkg in packageListings"
     py:attrs="{'name': str(pkg.id)}">
+    <?python
+    # Determine whether the present user is already involved with this
+    # packagelisting and if they're allowed to change acls
+    aclChanger = False
+    interested = False
+    if tg.identity.anonymous:
+        pass
+    else:
+        for person in pkg.people:
+            if person.userid == tg.identity.user.user_id:
+                interested = True
+                if (person.aclOrder.get('approveacls') and
+                    person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
+                    aclChanger = True
+                break
+        if not aclChanger and tg.identity.user.user_id == pkg.ownerid:
+            aclChanger = True
+    ?>
     <tr><th>
       Collection
     </th><th>
@@ -79,25 +97,6 @@ TODO='Not yet implemented'
           </th>
         </tr>
         <tr py:for="person in pkg.people" class="aclrow">
-          <?python
-          # Determine whether this person is already involved with this
-          # packagelisting and if they're allowed to change acls
-          aclChanger = False
-          interested = False
-          if tg.identity.anonymous:
-              pass
-          else:
-              for person in pkg.people:
-                  if person.userid == tg.identity.user.user_id:
-                      interested = True
-                      if (person.aclOrder.get('approveacls') and
-                          person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
-                          aclChanger = True
-                      break
-              if not aclChanger and tg.identity.user.user_id == pkg.ownerid:
-                  aclChanger = True
-          ?>
-          <span class="DEBUG" py:content="interested"/>
           <td py:content="person.name" class="acluser"
             py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
             Name
@@ -146,25 +145,29 @@ TODO='Not yet implemented'
                checkbox to edit this
             -->
           <td class="acell" py:attrs="{'colspan' : str(len(aclNames))}">
-            <div py:if="not tg.identity.anonymous and
-              pkg.ownerid==tg.identity.user.user_id"
-              py:attrs="{'name' : str(pkg.id) + ':groupcommit'}"
-              class="requestContainer groupAclPresent">
+            Allow anyone in this group to commit?
+            <div py:if="aclChanger"
+              py:attrs="{'name' : str(pkg.id) + ':commit'}"
+              class="requestContainer groupAclStatus">
               <input type="checkbox" checked="true" class="groupAclPresentBox"
-                py:if="group.aclOrder['commit'].translations[0].statusname=='Approved'"/>
+                py:if="group.aclOrder.get('commit') and
+                  group.aclOrder['commit'].status.translations[0].statusname=='Approved'"/>
               <input type="checkbox" class="aclPresentBox"
-                py:if="not group.aclOrder['commit'].translations[0].statusname!='Approved'"/>
-            Allow anyone in this group to commit
+                py:if="not group.aclOrder.get('commit') or
+                  group.aclOrder['commit'].status.translations[0].statusname!='Approved'"/>
             </div>
-            <span py:if="tg.identity.anonymous or
-              (tg.identity.user.user_id != pkg.ownerid and
-              (tg.identity.user.user_id not in pkg.people or
-                pkg.people[tg.identity.user.user_id].aclOrder['approveacls'].translations[0].statusname!='Approved'))"
-              py:content="person[1].acls[acl]" 
-              py:attrs="{'name' : acl}" class="aclStatus"></span>
+            <div py:if="not aclChanger"
+              py:attrs="{'name' : 'commit'}" class="aclStatus">
+              <input type="checkbox" checked="true" disabled="true"
+                class="groupAclPresentBox"
+                py:if="group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved'"/>
+              <input type="checkbox" disabled="true" class="aclPresentBox"
+                py:if="not group.aclOrder.get('commit') or 
+                  group.aclOrder['commit'].status.translations[0].statusname!='Approved'"/>
+            </div>
           </td>
         </tr>
-        <tr py:if="not interested">
+        <tr py:if="not tg.identity.anonymous and interested">
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
               + ':' + str(tg.identity.user.user_id)}"
