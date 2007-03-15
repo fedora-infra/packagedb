@@ -80,29 +80,24 @@ TODO='Not yet implemented'
         </tr>
         <tr py:for="person in pkg.people" class="aclrow">
           <?python
-          # Determine whether this person is allowed to change acls
+          # Determine whether this person is already involved with this
+          # packagelisting and if they're allowed to change acls
           aclChanger = False
+          interested = False
           if tg.identity.anonymous:
               pass
-          elif tg.identity.user.user_id == pkg.ownerid:
-              aclChanger = True
           else:
               for person in pkg.people:
-                  if (person.userid == tg.identity.user.user_id and
-                          person.aclOrder.get('approveacls') and
+                  if person.userid == tg.identity.user.user_id:
+                      interested = True
+                      if (person.aclOrder.get('approveacls') and
                           person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
-                      aclChanger = True
+                          aclChanger = True
                       break
-              # This should work, but kid doesn't like the tg.identity
-              # combined with filter.
-              # aclChanger = filter(lambda x:
-              #    x.aclOrder['aproveacls'].status.translations[0].statusname
-              #       == 'Approved',
-              #       filter(lambda y: y.aclOrder.has_key('approveacls'),
-              #           filter(lambda z:
-              #               z.userid == tg.identity.user.user_id,
-              #               pkg.people))
+              if not aclChanger and tg.identity.user.user_id == pkg.ownerid:
+                  aclChanger = True
           ?>
+          <span class="DEBUG" py:content="interested"/>
           <td py:content="person.name" class="acluser"
             py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
             Name
@@ -142,17 +137,14 @@ TODO='Not yet implemented'
           </td>
         </tr>
 
-<!--
         <tr py:for="group in pkg.groups" class="aclgrouprow">
           <td py:content="group.name" class="aclgroup"
             py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
             Name
           </td>
--->
           <!-- If the user has permission to edit the acls, give them a
                checkbox to edit this
             -->
-<!--
           <td class="acell" py:attrs="{'colspan' : str(len(aclNames))}">
             <div py:if="not tg.identity.anonymous and
               pkg.ownerid==tg.identity.user.user_id"
@@ -172,8 +164,7 @@ TODO='Not yet implemented'
               py:attrs="{'name' : acl}" class="aclStatus"></span>
           </td>
         </tr>
-        <tr py:if="not tg.identity.anonymous and
-          tg.identity.user.user_id not in pkg.people">
+        <tr py:if="not interested">
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
               + ':' + str(tg.identity.user.user_id)}"
@@ -181,7 +172,6 @@ TODO='Not yet implemented'
               value="Add myself to package"/>
           </td>
         </tr>
--->
       </table>
     </td></tr>
   </table>
