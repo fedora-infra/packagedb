@@ -14,7 +14,7 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
             aclStatus = getElementsByTagAndClassName(null, 'aclStatus',
                     aclFields[aclFieldNum])[0];
        
-            /* If we don't encounter a SPAN then this has already ben flipped
+            /* If we don't encounter a SPAN then this has already been flipped
              * to a SELECT.
              */
             if (aclStatus['nodeName']=='SPAN') {
@@ -66,7 +66,7 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                     aclRows[aclRowNum]);
             for (var aclFieldNum in aclFields) {
                 /* Find the current status */
-                aclStatus = getElementsByTagAndClassName(null, 'aclStatus',
+                aclStatus = getElementsByTagAndClassName(null, 'aclStatusList',
                         aclFields[aclFieldNum])[0];
                 if (aclStatus['nodeName'] === 'SELECT') {
                     var aclName = aclStatus.getAttribute('name');

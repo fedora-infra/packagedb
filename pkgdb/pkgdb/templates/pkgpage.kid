@@ -133,6 +133,8 @@ TODO='Not yet implemented'
             <span py:if="not aclChanger and person.aclOrder.get(acl)"
               py:content="person.aclOrder[acl].status.translations[0].statusname" 
               py:attrs="{'name' : acl}" class="aclStatus"></span>
+            <span py:if="not aclChanger and not person.aclOrder.get(acl)"
+              py:attrs="{'name' : acl}" class="aclStatus"></span>
           </td>
         </tr>
 
@@ -144,7 +146,7 @@ TODO='Not yet implemented'
           <!-- If the user has permission to edit the acls, give them a
                checkbox to edit this
             -->
-          <td class="aclcell" py:attrs="{'colspan' : str(len(aclNames))}">
+          <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
             <div py:if="aclChanger"
               py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid) +
                   ':commit'}"
