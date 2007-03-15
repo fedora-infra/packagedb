@@ -373,7 +373,8 @@ class Packages(controllers.Controller):
                 for acl in aclNames:
                     person.aclOrder[acl] = None
                 for acl in person.acls:
-                    person.aclOrder[acl.acl] = acl
+                    if acl.status.translations[0].statusname != 'Obsolete':
+                        person.aclOrder[acl.acl] = acl
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group

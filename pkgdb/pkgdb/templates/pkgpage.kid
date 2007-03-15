@@ -53,13 +53,11 @@ TODO='Not yet implemented'
           py:attrs="{'name': str(pkg.id)}"
           class="requestContainer owner orphaned">
           <span class="ownerName">${pkg.ownername}</span>
-        <span py:if="pkg.ownerid == 9900">
           <span py:if="'cvsextras' in tg.identity.groups and pkg.collection.status.translations[0].statusname!='EOL'">
             <input type="button" name="unorphan"
               class="ownerButton unorphanButton"
               value="Take Ownership"></input>
           </span>
-        </span>
         </div>
         <div py:if="pkg.ownerid != 9900"
           py:attrs="{'name': str(pkg.id)}"
@@ -96,33 +94,49 @@ TODO='Not yet implemented'
               <input type="checkbox" class="aclPresentBox"
                 py:if="not person.aclOrder[acl]"/>
             </div>
-          </td>
-        </tr>
-<!--
--->
             <!-- If the user can set acls, give drop downs for status -->
-<!--
-            <div py:if="not tg.identity.anonymous and (
-              tg.identity.user.user_id==pkg.ownerid or
-              (tg.identity.user.user_id in pkg.people and 
-                pkg.people[tg.identity.user.user_id].aclOrder.has_key('approveacls')
-                and pkg.people[tg.identity.user.user_id].aclOrder['approveacls'].translations[0].statusname=='Approved'))"
+            <?python
+            aclChanger = False
+            if tg.identity.anonymous:
+                pass
+            elif tg.identity.user.user_id == pkg.ownerid:
+                aclChanger = True
+            else:
+                for person in pkg.people:
+                    if (person.userid == tg.identity.user.user_id and
+                            person.aclOrder.get('approveacls') and
+                            person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
+                        aclChanger = True
+                        break
+                # This should work, but kid doesn't like the tg.identity
+                # combined with filter.
+                # aclChanger = filter(lambda x:
+                #    x.aclOrder['aproveacls'].status.translations[0].statusname
+                #       == 'Approved',
+                #       filter(lambda y: y.aclOrder.has_key('approveacls'),
+                #           filter(lambda z:
+                #               z.userid == tg.identity.user.user_id,
+                #               pkg.people))
+            ?>
+            <div py:if="aclChanger"
               py:attrs="{'name': str(pkg.id) + ':' + acl}"
                 class='aclStatus requestContainer'>
               <select class="aclStatusList">
                 <span py:for="status in aclStatus">
                   <option selected="true"
-                    py:if="person.aclOrder[acl].translations[0].statusname==status"
+                    py:if="person.aclOrder.get(acl) and person.aclOrder[acl].status.translations[0].statusname==status"
                     py:content="status"
                     py:attrs="{'value': status,
                     'name': status}"></option>
-                  <option py:if="not person.aclOrder[acl].translations[0].statusname==status"
+                  <option py:if="not (person.aclOrder.get(acl) and person.aclOrder[acl].status.translations[0].statusname==status)"
                     py:content="status"
                     py:attrs="{'value': status,
                     'name': status}"></option>
                 </span>
               </select>
             </div>
+</td></tr>
+<!--
             <span py:if="tg.identity.anonymous or
               (tg.identity.user.user_id != pkg.ownerid and
               (tg.identity.user.user_id not in pkg.people or
