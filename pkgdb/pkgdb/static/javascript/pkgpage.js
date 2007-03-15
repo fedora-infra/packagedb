@@ -68,17 +68,13 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                 /* Find the current status */
                 aclStatus = getElementsByTagAndClassName(null, 'aclStatusList',
                         aclFields[aclFieldNum])[0];
+                aclStatusDiv = getElementsByTagAndClassName(null, 'aclStatus',
+                        aclFields[aclFieldNum])[0];
                 if (aclStatus['nodeName'] === 'SELECT') {
-                    var aclName = aclStatus.getAttribute('name');
-                    var aclStatusName = '';
+                    var aclName = aclStatusDiv.getAttribute('name');
+                    var aclStatusName = aclStatus.value;
                     var aclOptions = getElementsByTagAndClassName('option',
                             null, aclStatus);
-                    for (var aclOptionNum in aclOptions) {
-                        if (aclOptions[aclOptionNum].hasAttribute('selected')) {
-                            var aclStatusName = scrapeText(
-                                    aclOptions[aclOptionNum]);
-                        }
-                    }
                     /* Create the new span and add it */
                     var newAclStatus = SPAN({'name' : aclName,
                             'class' : 'aclStatus'}, aclStatusName);
@@ -173,6 +169,7 @@ function toggle_owner(ownerDiv, data) {
 }
 
 function check_acl_status(statusDiv, data) {
+    logDebug('in check_acl_status');
     /* The only thing we have to do is check that there weren't any errors */
     if (! data.status) {
         revert_acl_status(statusDiv, data);
@@ -187,6 +184,7 @@ function check_acl_status(statusDiv, data) {
  * the user requests a change but the server throws an error.
  */
 function revert_acl_status(statusDiv, data) {
+    logDebug('in revert_acl_status');
     /* Retrieve the select list */
     var aclStatus = getElementsByTagAndClassName('select', 'aclStatusList',
             statusDiv)[0];
@@ -196,6 +194,8 @@ function revert_acl_status(statusDiv, data) {
 
     /* Remove the entry from the commits list */
     delete(commits[statusDiv]);
+
+    logDebug('Falling off the end of revert_acl_status');
 }
 
 /*

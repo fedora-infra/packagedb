@@ -80,7 +80,6 @@ function create_spinner(initialImage) {
  * Make the spinner turn.
  */
 function spin_spinner(timeout, seqNum) {
-  logDebug('Invoked spin_spinner');
   /* Only one image so we don't need to run this function. */
   if (spinnerImages.length <= 1) {
     return;
@@ -103,15 +102,12 @@ function spin_spinner(timeout, seqNum) {
   }
 
   /* As long as there are active spinners, reinvoke */
-  logDebug(spinners.length);
   if (spinners.length > 0) {
-    logDebug('setup next iteration:', imageNum);
     window.setTimeout(spin_spinner,
       timeout*1000, timeout, imageNum);
   } else {
     spinnerCount = 0;
   }
-  logDebug('Exit spinner_timeout');
 }
 
 /*
@@ -120,7 +116,6 @@ function spin_spinner(timeout, seqNum) {
  * 2) Put a spinner on the element.
  */
 function busy(elem, event) {
-    logDebug('in busy');
     /* Create a spinner */
     var spinner = create_spinner(spinnerImages[0]);
    

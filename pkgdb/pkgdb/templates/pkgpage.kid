@@ -116,7 +116,7 @@ TODO='Not yet implemented'
             <div py:if="aclChanger"
               py:attrs="{'name': str(pkg.id) + ':' + acl}"
                 class='aclStatus requestContainer'>
-              <select class="aclStatusList">
+              <select class="aclStatusList" py:attrs="{'name' : acl}">
                 <span py:for="status in aclStatus">
                   <option selected="true"
                     py:if="person.aclOrder.get(acl) and person.aclOrder[acl].status.translations[0].statusname==status"
@@ -132,9 +132,9 @@ TODO='Not yet implemented'
             </div>
             <span py:if="not aclChanger and person.aclOrder.get(acl)"
               py:content="person.aclOrder[acl].status.translations[0].statusname" 
-              py:attrs="{'name' : acl}" class="aclStatus"></span>
+              py:attrs="{'name' : str(pkg.id) + ':' + acl}" class="aclStatus"></span>
             <span py:if="not aclChanger and not person.aclOrder.get(acl)"
-              py:attrs="{'name' : acl}" class="aclStatus"></span>
+              py:attrs="{'name' : str(pkg.id) + ':' + acl}" class="aclStatus"></span>
           </td>
         </tr>
 
