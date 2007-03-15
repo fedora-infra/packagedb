@@ -144,10 +144,11 @@ TODO='Not yet implemented'
           <!-- If the user has permission to edit the acls, give them a
                checkbox to edit this
             -->
-          <td class="acell" py:attrs="{'colspan' : str(len(aclNames))}">
-            Allow anyone in this group to commit?
-            <div py:if="aclChanger"
-              py:attrs="{'name' : str(pkg.id) + ':commit'}"
+          <td class="aclcell" py:attrs="{'colspan' : str(len(aclNames))}">
+            Anyone in this group can commit
+            <span py:if="aclChanger"
+              py:attrs="{'name' : str(pkg.id) +':' + group.groupid + ':' +
+                  ':commit'}"
               class="requestContainer groupAclStatus">
               <input type="checkbox" checked="true" class="groupAclPresentBox"
                 py:if="group.aclOrder.get('commit') and
@@ -155,16 +156,17 @@ TODO='Not yet implemented'
               <input type="checkbox" class="aclPresentBox"
                 py:if="not group.aclOrder.get('commit') or
                   group.aclOrder['commit'].status.translations[0].statusname!='Approved'"/>
-            </div>
-            <div py:if="not aclChanger"
-              py:attrs="{'name' : 'commit'}" class="aclStatus">
+            </span>
+            <span py:if="not aclChanger"
+              py:attrs="{'name' : str(pkg.id) + ':commit'}"
+              class="groupAclStatus">
               <input type="checkbox" checked="true" disabled="true"
                 class="groupAclPresentBox"
                 py:if="group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved'"/>
               <input type="checkbox" disabled="true" class="aclPresentBox"
                 py:if="not group.aclOrder.get('commit') or 
                   group.aclOrder['commit'].status.translations[0].statusname!='Approved'"/>
-            </div>
+            </span>
           </td>
         </tr>
         <tr py:if="not tg.identity.anonymous and interested">

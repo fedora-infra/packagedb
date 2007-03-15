@@ -128,6 +128,31 @@ class PackageDispatcher(controllers.Controller):
                 self.aclStatusTranslations.append(status.translations[0].statusname)
             self.aclStatusMap[status.translations[0].statusname] = status
 
+        ### FIXME: pull groups from somewhere.
+        # In the future the list of groups that can commit to packages should
+        # be stored in a database somewhere.  Either packagedb or FAS should
+        # have a flag.
+
+        # Create a list of groups that can possibly commit to packages
+        self.groups = {'100300': 'cvsextras'}
+
+    def _user_can_set_acls(self, userid, pkg):
+        '''Check that the current user can set acls.
+        '''
+        # Make sure the current tg user has permission to set acls
+        if userid == pkg.owner:
+            # We're talking to the owner
+            return True
+        # Wasn't the owner.  See if they have been granted permission
+        for person in pkg.people:
+            if person.userid == userid:
+                # Check each acl that this person has on the package.
+                for acl in person.acls:
+                    if (acl.acl == 'approveacls' and acl.statuscode
+                            == self.aclStatusMap['Approved'].statuscodeid):
+                        return True
+                break
+        return False
 
     @expose('json')
     def index(self):
@@ -192,35 +217,19 @@ class PackageDispatcher(controllers.Controller):
             else:
                 raise
 
-        # Make sure the current tg user has permission to set acls
-        approved = False
-        changePerson = None
-        if identity.current.user.user_id == pkg.owner:
-            # We're talking to the owner
-            approved = True
-        # Wasn't the owner.  See if they have been granted permission
-        for person in pkg.people:
-            # While we're at it, check for the person who's acl we're
-            # setting
-            if person.userid == personid:
-                changePerson = person
-                if approved:
-                    break
-            if person.userid == identity.current.user.user_id:
-                # Check each acl that this person has on the package.
-                for acl in person.acls:
-                    if (acl.acl == 'approveacls' and acl.statuscode
-                            == self.aclStatusMap['Approved'].statuscodeid):
-                        approved = True
-                        break
-                if changePerson:
-                    break
+        approved = self._user_can_set_acls(identity.current.user.user_id, pkg)
         if not approved:
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs' %
                     identity.current.user.display_name)
 
         # Create the ACL
+        changePerson = None
+        for person in pkg.people:
+            # Check for the person who's acl we're setting
+            if person.userid == personid:
+                changePerson = person
+                break
         if not changePerson:
             # Person has no ACLs on this Package yet.  Create a record
             personPackage = model.PersonPackageListing(personid, pkgid)
@@ -248,6 +257,66 @@ class PackageDispatcher(controllers.Controller):
                             % (newAcl, pkgid, status))
 
         return dict(status=True)
+
+    @expose('json')
+    # Check that the requestor is in a group that could potentially set ACLs.
+    @identity.require(identity.in_group("cvsextras"))
+    def toggle_groupacl_status(self, containerId):
+        '''Set the groupacl to determine whether the group can commit.
+        '''
+        # Pull apart the identifier
+        pkgListId, groupId, aclName = containerId.split(':')
+        pkgListId = int(pkgListId)
+        groupId = int(groupId)
+
+        # Make sure the package listing exists
+        pkg = model.PackageListing.get_by(
+                model.PackageListing.c.id==pkgListId)
+        if not pkg:
+            return dict(status=False,
+                    message='Package Listing %s does not exist' % pkgListId)
+
+        # Check whether the user is allowed to set this
+        approved = self._user_can_set_acls(identity.current.user.user_id, pkg)
+        if not approved:
+            return dict(status=False, message=
+                    '%s is not allowed to approve Package ACLs' %
+                    identity.current.user.display_name)
+
+        # Make sure the group exists
+        # Note: We don't let every group in the FAS have access to packages.
+        if groupId not in self.groups:
+            raise dict(status=False, message='%s is not a group that can commit'
+                    ' to packages' % groupId)
+       
+        # See if the group has a record
+        changeGroup = None
+        changeAcl = None
+        for group in pkg.groups:
+            if group.groupid == groupId:
+                changeGroup = group
+                # See if the group has an acl
+                for acl in group.acls:
+                    if acl.acl == aclName:
+                        changeAcl = acl
+                        # toggle status
+                        if acl.status.translations[0].statusname = 'Approved':
+                            acl.statuscode = self.aclStatusMap['Denied'].statuscodeid
+                        else:
+                            acl.statuscode = self.aclStatusMap['Approved'].statuscodeid
+                        break
+                if not changeAcl:
+                    # if no acl yet create it
+                    changeAcl = model.GroupPackageListingAcl(changeGroup.id,
+                            'commit',
+                            self.aclStatusMap['Approved'].statuscodeid)
+                break
+
+        if not changeGroup:
+            # No record for the group yet, create it
+            changeGroup = model.GroupPackageListing(groupId, pkgListId)
+            changeAcl = model.GroupPackageListingAcl(changeGroup.id, 'commit'
+                    self.aclStatusMap['Approved'].statuscodeid)
 
     @expose('json')
     # Check that we have a tg.identity, otherwise you can't set any acls.
