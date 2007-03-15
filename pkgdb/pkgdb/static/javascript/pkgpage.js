@@ -232,8 +232,7 @@ function request_acl_gui(event) {
     // FIXME: We should have the acls handed over in a JSON array in the
     // template so that we could operate on it as javascript now.  But we
     // don't.
-    acls = ['checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build',
-            'approveacls'];
+    acls = ['watchbugzilla', 'watchcommits', 'commit', 'approveacls'];
     var newAclRow = TR({'class' : 'aclrow'},
             TD({'class' : 'acluser'},
                 tgUserDisplayName + ' (' + tgUserUserName + ')'
