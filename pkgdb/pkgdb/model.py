@@ -164,7 +164,7 @@ class GroupPackageListing(object):
 # person owns.
 #
 class PersonPackageListingAcl(object):
-    def __init__(self, personpackagelistingid, acl, statuscode):
+    def __init__(self, acl, statuscode, personpackagelistingid=None):
         self.personpackagelistingid = personpackagelistingid
         self.acl = acl
         self.statuscode = statuscode
