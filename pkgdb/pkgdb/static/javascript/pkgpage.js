@@ -214,6 +214,35 @@ function revert_acl_request(aclBoxDiv, data) {
     replaceChildNodes(aclBoxDiv, newAclBox);
 }
 
+function check_groupacl_request(aclBoxDiv, data) {
+    logDebug('in check_groupacl_request');
+    /* If an error occurred, toggle it back */
+    if (! data.status) {
+        revert_groupacl_request(aclBoxDiv, data);
+        display_error(null, data);
+        return;
+    }
+}
+
+function revert_groupacl_request(aclBoxDiv, data) {
+    logDebug('in revert_groupacl_request');
+    var aclBox = getElementsByTagAndClassName('input', 'groupAclStatusBox', aclBoxDiv)[0];
+    /* The browser doesn't let us change the toggle status so we have to
+     * create a new checkbox
+     */
+    /* Since this is a simple toggle, just toggle it back */
+    var label = SPAN(null, 'group members can commit?');
+    if (aclBox.hasAttribute('checked')) {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'groupAclStatusBox',
+                'checked' : 'true'});
+    } else {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'groupAclStatusBox'});
+        newAclBox.removeAttribute('checked');
+    }
+    connect(newAclBox, 'onclick', request_approve_deny_groupacl);
+    replaceChildNodes(aclBoxDiv, label, newAclBox);
+}
+
 function request_acl_gui(event) {
     var buttonRow = getFirstParentByTagAndClassName(event.target(), 'tr');
     var pkgListTable = getFirstParentByTagAndClassName(buttonRow, 'table',
@@ -263,6 +292,12 @@ function request_acl_gui(event) {
  */
 request_add_drop_acl = partial(make_request, '/toggle_acl_request',
         check_acl_request, revert_acl_request);
+
+/*
+ * Callback for clicking on the groupacl allow checkboxes
+ */
+request_approve_deny_groupacl = partial(make_request, '/toggle_groupacl_status',
+        check_groupacl_request, revert_groupacl_request);
 
 /*
  * Callback for selecting a new acl status from an option list.
@@ -324,7 +359,7 @@ function init(event) {
     }
 
     var statusBoxes = getElementsByTagAndClassName('select', 'aclStatusList');
-    for (var statusNum in  statusBoxes) {
+    for (var statusNum in statusBoxes) {
         connect(statusBoxes[statusNum], 'onchange', request_status_change);
         connect(statusBoxes[statusNum], 'onfocus', save_status);
     }
@@ -332,6 +367,12 @@ function init(event) {
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
     for (var aclReqNum in aclReqBoxes) {
         connect(aclReqBoxes[aclReqNum], 'onclick', request_add_drop_acl);
+    }
+
+    var groupAclReqBoxes = getElementsByTagAndClassName('input',
+            'groupAclStatusBox');
+    for (var groupAclReqNum in groupAclReqBoxes) {
+        connect(groupAclReqBoxes[groupAclReqNum], 'onclick', request_approve_deny_groupacl);
     }
 
     /* This one's unique in that it doesn't have to talk to the server */

@@ -134,7 +134,7 @@ class PackageDispatcher(controllers.Controller):
         # have a flag.
 
         # Create a list of groups that can possibly commit to packages
-        self.groups = {'100300': 'cvsextras'}
+        self.groups = {100300: 'cvsextras'}
 
     def _user_can_set_acls(self, userid, pkg):
         '''Check that the current user can set acls.
@@ -286,7 +286,7 @@ class PackageDispatcher(controllers.Controller):
         # Make sure the group exists
         # Note: We don't let every group in the FAS have access to packages.
         if groupId not in self.groups:
-            raise dict(status=False, message='%s is not a group that can commit'
+            return dict(status=False, message='%s is not a group that can commit'
                     ' to packages' % groupId)
        
         # See if the group has a record
@@ -300,7 +300,7 @@ class PackageDispatcher(controllers.Controller):
                     if acl.acl == aclName:
                         changeAcl = acl
                         # toggle status
-                        if acl.status.translations[0].statusname = 'Approved':
+                        if acl.status.translations[0].statusname == 'Approved':
                             acl.statuscode = self.aclStatusMap['Denied'].statuscodeid
                         else:
                             acl.statuscode = self.aclStatusMap['Approved'].statuscodeid
@@ -315,8 +315,11 @@ class PackageDispatcher(controllers.Controller):
         if not changeGroup:
             # No record for the group yet, create it
             changeGroup = model.GroupPackageListing(groupId, pkgListId)
-            changeAcl = model.GroupPackageListingAcl(changeGroup.id, 'commit'
+            changeAcl = model.GroupPackageListingAcl(changeGroup.id, 'commit',
                     self.aclStatusMap['Approved'].statuscodeid)
+
+        return dict(status=True,
+                newAclStatus=changeAcl.status.translations[0].statusname)
 
     @expose('json')
     # Check that we have a tg.identity, otherwise you can't set any acls.

@@ -145,28 +145,30 @@ TODO='Not yet implemented'
                checkbox to edit this
             -->
           <td class="aclcell" py:attrs="{'colspan' : str(len(aclNames))}">
-            Anyone in this group can commit
-            <span py:if="aclChanger"
-              py:attrs="{'name' : str(pkg.id) +':' + group.groupid + ':' +
+            <div py:if="aclChanger"
+              py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid) +
                   ':commit'}"
               class="requestContainer groupAclStatus">
-              <input type="checkbox" checked="true" class="groupAclPresentBox"
+              group members can commit?
+              <input type="checkbox" checked="true" class="groupAclStatusBox"
                 py:if="group.aclOrder.get('commit') and
                   group.aclOrder['commit'].status.translations[0].statusname=='Approved'"/>
-              <input type="checkbox" class="aclPresentBox"
+              <input type="checkbox" class="groupAclStatusBox"
                 py:if="not group.aclOrder.get('commit') or
                   group.aclOrder['commit'].status.translations[0].statusname!='Approved'"/>
-            </span>
-            <span py:if="not aclChanger"
-              py:attrs="{'name' : str(pkg.id) + ':commit'}"
-              class="groupAclStatus">
+            </div>
+            <div py:if="not aclChanger"
+              py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
+                + ':commit'}"
+              class="groupAclStatus requestContainer">
+              group members can commit?
               <input type="checkbox" checked="true" disabled="true"
-                class="groupAclPresentBox"
+                class="groupAclStatusLabelBox"
                 py:if="group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved'"/>
-              <input type="checkbox" disabled="true" class="aclPresentBox"
+              <input type="checkbox" disabled="true" class="groupAclStatusLabelBox"
                 py:if="not group.aclOrder.get('commit') or 
                   group.aclOrder['commit'].status.translations[0].statusname!='Approved'"/>
-            </span>
+            </div>
           </td>
         </tr>
         <tr py:if="not tg.identity.anonymous and interested">
