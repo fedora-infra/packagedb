@@ -80,7 +80,6 @@ function create_spinner(initialImage) {
  * Make the spinner turn.
  */
 function spin_spinner(timeout, seqNum) {
-  logDebug('Invoked spin_spinner');
   /* Only one image so we don't need to run this function. */
   if (spinnerImages.length <= 1) {
     return;
@@ -103,15 +102,12 @@ function spin_spinner(timeout, seqNum) {
   }
 
   /* As long as there are active spinners, reinvoke */
-  logDebug(spinners.length);
   if (spinners.length > 0) {
-    logDebug('setup next iteration:', imageNum);
     window.setTimeout(spin_spinner,
       timeout*1000, timeout, imageNum);
   } else {
     spinnerCount = 0;
   }
-  logDebug('Exit spinner_timeout');
 }
 
 /*
@@ -119,8 +115,7 @@ function spin_spinner(timeout, seqNum) {
  * Do this by 1) Disabling changes
  * 2) Put a spinner on the element.
  */
-function busy(elem) {
-    logDebug('in busy');
+function busy(elem, event) {
     /* Create a spinner */
     var spinner = create_spinner(spinnerImages[0]);
    
@@ -195,7 +190,7 @@ function make_request(action, callback, errback, event) {
     logDebug('in Make_request');
     var requestContainer = getFirstParentByTagAndClassName(event.target(),
             'div', 'requestContainer');
-    busy(requestContainer);
+    busy(requestContainer, event);
     var form = getFirstParentByTagAndClassName(requestContainer, 'form');
     var base = form.action;
     var req = loadJSONDoc(base + action,
@@ -212,9 +207,18 @@ function make_request(action, callback, errback, event) {
 }
 
 /* Initialize the spinner */
-spinnerImages = ['/pkgdb-dev/static/images/spinner2.png',
-              '/pkgdb-dev/static/images/spinner3.png',
-              '/pkgdb-dev/static/images/spinner4.png',
-              '/pkgdb-dev/static/images/spinner1.png'];
-spinnerTimeout = 1;
+spinnerImages = ['/pkgdb-dev/static/images/spinner/01.png',
+              '/pkgdb-dev/static/images/spinner/02.png',
+              '/pkgdb-dev/static/images/spinner/03.png',
+              '/pkgdb-dev/static/images/spinner/04.png',
+              '/pkgdb-dev/static/images/spinner/05.png',
+              '/pkgdb-dev/static/images/spinner/06.png',
+              '/pkgdb-dev/static/images/spinner/07.png',
+              '/pkgdb-dev/static/images/spinner/08.png',
+              '/pkgdb-dev/static/images/spinner/09.png',
+              '/pkgdb-dev/static/images/spinner/10.png',
+              '/pkgdb-dev/static/images/spinner/11.png',
+              '/pkgdb-dev/static/images/spinner/12.png'
+              ];
+spinnerTimeout = 0.1;
 spinnerCount = 0;

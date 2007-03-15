@@ -14,7 +14,7 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
             aclStatus = getElementsByTagAndClassName(null, 'aclStatus',
                     aclFields[aclFieldNum])[0];
        
-            /* If we don't encounter a SPAN then this has already ben flipped
+            /* If we don't encounter a SPAN then this has already been flipped
              * to a SELECT.
              */
             if (aclStatus['nodeName']=='SPAN') {
@@ -66,19 +66,15 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                     aclRows[aclRowNum]);
             for (var aclFieldNum in aclFields) {
                 /* Find the current status */
-                aclStatus = getElementsByTagAndClassName(null, 'aclStatus',
+                aclStatus = getElementsByTagAndClassName(null, 'aclStatusList',
+                        aclFields[aclFieldNum])[0];
+                aclStatusDiv = getElementsByTagAndClassName(null, 'aclStatus',
                         aclFields[aclFieldNum])[0];
                 if (aclStatus['nodeName'] === 'SELECT') {
-                    var aclName = aclStatus.getAttribute('name');
-                    var aclStatusName = '';
+                    var aclName = aclStatusDiv.getAttribute('name');
+                    var aclStatusName = aclStatus.value;
                     var aclOptions = getElementsByTagAndClassName('option',
                             null, aclStatus);
-                    for (var aclOptionNum in aclOptions) {
-                        if (aclOptions[aclOptionNum].hasAttribute('selected')) {
-                            var aclStatusName = scrapeText(
-                                    aclOptions[aclOptionNum]);
-                        }
-                    }
                     /* Create the new span and add it */
                     var newAclStatus = SPAN({'name' : aclName,
                             'class' : 'aclStatus'}, aclStatusName);
@@ -99,6 +95,45 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                 }
             }
         }
+    }
+
+    /* Change the groupacl checkboxes now as well. */
+    /* Retrieve the group acl boxes */
+    var aclStatusContainers = getElementsByTagAndClassName('div',
+            'groupAclStatus', aclTable);
+    var groupAclLabel = SPAN(null, 'group members can commit?');
+    for (aclStatusContainerNum in aclStatusContainers) {
+        if (add) {
+            /* Enable the checkboxes so the user can click them */
+            var aclStatusBox = getElementsByTagAndClassName('input',
+                    'groupAclStatusLabelBox',
+                    aclStatusContainers[aclStatusContainerNum])[0];
+            if (aclStatusBox.hasAttribute('checked')) {
+                var newAclBox = INPUT({'type' : 'checkbox', 'checked' : 'true',
+                        'class' : 'groupAclStatusBox'});
+            } else {
+                var newAclBox = INPUT({'type' : 'checkbox', 'class' :
+                        'groupAclStatusBox'});
+                newAclBox.removeAttribute('checked');
+            }
+            connect(newAclBox, 'onclick', request_approve_deny_groupacl);
+        } else {
+            /* Disables the checkboxes so the user can't click on them */
+            var aclStatusBox = getElementsByTagAndClassName('input',
+                    'groupAclStatusBox',
+                    aclStatusContainers[aclStatusContainerNum])[0];
+            if (aclStatusBox.hasAttribute('checked')) {
+                var newAclBox = INPUT({'type' : 'checkbox', 'checked' : 'true',
+                        'disabled' : 'true', 
+                        'class' : 'groupAclStatusLabelBox'});
+            } else {
+                var newAclBox = INPUT({'type' : 'checkbox', 'disabled' : 'true',
+                        'class' : 'groupAclStatusLabelBox'});
+                newAclBox.removeAttribute('checked');
+            }
+        }
+        replaceChildNodes(aclStatusContainers[aclStatusContainerNum],
+                groupAclLabel, newAclBox);
     }
 }
 
@@ -134,6 +169,7 @@ function toggle_owner(ownerDiv, data) {
 }
 
 function check_acl_status(statusDiv, data) {
+    logDebug('in check_acl_status');
     /* The only thing we have to do is check that there weren't any errors */
     if (! data.status) {
         revert_acl_status(statusDiv, data);
@@ -148,6 +184,7 @@ function check_acl_status(statusDiv, data) {
  * the user requests a change but the server throws an error.
  */
 function revert_acl_status(statusDiv, data) {
+    logDebug('in revert_acl_status');
     /* Retrieve the select list */
     var aclStatus = getElementsByTagAndClassName('select', 'aclStatusList',
             statusDiv)[0];
@@ -157,6 +194,8 @@ function revert_acl_status(statusDiv, data) {
 
     /* Remove the entry from the commits list */
     delete(commits[statusDiv]);
+
+    logDebug('Falling off the end of revert_acl_status');
 }
 
 /*
@@ -214,6 +253,48 @@ function revert_acl_request(aclBoxDiv, data) {
     replaceChildNodes(aclBoxDiv, newAclBox);
 }
 
+function check_groupacl_request(aclBoxDiv, data) {
+    logDebug('in check_groupacl_request');
+    /* If an error occurred, toggle it back */
+    if (! data.status) {
+        revert_groupacl_request(aclBoxDiv, data);
+        display_error(null, data);
+        return;
+    }
+
+    /* For some reason firefox doesn't pick this up.  Reconfirm the changes */
+    var label = SPAN(null, 'group members can commit?');
+    var aclBox = getElementsByTagAndClassName('input', 'groupAclStatusBox', aclBoxDiv)[0];
+    if (aclBox.hasAttribute('checked')) {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'groupAclStatusBox'});
+        newAclBox.removeAttribute('checked');
+    } else {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'groupAclStatusBox',
+                'checked' : 'true'});
+    }
+    connect(newAclBox, 'onclick', request_approve_deny_groupacl);
+    replaceChildNodes(aclBoxDiv, label, newAclBox);
+}
+
+function revert_groupacl_request(aclBoxDiv, data) {
+    logDebug('in revert_groupacl_request');
+    var aclBox = getElementsByTagAndClassName('input', 'groupAclStatusBox', aclBoxDiv)[0];
+    /* The browser doesn't let us change the toggle status so we have to
+     * create a new checkbox
+     */
+    /* Since this is a simple toggle, just toggle it back */
+    var label = SPAN(null, 'group members can commit?');
+    if (aclBox.hasAttribute('checked')) {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'groupAclStatusBox',
+                'checked' : 'true'});
+    } else {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'groupAclStatusBox'});
+        newAclBox.removeAttribute('checked');
+    }
+    connect(newAclBox, 'onclick', request_approve_deny_groupacl);
+    replaceChildNodes(aclBoxDiv, label, newAclBox);
+}
+
 function request_acl_gui(event) {
     var buttonRow = getFirstParentByTagAndClassName(event.target(), 'tr');
     var pkgListTable = getFirstParentByTagAndClassName(buttonRow, 'table',
@@ -232,8 +313,7 @@ function request_acl_gui(event) {
     // FIXME: We should have the acls handed over in a JSON array in the
     // template so that we could operate on it as javascript now.  But we
     // don't.
-    acls = ['checkout', 'watchbugzilla', 'watchcommits', 'commit', 'build',
-            'approveacls'];
+    acls = ['watchbugzilla', 'watchcommits', 'commit', 'approveacls'];
     var newAclRow = TR({'class' : 'aclrow'},
             TD({'class' : 'acluser'},
                 tgUserDisplayName + ' (' + tgUserUserName + ')'
@@ -264,6 +344,12 @@ function request_acl_gui(event) {
  */
 request_add_drop_acl = partial(make_request, '/toggle_acl_request',
         check_acl_request, revert_acl_request);
+
+/*
+ * Callback for clicking on the groupacl allow checkboxes
+ */
+request_approve_deny_groupacl = partial(make_request, '/toggle_groupacl_status',
+        check_groupacl_request, revert_groupacl_request);
 
 /*
  * Callback for selecting a new acl status from an option list.
@@ -325,7 +411,7 @@ function init(event) {
     }
 
     var statusBoxes = getElementsByTagAndClassName('select', 'aclStatusList');
-    for (var statusNum in  statusBoxes) {
+    for (var statusNum in statusBoxes) {
         connect(statusBoxes[statusNum], 'onchange', request_status_change);
         connect(statusBoxes[statusNum], 'onfocus', save_status);
     }
@@ -333,6 +419,12 @@ function init(event) {
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
     for (var aclReqNum in aclReqBoxes) {
         connect(aclReqBoxes[aclReqNum], 'onclick', request_add_drop_acl);
+    }
+
+    var groupAclReqBoxes = getElementsByTagAndClassName('input',
+            'groupAclStatusBox');
+    for (var groupAclReqNum in groupAclReqBoxes) {
+        connect(groupAclReqBoxes[groupAclReqNum], 'onclick', request_approve_deny_groupacl);
     }
 
     /* This one's unique in that it doesn't have to talk to the server */

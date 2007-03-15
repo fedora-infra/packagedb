@@ -7,8 +7,32 @@ layout_params['displayNotes']=False
 
 <div py:match="item.tag == 'content'">
 
-<h1>Fedora Package Database -- Version 0.1.92</h1>
+<h2>Overview</h2>
+<p>The Package Database is a central repository of package information in
+Fedora.  You will eventually be able to find and change all the metainformation
+about a package by searching the database.  The current implementation is
+focused on the data that package developers and release engineers need to
+create packages and spin them into a distribution.
+</p>
+
+<h2>Browse Packages</h2>
+  <ul>
+  <li><a href="${tg.url('/collections/')}">View Packages by Collection</a></li>
+  <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
+  </ul>
+
+<h1>Fedora Package Database -- Version 0.2</h1>
 <h2>News</h2>
+<h3>0.2</h3>
+<ul>
+<li>Able to allow or deny commits from anyone in cvsextras group.</li>
+<li>Hide checkout and build perms as we aren't using them yet.</li>
+</ul>
+<p>
+At this point the user interface should be a full replacement for owners.list
+and pkg.acl.  The backend that takes data from the database and applies it to
+cvs is not yet complete.
+</p>
 <h3>0.1.92</h3>
 <ul>
 <li>If you are a maintainer or co-maintainer, approve privileges for other people.</li>
@@ -26,12 +50,9 @@ packages that you own</li>
 <ul>
 <li>Within the web app
 <ul>
-<li>Ability to add or subtract cvsextras access to your package: This will be
-a general group feature later.  For now we just need cvsextras +/- to match
-the present ACL system. <strong>(*) This is the last feature before 0.2</strong></li>
 <li>Notification that people have requested acls: package owner and people on approveacls</li>
 <li>Notification of owner changes:  cvsadmin group?</li>
-<li>Hide checkout and build perms</li>
+<li>Log changes to package meta-information in the database</li>
 </ul>
 </li>
 <li>External scripts
@@ -62,26 +83,7 @@ approved and changes made to cvs, others are sent to cvsadmins for approval.</li
 <li>Restore the ability for contributors to import new packages into the tree after approval.</li>
 </ul>
 
-<h2>Overview</h2>
-<p>The Package Database is a central repository of package information in
-Fedora.  You will eventually be able to find ad change all the metainformation
-about a package by searching the database.  The current implementation is
-focused on the data that package developers and release engineers need to
-create packages and spin them into a distribution.
-</p>
-<h2>Browse Packages</h2>
-  <ul>
-  <li><a href="${tg.url('/collections/')}">View Packages by Collection</a></li>
-  <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
-  </ul>
-
 <h2 id="notes">Notes</h2>
-  <p>Version 0.1 is a read-only interface to the information that was stored in
-  owners.list and the Fedora cvs archive.
-  </p>
-  <p>Version 0.2 will add the ability to make changes to the acl information
-  stored in the database.
-  </p>
   <p>Version 0.3 will satisfy all the must haves for the "go live" date.</p>
   <p>Version 0.4 will hit low hanging fruit in the future page</p>
   <p>As we have time, we may add more end-user content like:
@@ -101,7 +103,7 @@ create packages and spin them into a distribution.
   </p>
 
   <p>The tentative plan is to have one interface for searching for packages.
-  If the user is logged in, they have access ot more information and have the
+  If the user is logged in, they have access to more information and have the
   ability to make changes to the database.
   </p>
   <p>More complete plans for moving forward are available in the
