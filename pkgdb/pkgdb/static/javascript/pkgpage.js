@@ -100,6 +100,45 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
             }
         }
     }
+
+    /* Change the groupacl checkboxes now as well. */
+    /* Retrieve the group acl boxes */
+    var aclStatusContainers = getElementsByTagAndClassName('div',
+            'groupAclStatus', aclTable);
+    var groupAclLabel = SPAN(null, 'group members can commit?');
+    for (aclStatusContainerNum in aclStatusContainers) {
+        if (add) {
+            /* Enable the checkboxes so the user can click them */
+            var aclStatusBox = getElementsByTagAndClassName('input',
+                    'groupAclStatusLabelBox',
+                    aclStatusContainers[aclStatusContainerNum])[0];
+            if (aclStatusBox.hasAttribute('checked')) {
+                var newAclBox = INPUT({'type' : 'checkbox', 'checked' : 'true',
+                        'class' : 'groupAclStatusBox'});
+            } else {
+                var newAclBox = INPUT({'type' : 'checkbox', 'class' :
+                        'groupAclStatusBox'});
+                newAclBox.removeAttribute('checked');
+            }
+            connect(newAclBox, 'onclick', request_approve_deny_groupacl);
+        } else {
+            /* Disables the checkboxes so the user can't click on them */
+            var aclStatusBox = getElementsByTagAndClassName('input',
+                    'groupAclStatusBox',
+                    aclStatusContainers[aclStatusContainerNum])[0];
+            if (aclStatusBox.hasAttribute('checked')) {
+                var newAclBox = INPUT({'type' : 'checkbox', 'checked' : 'true',
+                        'disabled' : 'true', 
+                        'class' : 'groupAclStatusLabelBox'});
+            } else {
+                var newAclBox = INPUT({'type' : 'checkbox', 'disabled' : 'true',
+                        'class' : 'groupAclStatusLabelBox'});
+                newAclBox.removeAttribute('checked');
+            }
+        }
+        replaceChildNodes(aclStatusContainers[aclStatusContainerNum],
+                groupAclLabel, newAclBox);
+    }
 }
 
 function toggle_owner(ownerDiv, data) {
@@ -222,6 +261,19 @@ function check_groupacl_request(aclBoxDiv, data) {
         display_error(null, data);
         return;
     }
+
+    /* For some reason firefox doesn't pick this up.  Reconfirm the changes */
+    var label = SPAN(null, 'group members can commit?');
+    var aclBox = getElementsByTagAndClassName('input', 'groupAclStatusBox', aclBoxDiv)[0];
+    if (aclBox.hasAttribute('checked')) {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'groupAclStatusBox'});
+        newAclBox.removeAttribute('checked');
+    } else {
+        var newAclBox = INPUT({'type' : 'checkbox', 'class' : 'groupAclStatusBox',
+                'checked' : 'true'});
+    }
+    connect(newAclBox, 'onclick', request_approve_deny_groupacl);
+    replaceChildNodes(aclBoxDiv, label, newAclBox);
 }
 
 function revert_groupacl_request(aclBoxDiv, data) {
