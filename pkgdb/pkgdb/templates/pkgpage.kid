@@ -79,6 +79,30 @@ TODO='Not yet implemented'
           </th>
         </tr>
         <tr py:for="person in pkg.people" class="aclrow">
+          <?python
+          # Determine whether this person is allowed to change acls
+          aclChanger = False
+          if tg.identity.anonymous:
+              pass
+          elif tg.identity.user.user_id == pkg.ownerid:
+              aclChanger = True
+          else:
+              for person in pkg.people:
+                  if (person.userid == tg.identity.user.user_id and
+                          person.aclOrder.get('approveacls') and
+                          person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
+                      aclChanger = True
+                      break
+              # This should work, but kid doesn't like the tg.identity
+              # combined with filter.
+              # aclChanger = filter(lambda x:
+              #    x.aclOrder['aproveacls'].status.translations[0].statusname
+              #       == 'Approved',
+              #       filter(lambda y: y.aclOrder.has_key('approveacls'),
+              #           filter(lambda z:
+              #               z.userid == tg.identity.user.user_id,
+              #               pkg.people))
+          ?>
           <td py:content="person.name" class="acluser"
             py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
             Name
@@ -95,29 +119,6 @@ TODO='Not yet implemented'
                 py:if="not person.aclOrder[acl]"/>
             </div>
             <!-- If the user can set acls, give drop downs for status -->
-            <?python
-            aclChanger = False
-            if tg.identity.anonymous:
-                pass
-            elif tg.identity.user.user_id == pkg.ownerid:
-                aclChanger = True
-            else:
-                for person in pkg.people:
-                    if (person.userid == tg.identity.user.user_id and
-                            person.aclOrder.get('approveacls') and
-                            person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
-                        aclChanger = True
-                        break
-                # This should work, but kid doesn't like the tg.identity
-                # combined with filter.
-                # aclChanger = filter(lambda x:
-                #    x.aclOrder['aproveacls'].status.translations[0].statusname
-                #       == 'Approved',
-                #       filter(lambda y: y.aclOrder.has_key('approveacls'),
-                #           filter(lambda z:
-                #               z.userid == tg.identity.user.user_id,
-                #               pkg.people))
-            ?>
             <div py:if="aclChanger"
               py:attrs="{'name': str(pkg.id) + ':' + acl}"
                 class='aclStatus requestContainer'>
@@ -135,17 +136,13 @@ TODO='Not yet implemented'
                 </span>
               </select>
             </div>
-</td></tr>
-<!--
-            <span py:if="tg.identity.anonymous or
-              (tg.identity.user.user_id != pkg.ownerid and
-              (tg.identity.user.user_id not in pkg.people or
-                pkg.people[tg.identity.user.user_id].aclOrder['approveacls'].translations[0].statusname!='Approved'))"
-              py:content="person[1].acls[acl]" 
+            <span py:if="not aclChanger and person.aclOrder.get(acl)"
+              py:content="person.aclOrder[acl].status.translations[0].statusname" 
               py:attrs="{'name' : acl}" class="aclStatus"></span>
           </td>
         </tr>
 
+<!--
         <tr py:for="group in pkg.groups" class="aclgrouprow">
           <td py:content="group.name" class="aclgroup"
             py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
