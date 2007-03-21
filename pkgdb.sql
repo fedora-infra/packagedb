@@ -1,5 +1,5 @@
 -- Fedora Package Database
--- Version 0.4
+-- Version 0.5
 
 -- Note TG_RELNAME was changed to TG_TABLE_NAME in 8.2.  We'll have to
 -- update the following triggers when we upgrade our postgresql version:
@@ -813,7 +813,7 @@ grant select
 -- 10 is the statuscode for denied.  This populates our test db with no one in
 -- cvsextras able to commit.  Change to 3 (approved) to open it up
 -- insert into grouppackagelistingacl (grouppackagelistingid, acl, statuscode)
--- select id, 'commit', 10 from grouppackagelisting;
+-- select id, 'commit', 3 from grouppackagelisting;
 --
 --
 

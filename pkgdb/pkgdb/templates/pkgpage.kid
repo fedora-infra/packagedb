@@ -173,7 +173,7 @@ TODO='Not yet implemented'
             </div>
           </td>
         </tr>
-        <tr py:if="not tg.identity.anonymous and interested">
+        <tr py:if="not tg.identity.anonymous and not interested">
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
               + ':' + str(tg.identity.user.user_id)}"

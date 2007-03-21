@@ -261,8 +261,8 @@ class PackageDispatcher(controllers.Controller):
         if not changePerson:
             # Person has no ACLs on this Package yet.  Create a record
             personPackage = model.PersonPackageListing(personid, pkgid)
-            personAcl = model.PersonPackageListingAcl(personPackage.id,
-                newAcl, self.aclStatusMap[status].statuscodeid)
+            personPackage.acls.append(model.PersonPackageListingAcl(
+                newAcl, self.aclStatusMap[status].statuscodeid))
         else:
             # Look for an acl for the person
             personAcl = None
@@ -274,8 +274,8 @@ class PackageDispatcher(controllers.Controller):
                     break
             if not personAcl:
                 # Acl was not found.  Create one.
-                personAcl = model.PersonPackageListingAcl(changePerson.id,
-                    newAcl, self.aclStatusMap[status].statuscodeid)
+                changePerson.acls.append(model.PersonPackageListingAcl(
+                    newAcl, self.aclStatusMap[status].statuscodeid))
         try:
             session.flush()
         except sqlalchemy.exceptions.SQLError, e:
@@ -368,8 +368,9 @@ class PackageDispatcher(controllers.Controller):
             # There was no association, create it.
             person = model.PersonPackageListing(
                 identity.current.user.user_id, pkgListId)
-            personAcl = model.PersonPackageListingAcl(person.id, aclName,
-                self.aclStatusMap['Awaiting Review'].statuscodeid)
+            person.acls.append(model.PersonPackageListingAcl(aclName,
+                self.aclStatusMap['Awaiting Review'].statuscodeid))
+            aclStatus = 'Awaiting Review'
         else:
             # Check whether the person already has this acl
             aclSet = False
@@ -386,8 +387,8 @@ class PackageDispatcher(controllers.Controller):
                     break
             if not aclSet:
                 # Create a new acl
-                acl = model.PersonPackageListingAcl(person.id, aclName,
-                        self.aclStatusMap['Awaiting Review'].statuscodeid)
+                person.acls.append(model.PersonPackageListingAcl(aclName,
+                        self.aclStatusMap['Awaiting Review'].statuscodeid))
                 aclStatus = 'Awaiting Review'
 
         try:
