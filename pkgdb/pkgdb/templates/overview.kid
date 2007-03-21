@@ -21,7 +21,7 @@ create packages and spin them into a distribution.
   <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
   </ul>
 
-<h1>Fedora Package Database -- Version 0.2</h1>
+<h1>Fedora Package Database -- Version 0.2.90.0</h1>
 <h2>News</h2>
 <h3>0.2</h3>
 <ul>

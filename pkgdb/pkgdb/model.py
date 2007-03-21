@@ -328,8 +328,8 @@ logJoin = polymorphic_union (
         {'pkglistlog' : select((LogTable.join(
             PackageListingLogTable,
                 LogTable.c.id == PackageListingLogTable.c.logid),
-            column("'pkglistlog'").label('kind'))),
-         'log' : select((LogTable, column("'log'").label('kind')),
+            literal_column("'pkglistlog'").label('kind'))),
+         'log' : select((LogTable, literal_column("'log'").label('kind')),
              not_(LogTable.c.id.in_(select(
                  (LogTable.c.id,),
                  LogTable.c.id == PackageListingLogTable.c.logid)
