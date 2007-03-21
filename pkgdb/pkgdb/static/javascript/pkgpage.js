@@ -108,6 +108,12 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
             var aclStatusBox = getElementsByTagAndClassName('input',
                     'groupAclStatusLabelBox',
                     aclStatusContainers[aclStatusContainerNum])[0];
+            if (!aclStatusBox) {
+                /* This has already been turned on -- probably because the
+                 * person has approveacls
+                 */
+                continue;
+            }
             if (aclStatusBox.hasAttribute('checked')) {
                 var newAclBox = INPUT({'type' : 'checkbox', 'checked' : 'true',
                         'class' : 'groupAclStatusBox'});
