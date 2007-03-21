@@ -172,13 +172,41 @@ class PackageDispatcher(controllers.Controller):
             # Release ownership
             pkg.owner = ORPHAN_ID
             ownerName = 'Orphaned Package (orphan)'
+            ### FIXME: We want the package name and collection name/ver.
+            # rather than the pkg.id
+            logMessage = 'Package %s was orphaned by %s' % (pkg.id,
+                    identity.current.user.user_id)
+            status = model.StatusTranslation.get_by(statusname='Orphaned')
         elif pkg.owner == ORPHAN_ID:
             # Take ownership
             pkg.owner = identity.current.user.user_id
             ownerName = '%s (%s)' % (identity.current.user.display_name,
                     identity.current.user_name)
+            ### FIXME: We want the package name and collection name/ver.
+            # rather than the pkg.id
+            logMessage = 'Package %s is now owned by %s' % (pkg.id, ownerName)
+            status = model.StatusTranslation.get_by(statusname='Owned')
         else:
-            return dict(status=False, message='Package %s not available for taking' % containerId)
+            return dict(status=False, message=
+                    'Package %s not available for taking' % containerId)
+
+        # Make sure a log is created in the db as well.
+        log = model.PackageListingLog(identity.current.user.user_id,
+                status.statuscodeid, logMessage, None, containerId)
+        try:
+            session.flush()
+        except sqlalchemy.exceptions.SQLError, e:
+            # An error was generated
+            return dict(status=False,
+                    message='Not able to change owner information for %s' \
+                            % (containerId))
+
+        # Send a log to the commits list as well
+        email = turbomail.Message(FROMADDR, TOADDR, '[pkgdb] %s %s' % (pkg.id,
+            status.statusname))
+        email.plain = logMessage
+        ### FIXME: Uncomment this when the outgoing configuration is worked out
+        #turbomail.enqueue(email)
 
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
                 aclStatusFields=self.aclStatusTranslations)

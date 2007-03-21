@@ -186,6 +186,30 @@ class GroupPackageListingAcl(object):
         return 'GroupPackageListingAcl(%s, %s, %s)' % (
                 self.grouppackagelistingid, self.acl, self.statuscode)
 
+# Log
+class Log(object):
+    def __init__(self, userid, description=None, changetime=None):
+        self.userid = userid
+        self.description = description
+        self.changetime = changetime
+
+    def __repr__(self):
+        return 'Log(%s, %s, %s)' % (self.userid, self.description,
+                self.changetime)
+
+# PackageListingLog
+class PackageListingLog(Log):
+    def __init__(self, userid, action, description=None, changetime=None,
+            packagelistingid=None):
+        Log.__init__(self, userid, description, changetime)
+        self.action = action
+        self.packagelistingid = packagelistingid
+
+    def __repr__(self):
+        return 'PackageListingLog(%s, %s, %s, %s, %s)' % (self.userid,
+                self.action, self.description, self.changetime,
+                self.packagelistingid)
+
 # Mapping status tables
 # These are a bit convoluted as we have a 1:1:N relation between
 # SpecificStatusTable:StatusCodeTable:StatusTranslationTable
@@ -293,6 +317,36 @@ assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
                     foreignkey=PackageAclStatusTable.c.statuscodeid,
                     primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid)
                 )})
+
+# Log tables
+# The log tables all inherit from the base log table.
+
+LogTable = Table('log', metadata, autoload=True)
+PackageListingLogTable = Table('packagelistinglog', metadata, autoload=True)
+
+logJoin = polymorphic_union (
+        {'pkglistlog' : select((LogTable.join(
+            PackageListingLogTable,
+                LogTable.c.id == PackageListingLogTable.c.logid),
+            column("'pkglistlog'").label('kind'))),
+         'log' : select((LogTable, column("'log'").label('kind')),
+             not_(LogTable.c.id.in_(select(
+                 (LogTable.c.id,),
+                 LogTable.c.id == PackageListingLogTable.c.logid)
+             )))
+         },
+        None
+        )
+
+logMapper = assign_mapper(session.context, Log, LogTable,
+        select_table=logJoin, polymorphic_on=logJoin.c.kind,
+        polymorphic_identity='log')
+        
+assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
+        inherits=logMapper,
+        inherit_condition=LogTable.c.id==PackageListingLogTable.c.logid,
+        polymorphic_identity='pkglistlog',
+        properties={'listing': relation(PackageListing, backref='logs')})
 
 ### FIXME: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example
