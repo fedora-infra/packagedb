@@ -79,7 +79,7 @@ class Collection(object):
     def __repr__(self):
         return 'Collection("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s")' % (
                 self.name, self.version, self.statuscode, self.owner,
-                self.publishurltemplate, selg.pendingurltemplate,
+                self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
 
 #
@@ -212,8 +212,8 @@ BranchTable = Table('branch', metadata, autoload=True)
 collectionJoin = polymorphic_union (
         {'b' : select((CollectionTable.join(
             BranchTable, CollectionTable.c.id == BranchTable.c.collectionid),
-            column("'b'").label('kind'))),
-         'c' : select((CollectionTable, column("'c'").label('kind')),
+            literal_column("'b'").label('kind'))),
+         'c' : select((CollectionTable, literal_column("'c'").label('kind')),
              not_(CollectionTable.c.id.in_(select(
                  (CollectionTable.c.id,),
                  CollectionTable.c.id == BranchTable.c.collectionid)

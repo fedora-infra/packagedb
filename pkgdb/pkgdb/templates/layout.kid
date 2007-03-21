@@ -3,9 +3,9 @@
   <title>${title}</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <style type="text/css" media="screen">
-    @import url("http://fedora.redhat.com/css/layout.css");
-    @import url("http://fedora.redhat.com/css/content.css");
-    @import url("http://fedora.redhat.com/css/docbook.css");
+    @import url("http://rhold.fedoraproject.org/css/layout.css");
+    @import url("http://rhold.fedoraproject.org/css/content.css");
+    @import url("http://rhold.fedoraproject.org/css/docbook.css");
     @import url("${tg.url("/static/css/pkgdb.css")}");
   </style>
     <style type="text/css">
@@ -26,7 +26,7 @@
   <!-- Header BEGIN -->
   <div id="fedora-header">
     <div id="fedora-header-logo">
-      <a href="/"><img src="http://fedora.redhat.com/images/header-fedora_logo.png" alt="Fedora Project"/></a>
+      <a href="/"><img src="http://rhold.fedoraproject.org/images/header-fedora_logo.png" alt="Fedora Project"/></a>
     </div>
 
     <div id="fedora-header-items">
@@ -81,7 +81,7 @@
     <h1>Links</h1>
     <p>Links to other sites
       <ul>
-        <li><a href="http://fedora.redhat.com">Fedora Home</a></li>
+        <li><a href="http://rhold.fedoraproject.org">Fedora Home</a></li>
         <li><a href="http://fedoranews.org">Fedora News</a></li>
         <li><a href="http://fedoralegacy.org/">Fedora Legacy Project</a></li>
         <li><a href="http://fedoraproject.org">Fedora Project</a></li>
@@ -97,8 +97,8 @@
     <br/>Fedora is a trademark of Red Hat, Inc. 
     <br/>The Fedora Project is not a supported product of Red Hat, Inc.
     <br/>Red Hat, Inc. is not responsible for the content of other sites. 
-    <br/><a href="http://fedora.redhat.com/About/legal/">Legal</a> | <a
-  href="http://fedora.redhat.com/About/legal/trademarks/">Trademark Guidelines</a>
+    <br/><a href="http://rhold.fedoraproject.org/About/legal/">Legal</a> | <a
+  href="http://rhold.fedoraproject.org/About/legal/trademarks/">Trademark Guidelines</a>
     <br/>
   </div>
   <!-- footer END -->
