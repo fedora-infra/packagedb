@@ -39,7 +39,7 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
 
                 /* Create the requestContainer that holds the statusList */
                 var newAclStatus = DIV({'name': aclName,
-                        'class' : 'requestContainer aclStatus'},
+                        'class' : 'requestContainer aclStatus debug'},
                         newAclStatusList);
                 /* Replace the span */
                 replaceChildNodes(aclFields[aclFieldNum], newAclStatus);
@@ -170,8 +170,6 @@ function toggle_owner(ownerDiv, data) {
     var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
     insertSiblingNodesBefore(ownerName, newOwnerName);
     removeElement(ownerName);
-
-    logDebug('Exit toggle_owner');
 }
 
 function check_acl_status(statusDiv, data) {
@@ -235,8 +233,8 @@ function check_acl_request(aclBoxDiv, data) {
     for (aclStatusNum in oldAclStatus) {
         removeElement(oldAclStatus[aclStatusNum]);
     }
-    var aclBoxId = aclBoxDiv.getAttribute('name').split(':');
-    var aclStatus = SPAN({'name' : aclBoxId[0], 'class' : 'aclStatus'},
+    var aclBoxId = aclBoxDiv.getAttribute('name');
+    var aclStatus = SPAN({'name' : aclBoxId, 'class' : 'aclStatus'},
             data.aclStatus);
     appendChildNodes(aclBoxDiv, aclStatus);
 }
@@ -392,7 +390,6 @@ function request_status_change(event) {
     req.addErrback(partial(revert_acl_status, requestContainer));
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-
     logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'newAcl':idParts[1],'statusname':aclStatus}));
 }
 

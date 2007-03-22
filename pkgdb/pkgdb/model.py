@@ -191,7 +191,7 @@ class GroupPackageListingAcl(object):
 
     Table -- GroupPackageListingAcl
     '''
-    def __init__(self, acl, statuscode, grouppackagelistingid):
+    def __init__(self, acl, statuscode, grouppackagelistingid=None):
         self.grouppackagelistingid = grouppackagelistingid
         self.acl = acl
         self.statuscode = statuscode

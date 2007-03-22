@@ -24,6 +24,11 @@ create packages and spin them into a distribution.
   </ul>
 
 <h2>News</h2>
+<h3>0.2.90.0</h3>
+<ul>
+<li>Log changes to package meta-information in the database [0.3]</li>
+<li>Notification of acl/owner changes send to extras-commits-list</li>
+</ul>
 <h3>0.2</h3>
 <ul>
 <li>Able to allow or deny commits from anyone in cvsextras group.</li>
@@ -52,8 +57,7 @@ packages that you own</li>
 <ul>
 <li>Within the web app
 <ul>
-<li>Notification of acl changes: extras-commits-list, owner, and approveacl group.  Notification of owner changes to extras-commits-list and everyone with acls on that package[0.3]</li>
-<li>Log changes to package meta-information in the database [0.3]</li>
+<li>Notification of acl changes: owner, and approveacl group.  Notification of owner changes to everyone with acls on that package[0.3]</li>
 <li>Notification that people have requested acls: package owner and people on approveacls</li>
 </ul>
 </li>
@@ -76,6 +80,8 @@ account for the new owners.list format</li>
 </ul>
 <h3>Future</h3>
 <ul>
+<li>Have a interface for reviewing changes on the PackageDB. (When and by whom
+were ACLs changed, when were the Collections added to the system, etc.)</li>
 <li>View packages by owner</li>
 <li>Full UI for managing groups in ACLs.</li>
 <li>URL scheme that uses package name</li>

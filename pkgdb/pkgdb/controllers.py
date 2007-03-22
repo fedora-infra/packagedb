@@ -123,14 +123,12 @@ class PackageDispatcher(controllers.Controller):
         # Possible statuses for acls:
         aclStatus = SelectResults(session.query(model.PackageAclStatus))
         self.aclStatusTranslations=['']
-        self.aclStatusMap = {}
         # Create a mapping from status name => statuscode
         for status in aclStatus:
             ### FIXME: At some point, we have to pull other translations out,
             # not just C
             if status.translations[0].statusname != 'Obsolete':
                 self.aclStatusTranslations.append(status.translations[0].statusname)
-            self.aclStatusMap[status.translations[0].statusname] = status
 
         ### FIXME: pull groups from somewhere.
         # In the future the list of groups that can commit to packages should
@@ -269,10 +267,10 @@ class PackageDispatcher(controllers.Controller):
                 break
         if not changePerson:
             # Person has no ACLs on this Package yet.  Create a record
-            personPackage = model.PersonPackageListing(personid, pkgid)
+            changePerson = model.PersonPackageListing(personid, pkgid)
             personAcl = model.PersonPackageListingAcl(newAcl,
                     status.statuscodeid)
-            personPackage.acls.append(personAcl)
+            personAcl.personpackagelisting = changePerson
         else:
             # Look for an acl for the person
             personAcl = None
@@ -286,14 +284,16 @@ class PackageDispatcher(controllers.Controller):
                 # Acl was not found.  Create one.
                 personAcl = model.PersonPackageListingAcl(newAcl,
                         status.statuscodeid)
-                changePerson.acls.append(personAcl)
+                personAcl.personpackagelisting = changePerson
 
         # Get the human name and username for the person whose acl we changed
         (user, groups) = fas.get_user_info(personAcl.personpackagelisting.userid)
         # Make sure a log is created in the db as well.
-        logMessage = '%s (%s) has set the %s acl to %s for %s (%s)' % (
+        logMessage = '%s (%s) has set the %s acl on %s (%s %s) to %s for %s (%s)' % (
                     identity.current.user.display_name,
-                    identity.current.user_name, newAcl, status.statusname,
+                    identity.current.user_name, newAcl, pkg.package.name,
+                    pkg.collection.name, pkg.collection.version,
+                    status.statusname,
                     user['human_name'], user['username'])
         log = model.PersonPackageListingAclLog(identity.current.user.user_id,
                 status.statuscodeid, logMessage)
@@ -321,6 +321,16 @@ class PackageDispatcher(controllers.Controller):
     @identity.require(identity.in_any_group('cvsextras', 'cvsadmin'))
     def toggle_groupacl_status(self, containerId):
         '''Set the groupacl to determine whether the group can commit.
+
+        WARNING: Do not use changeAcl.status in this method.  There is a high
+        chance that it will be out of sync with the current statuscode after
+        the status is set.  Updating changeAcl.status at the same time as we
+        update changeAcl.statuscodeid makes this method take 10-11s instead of
+        <1s.
+
+        If you cannot live without changeAcl.status, try flushing the session
+        after changeAcl.statuscodeid is set and see if that can automatically
+        refresh the status without the performance hit.
         '''
         # Pull apart the identifier
         pkgListId, groupId, aclName = containerId.split(':')
@@ -350,6 +360,8 @@ class PackageDispatcher(controllers.Controller):
         # See if the group has a record
         changeGroup = None
         changeAcl = None
+        approvedStatus = model.StatusTranslation.get_by(statusname='Approved')
+        deniedStatus = model.StatusTranslation.get_by(statusname='Denied')
         for group in pkg.groups:
             if group.groupid == groupId:
                 changeGroup = group
@@ -359,23 +371,59 @@ class PackageDispatcher(controllers.Controller):
                         changeAcl = acl
                         # toggle status
                         if acl.status.translations[0].statusname == 'Approved':
-                            acl.statuscode = self.aclStatusMap['Denied'].statuscodeid
+                            changeAcl.statuscode = deniedStatus.statuscodeid
                         else:
-                            acl.statuscode = self.aclStatusMap['Approved'].statuscodeid
+                            changeAcl.statuscode = approvedStatus.statuscodeid
+                        ### WARNING: At this point changeAcl.status is out of
+                        # sync with changeAcl.statuscode.  There is a large
+                        # performance penalty to setting it here.
+                        # If you need it, try doing a session.flush() here and
+                        # repull the information from the database.
                         break
                 if not changeAcl:
                     # if no acl yet create it
-                    changeAcl = model.GroupPackageListingAcl('commit',
-                            self.aclStatusMap['Approved'].statuscodeid,
-                            changeGroup.id)
+                    changeAcl = model.GroupPackageListingAcl(aclName,
+                            approvedStatus.statuscodeid)
+                    changeAcl.grouppackagelisting = changeGroup
                 break
 
         if not changeGroup:
             # No record for the group yet, create it
             changeGroup = model.GroupPackageListing(groupId, pkgListId)
-            changeAcl = model.GroupPackageListingAcl('commit',
-                    self.aclStatusMap['Approved'].statuscodeid,
-                    changeGroup.id)
+            changeAcl = model.GroupPackageListingAcl(aclName,
+                    approvedStatus.statuscodeid)
+            changeAcl.grouppackagelisting = changeGroup
+        
+        ### WARNING: changeAcl.status is very likely out of sync at this point.
+        # See the docstring for an explanation.
+
+        # Make sure a log is created in the db as well.
+        statusname = model.StatusTranslation.get_by(
+                statuscodeid=changeAcl.statuscode).statusname
+        logMessage = '%s (%s) has set the %s acl on %s (%s %s) to %s for %s' % (
+                    identity.current.user.display_name,
+                    identity.current.user_name, aclName, pkg.package.name,
+                    pkg.collection.name, pkg.collection.version, statusname,
+                    self.groups[changeGroup.groupid])
+        log = model.GroupPackageListingAclLog(identity.current.user.user_id,
+                changeAcl.statuscode, logMessage)
+        log.acl = changeAcl
+
+        try:
+            session.flush()
+        except sqlalchemy.exceptions.SQLError, e:
+            # An error was generated
+            return dict(status=False,
+                    message='Not able to create acl %s on %s with status %s' \
+                            % (newAcl, pkgid, status))
+
+        # Send a log to the commits list as well
+        ### FIXME: Want to send to everyone in approveacls as well.
+        email = turbomail.Message(FROMADDR, TOADDR,
+                '[pkgdb] %s set to %s for %s' % (aclName, statusname,
+                    self.groups[changeGroup.groupid]))
+        email.plain = logMessage
+        turbomail.enqueue(email)
 
         return dict(status=True,
                 newAclStatus=changeAcl.status.translations[0].statusname)
@@ -395,12 +443,16 @@ class PackageDispatcher(controllers.Controller):
                 model.PersonPackageListing.c.packagelistingid==pkgListId,
                 model.PersonPackageListing.c.userid==
                     identity.current.user.user_id))
+        awaitingStatus = model.StatusTranslation.get_by(
+                statusname='Awaiting Review')
+        obsoleteStatus = model.StatusTranslation.get_by(statusname='Obsolete')
         if not person:
             # There was no association, create it.
             person = model.PersonPackageListing(
-                identity.current.user.user_id, pkgListId)
-            person.acls.append(model.PersonPackageListingAcl(aclName,
-                self.aclStatusMap['Awaiting Review'].statuscodeid))
+                    identity.current.user.user_id, pkgListId)
+            personAcl = model.PersonPackageListingAcl(aclName,
+                    awaitingStatus.statuscodeid)
+            personAcl.personpackagelisting = person
             aclStatus = 'Awaiting Review'
         else:
             # Check whether the person already has this acl
@@ -408,19 +460,35 @@ class PackageDispatcher(controllers.Controller):
             for acl in person.acls:
                 if acl.acl == aclName:
                     # Acl already exists, set the status
-                    if self.aclStatusMap['Obsolete'].statuscodeid == acl.statuscode:
-                        acl.statuscode = self.aclStatusMap['Awaiting Review'].statuscodeid
+                    personAcl = acl
+                    if obsoleteStatus.statuscodeid == acl.statuscode:
+                        acl.statuscode = awaitingStatus.statuscodeid
                         aclStatus = 'Awaiting Review'
                     else:
-                        acl.statuscode = self.aclStatusMap['Obsolete'].statuscodeid
+                        acl.statuscode = obsoleteStatus.statuscodeid
                         aclStatus = ''
                     aclSet = True
                     break
             if not aclSet:
                 # Create a new acl
-                person.acls.append(model.PersonPackageListingAcl(aclName,
-                        self.aclStatusMap['Awaiting Review'].statuscodeid))
+                personAcl = model.PersonPackageListingAcl(aclName,
+                        awaitingStatus.statuscodeid)
+                personAcl.personpackagelisting = person
                 aclStatus = 'Awaiting Review'
+
+        # Make sure a log is created in the db as well.
+        if aclStatus == 'Awaiting Review':
+            aclAction = 'requested'
+        else:
+            aclAction = 'given up'
+        logMessage = '%s (%s) has %s the %s acl on %s (%s %s)' % (
+                    identity.current.user.display_name,
+                    identity.current.user_name, aclAction, aclName,
+                    pkgListing.package.name, pkgListing.collection.name,
+                    pkgListing.collection.version)
+        log = model.PersonPackageListingAclLog(identity.current.user.user_id,
+                personAcl.statuscode, logMessage)
+        log.acl = personAcl
 
         try:
             session.flush()
@@ -430,6 +498,15 @@ class PackageDispatcher(controllers.Controller):
                     message='Not able to create acl %s for %s on %s' %
                         (aclName, identity.current.user.user_id,
                         pkgListId))
+
+        # Send a log to the commits list as well
+        ### FIXME: Want to send to everyone in approveacls as well.
+        email = turbomail.Message(FROMADDR, TOADDR,
+                '[pkgdb] %s has %s %s for %s' % (
+                    identity.current.user.display_name, aclAction,
+                    aclName, pkgListing.package.name))
+        email.plain = logMessage
+        turbomail.enqueue(email)
 
         # Return the new value
         return dict(status=True, personId=identity.current.user.user_id,
