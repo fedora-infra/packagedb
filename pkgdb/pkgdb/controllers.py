@@ -138,7 +138,8 @@ class PackageDispatcher(controllers.Controller):
         # have a flag.
 
         # Create a list of groups that can possibly commit to packages
-        self.groups = {100300: 'cvsextras'}
+        self.groups = {100300: 'cvsextras',
+                101197: 'cvsadmin'}
 
     def _user_can_set_acls(self, userid, pkg):
         '''Check that the current user can set acls.
@@ -164,7 +165,7 @@ class PackageDispatcher(controllers.Controller):
 
     @expose('json')
     # Check that the tg.identity is allowed to set themselves as owner
-    @identity.require(identity.in_group("cvsextras"))
+    @identity.require(identity.in_any_group('cvsextras', 'cvsadmin'))
     def toggle_owner(self, containerId):
         
         # Check that the pkgid is orphaned
@@ -216,16 +217,17 @@ class PackageDispatcher(controllers.Controller):
 
     @expose('json')
     # Check that the requestor is in a group that could potentially set ACLs.
-    @identity.require(identity.in_group("cvsextras"))
-    def set_acl_status(self, pkgid, personid, newAcl, status):
+    @identity.require(identity.in_group('cvsextras', 'cvsadmin'))
+    def set_acl_status(self, pkgid, personid, newAcl, statusname):
         ### FIXME: Changing Obsolete into "" sounds like it should be
         # Pushed out to the view (template) instead of being handled in the
         # controller.
 
         # We are making Obsolete into "" for our interface.  Need to reverse
         # that here.
-        if not status or not status.strip():
-            status = 'Obsolete'
+        if not statusname or not statusname.strip():
+            statusname = 'Obsolete'
+        status = model.StatusTranslation.get_by(statusname=statusname)
 
         # Change strings into numbers because we do some comparisons later on
         pkgid = int(pkgid)
@@ -264,8 +266,9 @@ class PackageDispatcher(controllers.Controller):
         if not changePerson:
             # Person has no ACLs on this Package yet.  Create a record
             personPackage = model.PersonPackageListing(personid, pkgid)
-            personPackage.acls.append(model.PersonPackageListingAcl(
-                newAcl, self.aclStatusMap[status].statuscodeid))
+            personAcl = model.PersonPackageListingAcl(newAcl,
+                    status.statuscodeid)
+            personPackage.acls.append(personAcl)
         else:
             # Look for an acl for the person
             personAcl = None
@@ -273,12 +276,25 @@ class PackageDispatcher(controllers.Controller):
                 if acl.acl == newAcl:
                     # Found the acl, change its status
                     personAcl = acl
-                    acl.statuscode = self.aclStatusMap[status].statuscodeid
+                    acl.statuscode = status.statuscodeid
                     break
             if not personAcl:
                 # Acl was not found.  Create one.
-                changePerson.acls.append(model.PersonPackageListingAcl(
-                    newAcl, self.aclStatusMap[status].statuscodeid))
+                personAcl = model.PersonPackageListingAcl(newAcl,
+                        status.statuscodeid)
+                changePerson.acls.append(personAcl)
+
+        # Get the human name and username for the person whose acl we changed
+        (user, groups) == fas.get_user_info(personAcl.personpackagelisting.userid)
+        # Make sure a log is created in the db as well.
+        logMessage = '%s (%s) has %s the %s acl for %s (%s)' % (
+                    identity.current.user.display_name,
+                    identity.current.user_name. status.statusname,
+                    newAcl, user['human_name'], user['username'])
+        log = model.PersonPackageListingAclLog(identity.current.user.user_id,
+                status.statuscodeid, logMessage)
+        log.acl = personAcl
+
         try:
             session.flush()
         except sqlalchemy.exceptions.SQLError, e:
@@ -286,12 +302,17 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False,
                     message='Not able to create acl %s on %s with status %s' \
                             % (newAcl, pkgid, status))
+        # Send a log to the commits list as well
+        email = turbomail.Message(FROMADDR, TOADDR, '[pkgdb] %s for %s %s' % (
+            newAcl, user['human_name'], status.statusname))
+        email.plain = logMessage
+        turbomail.enqueue(email)
 
         return dict(status=True)
 
     @expose('json')
     # Check that the requestor is in a group that could potentially set ACLs.
-    @identity.require(identity.in_group("cvsextras"))
+    @identity.require(identity.in_group('cvsextras', 'cvsadmin'))
     def toggle_groupacl_status(self, containerId):
         '''Set the groupacl to determine whether the group can commit.
         '''
@@ -338,16 +359,17 @@ class PackageDispatcher(controllers.Controller):
                         break
                 if not changeAcl:
                     # if no acl yet create it
-                    changeAcl = model.GroupPackageListingAcl(changeGroup.id,
-                            'commit',
-                            self.aclStatusMap['Approved'].statuscodeid)
+                    changeAcl = model.GroupPackageListingAcl('commit',
+                            self.aclStatusMap['Approved'].statuscodeid,
+                            changeGroup.id)
                 break
 
         if not changeGroup:
             # No record for the group yet, create it
             changeGroup = model.GroupPackageListing(groupId, pkgListId)
-            changeAcl = model.GroupPackageListingAcl(changeGroup.id, 'commit',
-                    self.aclStatusMap['Approved'].statuscodeid)
+            changeAcl = model.GroupPackageListingAcl('commit',
+                    self.aclStatusMap['Approved'].statuscodeid,
+                    changeGroup.id)
 
         return dict(status=True,
                 newAclStatus=changeAcl.status.translations[0].statusname)

@@ -7,6 +7,8 @@ layout_params['displayNotes']=False
 
 <div py:match="item.tag == 'content'">
 
+<h1>Fedora Package Database -- Version 0.2.90.0</h1>
+
 <h2>Overview</h2>
 <p>The Package Database is a central repository of package information in
 Fedora.  You will eventually be able to find and change all the metainformation
@@ -21,7 +23,6 @@ create packages and spin them into a distribution.
   <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
   </ul>
 
-<h1>Fedora Package Database -- Version 0.2.90.0</h1>
 <h2>News</h2>
 <h3>0.2</h3>
 <ul>
@@ -46,13 +47,14 @@ packages that you own</li>
 <li>Sign up to watch or comaintain packages</li>
 </ul>
 
-<h2>Before Go Live</h2>
+<h2>Plans</h2>
+<h3>Before Go Live</h3>
 <ul>
 <li>Within the web app
 <ul>
+<li>Notification of acl changes: extras-commits-list, owner, and approveacl group.  Notification of owner changes to extras-commits-list and everyone with acls on that package[0.3]</li>
+<li>Log changes to package meta-information in the database [0.3]</li>
 <li>Notification that people have requested acls: package owner and people on approveacls</li>
-<li>Notification of owner changes:  cvsadmin group?</li>
-<li>Log changes to package meta-information in the database</li>
 </ul>
 </li>
 <li>External scripts
@@ -67,8 +69,12 @@ account for the new owners.list format</li>
 </ul>
 </li>
 </ul>
-
-<h2>Future</h2>
+<h3>Urgent</h3>
+<ul>
+<li>Allow anyone from cvsadmin group to make changes.
+</li>
+</ul>
+<h3>Future</h3>
 <ul>
 <li>View packages by owner</li>
 <li>Full UI for managing groups in ACLs.</li>
