@@ -32,9 +32,6 @@
     <div id="fedora-header-items">
       <span class="fedora-header-icon">
         
-      <!--   <a href="/download/"><img src="images/header-download.png" alt=""/>Download</a>
-      <a href="/projects/"><img src="images/header-projects.png" alt=""/>Projects</a>
-      <a href="/about/faq/"><img src="images/header-faq.png" alt=""/>FAQ</a></span> -->
       </span>
     <div py:if="tg.config('identity.on',False) and not 'logging_in' in locals()"
         id="pageLogin">
@@ -57,8 +54,10 @@
   <div id="fedora-side-left">
     <div id="fedora-side-nav-label">Site Navigation:</div>
     <ul id="fedora-side-nav">
-      <li><strong><a href="https://admin.fedoraproject.org/accounts/">Accounts Home</a></strong></li>
-      <li><a href="http://fedoraproject.org/wiki/Infrastructure/AccountSystem">Help</a></li>
+      <li><strong><a href="http://fedoraproject.org/wiki/">FedoraProject</a></strong></li>
+      <li><a href="http://fedoraproject.org/wiki/PackageMaintainers">Packagers Portal</a></li>
+      <li><a href="https://admin.fedoraproject.org/accounts/">Account System</a></li>
+      <li><a href="http://fedoraproject.org/wiki/DocsProject">Documentation</a></li>
     </ul>
   </div>
   <!-- LeftNavBar END -->
@@ -76,20 +75,6 @@
   <!-- contentArea END -->
 
 <!-- RightNavBar BEGIN -->
-<div id="fedora-side-right">
-  <div class="fedora-side-right-content">
-    <h1>Links</h1>
-    <p>Links to other sites
-      <ul>
-        <li><a href="http://rhold.fedoraproject.org">Fedora Home</a></li>
-        <li><a href="http://fedoranews.org">Fedora News</a></li>
-        <li><a href="http://fedoralegacy.org/">Fedora Legacy Project</a></li>
-        <li><a href="http://fedoraproject.org">Fedora Project</a></li>
-      </ul>
-    </p>
-  </div>
-  </div>
-  <!-- rightside END -->
   
   <!-- footer BEGIN -->
   <div id="fedora-footer">

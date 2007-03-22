@@ -7,7 +7,7 @@ layout_params['displayNotes']=False
 
 <div py:match="item.tag == 'content'">
 
-<h1>Fedora Package Database -- Version 0.2.90.0</h1>
+<h1>Fedora Package Database -- Version 0.2.90.1</h1>
 
 <h2>Overview</h2>
 <p>The Package Database is a central repository of package information in
@@ -24,6 +24,9 @@ create packages and spin them into a distribution.
   </ul>
 
 <h2>News</h2>
+<h3>0.2.90.1</h3>
+<p>No changes yet</p>
+
 <h3>0.2.90.0</h3>
 <ul>
 <li>Log changes to package meta-information in the database [0.3]</li>
