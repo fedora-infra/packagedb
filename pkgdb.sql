@@ -715,11 +715,11 @@ create table PackageBuildLog (
     on delete restrict on update cascade
 );
 
--- Log changes to built package ACLs.
+-- Log changes to the acls someone holds on a package.
 --
 -- Fields:
 -- :logId: The id of the log entry.
--- :packageBuildId: The `PackageACL` that changed.
+-- :personPackageListingAclId: The Person-PackageListing ACL that's changed.
 -- :action: What happened to the ACLs for the package.
 create table PersonPackageListingAclLog (
   logId integer primary key,
@@ -733,11 +733,11 @@ create table PersonPackageListingAclLog (
     on delete restrict on update cascade
 );
 
--- Log changes to built package ACLs.
+-- Log changes to the acls a roup holds on the package.
 --
 -- Fields:
 -- :logId: The id of the log entry.
--- :packageBuildId: The `PackageACL` that changed.
+-- :groupPackageListingAclId: The group-package acl that's changed.
 -- :action: What happened to the ACLs for the package.
 create table GroupPackageListingACLLog (
   logId integer primary key,

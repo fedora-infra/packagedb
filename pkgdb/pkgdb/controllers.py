@@ -176,19 +176,19 @@ class PackageDispatcher(controllers.Controller):
             # Release ownership
             pkg.owner = ORPHAN_ID
             ownerName = 'Orphaned Package (orphan)'
-            ### FIXME: We want the package name and collection name/ver.
-            # rather than the pkg.id
-            logMessage = 'Package %s was orphaned by %s' % (pkg.id,
-                    identity.current.user.user_id)
+            logMessage = 'Package %s in %s %s was orphaned by %s (%s)' % (
+                    pkg.package.name, pkg.collection.name,
+                    pkg.collection.version, identity.current.user.display_name,
+                    identity.current.user_name)
             status = model.StatusTranslation.get_by(statusname='Orphaned')
         elif pkg.owner == ORPHAN_ID:
             # Take ownership
             pkg.owner = identity.current.user.user_id
             ownerName = '%s (%s)' % (identity.current.user.display_name,
                     identity.current.user_name)
-            ### FIXME: We want the package name and collection name/ver.
-            # rather than the pkg.id
-            logMessage = 'Package %s is now owned by %s' % (pkg.id, ownerName)
+            logMessage = 'Package %s in %s %s is now owned by %s' % (
+                    pkg.package.name, pkg.collection.name,
+                    pkg.collection.version, ownerName)
             status = model.StatusTranslation.get_by(statusname='Owned')
         else:
             return dict(status=False, message=
@@ -206,10 +206,9 @@ class PackageDispatcher(controllers.Controller):
                             % (containerId))
 
         # Send a log to the commits list as well
-        email = turbomail.Message(FROMADDR, TOADDR, '[pkgdb] %s %s' % (pkg.id,
-            status.statusname))
+        email = turbomail.Message(FROMADDR, TOADDR, '[pkgdb] %s %s' % (
+            pkg.package.name, status.statusname))
         email.plain = logMessage
-        ### FIXME: Uncomment this when the outgoing configuration is worked out
         turbomail.enqueue(email)
 
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
