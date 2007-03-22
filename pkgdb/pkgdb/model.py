@@ -10,11 +10,11 @@ bind_meta_data()
 # Python classes
 #
 
-#
-# StatusCodeTranslation table.  Maps status codes to status names in various
-# languages.
-#
 class StatusTranslation(object):
+    '''Map status codes to status names in various languages.
+    
+    Table -- StatusCodeTranslation
+    '''
     def __init__(self, statuscodeid, statusname, language=None,
             description=None):
         self.statuscodeid = statuscodeid
@@ -24,46 +24,48 @@ class StatusTranslation(object):
         self.description = description or None
 
     def __repr__(self):
-        return 'StatusTranslation(%s, "%s", "%s")' % (self.statuscodeid,
-                self.statusname, self.language)
+        return 'StatusTranslation(%s, "%s", language="%s", description="%s")' \
+                % (self.statuscodeid, self.statusname, self.language,
+                        self.description)
 
-#
-# CollectionStatusCode table.  Subset of status codes that are applicable for
-# collections.
-#
 class CollectionStatus(object):
+    '''Subset of status codes that are applicable to collections.
+
+    Table -- CollectionStatusCode
+    '''
     def __init__(self, statuscodeid):
         self.statuscodeid = statuscodeid
 
     def __repr__(self):
         return 'CollectionStatus(%s)' % self.statuscodeid
 
-#
-# PackageListingStatusCode table.  Subset of status codes that are applicable
-# to package listings.
-#
 class PackageListingStatus(object):
+    '''Subset of status codes that are applicable to package listings.
+
+    Table -- PackageListingStatusCode
+    '''
     def __init__(self, statuscodeid):
         self.statuscodeid = statuscodeid
 
     def __repr__(self):
         return 'PackageListingStatus(%s)' % self.statuscodeid
 
-#
-# PackageAclStatusCode table.  Subset of status codes that apply to
-# PersonPackageListingAcl and GroupPackageListingAcls.
-#
 class PackageAclStatus(object):
+    ''' Subset of status codes that apply to Person and Group Package Acls.
+
+    Table -- PackageAclStatusCode
+    '''
     def __init__(self, statuscodeid):
         self.statuscodeid = statuscodeid
 
     def __repr__(self):
         return 'PackageAclStatus(%s)' % self.statuscodeid
 
-#
-# Collection table.  A collection of packages.
-#
 class Collection(object):
+    '''A Collection of packages.
+
+    Table -- Collection
+    '''
     def __init__(self, name, version, statuscode, owner,
             publishurltemplate=None, pendingurltemplate=None, summary=None,
             description=None):
@@ -77,16 +79,21 @@ class Collection(object):
         self.description = description
 
     def __repr__(self):
-        return 'Collection("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s")' % (
+        return 'Collection("%s", "%s", "%s", "%s", publishurltemplate="%s",' \
+                ' pendingurltemplate="%s", summary="%s", description=")' % (
                 self.name, self.version, self.statuscode, self.owner,
                 self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
 
-#
-# Branch table.  A collection of packages which has a physical representation
-# in our VCS and download repositories.
-#
 class Branch(Collection):
+    '''Collection that has a physical existence.
+
+    Some Collections are only present as a name and collection of packages.  The
+    Collections that have a branch record are also present in our VCS and
+    download repositories.
+
+    Table -- Branch
+    '''
     def __init__(self, collectionid, branchname, disttag, parentid, *args):
         self.collectionid = collectionid
         self.branchname = branchname
@@ -98,12 +105,14 @@ class Branch(Collection):
         return 'Branch(%s, "%s", "%s", "%s", "%s")' % (self.collectionid,
                 self.branchname, self.disttag, self.parentid)
 
-#
-# Package table.  This is equal to the software in one of our revision control
-# directories.  It is unversioned and not associated with a particular
-# collection.
-#
 class Package(object):
+    '''Software we are packaging.
+
+    This is equal to the software in one of our revision control directories.
+    It is unversioned and not associated with a particular collection.
+
+    Table -- Package
+    '''
     def __init__(self, name, summary, statuscode, description=None,
             reviewurl=None):
         self.name = name
@@ -113,14 +122,15 @@ class Package(object):
         self.reviewurl = reviewurl
 
     def __repr__(self):
-        return 'Package("%s", "%s", "%s", "%s", "%s")' % (self.name,
-                self.summary, self.statuscode, self.description, self.reviewurl)
+        return 'Package("%s", "%s", %s, description="%s", reviewurl="%s")' % (
+                self.name, self.summary, self.statuscode, self.description,
+                self.reviewurl)
 
-# 
-# PackageListing table.  This associates a package with a particular
-# collection.
-#
 class PackageListing(object):
+    '''This associates a package with a particular collection.
+
+    Table -- PackageListing
+    '''
     def __init__(self, packageid, collectionid, owner, statuscode,
             qacontact=None):
         self.packageid = packageid
@@ -130,14 +140,17 @@ class PackageListing(object):
         self.statuscode = statuscode
 
     def __repr__(self):
-        return 'PackageListing(%s, %s, %s, %s, %s)' % (self.packageid,
-                self.collectionid, self.owner, self.statuscode, self.qacontact)
+        return 'PackageListing(%s, %s, %s, %s, qacontact="%s")' % (
+                self.packageid, self.collectionid, self.owner,
+                self.statuscode, self.qacontact)
 
-#
-# PersonPackageListing table.  Each packagelisting has people who can modify
-# it.  This table associates acls with a person.
-#
 class PersonPackageListing(object):
+    '''Associate a person with a PackageListing.
+
+    People who are watching or can modify a packagelisting.
+
+    Table -- PersonPackageListing
+    '''
     def __init__(self, userid, packagelistingid):
         self.userid = userid
         self.packagelistingid = packagelistingid
@@ -146,11 +159,11 @@ class PersonPackageListing(object):
         return 'PersonPackageListing(%s, %s)' % (self.userid,
                 self.packagelistingid)
 
-#
-# GroupPackageListing table.  Each packagelisting can have groups which can
-# modify it.  This table associates acls with a group.
-#
 class GroupPackageListing(object):
+    '''Associate a group with a PackageListing.
+
+    Table -- GroupPackageListing
+    '''
     def __init__(self, groupid, packagelistingid):
         self.groupid = groupid
         self.packagelistingid = packagelistingid
@@ -159,32 +172,100 @@ class GroupPackageListing(object):
         return 'GroupPackageListing(%s, %s)' % (self.groupid,
                 self.packagelistingid)
 
-#
-# PersonPackageListingAcl table.  This is an actual acl on a package that a
-# person owns.
-#
 class PersonPackageListingAcl(object):
+    '''Acl on a package that a person owns.
+
+    Table -- PersonPackageListingAcl
+    '''
     def __init__(self, acl, statuscode, personpackagelistingid=None):
         self.personpackagelistingid = personpackagelistingid
         self.acl = acl
         self.statuscode = statuscode
 
     def __repr__(self):
-        return 'PersonPackageListingAcl(%s, %s, %s)' % (
-                self.personpackagelistingid, self.acl, self.statuscode)
+        return 'PersonPackageListingAcl("%s", %s, personpackagelistingid=%s)' \
+                % (self.acl, self.statuscode, self.personpackagelistingid)
 
-#
-# GroupPackageListingAcl table.  This is an acl that a group holds on an acl.
-#
 class GroupPackageListingAcl(object):
-    def __init__(self, grouppackagelistingid, acl, statuscode):
+    '''Acl on a package that a group owns.
+
+    Table -- GroupPackageListingAcl
+    '''
+    def __init__(self, acl, statuscode, grouppackagelistingid=None):
         self.grouppackagelistingid = grouppackagelistingid
         self.acl = acl
         self.statuscode = statuscode
 
     def __repr__(self):
-        return 'GroupPackageListingAcl(%s, %s, %s)' % (
-                self.grouppackagelistingid, self.acl, self.statuscode)
+        return 'GroupPackageListingAcl("%s", %s, grouppackagelistingid=%s)' % (
+                self.acl, self.statuscode, self.grouppackagelistingid)
+
+class Log(object):
+    '''Base Log record.
+
+    This is a Log record.  All logs will be entered via a subclass of this.
+
+    Table -- Log
+    '''
+    def __init__(self, userid, description=None, changetime=None):
+        self.userid = userid
+        self.description = description
+        self.changetime = changetime
+
+    def __repr__(self):
+        return 'Log(%s, description="%s", changetime="%s")' % (self.userid,
+                self.description, self.changetime)
+
+class PackageListingLog(Log):
+    '''Log of changes to the PackageListings.
+
+    Table -- Log
+    '''
+    def __init__(self, userid, action, description=None, changetime=None,
+            packagelistingid=None):
+        Log.__init__(self, userid, description, changetime)
+        self.action = action
+        self.packagelistingid = packagelistingid
+
+    def __repr__(self):
+        return 'PackageListingLog(%s, %s, description="%s", changetime="%s",' \
+                ' packagelistingid=%s)' % (self.userid,
+                self.action, self.description, self.changetime,
+                self.packagelistingid)
+
+class PersonPackageListingAclLog(Log):
+    '''Log changes to an Acl that a person owns.
+
+    Table -- PersonPackageListingAcl
+    '''
+    def __init__(self, userid, action, description=None, changetime=None,
+            personpackagelistingaclid=None):
+        Log.__init__(self, userid, description, changetime)
+        self.action = action
+        self.personpackagelistingaclid = personpackagelistingaclid
+
+    def __repr__(self):
+        return 'PersonPackageListingAclLog(%s, %s, description="%s",' \
+                ' changetime="%s", personpackagelistingaclid= %s)' % (
+                        self.userid, self.action, self.description,
+                        self.changetime, self.personpackagelistingaclid)
+
+class GroupPackageListingAclLog(Log):
+    '''Log changes to an Acl that a group owns.
+
+    Table -- GroupPackageListingAcl
+    '''
+    def __init__(self, userid, action, description=None, changetime=None,
+            grouppackagelistingaclid=None):
+        Log.__init__(self, userid, description, changetime)
+        self.action = action
+        self.grouppackagelistingaclid = grouppackagelistingaclid
+
+    def __repr__(self):
+        return 'GroupPackageListingAclLog(%s, %s, description="%s",' \
+                ' changetime="%s", grouppackagelistingaclid= %s)' % (
+                        self.userid, self.action, self.description,
+                        self.changetime, self.grouppackagelistingaclid)
 
 # Mapping status tables
 # These are a bit convoluted as we have a 1:1:N relation between
@@ -294,10 +375,66 @@ assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
                     primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid)
                 )})
 
+# Log tables
+# The log tables all inherit from the base log table.
+
+LogTable = Table('log', metadata, autoload=True)
+PackageListingLogTable = Table('packagelistinglog', metadata, autoload=True)
+PersonPackageListingAclLogTable = Table('personpackagelistingacllog', metadata,
+        autoload=True)
+GroupPackageListingAclLogTable = Table('grouppackagelistingacllog', metadata,
+        autoload=True)
+
+logJoin = polymorphic_union (
+        {'pkglistlog' : select((LogTable.join(
+            PackageListingLogTable,
+                LogTable.c.id == PackageListingLogTable.c.logid),
+            literal_column("'pkglistlog'").label('kind'))),
+         'personpkglistacllog' : select((LogTable.join(
+            PersonPackageListingAclLogTable,
+                LogTable.c.id == PersonPackageListingAclLogTable.c.logid),
+            literal_column("'personpkglistacllog'").label('kind'))),
+         'grouppkglistacllog' : select((LogTable.join(
+            GroupPackageListingAclLogTable,
+                LogTable.c.id == GroupPackageListingAclLogTable.c.logid),
+            literal_column("'grouppkglistacllog'").label('kind'))),
+         'log' : select((LogTable, literal_column("'log'").label('kind')),
+             not_(LogTable.c.id.in_(select(
+                 (LogTable.c.id,),
+                 LogTable.c.id == PackageListingLogTable.c.logid)
+             )))
+         },
+        None
+        )
+
+logMapper = assign_mapper(session.context, Log, LogTable,
+        select_table=logJoin, polymorphic_on=logJoin.c.kind,
+        polymorphic_identity='log')
+        
+assign_mapper(session.context, PersonPackageListingAclLog,
+        PersonPackageListingAclLogTable,
+        inherits=logMapper,
+        inherit_condition=LogTable.c.id==PersonPackageListingAclLogTable.c.logid,
+        polymorphic_identity='personpkglistacllog',
+        properties={'acl': relation(PersonPackageListingAcl, backref='logs')})
+
+assign_mapper(session.context, GroupPackageListingAclLog,
+        GroupPackageListingAclLogTable,
+        inherits=logMapper,
+        inherit_condition=LogTable.c.id==GroupPackageListingAclLogTable.c.logid,
+        polymorphic_identity='grouppkglistacllog',
+        properties={'acl': relation(GroupPackageListingAcl, backref='logs')})
+
+assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
+        inherits=logMapper,
+        inherit_condition=LogTable.c.id==PackageListingLogTable.c.logid,
+        polymorphic_identity='pkglistlog',
+        properties={'listing': relation(PackageListing, backref='logs')})
+
 ### FIXME: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example
 # above.
-# List of tables not yet maped::
+# List of tables not yet mapped::
 # StatusCode
 # CollectionLogStatusCode
 # PackageStatusCode
@@ -309,10 +446,6 @@ assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
 # CollectionSet
 # PackageBuild
 # PackageBuildListing
-# Log
 # CollectionLog
 # PackageLog
-# PackageListingLog
 # PackageBuildLog
-# PersonPackageListingAclLog
-# GroupPackageListingACLLog

@@ -170,8 +170,6 @@ function toggle_owner(ownerDiv, data) {
     var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
     insertSiblingNodesBefore(ownerName, newOwnerName);
     removeElement(ownerName);
-
-    logDebug('Exit toggle_owner');
 }
 
 function check_acl_status(statusDiv, data) {
@@ -235,8 +233,8 @@ function check_acl_request(aclBoxDiv, data) {
     for (aclStatusNum in oldAclStatus) {
         removeElement(oldAclStatus[aclStatusNum]);
     }
-    var aclBoxId = aclBoxDiv.getAttribute('name').split(':');
-    var aclStatus = SPAN({'name' : aclBoxId[0], 'class' : 'aclStatus'},
+    var aclBoxId = aclBoxDiv.getAttribute('name');
+    var aclStatus = SPAN({'name' : aclBoxId, 'class' : 'aclStatus'},
             data.aclStatus);
     appendChildNodes(aclBoxDiv, aclStatus);
 }
@@ -386,13 +384,13 @@ function request_status_change(event) {
     var idParts = requestContainer.getAttribute('name').split(':');
 
     var req = loadJSONDoc(base + '/set_acl_status', {'pkgid': idParts[0],
-            'personid': personid, 'newAcl': idParts[1], 'status': aclStatus});
+            'personid': personid, 'newAcl': idParts[1],
+            'statusname': aclStatus});
     req.addCallback(partial(check_acl_status, requestContainer));
     req.addErrback(partial(revert_acl_status, requestContainer));
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-
-    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'newAcl':idParts[1],'status':aclStatus}));
+    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'newAcl':idParts[1],'statusname':aclStatus}));
 }
 
 /*

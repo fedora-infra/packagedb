@@ -109,6 +109,16 @@ commit;
 begin;
   insert into StatusCode default values;
   insert into StatusCodeTranslation (statusCodeId, statusName)
+    values (lastval(), 'Orphaned');
+commit;
+begin;
+  insert into StatusCode default values;
+  insert into StatusCodeTranslation (statusCodeId, statusName)
+    values (lastval(), 'Owned');
+commit;
+begin;
+  insert into StatusCode default values;
+  insert into StatusCodeTranslation (statusCodeId, statusName)
     values (lastval(), 'Rejected');
 commit;
 begin;
@@ -234,7 +244,7 @@ begin;
   create table PackageListingLogStatusCode as
     select StatusCodeId from PackageListingStatusCode
     union select StatusCodeId from StatusCodeTranslation
-    where statusName in ('Added', 'Removed');
+    where statusName in ('Added', 'Removed', 'Orphaned', 'Owned');
   alter table PackageListingLogStatusCode add primary key (statusCodeId);
 commit;
 create trigger add_status_to_action after insert or delete or update
@@ -641,11 +651,11 @@ create table Log (
 -- :action: What happened to the collection.
 create table CollectionLog (
   logId integer primary key,
-  packageId integer not null,
+  collectionId integer not null,
   action integer not null,
   foreign key (logId) references Log(id)
     on delete cascade on update cascade,
-  foreign key (packageId) references Package(id)
+  foreign key (collectionId) references Collection(id)
     on delete restrict on update cascade,
   foreign key (action) references CollectionLogStatusCode (statusCodeId)
     on delete restrict on update cascade
@@ -705,11 +715,11 @@ create table PackageBuildLog (
     on delete restrict on update cascade
 );
 
--- Log changes to built package ACLs.
+-- Log changes to the acls someone holds on a package.
 --
 -- Fields:
 -- :logId: The id of the log entry.
--- :packageBuildId: The `PackageACL` that changed.
+-- :personPackageListingAclId: The Person-PackageListing ACL that's changed.
 -- :action: What happened to the ACLs for the package.
 create table PersonPackageListingAclLog (
   logId integer primary key,
@@ -723,11 +733,11 @@ create table PersonPackageListingAclLog (
     on delete restrict on update cascade
 );
 
--- Log changes to built package ACLs.
+-- Log changes to the acls a roup holds on the package.
 --
 -- Fields:
 -- :logId: The id of the log entry.
--- :packageBuildId: The `PackageACL` that changed.
+-- :groupPackageListingAclId: The group-package acl that's changed.
 -- :action: What happened to the ACLs for the package.
 create table GroupPackageListingACLLog (
   logId integer primary key,
@@ -752,7 +762,7 @@ grant select, insert, update
     PersonPackageListingAcl, GroupPackageListingAcl
   to pkgdbadmin;
 grant select, insert
-  on Log, PackageLog, PackageListingLog, PackageBuildLog,
+  on Log, CollectionLog, PackageLog, PackageListingLog, PackageBuildLog,
     PersonPackageListingAclLog, GroupPackageListingAclLog
   to pkgdbadmin;
 
@@ -764,7 +774,7 @@ grant update
   to pkgdbadmin;
 grant select
   on StatusCode, StatusCodeTranslation,
-    CollectionStatusCode, CollectionLogStatusCode
+    CollectionStatusCode, CollectionLogStatusCode,
     PackageStatusCode, PackageLogStatusCode, PackageBuildStatusCode,
     PackageBuildLogStatusCode, PackageListingStatusCode,
     PackageListingLogStatusCode, PackageACLStatusCode,
