@@ -144,6 +144,9 @@ class PackageDispatcher(controllers.Controller):
     def _user_can_set_acls(self, userid, pkg):
         '''Check that the current user can set acls.
         '''
+        # Find the approved statuscode
+        status = model.StatusTranslation.get_by(statusname='Approved')
+
         # Make sure the current tg user has permission to set acls
         if userid == pkg.owner:
             # We're talking to the owner
@@ -154,7 +157,7 @@ class PackageDispatcher(controllers.Controller):
                 # Check each acl that this person has on the package.
                 for acl in person.acls:
                     if (acl.acl == 'approveacls' and acl.statuscode
-                            == self.aclStatusMap['Approved'].statuscodeid):
+                            == status.statuscodeid):
                         return True
                 break
         return False
@@ -207,6 +210,7 @@ class PackageDispatcher(controllers.Controller):
                             % (containerId))
 
         # Send a log to the commits list as well
+        ### FIXME: Want to send to everyone interested in this package as well
         email = turbomail.Message(FROMADDR, TOADDR, '[pkgdb] %s %s' % (
             pkg.package.name, status.statusname))
         email.plain = logMessage
@@ -217,7 +221,7 @@ class PackageDispatcher(controllers.Controller):
 
     @expose('json')
     # Check that the requestor is in a group that could potentially set ACLs.
-    @identity.require(identity.in_group('cvsextras', 'cvsadmin'))
+    @identity.require(identity.in_any_group('cvsextras', 'cvsadmin'))
     def set_acl_status(self, pkgid, personid, newAcl, statusname):
         ### FIXME: Changing Obsolete into "" sounds like it should be
         # Pushed out to the view (template) instead of being handled in the
@@ -285,12 +289,12 @@ class PackageDispatcher(controllers.Controller):
                 changePerson.acls.append(personAcl)
 
         # Get the human name and username for the person whose acl we changed
-        (user, groups) == fas.get_user_info(personAcl.personpackagelisting.userid)
+        (user, groups) = fas.get_user_info(personAcl.personpackagelisting.userid)
         # Make sure a log is created in the db as well.
-        logMessage = '%s (%s) has %s the %s acl for %s (%s)' % (
+        logMessage = '%s (%s) has set the %s acl to %s for %s (%s)' % (
                     identity.current.user.display_name,
-                    identity.current.user_name. status.statusname,
-                    newAcl, user['human_name'], user['username'])
+                    identity.current.user_name, newAcl, status.statusname,
+                    user['human_name'], user['username'])
         log = model.PersonPackageListingAclLog(identity.current.user.user_id,
                 status.statuscodeid, logMessage)
         log.acl = personAcl
@@ -303,8 +307,10 @@ class PackageDispatcher(controllers.Controller):
                     message='Not able to create acl %s on %s with status %s' \
                             % (newAcl, pkgid, status))
         # Send a log to the commits list as well
-        email = turbomail.Message(FROMADDR, TOADDR, '[pkgdb] %s for %s %s' % (
-            newAcl, user['human_name'], status.statusname))
+        ### FIXME: Want to send to everyone in approveacls as well.
+        email = turbomail.Message(FROMADDR, TOADDR,
+                '[pkgdb] %s set to %s for %s' % (newAcl, status.statusname,
+                    user['human_name']))
         email.plain = logMessage
         turbomail.enqueue(email)
 
@@ -312,7 +318,7 @@ class PackageDispatcher(controllers.Controller):
 
     @expose('json')
     # Check that the requestor is in a group that could potentially set ACLs.
-    @identity.require(identity.in_group('cvsextras', 'cvsadmin'))
+    @identity.require(identity.in_any_group('cvsextras', 'cvsadmin'))
     def toggle_groupacl_status(self, containerId):
         '''Set the groupacl to determine whether the group can commit.
         '''
