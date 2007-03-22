@@ -40,6 +40,7 @@ require {
 	type sendmail_t; 
 	type setrans_t; 
 	type setroubleshootd_t; 
+	type smtp_port_t;
 	type syslogd_t; 
 	type system_dbusd_t; 
 	type transproxy_port_t;
@@ -49,8 +50,8 @@ require {
 	role system_r; 
 };
 
-allow httpd_sys_script_t transproxy_port_t:tcp_socket { name_bind name_connect };
 allow httpd_t transproxy_port_t:tcp_socket name_connect;
+allow httpd_sys_script_t transproxy_port_t:tcp_socket { name_bind name_connect recv_msg send_msg };
 allow httpd_sys_script_t dns_port_t:udp_socket { recv_msg send_msg };
 allow httpd_sys_script_t http_port_t:tcp_socket { name_connect send_msg };
 allow httpd_sys_script_t auditd_t:file read;
@@ -75,6 +76,7 @@ allow httpd_sys_script_t rpcd_t:file read;
 allow httpd_sys_script_t sendmail_t:file read;
 allow httpd_sys_script_t setrans_t:file read;
 allow httpd_sys_script_t setroubleshootd_t:file read;
+allow httpd_sys_script_t smtp_port_t:tcp_socket { name_connect recv_msg send_msg };
 allow httpd_sys_script_t syslogd_t:file read;
 allow httpd_sys_script_t system_dbusd_t:file read;
 allow httpd_sys_script_t udev_t:file read;

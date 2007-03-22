@@ -4,10 +4,12 @@ import sqlalchemy.mods.selectresults
 from turbogears import controllers, expose, paginate, config
 from turbogears import identity, redirect
 from turbogears.database import session
-from pkgdb import model
+import turbomail
 from cherrypy import request, response
-from pkgdb import json
 import logging
+
+from pkgdb import model
+from pkgdb import json
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
@@ -17,6 +19,8 @@ appTitle = 'Fedora Package Database'
 fas = AccountSystem()
 
 ORPHAN_ID=9900
+FROMADDR=config.get('from_address')
+TOADDR=config.get('commits_address')
 
 class Test(controllers.Controller):
     @expose(template="pkgdb.templates.welcome")
@@ -206,7 +210,7 @@ class PackageDispatcher(controllers.Controller):
             status.statusname))
         email.plain = logMessage
         ### FIXME: Uncomment this when the outgoing configuration is worked out
-        #turbomail.enqueue(email)
+        turbomail.enqueue(email)
 
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
                 aclStatusFields=self.aclStatusTranslations)
