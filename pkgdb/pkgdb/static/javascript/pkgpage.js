@@ -39,7 +39,7 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
 
                 /* Create the requestContainer that holds the statusList */
                 var newAclStatus = DIV({'name': aclName,
-                        'class' : 'requestContainer aclStatus debug'},
+                        'class' : 'requestContainer aclStatus'},
                         newAclStatusList);
                 /* Replace the span */
                 replaceChildNodes(aclFields[aclFieldNum], newAclStatus);
