@@ -1,5 +1,4 @@
 <?python
-layout_params['displayNotes']=True
 TODO='Not yet implemented'
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml"
@@ -185,13 +184,5 @@ TODO='Not yet implemented'
     </td></tr>
   </table>
   </form>
-  <div id='Notes' py:if="layout_params['displayNotes']">
-  <p>
-    <ul>
-      <li>If the user is an owner or has permission to change packagedb information they can edit all the mutable package information.</li>
-      <li>Package name and EVR are immutable.  Status should eventually be immutable (set automatically).</li>
-    </ul>
-  </p>
-  </div>
 </div>
 </html>

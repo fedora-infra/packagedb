@@ -1,6 +1,3 @@
-<?python
-layout_params['displayNotes']=False
-?>
 <html xmlns="http://www.w3.org/1999/xhtml"
   xmlns:py="http://purl.org/kid/ns#"
   py:layout="'layout.kid'">
@@ -25,7 +22,10 @@ create packages and spin them into a distribution.
 
 <h2>News</h2>
 <h3>0.2.90.1</h3>
-<p>No changes yet</p>
+<ul>
+<li>URL scheme that uses package name</li>
+<li>Minor template tweaks</li>
+</ul>
 
 <h3>0.2.90.0</h3>
 <ul>
@@ -34,26 +34,18 @@ create packages and spin them into a distribution.
 </ul>
 <h3>0.2</h3>
 <ul>
-<li>Able to allow or deny commits from anyone in cvsextras group.</li>
-<li>Hide checkout and build perms as we aren't using them yet.</li>
+<li>Sign up to watch or comaintain packages</li>
+<li>If you are a maintainer or co-maintainer, approve privileges for other people and groups.</li>
+<li>You can now log in to the database using your Fedora Account System Username
+and Password</li>
+<li>While logged in, you can take ownership of orphaned packages or orphan
+packages that you own</li>
 </ul>
 <p>
 At this point the user interface should be a full replacement for owners.list
 and pkg.acl.  The backend that takes data from the database and applies it to
 cvs is not yet complete.
 </p>
-<h3>0.1.92</h3>
-<ul>
-<li>If you are a maintainer or co-maintainer, approve privileges for other people.</li>
-</ul>
-<h3>0.1.91</h3>
-<ul>
-<li>You can now log in to the database using your Fedora Account System Username
-and Password</li>
-<li>While logged in, you can take ownership of orphaned packages or orphan
-packages that you own</li>
-<li>Sign up to watch or comaintain packages</li>
-</ul>
 
 <h2>Plans</h2>
 <h3>Before Go Live</h3>
@@ -66,36 +58,39 @@ packages that you own</li>
 </li>
 <li>External scripts
 <ul>
-<li>How to add a new package:  Must be done pre-cvs-import so we should tie this
-into dgilmore's scripts on cvs-int.</li>
 <li>Current sync of owners.list/owners.epel.list: Have to update slightly to
 account for the new owners.list format</li>
+<li>How to add a new package, branch scripts, etc:  Must be done
+pre-cvs-import so we should tie this
+into dgilmore's scripts on cvs-int.  This can be enabled concurrently to the
+current entering into owners.list.</li>
+<li>Output entries to bugzilla</li>
 <li>Sync to Package ACLs</li>
 <li>Output ACLs to the system</li>
-<li>Output entries to bugzilla</li>
 </ul>
 </li>
 </ul>
 <h3>Urgent</h3>
 <ul>
-<li>Allow anyone from cvsadmin group to make changes.
-</li>
+<li>Give cvsadmin group admin permissions on the packagedb</li>
 </ul>
 <h3>Future</h3>
 <ul>
+<li>Autoapproval of watchbugzilla and watchcommits ACLs</li>
 <li>Have a interface for reviewing changes on the PackageDB. (When and by whom
 were ACLs changed, when were the Collections added to the system, etc.)</li>
 <li>View packages by owner</li>
 <li>Full UI for managing groups in ACLs.</li>
-<li>URL scheme that uses package name</li>
-<li>Give cvsadmin group admin permissions on the packagedb</li>
-<li>Later, expand that to sponsor roles, etc</li>
+<li>Expand what sponsors can do.</li>
 <li>Modify tg_paginate to display entries alphabetically instead of as pages
 of 100 entries</li>
 <li>Tie into koji for build ACLs</li>
 <li>Make branch requests through the pkgdb.  Some requests are automatically
 approved and changes made to cvs, others are sent to cvsadmins for approval.</li>
 <li>Restore the ability for contributors to import new packages into the tree after approval.</li>
+<li>Add License information to the Database.  Initially this will be the same
+as the spec file tag.  Later it will tie into a License DB.  Talk to Tom
+Callaway (spot) for further details</li>
 </ul>
 
 <h2 id="notes">Notes</h2>
