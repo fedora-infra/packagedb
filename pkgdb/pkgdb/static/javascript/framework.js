@@ -207,18 +207,18 @@ function make_request(action, callback, errback, event) {
 }
 
 /* Initialize the spinner */
-spinnerImages = ['/pkgdb-dev/static/images/spinner/01.png',
-              '/pkgdb-dev/static/images/spinner/02.png',
-              '/pkgdb-dev/static/images/spinner/03.png',
-              '/pkgdb-dev/static/images/spinner/04.png',
-              '/pkgdb-dev/static/images/spinner/05.png',
-              '/pkgdb-dev/static/images/spinner/06.png',
-              '/pkgdb-dev/static/images/spinner/07.png',
-              '/pkgdb-dev/static/images/spinner/08.png',
-              '/pkgdb-dev/static/images/spinner/09.png',
-              '/pkgdb-dev/static/images/spinner/10.png',
-              '/pkgdb-dev/static/images/spinner/11.png',
-              '/pkgdb-dev/static/images/spinner/12.png'
+spinnerImages = ['/pkgdb/static/images/spinner/01.png',
+              '/pkgdb/static/images/spinner/02.png',
+              '/pkgdb/static/images/spinner/03.png',
+              '/pkgdb/static/images/spinner/04.png',
+              '/pkgdb/static/images/spinner/05.png',
+              '/pkgdb/static/images/spinner/06.png',
+              '/pkgdb/static/images/spinner/07.png',
+              '/pkgdb/static/images/spinner/08.png',
+              '/pkgdb/static/images/spinner/09.png',
+              '/pkgdb/static/images/spinner/10.png',
+              '/pkgdb/static/images/spinner/11.png',
+              '/pkgdb/static/images/spinner/12.png'
               ];
 spinnerTimeout = 0.1;
 spinnerCount = 0;
