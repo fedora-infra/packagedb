@@ -34,6 +34,16 @@ class Test(controllers.Controller):
     def test(self):
         return dict(title='Test Page', rows=({'1': 'alligator', '2':'bat'},{'1':'avocado', '2':'bannana'}))
 
+    @expose(template='pkgdb.templates.orphans')
+    def orphans(self):
+        pkgIds = {}
+        orphanedPackages = SelectResults(session.query(model.PackageListing)).select(
+                model.PackageListing.c.owner==ORPHAN_ID)
+        for pkg in orphanedPackages:
+            pkgIds[pkg.package.id] = pkg.package.name
+
+        return dict(title='List Orphans', pkgIds=pkgIds)
+
 class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionoverview')
     def index(self):
@@ -522,6 +532,11 @@ class Packages(controllers.Controller):
         # Retrieve the complete list of packages
         packages = SelectResults(session.query(model.Package))
         return dict(title=appTitle + ' -- Package Overview', packages=packages)
+
+    @expose(template='pkgdb.templates.pkgpage')
+    def name(self, packageName):
+        pkg = model.Package.get_by(name=packageName)
+        return self.id(pkg.id)
 
     @expose(template='pkgdb.templates.pkgpage')
     def id(self, packageId):

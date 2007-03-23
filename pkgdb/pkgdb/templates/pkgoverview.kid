@@ -1,6 +1,3 @@
-<?python
-layout_params['displayNotes']=False
-?>
 <html xmlns="http://www.w3.org/1999/xhtml"
   xmlns:py="http://purl.org/kid/ns#"
   py:layout="'layout.kid'">
