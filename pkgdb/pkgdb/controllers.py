@@ -36,13 +36,13 @@ class Test(controllers.Controller):
 
     @expose(template='pkgdb.templates.orphans')
     def orphans(self):
-        pkgIds = {}
+        pkgs = {}
         orphanedPackages = SelectResults(session.query(model.PackageListing)).select(
                 model.PackageListing.c.owner==ORPHAN_ID)
         for pkg in orphanedPackages:
-            pkgIds[pkg.package.id] = pkg.package.name
+            pkgs[pkg.package.name] = pkg.package.summary
 
-        return dict(title='List Orphans', pkgIds=pkgIds)
+        return dict(title='List Orphans', pkgs=pkgs)
 
 class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionoverview')
@@ -536,6 +536,9 @@ class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgpage')
     def name(self, packageName):
         pkg = model.Package.get_by(name=packageName)
+        if not pkg:
+            raise redirect(config.get('base_url_filter.base_url') +
+                    '/packages/not_packagename')
         return self.id(pkg.id)
 
     @expose(template='pkgdb.templates.pkgpage')
@@ -622,6 +625,13 @@ class Packages(controllers.Controller):
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.' % packageId
         return dict(title=appTitle + ' -- Unknown Package', msg=msg)
+
+    @expose(template='pkgdb.templates.errors')
+    def not_packagename(self):
+        msg = 'The packagename you were linked to is not a valid name.' \
+                ' If you received this error from a link on the' \
+                ' fedoraproject.org website, please report it.'
+        return dict(title=appTitle + ' -- Invalid Package Name', msg=msg)
 
     @expose(template='pkgdb.templates.errors')
     def not_id(self):

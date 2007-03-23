@@ -48,7 +48,44 @@ cvs is not yet complete.
 </p>
 
 <h2>Plans</h2>
+<h3>Timeline</h3>
+<table>
+<tr><td>
+29 March 2007
+</td><td>
+F7 Test3
+</td></tr>
+<tr><td>
+17 April 2007
+</td><td>
+F7 translation freeze/smolt release
+</td></tr>
+<tr><td>
+19 April 2007
+</td><td>
+** Completion of Go Live items no later than this date/Commencement of deployment (Hoping for April 12-17)
+</td></tr>
+<tr><td>
+26 April 2007
+</td><td>
+F7 Test4
+</td></tr>
+<tr><td>
+1 May 2007
+</td><td>
+** PackageDB General Release by this date (Hoping for April 23)
+</td></tr>
+<tr><td>
+24 May 2007
+</td><td>
+F7 general Availability
+</td></tr>
+</table>
 <h3>Before Go Live</h3>
+<p>Completion of these items to be done no later than April 19, 2007.</p>
+<p>Deployment for testing</p>
+<p>26 April F7 test4</p>
+
 <ul>
 <li>Within the web app
 <ul>
