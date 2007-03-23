@@ -36,13 +36,13 @@ class Test(controllers.Controller):
 
     @expose(template='pkgdb.templates.orphans')
     def orphans(self):
-        pkgIds = {}
+        pkgs = {}
         orphanedPackages = SelectResults(session.query(model.PackageListing)).select(
                 model.PackageListing.c.owner==ORPHAN_ID)
         for pkg in orphanedPackages:
-            pkgIds[pkg.package.id] = pkg.package.name
+            pkgs[pkg.package.name] = pkg.package.summary
 
-        return dict(title='List Orphans', pkgIds=pkgIds)
+        return dict(title='List Orphans', pkgs=pkgs)
 
 class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionoverview')

@@ -16,7 +16,7 @@
   <a py:if="tg.paginate.current_page &lt; tg.paginate.page_count"
     href="${tg.paginate.get_href(tg.paginate.page_count)}">&gt;&gt;</a>
   <ul py:for="pkg in packages">
-  <li><a href="${tg.url('/packages/id/' + str(pkg.id))}"
+  <li><a href="${tg.url('/packages/name/' + pkg.name)}"
     py:content="pkg.name"></a> --
     <span py:replace="pkg.summary">Package Summary</span></li>
   </ul>
