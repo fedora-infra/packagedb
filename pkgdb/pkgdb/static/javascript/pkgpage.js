@@ -89,7 +89,10 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                             var aclRequestBox = INPUT({'type' : 'checkbox',
                                 'class' : 'aclPresentBox'});
                         }
-                        insertSiblingNodesBefore(newAclStatus, aclRequestBox);
+                        var requestContainer = DIV({'class':
+                                'requestContainer aclPresent', 'name': aclName},
+                                aclRequestBox);
+                        insertSiblingNodesBefore(newAclStatus, requestContainer);
                         connect(aclRequestBox, 'onclick', request_add_drop_acl);
                     }
                 }
