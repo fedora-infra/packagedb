@@ -13,7 +13,7 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
         for (var aclFieldNum in aclFields) {
             aclStatus = getElementsByTagAndClassName(null, 'aclStatus',
                     aclFields[aclFieldNum])[0];
-       
+
             /* If we don't encounter a SPAN then this has already been flipped
              * to a SELECT.
              */
@@ -319,19 +319,26 @@ function request_acl_gui(event) {
     // don't.
     acls = ['watchbugzilla', 'watchcommits', 'commit', 'approveacls'];
     var newAclRow = TR({'class' : 'aclrow'},
-            TD({'class' : 'acluser'},
+            TD({'class' : 'acluser',
+                'name': pkgListTable.getAttribute('name') + ':' + tgUserUserId},
                 tgUserDisplayName + ' (' + tgUserUserName + ')'
             ))
     for (var aclNum in acls) {
+        // FIXME: If the user is also the owner, create aclStatus as a select
+        // list instead of a span so they can approve acls for themselves.
+        // Have to ad the pkg owner information to the table somewhere.
+        // Probaby <span class='ownerName'
+        //    name='pkgListId:ownerId'>display_name (username)</span>
+        // is the place to store that.
+        var aclStatus = SPAN({'class': 'aclStatus',
+            'name': pkgListTable.getAttribute('name') + ':' + acls[aclNum]});
         var aclReqBox = INPUT({'type' : 'checkbox', 'class' : 'aclPresentBox'})
         connect(aclReqBox, 'onclick', request_add_drop_acl);
         var newAclCell = TD({'class' : 'aclcell'},
                 DIV({'name' : pkgListTable.getAttribute('name') + ':' + acls[aclNum],
                     'class' : 'requestContainer aclPresent'},
                     aclReqBox
-                   )
-                // FIXME: If the user is also the owner, create a select list
-                // for them to approve acls for themselves.
+                   ), aclStatus
                 );
         appendChildNodes(newAclRow, newAclCell);
     }
