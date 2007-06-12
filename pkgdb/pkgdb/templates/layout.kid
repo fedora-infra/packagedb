@@ -3,9 +3,9 @@
   <title>${title}</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <style type="text/css" media="screen">
-    @import url("http://rhold.fedoraproject.org/css/layout.css");
-    @import url("http://rhold.fedoraproject.org/css/content.css");
-    @import url("http://rhold.fedoraproject.org/css/docbook.css");
+    @import url("https://admin.fedoraproject.org/css/layout.css");
+    @import url("https://admin.fedoraproject.org/css/content.css");
+    @import url("https://admin.fedoraproject.org/css/docbook.css");
     @import url("${tg.url("/static/css/pkgdb.css")}");
   </style>
     <style type="text/css">
@@ -26,7 +26,7 @@
   <!-- Header BEGIN -->
   <div id="fedora-header">
     <div id="fedora-header-logo">
-      <a href="/"><img src="http://rhold.fedoraproject.org/images/header-fedora_logo.png" alt="Fedora Project"/></a>
+      <a href="/"><img src="https://admin.fedoraproject.org/images/header-fedora_logo.png" alt="Fedora Project"/></a>
     </div>
 
     <div id="fedora-header-items">
@@ -55,7 +55,8 @@
   <div id="fedora-side-left">
     <div id="fedora-side-nav-label">Site Navigation:</div>
     <ul id="fedora-side-nav">
-      <li><strong><a href="http://fedoraproject.org/wiki/">FedoraProject</a></strong></li>
+      <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
+      <li><a href="http://fedoraproject.org/wiki/">Fedora Project</a></li>
       <li><a href="http://fedoraproject.org/wiki/PackageMaintainers">Packagers Portal</a></li>
       <li><a href="https://admin.fedoraproject.org/accounts/">Account System</a></li>
       <li><a href="http://fedoraproject.org/wiki/DocsProject">Documentation</a></li>
@@ -83,8 +84,8 @@
     <br/>Fedora is a trademark of Red Hat, Inc. 
     <br/>The Fedora Project is not a supported product of Red Hat, Inc.
     <br/>Red Hat, Inc. is not responsible for the content of other sites. 
-    <br/><a href="http://rhold.fedoraproject.org/About/legal/">Legal</a> | <a
-  href="http://rhold.fedoraproject.org/About/legal/trademarks/">Trademark Guidelines</a>
+    <br/><a href="http://www.fedoraproject.org/wiki/Legal">Legal</a> | <a
+  href="http://www.fedoraproject.org/wiki/Legal/TrademarkGuidelines">Trademark Guidelines</a>
     <br/>
   </div>
   <!-- footer END -->
