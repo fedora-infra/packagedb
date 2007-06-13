@@ -26,7 +26,7 @@
   <!-- Header BEGIN -->
   <div id="fedora-header">
     <div id="fedora-header-logo">
-      <a href="/"><img src="https://admin.fedoraproject.org/images/header-fedora_logo.png" alt="Fedora Project"/></a>
+      <a href="http://www.fedoraproject.org/"><img src="https://admin.fedoraproject.org/images/header-fedora_logo.png" alt="Fedora Project"/></a>
     </div>
 
     <div id="fedora-header-items">
@@ -56,10 +56,9 @@
     <div id="fedora-side-nav-label">Site Navigation:</div>
     <ul id="fedora-side-nav">
       <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
-      <li><a href="http://fedoraproject.org/wiki/">Fedora Project</a></li>
-      <li><a href="http://fedoraproject.org/wiki/PackageMaintainers">Packagers Portal</a></li>
-      <li><a href="https://admin.fedoraproject.org/accounts/">Account System</a></li>
-      <li><a href="http://fedoraproject.org/wiki/DocsProject">Documentation</a></li>
+      <li><a href="${tg.url('/packages/')}">View Packages</a></li>
+      <li><a href="${tg.url('/collections/')}">View Collections</a></li>
+      <li><a href="fedoraproject.org/wiki/Infrastructure/PackageDatabase">Documentation</a></li>
     </ul>
   </div>
   <!-- LeftNavBar END -->
@@ -77,7 +76,21 @@
   <!-- contentArea END -->
 
 <!-- RightNavBar BEGIN -->
-  
+  <!-- rightside BEGIN -->
+  <div id="fedora-side-right">
+    <div class="fedora-side-right-content">
+      <h1>Links</h1>
+
+      <p>Links to other sites
+        <ul>
+          <li><a href="http://www.fedoranews.org">Fedora News</a></li>
+          <li><a href="https://admin.fedoraproject.org">Accounts System</a></li>
+          <li><a href="http://fedoraproject.org/wiki/DocsProject">Documentation Project</a></li>
+          <li><a href="http://fedoraproject.org/wiki/PackageMaintainers">Packagers Portal</a></li>
+        </ul>
+      </p>
+    </div>
+  </div><!-- rightside END -->
   <!-- footer BEGIN -->
   <div id="fedora-footer">
     Copyright &copy; 2003-2006 Red Hat, Inc. All rights reserved.
