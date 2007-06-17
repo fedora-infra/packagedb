@@ -4,7 +4,7 @@
 
 <div py:match="item.tag == 'content'">
 
-<h1>Fedora Package Database -- Version 0.2.90.1</h1>
+<h1>Fedora Package Database -- Version 0.2.90.2</h1>
 
 <h2>Overview</h2>
 <p>The Package Database is a central repository of package information in
@@ -21,6 +21,13 @@ create packages and spin them into a distribution.
   </ul>
 
 <h2>News</h2>
+<h3>0.2.90.2</h3>
+<ul>
+<li>Current sync of owners.list/owners.epel.list: Have to update slightly to
+account for the new owners.list format</li>
+<li>Sync from Package ACLs</li>
+</ul>
+
 <h3>0.2.90.1</h3>
 <ul>
 <li>URL scheme that uses package name</li>
@@ -48,44 +55,7 @@ cvs is not yet complete.
 </p>
 
 <h2>Plans</h2>
-<h3>Timeline</h3>
-<table>
-<tr><td>
-29 March 2007
-</td><td>
-F7 Test3
-</td></tr>
-<tr><td>
-17 April 2007
-</td><td>
-F7 translation freeze/smolt release
-</td></tr>
-<tr><td>
-19 April 2007
-</td><td>
-** Completion of Go Live items no later than this date/Commencement of deployment (Hoping for April 12-17)
-</td></tr>
-<tr><td>
-26 April 2007
-</td><td>
-F7 Test4
-</td></tr>
-<tr><td>
-1 May 2007
-</td><td>
-** PackageDB General Release by this date (Hoping for April 23)
-</td></tr>
-<tr><td>
-24 May 2007
-</td><td>
-F7 general Availability
-</td></tr>
-</table>
 <h3>Before Go Live</h3>
-<p>Completion of these items to be done no later than April 19, 2007.</p>
-<p>Deployment for testing</p>
-<p>26 April F7 test4</p>
-
 <ul>
 <li>Within the web app
 <ul>
@@ -95,15 +65,12 @@ F7 general Availability
 </li>
 <li>External scripts
 <ul>
-<li>Current sync of owners.list/owners.epel.list: Have to update slightly to
-account for the new owners.list format</li>
+<li>Output entries to bugzilla [<a href="${tg.url('/static/bz-make-components.py')}">Initial work</a> done 04-04: Needs testing] -- <i>need to change to use the bugzilla xmlrpc interface</i></li>
+<li>Output ACLs to the system</li>
 <li>How to add a new package, branch scripts, etc:  Must be done
 pre-cvs-import so we should tie this
 into dgilmore's scripts on cvs-int.  This can be enabled concurrently to the
-current entering into owners.list.</li>
-<li>Output entries to bugzilla</li>
-<li>Sync to Package ACLs</li>
-<li>Output ACLs to the system</li>
+current entering into owners.list. -- <i>warren is working on sync to koji.  Also need to be able to add the new package to the db.</i></li>
 </ul>
 </li>
 </ul>
@@ -128,6 +95,7 @@ approved and changes made to cvs, others are sent to cvsadmins for approval.</li
 <li>Add License information to the Database.  Initially this will be the same
 as the spec file tag.  Later it will tie into a License DB.  Talk to Tom
 Callaway (spot) for further details</li>
+<li>UI Improvements!</li>
 </ul>
 
 <h2 id="notes">Notes</h2>
