@@ -73,14 +73,14 @@ TODO='Not yet implemented'
           <span py:if="'cvsextras' in tg.identity.groups and pkg.collection.status.translations[0].statusname!='EOL'">
             <input type="button" name="unorphan"
               class="ownerButton unorphanButton"
-              value="Take Ownership"></input>
+              value="Take Ownership"/>
           </span>
         </div>
         <div py:if="pkg.ownerid != 9900"
           py:attrs="{'name': str(pkg.id)}"
           class="requestContainer owner owned">
           <span class="ownerName">${pkg.ownername}</span>
-        <span py:if="not tg.identity.anonymous and tg.identity.user.user_id == pkg.ownerid">
+        <span py:if="not tg.identity.anonymous and (tg.identity.user.user_id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
           <input type="button" name="orphan"
             class="ownerButton orphanButton"
             value="Release Ownership"/>

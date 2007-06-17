@@ -36,6 +36,13 @@ class Test(controllers.Controller):
 
     @expose(template='pkgdb.templates.orphans')
     def orphans(self):
+        import os
+        t = file('/var/tmp/t', 'w')
+        #for line in os.environ:
+        #    t.writelines('%s: %s\n' % (line, os.environ[line]))
+        #t.writelines('%s' % request.wsgi_environ)
+        t.writelines('%s' % request.headers)
+        t.close()
         pkgs = {}
         orphanedPackages = SelectResults(session.query(model.PackageListing)).select(
                 model.PackageListing.c.owner==ORPHAN_ID)
@@ -43,6 +50,18 @@ class Test(controllers.Controller):
             pkgs[pkg.package.name] = pkg.package.summary
 
         return dict(title='List Orphans', pkgs=pkgs)
+
+    @expose(template='pkgdb.templates.pkgmine')
+    @paginate('pkgs')
+    @identity.require(identity.in_group("cvsextras"))
+    def mine(self):
+        #pkgs = {}
+        myPackages = SelectResults(session.query(model.PackageListing)).select(
+                model.PackageListing.c.owner==identity.current.user.user_id)
+        #for pkg in myPackages:
+        #    pkgs = pkg.package
+
+        return dict(title='My Packages', pkgs=myPackages)
 
 class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionoverview')
@@ -184,7 +203,7 @@ class PackageDispatcher(controllers.Controller):
         if not pkg:
             return dict(status=False, message='No such package %s' % containerId)
         ### FIXME: We want to allow "admin" users to set orphan status as well.
-        if pkg.owner == identity.current.user.user_id:
+        if pkg.owner == identity.current.user.user_id or identity.in_group("cvsadmin"):
             # Release ownership
             pkg.owner = ORPHAN_ID
             ownerName = 'Orphaned Package (orphan)'
@@ -538,7 +557,7 @@ class Packages(controllers.Controller):
         pkg = model.Package.get_by(name=packageName)
         if not pkg:
             raise redirect(config.get('base_url_filter.base_url') +
-                    '/packages/not_packagename')
+                    '/packages/not_packagename', redirect_params={'packageName' : packageName})
         return self.id(pkg.id)
 
     @expose(template='pkgdb.templates.pkgpage')
@@ -627,10 +646,11 @@ class Packages(controllers.Controller):
         return dict(title=appTitle + ' -- Unknown Package', msg=msg)
 
     @expose(template='pkgdb.templates.errors')
-    def not_packagename(self):
-        msg = 'The packagename you were linked to is not a valid name.' \
+    def not_packagename(self, packageName):
+        msg = 'The packagename you were linked to (%s) does not appear' \
+                ' in the Package Database.' \
                 ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.'
+                ' fedoraproject.org website, please report it.' % packageName
         return dict(title=appTitle + ' -- Invalid Package Name', msg=msg)
 
     @expose(template='pkgdb.templates.errors')
