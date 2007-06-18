@@ -58,18 +58,24 @@ class Test(controllers.Controller):
     @paginate('pkgs', default_order='name')
     @identity.require(identity.in_group("cvsextras"))
     def mine(self):
-        #pkgs = {}
-        #myPackages = SelectResults(session.query(model.PackageListing)).select(
-        #        model.PackageListing.c.owner==identity.current.user.user_id)
+        '''I thought I managed to get this one at last, but it seems not
+           I'll tackle it soon though -- Nigel
+        '''
+
         myPackages = SelectResults(session.query(model.Package)
                 ).distinct().select(model.PackageListing.c.packageid == 
                     model.Package.c.id).select(model.PackageListing.c.owner==
                         identity.current.user.user_id)
 
-        #for pkg in myPackages:
-        #    pkgs = pkg.package
+        myAclEntries = SelectResults(session.query(model.Package)).select(
+          model.PackageListing.c.packageid == model.Package.c.id).select(
+          model.PersonPackageListing.c.packagelistingid == 
+          model.PackageListing.c.id).select(model.PersonPackageListing.c.userid
+          == identity.current.user.user_id)
 
-        return dict(title='My Packages', pkgs=myPackages)
+        #packages = myPackages.list() + myAclEntries.list()
+
+        return dict(title=appTitle + ' -- My Packages', pkgs=myPackages)
 
 class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionoverview')
