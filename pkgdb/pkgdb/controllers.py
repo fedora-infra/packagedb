@@ -55,16 +55,16 @@ class Test(controllers.Controller):
         return dict(title='List Orphans', pkgs=pkgs)
 
     @expose(template='pkgdb.templates.pkgmine')
-    @paginate('pkgs')
+    @paginate('pkgs', default_order='name')
     @identity.require(identity.in_group("cvsextras"))
     def mine(self):
         #pkgs = {}
-        myPackages = SelectResults(session.query(model.PackageListing)).select(
-                model.PackageListing.c.owner==identity.current.user.user_id)
-        #myPackages = SelectResults(session.query(model.Package)
-        #        ).select(model.PackageListing.c.packageid == model.Package.c.id
-        #            ).select(model.PackageListing.c.owner==
-        #                identity.current.user.user_id)
+        #myPackages = SelectResults(session.query(model.PackageListing)).select(
+        #        model.PackageListing.c.owner==identity.current.user.user_id)
+        myPackages = SelectResults(session.query(model.Package)
+                ).distinct().select(model.PackageListing.c.packageid == 
+                    model.Package.c.id).select(model.PackageListing.c.owner==
+                        identity.current.user.user_id)
 
         #for pkg in myPackages:
         #    pkgs = pkg.package

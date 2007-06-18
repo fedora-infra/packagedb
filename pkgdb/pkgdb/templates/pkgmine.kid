@@ -8,11 +8,11 @@
         href="${tg.paginate.get_href(page)}">${page}</a>
     <b py:if="page == tg.paginate.current_page">${page}</b>
 </span>
-<p>N.B. Multiple listings for the same package is a known bug that we hope to fix soon.</p>
+<p>N.B. This list does NOT show packages for which you are currently on the ACL of.</p>
 <ul py:for="package in pkgs">
- <li><a href="${tg.url('/packages/name/' + package.package.name)}"
-    py:content="package.package.name"></a> --
-    <span py:replace="package.package.summary">Package Summary</span></li>
+ <li><a href="${tg.url('/packages/name/' + package.name)}"
+    py:content="package.name"></a> --
+    <span py:replace="package.summary">Package Summary</span></li>
 </ul>
 </div>
 </html>
