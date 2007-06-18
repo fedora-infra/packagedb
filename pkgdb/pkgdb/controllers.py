@@ -4,7 +4,6 @@ import sqlalchemy.mods.selectresults
 from turbogears import controllers, expose, paginate, config
 from turbogears import identity, redirect
 from turbogears.database import session
-import turbomail
 from cherrypy import request, response
 import logging
 
@@ -19,8 +18,6 @@ log = logging.getLogger("pkgdb.controllers")
 from fedora.accounts.fas import AccountSystem, AuthError
 
 ORPHAN_ID=9900
-FROMADDR=config.get('from_address')
-TOADDR=config.get('commits_address')
 
 appTitle = 'Fedora Package Database'
 fas = AccountSystem()

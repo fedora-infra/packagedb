@@ -2,10 +2,21 @@ import sqlalchemy
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
 
-from turbogears import controllers, expose, identity
+import turbomail
+from turbogears import controllers, expose, identity, config
 from turbogears.database import session
 
 from pkgdb import model
+
+COMMITSLIST=config.get('commits_address')
+
+def send_msg(msg, subject, recipients):
+    '''Send a message from the packagedb.'''
+    fromAddr = config.get('from_address')
+    for person in recipients:
+        email = turbomail.Message(fromAddr, person, '[pkgdb] %s' % (subject,))
+        email.plain = msg
+        turbomail.enqueue(email)
 
 class PackageDispatcher(controllers.Controller):
     def __init__(self, fas = None):
@@ -111,10 +122,8 @@ class PackageDispatcher(controllers.Controller):
 
         # Send a log to the commits list as well
         ### FIXME: Want to send to everyone interested in this package as well
-        email = turbomail.Message(FROMADDR, TOADDR, '[pkgdb] %s %s' % (
-            pkg.package.name, status.statusname))
-        email.plain = logMessage
-        turbomail.enqueue(email)
+        send_msg(logMessage, '%s %s' % (pkg.package.name, status.statusname),
+                (COMMITSLIST,))
 
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
                 aclStatusFields=self.aclStatusTranslations)
@@ -210,11 +219,7 @@ class PackageDispatcher(controllers.Controller):
                             % (newAcl, pkgid, status))
         # Send a log to the commits list as well
         ### FIXME: Want to send to everyone in approveacls as well.
-        email = turbomail.Message(FROMADDR, TOADDR,
-                '[pkgdb] %s set to %s for %s' % (newAcl, status.statusname,
-                    user['human_name']))
-        email.plain = logMessage
-        turbomail.enqueue(email)
+        send_msg(logMessage, '%s set to %s for %s' % (newAcl, status.statusname, user['human_name']), (COMMITSLIST,))
 
         return dict(status=True)
 
@@ -321,11 +326,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Send a log to the commits list as well
         ### FIXME: Want to send to everyone in approveacls as well.
-        email = turbomail.Message(FROMADDR, TOADDR,
-                '[pkgdb] %s set to %s for %s' % (aclName, statusname,
-                    self.groups[changeGroup.groupid]))
-        email.plain = logMessage
-        turbomail.enqueue(email)
+        send_msg(logMessage, '%s set to %s for %s' % (aclName, statusname, self.groups[changeGroup.groupid]), (COMMITSLIST,))
 
         return dict(status=True,
                 newAclStatus=changeAcl.status.translations[0].statusname)
@@ -403,12 +404,9 @@ class PackageDispatcher(controllers.Controller):
 
         # Send a log to the commits list as well
         ### FIXME: Want to send to everyone in approveacls as well.
-        email = turbomail.Message(FROMADDR, TOADDR,
-                '[pkgdb] %s has %s %s for %s' % (
-                    identity.current.user.display_name, aclAction,
-                    aclName, pkgListing.package.name))
-        email.plain = logMessage
-        turbomail.enqueue(email)
+        send_msg(logMessage, '%s has %s %s for %s' % (
+                    identity.current.user.display_name, aclAction, aclName,
+                    pkgListing.package.name), (COMMITSLIST,))
 
         # Return the new value
         return dict(status=True, personId=identity.current.user.user_id,
