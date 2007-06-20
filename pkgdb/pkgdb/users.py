@@ -28,11 +28,11 @@ class Users(controllers.Controller):
     @expose(template='pkgdb.templates.pkgmine')
     @paginate('pkgs', default_order='name')
     @identity.require(identity.in_group("cvsextras"))
-    def packages(self):
+    def packages(self,fasName=None):
         '''I thought I managed to get this one at last, but it seems not
            I'll tackle it soon though -- Nigel
         '''
-
+        
         myPackages = SelectResults(session.query(model.Package)
           ).distinct().select(model.PackageListing.c.packageid ==
           model.Package.c.id).select(model.PackageListing.c.owner ==

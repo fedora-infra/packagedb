@@ -9,6 +9,7 @@ from turbogears.database import session
 from pkgdb import model
 
 COMMITSLIST=config.get('commits_address')
+ORPHAN_ID=9900
 
 def send_msg(msg, subject, recipients):
     '''Send a message from the packagedb.'''

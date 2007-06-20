@@ -10,7 +10,10 @@ import logging
 from pkgdb import model
 from pkgdb import json
 
+from pkgdb.acls import Acls
+from pkgdb.collections import Collections
 from pkgdb.packages import Packages
+from pkgdb.users import Users
 
 log = logging.getLogger("pkgdb.controllers")
 
@@ -18,11 +21,13 @@ log = logging.getLogger("pkgdb.controllers")
 from fedora.accounts.fas import AccountSystem, AuthError
 
 ORPHAN_ID=9900
-
-appTitle = 'Fedora Package Database'
-fas = AccountSystem()
+CVSEXTRAS_ID=100300
 
 class Test(controllers.Controller):
+    def __init__(self, fas=None, appTitle=None):
+        self.fas = fas
+        self.appTitle = appTitle
+
     @expose(template="pkgdb.templates.welcome")
     @identity.require(identity.in_group("cvsextras"))
     def index(self):
@@ -38,9 +43,6 @@ class Test(controllers.Controller):
     def orphans(self):
         import os
         t = file('/var/tmp/t', 'w')
-        #for line in os.environ:
-        #    t.writelines('%s: %s\n' % (line, os.environ[line]))
-        #t.writelines('%s' % request.wsgi_environ)
         t.writelines('%s' % request.headers)
         t.close()
         pkgs = {}
@@ -51,112 +53,19 @@ class Test(controllers.Controller):
 
         return dict(title='List Orphans', pkgs=pkgs)
 
-    @expose(template='pkgdb.templates.pkgmine')
-    @paginate('pkgs', default_order='name')
-    @identity.require(identity.in_group("cvsextras"))
-    def mine(self):
-        '''I thought I managed to get this one at last, but it seems not
-           I'll tackle it soon though -- Nigel
-        '''
-
-        myPackages = SelectResults(session.query(model.Package)
-                ).distinct().select(model.PackageListing.c.packageid == 
-                    model.Package.c.id).select(model.PackageListing.c.owner==
-                        identity.current.user.user_id)
-
-        myAclEntries = SelectResults(session.query(model.Package)).select(
-          model.PackageListing.c.packageid == model.Package.c.id).select(
-          model.PersonPackageListing.c.packagelistingid == 
-          model.PackageListing.c.id).select(model.PersonPackageListing.c.userid
-          == identity.current.user.user_id)
-
-        #packages = myPackages.list() + myAclEntries.list()
-
-        return dict(title=appTitle + ' -- My Packages', pkgs=myPackages)
-
-class Collections(controllers.Controller):
-    @expose(template='pkgdb.templates.collectionoverview')
-    def index(self):
-        '''List the Collections we know about.
-        '''
-        collectionPkg = sqlalchemy.select(
-                (model.PackageListingTable.c.collectionid.label('id'),
-                    sqlalchemy.func.count(1).label('numpkgs')),
-                group_by=(model.PackageListingTable.c.collectionid,)).alias(
-                        'collectionpkg')
-        collections = sqlalchemy.select(
-                (model.CollectionTable, collectionPkg.c.numpkgs),
-                model.CollectionTable.c.id == collectionPkg.c.id,
-                order_by=(model.CollectionTable.c.name,
-                    model.CollectionTable.c.version)).execute()
-
-        return dict(title=appTitle + ' -- Collection Overview',
-                collections=collections)
-
-    @expose(template='pkgdb.templates.collectionpage')
-    @paginate('packages', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
-    def id(self, collectionId):
-        '''Return a page with information on a particular Collection
-        '''
-        try:
-            collectionId = int(collectionId)
-        except ValueError:
-            raise redirect(config.get('base_url_filter.base_url') + '/collections/not_id')
-        ### FIXME: Want to return additional info:
-        # date it was created (join log table: creation date)
-        # The initial import doesn't have this information, though.
-        collection = sqlalchemy.select((model.CollectionTable.c.name,
-            model.CollectionTable.c.version, model.CollectionTable.c.owner,
-            model.CollectionTable.c.summary, model.CollectionTable.c.description,
-            model.StatusTranslationTable.c.statusname),
-            sqlalchemy.and_(
-                model.CollectionTable.c.statuscode==model.StatusTranslationTable.c.statuscodeid,
-                model.StatusTranslationTable.c.language=='C',
-                model.CollectionTable.c.id==collectionId), limit=1).execute()
-        if collection.rowcount <= 0:
-            raise redirect(config.get('base_url_filter.base_url') + '/collections/unknown',
-                    redirect_params={'collectionId':collectionId})
-        collection = collection.fetchone()
-
-        # Get real ownership information from the fas
-        (user, groups) = fas.get_user_info(collection.owner)
-        collection.ownername = '%s (%s)' % (user['human_name'],
-                user['username'])
-
-        # Retrieve the packagelist for this collection
-        packages = SelectResults(session.query(model.Package)).select(
-                sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
-                    model.PackageListing.c.packageid==model.Package.c.id)
-                )
-        return dict(title='%s -- %s %s' % (appTitle, collection.name,
-            collection.version), collection=collection, packages=packages)
-
-    @expose(template='pkgdb.templates.errors')
-    def unknown(self, collectionId):
-        msg = 'The collectionId you were linked to, %s, does not exist.' \
-                ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.' % collectionId
-        return dict(title=appTitle + ' -- Unknown Collection', msg=msg)
-
-    @expose(template='pkgdb.templates.errors')
-    def not_id(self):
-        msg = 'The collectionId you were linked to is not a valid id.' \
-                ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.'
-        return dict(title=appTitle + ' -- Invalid Collection Id', msg=msg)
-
 class Root(controllers.RootController):
     appTitle = 'Fedora Package Database'
     fas = AccountSystem()
 
-    test = Test()
-    collections = Collections()
+    test = Test(fas, appTitle)
+    acls = Acls(fas, appTitle)
+    collections = Collections(fas, appTitle)
     packages = Packages(fas, appTitle)
+    users = Users(fas, appTitle)
 
     @expose(template='pkgdb.templates.overview')
     def index(self):
-        return dict(title=appTitle)
+        return dict(title=self.appTitle)
 
     @expose(template="pkgdb.templates.login")
     def login(self, forward_url=None, previous_url=None, *args, **kw):
