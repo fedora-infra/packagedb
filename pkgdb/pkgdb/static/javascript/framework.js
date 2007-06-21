@@ -96,8 +96,8 @@ function spin_spinner(timeout, seqNum) {
   for (var spinnerNum in spinners) {
     /* Update all of them to the next image */
     replaceChildNodes(spinners[spinnerNum], IMG (
-      {'src': spinnerImages[imageNum], 'alt' : 'spinner',
-      class : 'spinnerImage'}
+      {'src': spinnerImages[imageNum], 'alt': 'spinner',
+      'class': 'spinnerImage'}
     ));
   }
 
