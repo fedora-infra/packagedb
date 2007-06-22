@@ -26,6 +26,7 @@ create packages and spin them into a distribution.
 <li>Current sync of owners.list/owners.epel.list: Have to update slightly to
 account for the new owners.list format</li>
 <li>Sync from Package ACLs</li>
+<li>Output ACLs to the cvs server</li>
 </ul>
 
 <h3>0.2.90.1</h3>
@@ -66,7 +67,6 @@ cvs is not yet complete.
 <li>External scripts
 <ul>
 <li>Output entries to bugzilla [<a href="${tg.url('/static/bz-make-components.py')}">Initial work</a> done 04-04: Needs testing] -- <i>need to change to use the bugzilla xmlrpc interface</i></li>
-<li>Output ACLs to the system</li>
 <li>How to add a new package, branch scripts, etc:  Must be done
 pre-cvs-import so we should tie this
 into dgilmore's scripts on cvs-int.  This can be enabled concurrently to the
