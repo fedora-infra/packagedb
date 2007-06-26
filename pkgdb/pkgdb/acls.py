@@ -41,7 +41,7 @@ class Acls(controllers.Controller):
             collection = packageAcls[collectionName]
         except KeyError:
             collection = {}
-            bugzillaAcls[collectionName] = collection
+            packageAcls[collectionName] = collection
         # Then the package
         try:
             package = collection[pkgName]
@@ -51,14 +51,14 @@ class Acls(controllers.Controller):
         # Then add the acl
         if group:
             try:
-                package[acl].cclist.groups.append(identity)
+                package.cclist.groups.append(identity)
             except KeyError, e:
-                package[acl].cclist = AclList(groups=[identity])
+                package.cclist = AclList(groups=[identity])
         else:
             try:
-                package[acl].cclist.people.append(identity)
+                package.cclist.people.append(identity)
             except KeyError, e:
-                package[acl].cclist = AclList(people=[identity])
+                package.cclist = AclList(people=[identity])
 
     def _add_to_vcs_acl_list(self, packageAcls, acl, pkgName, branchName,
             identity, group=None):
@@ -143,11 +143,11 @@ class Acls(controllers.Controller):
 
         # Save them into a python data structure
         for record in ownerAcls.execute():
-            # Cache the userId/username  so we don't have to call the fas
-            # for all packages
-            if userId == ORPHAN_ID:
+            if record[2] == ORPHAN_ID:
                 # We don't want the orphan pseudo user to show up in the acls
                 continue
+            # Cache the userId/username  so we don't have to call the fas
+            # for all packages
             if userId != record[2]:
                 fasPerson, group = self.fas.get_user_info(record[2])
                 username = fasPerson['username']
@@ -206,13 +206,13 @@ class Acls(controllers.Controller):
         '''
         bugzillaAcls = {}
         username = None
-        userid = None
+        userId = None
 
         # select all packages
         packageInfo = sqlalchemy.select((model.Collection.c.name,
-            model.Package.c.name, model.Package.c.owner,
-            model.Package.c.qacontact, model.Package.c.summary),
-            sqlalchemy._and(
+            model.Package.c.name, model.PackageListing.c.owner,
+            model.PackageListing.c.qacontact, model.Package.c.summary),
+            sqlalchemy.and_(
                 model.Collection.c.id==model.PackageListing.c.collectionid,
                 model.Package.c.id==model.PackageListing.c.packageid
                 ),
@@ -242,33 +242,32 @@ class Acls(controllers.Controller):
                 fasPerson, group = self.fas.get_user_info(pkg[3])
                 package.qacontact = fasPerson['username']
             package.summary = pkg[4]
+        # Retrieve the user acls
+        personAcls = sqlalchemy.select((model.Package.c.name,
+            model.Collection.c.name, model.PersonPackageListing.c.userid),
+            sqlalchemy.and_(
+                model.PersonPackageListingAcl.c.acl == 'watchbugzilla',
+                model.PersonPackageListingAcl.c.statuscode == model.StatusTranslation.c.statuscodeid,
+                model.StatusTranslation.c.statusname == 'Approved',
+                model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id,
+                model.PersonPackageListing.c.packagelistingid == model.PackageListing.c.id,
+                model.PackageListing.c.packageid == model.Package.c.id,
+                model.PackageListing.c.collectionid == model.Collection.c.id
+                ),
+            order_by=(model.PersonPackageListing.c.userid,), distinct=True
+            )
+        # Save them into a python data structure
+        for record in personAcls.execute():
+            # Cache the userId/username  so we don't have to call the fas
+            # for all packages
+            if userId != record[2]:
+                fasPerson, group = self.fas.get_user_info(record[2])
+                username = fasPerson['username']
+                userId = record[2]
 
-            # Retrieve the user acls
-            personAcls = sqlalchemy.select((model.Package.c.name,
-                model.Collection.c.name, model.PersonPackageListing.c.userid),
-                sqlalchemy.and_(
-                    model.PersonPackageListingAcl.c.acl == 'watchbugzilla',
-                    model.PersonPackageListingAcl.c.statuscode == model.StatusTranslation.c.statuscodeid,
-                    model.StatusTanslation.c.statusname == 'Approved',
-                    model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id,
-                    model.PersonPackageListing.c.packagelistingid == model.PackageListing.c.id,
-                    model.PackageListing.c.packageid == model.Package.c.id,
-                    model.PackageListing.c.collectionid == model.Collection.c.id
-                    ),
-                order_by=(model.PersonPackageListing.c.userid,), distinct=True
-                )
-            # Save them into a python data structure
-            for record in personAcls.execute():
-                # Cache the userId/username  so we don't have to call the fas
-                # for all packages
-                if userId != record[2]:
-                    fasPerson, group = self.fas.get_user_info(record[2])
-                    username = fasPerson['username']
-                    userId = record[2]
+            self._add_to_bugzilla_acl_list(bugzillaAcls, 'watchbugzilla',
+                    record[0], record[1], username, group=False)
 
-                self._add_to_bugzilla_acl_list(bugzillaAcls, 'watchbugzilla',
-                        record[0], record[1], username, group=False)
-
-            ### TODO: No group acls at the moment
-            # There are no group acls to take advantage of this.
-        return dict(title=self.appTitle + ' -- VCS ACLs', bugzillaAcls=bugzillaAcls)
+        ### TODO: No group acls at the moment
+        # There are no group acls to take advantage of this.
+        return dict(title=self.appTitle + ' -- Bugzilla ACLs', bugzillaAcls=bugzillaAcls)
