@@ -9,9 +9,24 @@ class AclList(object):
     def __init__(self, people=None, groups=None):
         self.people = people or []
         self.groups = groups or []
+
     def __json__(self):
         return {'people' : self.people,
                 'groups' : self.groups
+                }
+
+class BugzillaInfo(object):
+    def __init__(self, owner=None, summary=None, cclist=None, qacontact=None):
+        self.owner = owner
+        self.summary = summary
+        self.cclist = cclist or AclList()
+        self.qacontact = qacontact
+
+    def __json__(self):
+        return {'owner' : self.owner,
+                'summary' : self.summary,
+                'cclist' : self.cclist,
+                'qacontact' : self.qacontact
                 }
 
 class Acls(controllers.Controller):
@@ -19,8 +34,34 @@ class Acls(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
 
-    def _add_person_to_acl(self, packageAcls, acl, pkgName, branchName,
-            username):
+    def _add_to_bugzilla_acl_list(self, packageAcls, acl, pkgName,
+            collectionName, identity, group=None):
+        # Lookup the collection
+        try:
+            collection = packageAcls[collectionName]
+        except KeyError:
+            collection = {}
+            bugzillaAcls[collectionName] = collection
+        # Then the package
+        try:
+            package = collection[pkgName]
+        except KeyError:
+            package = BugzillaInfo()
+            collection[pkgName] = package
+        # Then add the acl
+        if group:
+            try:
+                package[acl].cclist.groups.append(identity)
+            except KeyError, e:
+                package[acl].cclist = AclList(groups=[identity])
+        else:
+            try:
+                package[acl].cclist.people.append(identity)
+            except KeyError, e:
+                package[acl].cclist = AclList(people=[identity])
+
+    def _add_to_vcs_acl_list(self, packageAcls, acl, pkgName, branchName,
+            identity, group=None):
         # Key by package name
         try:
             pkg = packageAcls[pkgName]
@@ -36,10 +77,16 @@ class Acls(controllers.Controller):
             pkg[branchName] = branch
 
         # Add these acls to the group acls
-        try:
-            branch[acl].people.append(username)
-        except KeyError, e:
-            branch[acl] = AclList(people=[username])
+        if group:
+            try:
+                branch[acl].groups.append(identity)
+            except KeyError, e:
+                branch[acl] = AclList(groups=[identity])
+        else:
+            try:
+                branch[acl].people.append(identity)
+            except KeyError, e:
+                branch[acl] = AclList(people=[identity])
 
     @expose(template="pkgdb.templates.vcsacls", allow_json=True)
     def vcs(self):
@@ -53,6 +100,10 @@ class Acls(controllers.Controller):
 
         This method can display a long list of users but most people will want
         to access it as JSON data with the ?tg_format=json query parameter.
+
+        Caveat: The group handling in this code is special cased for cvsextras
+        rather than generic.  When we get groups figured out we can change
+        this.
         '''
         # Store our acls in a dict
         packageAcls = {}
@@ -75,25 +126,8 @@ class Acls(controllers.Controller):
             )
         # Save them into a python data structure
         for record in groupAcls.execute():
-            # Key by package name
-            try:
-                pkg = packageAcls[record[0]]
-            except KeyError:
-                pkg = {}
-                packageAcls[record[0]] = pkg
-
-            # Then by branch name
-            try:
-                branch = pkg[record[1]]
-            except KeyError:
-                branch = {}
-                pkg[record[1]] = branch
-
-            # Add these acls to the group acls
-            try:
-                branch['commit'].groups.append('cvsextras')
-            except KeyError:
-                branch['commit'] = AclList(groups=['cvsextras'])
+            self._add_to_vcs_acl_list(packageAcls, 'commit', record[0],
+                    record[1], 'cvsextras', group=True)
         del groupAcls
 
         # Get the package owners from the db
@@ -118,8 +152,8 @@ class Acls(controllers.Controller):
                 fasPerson, group = self.fas.get_user_info(record[2])
                 username = fasPerson['username']
                 userId = record[2]
-            self._add_person_to_acl(packageAcls, 'commit', record[0], record[1],
-                    username)
+            self._add_to_vcs_acl_list(packageAcls, 'commit', record[0],
+                    record[1], username, group=False)
         del ownerAcls
 
         # Get the vcs user acls from the db
@@ -146,7 +180,95 @@ class Acls(controllers.Controller):
                 username = fasPerson['username']
                 userId = record[2]
 
-            self._add_person_to_acl(packageAcls, 'commit', record[0], record[1],
-                    username)
+            self._add_to_vcs_acl_list(packageAcls, 'commit', record[0],
+                    record[1], username, group=False)
 
         return dict(title=self.appTitle + ' -- VCS ACLs', packageAcls=packageAcls)
+
+    @expose(template="pkgdb.templates.bugzillaacls", allow_json=True)
+    def bugzilla(self):
+        '''Return the package attributes used by bugzilla.
+
+        Note: The data returned by this function is for the way the current
+        Fedora bugzilla is setup as of (2007/6/25).  In the future, bugzilla
+        will change to have separate products for each collection-version.
+        When that happens we'll have to change what this function returns.
+
+        The returned data looks like this:
+
+        bugzillaAcls[collection][package].attribute
+        attribute is one of:
+        :owner: FAS username for the owner
+        :qacontact: if the package has a special qacontact, their userid is
+          listed here
+        :summary: Short description of the package
+        :cclist: list of FAS userids that are watching the package
+        '''
+        bugzillaAcls = {}
+        username = None
+        userid = None
+
+        # select all packages
+        packageInfo = sqlalchemy.select((model.Collection.c.name,
+            model.Package.c.name, model.Package.c.owner,
+            model.Package.c.qacontact, model.Package.c.summary),
+            sqlalchemy._and(
+                model.Collection.c.id==model.PackageListing.c.collectionid,
+                model.Package.c.id==model.PackageListing.c.packageid
+                ),
+            order_by=(model.PackageListing.c.owner,), distinct=True)
+
+        for pkg in packageInfo.execute():
+            # Lookup the collection
+            try:
+                collection = bugzillaAcls[pkg[0]]
+            except KeyError:
+                collection = {}
+                bugzillaAcls[pkg[0]] = collection
+            # Then the package
+            try:
+                package = collection[pkg[1]]
+            except KeyError:
+                package = BugzillaInfo()
+                collection[pkg[1]] = package
+
+            # Save the package information in the data structure to return
+            if userId != pkg[2]:
+                fasPerson, group = self.fas.get_user_info(pkg[2])
+                username = fasPerson['username']
+                userId = pkg[2]
+            package.owner = username
+            if pkg[3]:
+                fasPerson, group = self.fas.get_user_info(pkg[3])
+                package.qacontact = fasPerson['username']
+            package.summary = pkg[4]
+
+            # Retrieve the user acls
+            personAcls = sqlalchemy.select((model.Package.c.name,
+                model.Collection.c.name, model.PersonPackageListing.c.userid),
+                sqlalchemy.and_(
+                    model.PersonPackageListingAcl.c.acl == 'watchbugzilla',
+                    model.PersonPackageListingAcl.c.statuscode == model.StatusTranslation.c.statuscodeid,
+                    model.StatusTanslation.c.statusname == 'Approved',
+                    model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id,
+                    model.PersonPackageListing.c.packagelistingid == model.PackageListing.c.id,
+                    model.PackageListing.c.packageid == model.Package.c.id,
+                    model.PackageListing.c.collectionid == model.Collection.c.id
+                    ),
+                order_by=(model.PersonPackageListing.c.userid,), distinct=True
+                )
+            # Save them into a python data structure
+            for record in personAcls.execute():
+                # Cache the userId/username  so we don't have to call the fas
+                # for all packages
+                if userId != record[2]:
+                    fasPerson, group = self.fas.get_user_info(record[2])
+                    username = fasPerson['username']
+                    userId = record[2]
+
+                self._add_to_bugzilla_acl_list(bugzillaAcls, 'watchbugzilla',
+                        record[0], record[1], username, group=False)
+
+            ### TODO: No group acls at the moment
+            # There are no group acls to take advantage of this.
+        return dict(title=self.appTitle + ' -- VCS ACLs', bugzillaAcls=bugzillaAcls)
