@@ -3,7 +3,8 @@
   py:layout="'layout.kid'">
 
 <div py:match="item.tag == 'content'">
-
-    <p>Nothing to see here yet, however take a look at <a href="${tg.url('/users/packages/')}">your packages</a> or <a href="${tg.url('/users/acllist/')}">your ACL entries</a></p>
+<p>View users: <a href="${tg.url('/users/info/' + fasname)}">Info</a> | <a href="${tg.url('/users/packages/' + fasname)}">Packages</a> | <a href="${tg.url('/users/acllist/' + fasname)}">ACL Listings</a></p>
+<p></p>
+<p>Nothing else of interest yet!</p>
 </div>
 </html>

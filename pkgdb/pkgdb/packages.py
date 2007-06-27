@@ -81,6 +81,7 @@ class Packages(controllers.Controller):
             ### FIXME: Handle the case where the owner is unknown
             pkg.ownername = '%s (%s)' % (user['human_name'], user['username'])
             pkg.ownerid = user['id']
+            pkg.owneruser = user['username']
             if pkg.qacontact:
                 (user, groups) = self.fas.get_user_info(pkg.qacontact)
                 pkg.qacontactname = '%s (%s)' % (user['human_name'],
@@ -93,6 +94,7 @@ class Packages(controllers.Controller):
                 (fasPerson, groups) = self.fas.get_user_info(person.userid)
                 person.name = '%s (%s)' % (fasPerson['human_name'],
                         fasPerson['username'])
+                person.user = fasPerson['username']
                 # Setup acls to be accessible via aclName
                 person.aclOrder = {}
                 for acl in aclNames:

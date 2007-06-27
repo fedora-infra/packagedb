@@ -79,7 +79,7 @@ TODO='Not yet implemented'
         <div py:if="pkg.ownerid != 9900"
           py:attrs="{'name': str(pkg.id)}"
           class="requestContainer owner owned">
-          <span class="ownerName">${pkg.ownername}</span>
+          <span class="ownerName"><a href="${tg.url('/users/info/' + pkg.owneruser)}">${pkg.ownername}</a></span>
         <span py:if="not tg.identity.anonymous and (tg.identity.user.user_id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
           <input type="button" name="orphan"
             class="ownerButton orphanButton"
@@ -96,9 +96,8 @@ TODO='Not yet implemented'
           </th>
         </tr>
         <tr py:for="person in pkg.people" class="aclrow">
-          <td py:content="person.name" class="acluser"
-            py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
-            Name
+          <td class="acluser">
+            <a href="${tg.url('/users/info/' + person.user)}">${person.name}</a>
           </td>
           <td py:for="acl in aclNames" class="aclcell">
             <!-- If the logged in user is this row, add a checkbox to set it -->

@@ -40,7 +40,7 @@
             <a class="loginButton" href="${tg.url('/login/')}">Login</a>
         </span>
         <span py:if="not tg.identity.anonymous">
-            Welcome ${tg.identity.user.display_name}.
+            Welcome <a href="${tg.url('/users/info/')}">${tg.identity.user.display_name}</a>
             <a class="loginButton" href="${tg.url('/logout/')}">Logout</a>
         </span>
     </div>
