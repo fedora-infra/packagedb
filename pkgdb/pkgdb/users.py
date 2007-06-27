@@ -27,7 +27,7 @@ class Users(controllers.Controller):
         
         return dict(title=self.appTitle + ' -- User Overview')
 
-    @expose(template='pkgdb.templates.pkgmine')
+    @expose(template='pkgdb.templates.userpkgs')
     @paginate('pkgs', default_order='name')
     def packages(self,fasname=None):
         '''I thought I managed to get this one at last, but it seems not
@@ -54,7 +54,7 @@ class Users(controllers.Controller):
    
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 
-    @expose(template='pkgdb.templates.pkgmine')
+    @expose(template='pkgdb.templates.userpkgs')
     @paginate('pkgs', default_order='name')
     def acllist(self,fasname=None):
 
