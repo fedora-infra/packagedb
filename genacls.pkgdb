@@ -1,0 +1,89 @@
+#!/usr/bin/python -tt
+#
+# Create a CVSROOT/avail file with acls for CVS
+#
+# Takes no arguments!
+#
+
+import os
+import sys
+import string
+import grp
+import json
+import urllib2
+
+sys.path.append('.')
+import owners
+
+if __name__ == '__main__':
+    # Get the users in cvsadmin group
+    TRUSTED = grp.getgrnam('cvsadmin')[3]
+    # Get the CVSROOT we'll be operating on
+    CVSROOT = os.getenv('CVSROOT')
+
+    # No CVSROOT, no dice
+    if not CVSROOT:
+        sys.exit(1)
+
+    # Read the template for the avail file
+    f = open('%s/CVSROOT/avail-template' % (CVSROOT,),'r')
+    template = f.read()
+    f.close()
+
+    # Print the template
+    print template % {"TRUSTED": string.join(TRUSTED, ",") }
+
+    # Read the ACL information from the packageDB
+    aclPage = urllib2.urlopen("http://test3.fedora.phx.redhat.com/pkgdb-dev/acls/vcs?tg_format=json")
+    jsonData = json.read(aclPage.read())
+    del aclPage
+    acls = jsonData['packageAcls']
+    del jsonData
+
+    # Get a list of all the packages
+    pkglist = acls.keys()
+    pkglist.sort()
+
+    # sanity check
+    if len(pkglist) < 2500:
+        sys.exit(1)
+
+    for pkg in pkglist:
+        branchAcls = {} # Check whether we need to set separate per branch acls
+        buffer = [] # Buffer the output per package
+
+        # Examine each branch in the package
+        branches = acls[pkg].keys()
+        branches.sort()
+        for branch in branches:
+            if 'cvsextras' in acls[pkg][branch]['commit']['groups']:
+                # If the cvsextras group is defined, everyone has access
+                buffer.append('avail | | rpms/%s/%s' % (pkg, branch))
+                try:
+                    branchAcls[''].append((pkg, branch))
+                except KeyError:
+                    branchAcls[''] = [(pkg, branch)]
+            else:
+                # Extract the owners
+                committers = []
+                owners = acls[pkg][branch]['commit']['people']
+                owners.sort()
+                for owner in owners:
+                    committers.append(owner)
+
+                # Print the committers to the acl for this package-branch
+                committers = ','.join(committers)
+                buffer.append('avail | %s | rpms/%s/%s' % (committers, pkg, branch))
+                try:
+                    branchAcls[committers].append((pkg, branch))
+                except KeyError:
+                    branchAcls[committers] = [(pkg, branch)]
+
+        if len(branchAcls.keys()) == 1:
+            acl = branchAcls.keys()[0]
+            pkg = branchAcls[acl][0][0]
+            print 'avail | %s | rpms/%s' % (acl, pkg)
+        else:
+            print '\n'.join(buffer)
+
+    sys.exit(0)

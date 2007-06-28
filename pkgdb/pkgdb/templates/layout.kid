@@ -3,9 +3,9 @@
   <title>${title}</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <style type="text/css" media="screen">
-    @import url("http://rhold.fedoraproject.org/css/layout.css");
-    @import url("http://rhold.fedoraproject.org/css/content.css");
-    @import url("http://rhold.fedoraproject.org/css/docbook.css");
+    @import url("https://admin.fedoraproject.org/css/layout.css");
+    @import url("https://admin.fedoraproject.org/css/content.css");
+    @import url("https://admin.fedoraproject.org/css/docbook.css");
     @import url("${tg.url("/static/css/pkgdb.css")}");
   </style>
     <style type="text/css">
@@ -26,7 +26,7 @@
   <!-- Header BEGIN -->
   <div id="fedora-header">
     <div id="fedora-header-logo">
-      <a href="/"><img src="http://rhold.fedoraproject.org/images/header-fedora_logo.png" alt="Fedora Project"/></a>
+      <a href="http://www.fedoraproject.org/"><img src="https://admin.fedoraproject.org/images/header-fedora_logo.png" alt="Fedora Project"/></a>
     </div>
 
     <div id="fedora-header-items">
@@ -40,7 +40,7 @@
             <a class="loginButton" href="${tg.url('/login/')}">Login</a>
         </span>
         <span py:if="not tg.identity.anonymous">
-            Welcome ${tg.identity.user.display_name}.
+            Welcome <a href="${tg.url('/users/info/')}">${tg.identity.user.display_name}</a>
             <a class="loginButton" href="${tg.url('/logout/')}">Logout</a>
         </span>
     </div>
@@ -55,10 +55,12 @@
   <div id="fedora-side-left">
     <div id="fedora-side-nav-label">Site Navigation:</div>
     <ul id="fedora-side-nav">
-      <li><strong><a href="http://fedoraproject.org/wiki/">FedoraProject</a></strong></li>
-      <li><a href="http://fedoraproject.org/wiki/PackageMaintainers">Packagers Portal</a></li>
-      <li><a href="https://admin.fedoraproject.org/accounts/">Account System</a></li>
-      <li><a href="http://fedoraproject.org/wiki/DocsProject">Documentation</a></li>
+      <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
+      <li><a href="${tg.url('/packages/')}">View Packages</a></li>
+      <li><a href="${tg.url('/collections/')}">View Collections</a></li>
+      <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
+      <li><a href="${tg.url('/users/acllist/')}">My ACL Entries</a></li>
+      <li><a href="fedoraproject.org/wiki/Infrastructure/PackageDatabase">Documentation</a></li>
     </ul>
   </div>
   <!-- LeftNavBar END -->
@@ -76,15 +78,29 @@
   <!-- contentArea END -->
 
 <!-- RightNavBar BEGIN -->
-  
+  <!-- rightside BEGIN -->
+  <div id="fedora-side-right">
+    <div class="fedora-side-right-content">
+      <h1>Links</h1>
+
+      <p>Links to other sites
+        <ul>
+          <li><a href="http://www.fedoranews.org">Fedora News</a></li>
+          <li><a href="https://admin.fedoraproject.org">Accounts System</a></li>
+          <li><a href="http://fedoraproject.org/wiki/DocsProject">Documentation Project</a></li>
+          <li><a href="http://fedoraproject.org/wiki/PackageMaintainers">Packagers Portal</a></li>
+        </ul>
+      </p>
+    </div>
+  </div><!-- rightside END -->
   <!-- footer BEGIN -->
   <div id="fedora-footer">
     Copyright &copy; 2003-2006 Red Hat, Inc. All rights reserved.
     <br/>Fedora is a trademark of Red Hat, Inc. 
     <br/>The Fedora Project is not a supported product of Red Hat, Inc.
     <br/>Red Hat, Inc. is not responsible for the content of other sites. 
-    <br/><a href="http://rhold.fedoraproject.org/About/legal/">Legal</a> | <a
-  href="http://rhold.fedoraproject.org/About/legal/trademarks/">Trademark Guidelines</a>
+    <br/><a href="http://www.fedoraproject.org/wiki/Legal">Legal</a> | <a
+  href="http://www.fedoraproject.org/wiki/Legal/TrademarkGuidelines">Trademark Guidelines</a>
     <br/>
   </div>
   <!-- footer END -->
