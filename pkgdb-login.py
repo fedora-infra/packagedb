@@ -13,7 +13,10 @@ USERNAME=''
 PASSWORD=''
 DEBUG=False
 
-def authenticate():
+class AuthError(Exception):
+    pass
+
+def authenticate(username, password):
     sessionCookie = Cookie.SimpleCookie()
     req = urllib2.Request(LOGINURL)
     req.add_data(urllib.urlencode({'user_name': USERNAME, 'password': PASSWORD, 'login': 'Login'}))
@@ -22,14 +25,12 @@ def authenticate():
 
     serverData = json.read(f.read())
     if 'message' in serverData:
-        print 'Unable to login to server: %s' % serverData['message']
-        sys.exit(1)
+        raise AuthError, 'Unable to login to server: %s' % serverData['message']
 
     try:
         sessionCookie.load(f.headers['set-cookie'])
     except KeyError:
-        print 'Unable to login to the server.  Server did not send back a cookie.'
-        sys.exit(1)
+        raise AuthError, 'Unable to login to the server.  Server did not send back a cookie.'
 
     if DEBUG:
         print 'DEBUG:', sessionCookie, serverData
@@ -47,7 +48,11 @@ if __name__ == '__main__':
     print
 
     # Authenticate
-    sessionCookie = authenticate()
+    try:
+        sessionCookie = authenticate(USERNAME, PASSWORD)
+    except AuthError, e:
+        print e
+        sys.exit(1)
 
     # Retrieve private data
     req = urllib2.Request('https://admin.fedoraproject.org/pkgdb-dev/test/?tg_format=json')
