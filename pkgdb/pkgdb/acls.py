@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sqlalchemy
 from turbogears import controllers, expose
 from pkgdb import model
@@ -126,8 +127,9 @@ class Acls(controllers.Controller):
             )
         # Save them into a python data structure
         for record in groupAcls.execute():
-            self._add_to_vcs_acl_list(packageAcls, 'commit', record[0],
-                    record[1], 'cvsextras', group=True)
+            self._add_to_vcs_acl_list(packageAcls, 'commit',
+                    record[0], record[1],
+                    'cvsextras', group=True)
         del groupAcls
 
         # Get the package owners from the db
@@ -152,8 +154,9 @@ class Acls(controllers.Controller):
                 fasPerson, group = self.fas.get_user_info(record[2])
                 username = fasPerson['username']
                 userId = record[2]
-            self._add_to_vcs_acl_list(packageAcls, 'commit', record[0],
-                    record[1], username, group=False)
+            self._add_to_vcs_acl_list(packageAcls, 'commit',
+                    record[0], record[1],
+                    username, group=False)
         del ownerAcls
 
         # Get the vcs user acls from the db
@@ -180,8 +183,9 @@ class Acls(controllers.Controller):
                 username = fasPerson['username']
                 userId = record[2]
 
-            self._add_to_vcs_acl_list(packageAcls, 'commit', record[0],
-                    record[1], username, group=False)
+            self._add_to_vcs_acl_list(packageAcls, 'commit',
+                    record[0], record[1],
+                    username, group=False)
 
         return dict(title=self.appTitle + ' -- VCS ACLs', packageAcls=packageAcls)
 
@@ -220,17 +224,19 @@ class Acls(controllers.Controller):
 
         for pkg in packageInfo.execute():
             # Lookup the collection
+            collectionName = pkg[0]
             try:
-                collection = bugzillaAcls[pkg[0]]
+                collection = bugzillaAcls[collectionName]
             except KeyError:
                 collection = {}
-                bugzillaAcls[pkg[0]] = collection
+                bugzillaAcls[collectionName] = collection
             # Then the package
+            packageName = pkg[1]
             try:
-                package = collection[pkg[1]]
+                package = collection[packageName]
             except KeyError:
                 package = BugzillaInfo()
-                collection[pkg[1]] = package
+                collection[packageName] = package
 
             # Save the package information in the data structure to return
             if userId != pkg[2]:
@@ -242,6 +248,7 @@ class Acls(controllers.Controller):
                 fasPerson, group = self.fas.get_user_info(pkg[3])
                 package.qacontact = fasPerson['username']
             package.summary = pkg[4]
+
         # Retrieve the user acls
         personAcls = sqlalchemy.select((model.Package.c.name,
             model.Collection.c.name, model.PersonPackageListing.c.userid),
