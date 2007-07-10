@@ -8,6 +8,9 @@ from turbogears.database import session
 from pkgdb import model
 from dispatcher import PackageDispatcher
 
+from cherrypy import request
+import json
+
 class Packages(controllers.Controller):
     '''Display information related to individual packages.
     '''
@@ -31,33 +34,16 @@ class Packages(controllers.Controller):
         return dict(title=self.appTitle + ' -- Package Overview',
                 packages=packages)
 
-    @expose(template='pkgdb.templates.pkgpage')
+    @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName):
-        pkg = model.Package.get_by(name=packageName)
-        if not pkg:
+        # Return the information about a package.
+        package = model.Package.get_by(name=packageName)
+        if not package:
             raise redirect(config.get('base_url_filter.base_url') +
                     '/packages/not_packagename', redirect_params={'packageName' : packageName})
-        return self.id(pkg.id)
-
-    @expose(template='pkgdb.templates.pkgpage')
-    def id(self, packageId):
-        try:
-            packageId = int(packageId)
-        except ValueError:
-            raise redirect(config.get('base_url_filter.base_url') + '/packages/not_id')
-        # Return the information about a package.
-        pkgRow = sqlalchemy.select((model.PackageTable.c.name,
-            model.PackageTable.c.summary, model.PackageTable.c.description,
-            model.StatusTranslationTable.c.statusname),
-            sqlalchemy.and_(
-                model.PackageTable.c.statuscode ==
-                    model.StatusTranslationTable.c.statuscodeid,
-                model.StatusTranslationTable.c.language=='C',
-                model.PackageTable.c.id==packageId), limit=1).execute()
-        if pkgRow.rowcount <= 0:
-            raise redirect(config.get('base_url_filter.base_url') + '/packages/unknown',
-                redirect_params={'packageId' : packageId})
-        package = pkgRow.fetchone()
+        # By setting this, we allow status to be translated into json
+        package.c.status = True
+        package.status.c.translations = True
 
         # Possible ACLs
         aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
@@ -72,7 +58,7 @@ class Packages(controllers.Controller):
 
         # Fetch information about all the packageListings for this package
         pkgListings = SelectResults(session.query(model.PackageListing)).select(
-                model.PackageListingTable.c.packageid==packageId
+                model.PackageListingTable.c.packageid==package.id
                 )
 
         for pkg in pkgListings:
@@ -115,9 +101,22 @@ class Packages(controllers.Controller):
                     group.aclOrder[acl.acl] = acl
 
         return dict(title='%s -- %s' % (self.appTitle, package.name),
-                package=package, packageid=packageId,
                 packageListings=pkgListings, aclNames=aclNames,
                 aclStatus=aclStatusTranslations)
+
+    @expose(template='pkgdb.templates.pkgpage')
+    def id(self, packageId):
+        try:
+            packageId = int(packageId)
+        except ValueError:
+            raise redirect(config.get('base_url_filter.base_url') + '/packages/not_id')
+        pkg = model.Package.get_by(id=packageId)
+        if not pkg:
+            raise redirect(config.get('base_url_filter.base_url') +
+                    '/packages/unknown', redirect_params={'packageId': packageId})
+
+        raise redirect(config.get('base_url_filter.base_url') +
+                '/packages/name/' + pkg.name)
 
     @expose(template='pkgdb.templates.errors')
     def unknown(self, packageId):

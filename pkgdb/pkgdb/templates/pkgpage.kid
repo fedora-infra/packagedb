@@ -9,11 +9,12 @@ TODO='Not yet implemented'
     src="${tg.url('/static/javascript/framework.js')}"></script>
   <script type='text/javascript'
     src="${tg.url('/static/javascript/pkgpage.js')}"></script>
-  <h1 py:content="package.name">Package</h1>
+  <h1 py:content="packageListings[0].package.name">Package</h1>
   <table border="0">
     <tr><td>
       Status
-    </td><td py:content="package.statusname">
+    </td>
+    <td py:content="packageListings[0].package.status.translations[0].statusname">
     </td></tr>
     <tr><td>
       Creation Date
@@ -21,8 +22,8 @@ TODO='Not yet implemented'
       Fill in the Creation Date
     </td></tr>
   </table>
-  <p py:content="package.summary">Summary</p>
-  <p py:content="package.description">Description</p>
+  <p py:content="packageListings[0].package.summary">Summary</p>
+  <p py:content="packageListings[0].package.description">Description</p>
 
   <p>Contents:
     <ul py:for="pkg in packageListings">
@@ -32,6 +33,7 @@ TODO='Not yet implemented'
       </a></li>
     </ul>
   </p>
+
   <form action="${tg.url('/packages/dispatcher/')}" method="POST">
   <table class="pkglist" py:for="pkg in packageListings"
     py:attrs="{'name': str(pkg.id)}">
