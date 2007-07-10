@@ -383,6 +383,8 @@ function request_status_change(event) {
     var aclRow = getFirstParentByTagAndClassName(requestContainer, 'tr',
             'aclrow');
     var aclUser = getElementsByTagAndClassName('td', 'acluser', aclRow)[0];
+    logDebug(aclUser);
+    logDebug(aclUser.getAttribute('name'))
     var personid = aclUser.getAttribute('name').split(':')[1];
 
     /* Retrieve the status to change to for this acl */

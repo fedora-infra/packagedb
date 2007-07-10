@@ -98,7 +98,8 @@ TODO='Not yet implemented'
           </th>
         </tr>
         <tr py:for="person in pkg.people" class="aclrow">
-          <td class="acluser">
+          <td class="acluser"
+            py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
             <a href="${tg.url('/users/info/' + person.user)}">${person.name}</a>
           </td>
           <td py:for="acl in aclNames" class="aclcell">

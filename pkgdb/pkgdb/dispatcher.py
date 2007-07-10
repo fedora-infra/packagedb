@@ -6,6 +6,8 @@ import turbomail
 from turbogears import controllers, expose, identity, config
 from turbogears.database import session
 
+from fedora.accounts.fas import AuthError
+
 from pkgdb import model
 
 COMMITSLIST=config.get('commits_address')
@@ -201,7 +203,7 @@ class PackageDispatcher(controllers.Controller):
         # Get the human name and username for the person whose acl we changed
         (user, groups) = self.fas.get_user_info(personAcl.personpackagelisting.userid)
         # Make sure a log is created in the db as well.
-        logMessage = '%s (%s) has set the %s acl on %s (%s %s) to %s for %s (%s)' % (
+        logMessage = u'%s (%s) has set the %s acl on %s (%s %s) to %s for %s (%s)' % (
                     identity.current.user.display_name,
                     identity.current.user_name, newAcl, pkg.package.name,
                     pkg.collection.name, pkg.collection.version,

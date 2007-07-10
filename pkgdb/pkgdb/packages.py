@@ -8,12 +8,12 @@ from turbogears.database import session
 from pkgdb import model
 from dispatcher import PackageDispatcher
 
+from cherrypy import request
 import json
 
 class Packages(controllers.Controller):
     '''Display information related to individual packages.
     '''
-    dispatcher = PackageDispatcher()
 
     def __init__(self, fas=None, appTitle=None):
         '''Create a Packages Controller.
@@ -23,6 +23,7 @@ class Packages(controllers.Controller):
         '''
         self.fas = fas
         self.appTitle = appTitle
+        self.dispatcher = PackageDispatcher(self.fas)
 
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
@@ -38,7 +39,10 @@ class Packages(controllers.Controller):
         # Return the information about a package.
         package = model.Package.get_by(name=packageName)
         if not package:
-            raise redirect(config.get('base_url_filter.base_url') +
+            if 'tg_format' in request.params and request.params['tg_format'] == 'json':
+                return dict(msg='No package named %s' % packageName)
+            else:
+                raise redirect(config.get('base_url_filter.base_url') +
                     '/packages/not_packagename', redirect_params={'packageName' : packageName})
 
         # Possible ACLs
