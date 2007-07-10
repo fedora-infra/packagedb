@@ -8,7 +8,6 @@ from turbogears.database import session
 from pkgdb import model
 from dispatcher import PackageDispatcher
 
-from cherrypy import request
 import json
 
 class Packages(controllers.Controller):
@@ -41,9 +40,6 @@ class Packages(controllers.Controller):
         if not package:
             raise redirect(config.get('base_url_filter.base_url') +
                     '/packages/not_packagename', redirect_params={'packageName' : packageName})
-        # By setting this, we allow status to be translated into json
-        package.c.status = True
-        package.status.c.translations = True
 
         # Possible ACLs
         aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
