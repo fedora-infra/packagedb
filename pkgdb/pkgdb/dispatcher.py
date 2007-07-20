@@ -55,17 +55,20 @@ class PackageDispatcher(controllers.Controller):
         self.groups = {100300: 'cvsextras',
                 101197: 'cvsadmin'}
 
-    def _send_log_msg(self, msg, subject, author, pkgListing, acls=None):
+    def _send_log_msg(self, msg, subject, author, pkgListing, acls=None,
+            otherEmail=None):
+        # Store the email addresses in a hash to eliminate duplicates
+        recipients = {COMMITSLIST: '',
+                author.user['email']: ''}
+
         acls = acls or ('approveacls',)
-        authorEmail = author.user['email']
+        if otherEmail:
+            for email in otherEmail:
+                recipients[email] = ''
         # Get the owner for this package
         if pkgListing.owner != ORPHAN_ID:
             (owner, group) = self.fas.get_user_info(pkgListing.owner)
-
-        # Store the email addresses in a hash to eliminate duplicates
-        recipients = {COMMITSLIST: '',
-                authorEmail: '',
-                owner['email']: ''}
+            recipients[owner['email']] = ''
 
         # Get the co-maintainers
         aclUsers = SelectResults(session.query(model.PersonPackageListingAcl)
@@ -75,7 +78,7 @@ class PackageDispatcher(controllers.Controller):
         for acl in aclUsers:
             if acl.status.translations[0].statusname=='Approved':
                 (person, groups) = self.fas.get_user_info(acl.personpackagelisting.userid)
-            recipients[person['email']] = ''
+                recipients[person['email']] = ''
 
         # Send the log
         send_msg(msg, subject, recipients.keys())
@@ -200,7 +203,7 @@ class PackageDispatcher(controllers.Controller):
             else:
                 raise
 
-        approved = self._user_can_set_acls(identity.current.user.user_id, pkg)
+        approved = self._user_can_set_acls(identity, pkg)
         if not approved:
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs' %
@@ -256,7 +259,8 @@ class PackageDispatcher(controllers.Controller):
                             % (newAcl, pkgid, status))
         # Send a log to people interested in this package as well
         self._send_log_msg(logMessage, '%s set to %s for %s' % (newAcl,
-            status.statusname, user['human_name']), identity.current.user, pkg)
+            status.statusname, user['human_name']), identity.current.user,
+            pkg, otherEmail=(user['email'],))
 
         return dict(status=True)
 
@@ -289,7 +293,7 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing %s does not exist' % pkgListId)
 
         # Check whether the user is allowed to set this
-        approved = self._user_can_set_acls(identity.current.user.user_id, pkg)
+        approved = self._user_can_set_acls(identity, pkg)
         if not approved:
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs' %
@@ -441,10 +445,9 @@ class PackageDispatcher(controllers.Controller):
                         pkgListId))
 
         # Send a log to the commits list as well
-        ### FIXME: Want to send to everyone in approveacls as well.
-        send_msg(logMessage, '%s has %s %s for %s' % (
+        self._send_log_msg(logMessage, '%s has %s %s for %s' % (
                     identity.current.user.display_name, aclAction, aclName,
-                    pkgListing.package.name), (COMMITSLIST,))
+                    pkgListing.package.name), identity.current.user, pkgListing)
 
         # Return the new value
         return dict(status=True, personId=identity.current.user.user_id,
