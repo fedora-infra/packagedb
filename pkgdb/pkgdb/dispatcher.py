@@ -55,24 +55,57 @@ class PackageDispatcher(controllers.Controller):
         self.groups = {100300: 'cvsextras',
                 101197: 'cvsadmin'}
 
-    def _user_can_set_acls(self, userid, pkg):
+    def _send_log_msg(self, msg, subject, pkgListing, author):
+        authorEmail = author.user['email']
+        # Get the owner for this package
+        if pkgListing.owner != ORPHAN_ID:
+            (owner, group) = self.fas.get_user_info(pkgListing.owner)
+
+        # Store the email addresses in a hash to eliminate duplicates
+        recipients = {COMMITSLIST: '',
+                authorEmail: '',
+                owner['email']: ''}
+
+        # Get the co-maintainers
+        aclUsers = SelectResults(session.query(model.PersonPackageListingAcl)
+                ).select(model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id
+                ).select(model.PersonPackageListing.c.packagelistingid==pkgListing.id
+                ).select(model.PersonPackageListingAcl.c.acl=='approveacls')
+        for acl in aclUsers:
+            if acl.status.translations[0].statusname=='Approved':
+                (person, groups) = self.fas.get_user_info(acl.personpackagelisting.userid)
+            recipients[person['email']] = ''
+
+        # Send the log
+        send_msg(msg, subject, recipients.keys())
+
+    def _user_can_set_acls(self, identity, pkg):
         '''Check that the current user can set acls.
+
+        This method will return one of these values:
+            'admin', 'owner', 'comaintainer', False
+        depending on why the user is granted access.  You can therefore use the
+        value for finer grained access to some resources.
         '''
         # Find the approved statuscode
         status = model.StatusTranslation.get_by(statusname='Approved')
 
         # Make sure the current tg user has permission to set acls
-        if userid == pkg.owner:
-            # We're talking to the owner
-            return True
+        # If the user is a cvsadmin they can
+        if identity.in_group('cvsadmin'):
+            return 'admin'
+        # The owner can
+        if identity.current.user.user_id == pkg.owner:
+            return 'owner'
         # Wasn't the owner.  See if they have been granted permission
+        # explicitly
         for person in pkg.people:
             if person.userid == userid:
                 # Check each acl that this person has on the package.
                 for acl in person.acls:
                     if (acl.acl == 'approveacls' and acl.statuscode
                             == status.statuscodeid):
-                        return True
+                        return 'comaintainer'
                 break
         return False
 
@@ -89,17 +122,8 @@ class PackageDispatcher(controllers.Controller):
         pkg = model.PackageListing.get_by(id=containerId)
         if not pkg:
             return dict(status=False, message='No such package %s' % containerId)
-        ### FIXME: We want to allow "admin" users to set orphan status as well.
-        if pkg.owner == identity.current.user.user_id or identity.in_group("cvsadmin"):
-            # Release ownership
-            pkg.owner = ORPHAN_ID
-            ownerName = 'Orphaned Package (orphan)'
-            logMessage = 'Package %s in %s %s was orphaned by %s (%s)' % (
-                    pkg.package.name, pkg.collection.name,
-                    pkg.collection.version, identity.current.user.display_name,
-                    identity.current.user_name)
-            status = model.StatusTranslation.get_by(statusname='Orphaned')
-        elif pkg.owner == ORPHAN_ID:
+        approved = self._user_can_set_acls(identity, pkg)
+        if pkg.owner == ORPHAN_ID:
             # Take ownership
             pkg.owner = identity.current.user.user_id
             ownerName = '%s (%s)' % (identity.current.user.display_name,
@@ -108,6 +132,15 @@ class PackageDispatcher(controllers.Controller):
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, ownerName)
             status = model.StatusTranslation.get_by(statusname='Owned')
+        elif approved in ('admin', 'owner'):
+            # Release ownership
+            pkg.owner = ORPHAN_ID
+            ownerName = 'Orphaned Package (orphan)'
+            logMessage = 'Package %s in %s %s was orphaned by %s (%s)' % (
+                    pkg.package.name, pkg.collection.name,
+                    pkg.collection.version, identity.current.user.display_name,
+                    identity.current.user_name)
+            status = model.StatusTranslation.get_by(statusname='Orphaned')
         else:
             return dict(status=False, message=
                     'Package %s not available for taking' % containerId)
@@ -123,10 +156,9 @@ class PackageDispatcher(controllers.Controller):
                     message='Not able to change owner information for %s' \
                             % (containerId))
 
-        # Send a log to the commits list as well
-        ### FIXME: Want to send to everyone interested in this package as well
-        send_msg(logMessage, '%s %s' % (pkg.package.name, status.statusname),
-                (COMMITSLIST,))
+        # Send a log to people interested in this package as well
+        self._send_log_msg(logMessage, '%s %s' % (pkg.package.name,
+            status.statusname), pkg, identity.current.user)
 
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
                 aclStatusFields=self.aclStatusTranslations)
@@ -220,9 +252,10 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False,
                     message='Not able to create acl %s on %s with status %s' \
                             % (newAcl, pkgid, status))
-        # Send a log to the commits list as well
-        ### FIXME: Want to send to everyone in approveacls as well.
-        send_msg(logMessage, '%s set to %s for %s' % (newAcl, status.statusname, user['human_name']), (COMMITSLIST,))
+        # Send a log to people interested in this package as well
+        self._send_log_msg(logMessage, '%s set to %s for %s' % (newAcl,
+            status.statusname, user['human_name']),
+            pkg, identity.current.user)
 
         return dict(status=True)
 
@@ -327,9 +360,10 @@ class PackageDispatcher(controllers.Controller):
                     message='Not able to create acl %s on %s with status %s' \
                             % (newAcl, pkgid, status))
 
-        # Send a log to the commits list as well
-        ### FIXME: Want to send to everyone in approveacls as well.
-        send_msg(logMessage, '%s set to %s for %s' % (aclName, statusname, self.groups[changeGroup.groupid]), (COMMITSLIST,))
+        # Send a log to people interested in this package as well
+        self._send_log_msg(logMessage, '%s set to %s for %s' % (aclName,
+            statusname, self.groups[changeGroup.groupid]),
+            pkg, identity.current.user)
 
         return dict(status=True,
                 newAclStatus=changeAcl.status.translations[0].statusname)
