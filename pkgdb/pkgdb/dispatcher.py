@@ -55,7 +55,8 @@ class PackageDispatcher(controllers.Controller):
         self.groups = {100300: 'cvsextras',
                 101197: 'cvsadmin'}
 
-    def _send_log_msg(self, msg, subject, pkgListing, author):
+    def _send_log_msg(self, msg, subject, author, pkgListing, acls=None):
+        acls = acls or ('approveacls',)
         authorEmail = author.user['email']
         # Get the owner for this package
         if pkgListing.owner != ORPHAN_ID:
@@ -70,7 +71,7 @@ class PackageDispatcher(controllers.Controller):
         aclUsers = SelectResults(session.query(model.PersonPackageListingAcl)
                 ).select(model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id
                 ).select(model.PersonPackageListing.c.packagelistingid==pkgListing.id
-                ).select(model.PersonPackageListingAcl.c.acl=='approveacls')
+                ).select(model.PersonPackageListingAcl.c.acl.in_(*acls))
         for acl in aclUsers:
             if acl.status.translations[0].statusname=='Approved':
                 (person, groups) = self.fas.get_user_info(acl.personpackagelisting.userid)
@@ -158,7 +159,8 @@ class PackageDispatcher(controllers.Controller):
 
         # Send a log to people interested in this package as well
         self._send_log_msg(logMessage, '%s %s' % (pkg.package.name,
-            status.statusname), pkg, identity.current.user)
+            status.statusname), identity.current.user, pkg,
+            ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
 
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
                 aclStatusFields=self.aclStatusTranslations)
@@ -254,8 +256,7 @@ class PackageDispatcher(controllers.Controller):
                             % (newAcl, pkgid, status))
         # Send a log to people interested in this package as well
         self._send_log_msg(logMessage, '%s set to %s for %s' % (newAcl,
-            status.statusname, user['human_name']),
-            pkg, identity.current.user)
+            status.statusname, user['human_name']), identity.current.user, pkg)
 
         return dict(status=True)
 
@@ -363,7 +364,7 @@ class PackageDispatcher(controllers.Controller):
         # Send a log to people interested in this package as well
         self._send_log_msg(logMessage, '%s set to %s for %s' % (aclName,
             statusname, self.groups[changeGroup.groupid]),
-            pkg, identity.current.user)
+            identity.current.user, pkg)
 
         return dict(status=True,
                 newAclStatus=changeAcl.status.translations[0].statusname)
