@@ -5,9 +5,12 @@ Caveats:
 Assumes that owners.epel.list has a subset of the packages in owners.list.
 ATM this is true.
 
-Set CVSROOT=/cvs/extras before running
+Set CVSROOT=/cvs/pkgs before running
 
 Fill in dbPass and fasPass in the source before running
+
+owners.list MUST be pre-transformed for the special owners prior to running this script.
+
 '''
 
 import sys
