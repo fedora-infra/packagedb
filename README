@@ -17,7 +17,7 @@ need to import data from those sources into the packageDB.
 owners.list
 -----------
 
-:Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras cvs co owners; cat owners/owners.list
+:Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/pkgs cvs co owners; cat owners/owners.list
 :Data: Package names, summary, owner, qacontact, watchers
 :Duration: One-time; Obsoletes
 :Priority: Essential
@@ -39,7 +39,7 @@ plan to.
 CVS Repository
 --------------
 
-:Location: CVSROOT:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras
+:Location: CVSROOT:pserver:anonymous@cvs.fedora.redhat.com:/cvs/pkgs
 :Data: Collections that the package is present in, package metadata present in the spec file (URL, upstream source, etc.)
 :Duration: One-time; SyncReversal
 :Priority: Essential
