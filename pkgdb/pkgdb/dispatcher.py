@@ -236,7 +236,7 @@ class PackageDispatcher(controllers.Controller):
         personid = int(personid)
 
         # Make sure the package listing exists
-        pkg = model.PackageListing.get_by(PackageListing.id=pkgid)
+        pkg = model.PackageListing.get_by(id=pkgid)
         if not pkg:
             return dict(status=False,
                     message='Package Listing %s does not exist' % pkgid)
@@ -309,8 +309,7 @@ class PackageDispatcher(controllers.Controller):
         groupId = int(groupId)
 
         # Make sure the package listing exists
-        pkg = model.PackageListing.get_by(
-                model.PackageListing.c.id==pkgListId)
+        pkg = model.PackageListing.get_by(id=pkgListId)
         if not pkg:
             return dict(status=False,
                     message='Package Listing %s does not exist' % pkgListId)
@@ -407,10 +406,8 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message='No such package listing %s' % pkgListId)
 
         # See if the Person is already associated with the pkglisting.
-        person = model.PersonPackageListing.get_by(sqlalchemy.and_(
-                model.PersonPackageListing.c.packagelistingid==pkgListId,
-                model.PersonPackageListing.c.userid==
-                    identity.current.user.user_id))
+        person = model.PersonPackageListing.get_by(packagelistingid=pkgListId,
+                userid=identity.current.user.user_id)
         awaitingStatus = model.StatusTranslation.get_by(
                 statusname='Awaiting Review')
         obsoleteStatus = model.StatusTranslation.get_by(statusname='Obsolete')
@@ -492,7 +489,7 @@ class PackageDispatcher(controllers.Controller):
         addedStatus = model.StatusTranslation.get_by(statusname='Added')
 
         develCollection = model.Collection.select_by(name='Fedora',
-                version='devel'))
+                version='devel')
         person, group = self.fas.get_user_info(owner)
 
         # Create the package
@@ -616,7 +613,7 @@ class PackageDispatcher(controllers.Controller):
             # Retrieve the id of the initial package owner
             if not ownerId:
                 develCollection = model.Collection.select_by(name='Fedora',
-                        version='devel'))
+                        version='devel')
                 develPackage = model.PackageListing.get_by(packageid=pkg.id,
                         collectionid=develCollection.id)
                 ownerId = develPackage.owner
