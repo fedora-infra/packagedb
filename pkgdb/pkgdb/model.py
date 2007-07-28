@@ -164,7 +164,7 @@ class PackageListing(SABase):
 
     Table -- PackageListing
     '''
-    def __init__(self, packageid, collectionid, owner, statuscode,
+    def __init__(self, owner, statuscode, packageid=None, collectionid=None,
             qacontact=None):
         self.packageid = packageid
         self.collectionid = collectionid
@@ -249,10 +249,26 @@ class Log(SABase):
         return 'Log(%s, description="%s", changetime="%s")' % (self.userid,
                 self.description, self.changetime)
 
+class PackageLog(Log):
+    '''Log of changes to Packages.
+
+    Table -- PackageLog
+    '''
+    def __init__(self, userid, action, description=None, changetime=None,
+            packageid=None):
+        Log.__init__(self, userid, description, changetime)
+        self.action = action
+        self.packageid = packageid
+    
+    def __repr__(self):
+        return 'PackageLog(%s, %s, description="%s", changetime="%s",' \
+                ' packageid=%s)' % (self.userid, self.action,
+                        self.description, self.changetime, self.packageid)
+    
 class PackageListingLog(Log):
     '''Log of changes to the PackageListings.
 
-    Table -- Log
+    Table -- PackageListingLog
     '''
     def __init__(self, userid, action, description=None, changetime=None,
             packagelistingid=None):
@@ -425,6 +441,7 @@ assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
 # The log tables all inherit from the base log table.
 
 LogTable = Table('log', metadata, autoload=True)
+PackageLogTable = Table('packagelog', metadata, autoload=True)
 PackageListingLogTable = Table('packagelistinglog', metadata, autoload=True)
 PersonPackageListingAclLogTable = Table('personpackagelistingacllog', metadata,
         autoload=True)
@@ -432,7 +449,11 @@ GroupPackageListingAclLogTable = Table('grouppackagelistingacllog', metadata,
         autoload=True)
 
 logJoin = polymorphic_union (
-        {'pkglistlog' : select((LogTable.join(
+        {'pkglog' : select((LogTable.join(
+            PackageLogTable,
+                LogTable.c.id == PackageLogTable.c.logid),
+            literal_column("'pkglog'").label('kind'))),
+         'pkglistlog' : select((LogTable.join(
             PackageListingLogTable,
                 LogTable.c.id == PackageListingLogTable.c.logid),
             literal_column("'pkglistlog'").label('kind'))),
@@ -471,6 +492,12 @@ assign_mapper(session.context, GroupPackageListingAclLog,
         polymorphic_identity='grouppkglistacllog',
         properties={'acl': relation(GroupPackageListingAcl, backref='logs')})
 
+assign_mapper(session.context, PackageLog, PackageLogTable,
+        inherits=logMapper,
+        inherit_condition=LogTable.c.id==PackageLogTable.c.logid,
+        polymorphic_identity='pkglog',
+        properties={'package': relation(Package, backref='logs')})
+
 assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
         inherits=logMapper,
         inherit_condition=LogTable.c.id==PackageListingLogTable.c.logid,
@@ -492,5 +519,4 @@ assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
 # PackageBuild
 # PackageBuildListing
 # CollectionLog
-# PackageLog
 # PackageBuildLog
