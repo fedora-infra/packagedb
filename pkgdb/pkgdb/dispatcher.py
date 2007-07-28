@@ -129,18 +129,18 @@ class PackageDispatcher(controllers.Controller):
         ACL or modify an existing one depending on what's in the db already.
         '''
         # Lookup the statuscode
-        status = model.StatusTranslation.get_by(statusname=statusname)
+        status = model.StatusTranslation.get_by(statusname=statusName)
         # Create the ACL
         changePerson = None
         for person in pkgList.people:
             # Check for the person who's acl we're setting
-            if person.userid == personid:
+            if person.userid == personId:
                 changePerson = person
                 break
 
         if not changePerson:
             # Person has no ACLs on this Package yet.  Create a record
-            changePerson = model.PersonPackageListing(personid, pkgList.id)
+            changePerson = model.PersonPackageListing(personId, pkgList.id)
             personAcl = model.PersonPackageListingAcl(newAcl,
                     status.statuscodeid)
             personAcl.personpackagelisting = changePerson
@@ -230,6 +230,7 @@ class PackageDispatcher(controllers.Controller):
         # that here.
         if not statusname or not statusname.strip():
             statusname = 'Obsolete'
+        status = model.StatusTranslation.get_by(statusname=statusname)
 
         # Change strings into numbers because we do some comparisons later on
         pkgid = int(pkgid)
@@ -266,8 +267,7 @@ class PackageDispatcher(controllers.Controller):
         logMessage = u'%s (%s) has set the %s acl on %s (%s %s) to %s for %s (%s)' % (
                     identity.current.user.display_name,
                     identity.current.user_name, newAcl, pkg.package.name,
-                    pkg.collection.name, pkg.collection.version,
-                    status.statusname,
+                    pkg.collection.name, pkg.collection.version, statusname,
                     user['human_name'], user['username'])
         log = model.PersonPackageListingAclLog(identity.current.user.user_id,
                 status.statuscodeid, logMessage)
@@ -279,10 +279,10 @@ class PackageDispatcher(controllers.Controller):
             # An error was generated
             return dict(status=False,
                     message='Not able to create acl %s on %s with status %s' \
-                            % (newAcl, pkgid, status))
+                            % (newAcl, pkgid, statusname))
         # Send a log to people interested in this package as well
         self._send_log_msg(logMessage, '%s set to %s for %s' % (newAcl,
-            status.statusname, user['human_name']), identity.current.user,
+            statusname, user['human_name']), identity.current.user,
             (pkg,), otherEmail=(user['email'],))
 
         return dict(status=True)
