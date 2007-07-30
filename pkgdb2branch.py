@@ -4,7 +4,10 @@
 # License: GPLv2 or later
 
 import sys
-import subprocess
+try:
+    import subprocess
+except ImportError:
+    import popen2
 
 import json
 import urllib2
@@ -18,6 +21,9 @@ BASEURL='https://admin.fedoraproject.org/pkgdb-dev'
 BRANCHER='/cvs/extras/CVSROOT/mkbranchwrapper'
 
 class PackageDBError(ServerError):
+    pass
+
+class ProcessError(Exception):
     pass
 
 class PackageDBClient(BaseClient):
@@ -49,13 +55,24 @@ listed for it in the packagedb.
 def create_branches(pkgname, branches):
     cmdLine = [BRANCHER, pkgname]
     cmdLine.extend(branches)
-    branchScript = subprocess.Popen(cmdLine, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
-    retCode = branchScript.wait()
-    if retCode:
-        e = subprocess.CalledProcessError(retCode, ' '.join(cmdLine))
-        e.message = ''.join(branchScript.stdout.readlines())
-        raise e
+    if 'subprocess' in sys.modules():
+        branchScript = subprocess.Popen(cmdLine, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+        retCode = branchScript.wait()
+        if retCode:
+            e = ProcessError()
+            e.returnCode = retCode
+            e.cmd = ' '.join(cmdLine)
+            e.message = ''.join(branchScript.stdout.readlines())
+            raise e
+    else:
+        branchScript = popen2.Popen4(' '.join(cmdLine))
+        retCode = branchScript.wait()
+        if os.WIFEXITED(retCode) and os.WEXITSTATUS(retCode):
+            e = ProcessError()
+            e.returnCode = os.WEXITSTATUS(retCode)
+            e.cmd = ' '.join(cmdLine)
+            e.message = ''.join(branchScript.fromchild.readlines())
 
 if __name__ == '__main__':
     if '--help' in sys.argv or '-h' in sys.argv or len(sys.argv) == 1:
@@ -74,7 +91,7 @@ if __name__ == '__main__':
             continue
         try:
             create_branches(pkgname, branches)
-        except subprocess.CalledProcessError, e:
+        except ProcessError, e:
             print 'Error, "%s" returned %s: %s' % (e.cmd, e.returncode,
                     e.message)
             warnings = True
