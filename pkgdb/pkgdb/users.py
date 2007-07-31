@@ -105,4 +105,4 @@ class Users(controllers.Controller):
                 ' can not be found.' \
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.' % fasname
-        return dict(title=self.appTitle + ' -- Invalid Username', msg=msg)
+        return dict(title=self.appTitle + ' -- Invalid Username', message=msg)
