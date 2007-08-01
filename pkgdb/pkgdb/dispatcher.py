@@ -6,6 +6,8 @@ import turbomail
 from turbogears import controllers, expose, identity, config
 from turbogears.database import session
 
+import simplejson
+
 from fedora.accounts.fas import AuthError
 
 from pkgdb import model
@@ -140,10 +142,11 @@ class PackageDispatcher(controllers.Controller):
 
         if not changePerson:
             # Person has no ACLs on this Package yet.  Create a record
-            changePerson = model.PersonPackageListing(personId, pkgList.id)
+            changePerson = model.PersonPackageListing(personId)
+            pkgList.people.append(changePerson)
             personAcl = model.PersonPackageListingAcl(newAcl,
                     status.statuscodeid)
-            personAcl.personpackagelisting = changePerson
+            changePerson.acls.append(personAcl)
         else:
             # Look for an acl for the person
             personAcl = None
@@ -157,7 +160,7 @@ class PackageDispatcher(controllers.Controller):
                 # Acl was not found.  Create one.
                 personAcl = model.PersonPackageListingAcl(newAcl,
                         status.statuscodeid)
-                personAcl.personpackagelisting = changePerson
+                changePerson.acls.append(personAcl)
 
         return personAcl
 
@@ -166,10 +169,12 @@ class PackageDispatcher(controllers.Controller):
         return dict(methods=self.methods)
 
     @expose('json')
-    # Check that the tg.identity is allowed to set themselves as owner
-    @identity.require(identity.in_any_group('cvsextras', 'cvsadmin'))
+    @identity.require(identity.not_anonymous())
     def toggle_owner(self, containerId):
-        
+        # Check that the tg.identity is allowed to set themselves as owner
+        if not identity.in_any_group('cvsextras', 'cvsadmin'):
+            return dict(status=False, message='User must be in cvsextras or cvsadmin')
+
         # Check that the pkgid is orphaned
         pkg = model.PackageListing.get_by(id=containerId)
         if not pkg:
@@ -220,12 +225,12 @@ class PackageDispatcher(controllers.Controller):
 
     @expose('json')
     # Check that the requestor is in a group that could potentially set ACLs.
-    @identity.require(identity.in_any_group('cvsextras', 'cvsadmin'))
+    @identity.require(identity.not_anonymous())
     def set_acl_status(self, pkgid, personid, newAcl, statusname):
         ### FIXME: Changing Obsolete into "" sounds like it should be
         # Pushed out to the view (template) instead of being handled in the
         # controller.
-
+        
         # We are making Obsolete into "" for our interface.  Need to reverse
         # that here.
         if not statusname or not statusname.strip():
@@ -252,6 +257,9 @@ class PackageDispatcher(controllers.Controller):
             else:
                 raise
 
+        # Check that the tg.identity is allowed to set themselves as owner
+        if not identity.in_any_group('cvsextras', 'cvsadmin'):
+            return dict(status=False, message='User must be in cvsextras or cvsadmin')
         approved = self._user_can_set_acls(identity, pkg)
         if not approved:
             return dict(status=False, message=
@@ -289,7 +297,7 @@ class PackageDispatcher(controllers.Controller):
 
     @expose('json')
     # Check that the requestor is in a group that could potentially set ACLs.
-    @identity.require(identity.in_any_group('cvsextras', 'cvsadmin'))
+    @identity.require(identity.not_anonymous())
     def toggle_groupacl_status(self, containerId):
         '''Set the groupacl to determine whether the group can commit.
 
@@ -315,6 +323,8 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing %s does not exist' % pkgListId)
 
         # Check whether the user is allowed to set this
+        if not identity.in_any_group('cvsextras', 'cvsadmin'):
+            return dict(status=False, message='User must be in cvsextras or cvsadmin')
         approved = self._user_can_set_acls(identity, pkg)
         if not approved:
             return dict(status=False, message=
@@ -474,12 +484,16 @@ class PackageDispatcher(controllers.Controller):
         return dict(status=True, personId=identity.current.user.user_id,
                 aclStatusFields=self.aclStatusTranslations, aclStatus=aclStatus)
 
-    @expose('json')
+    @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.
-    @identity.require(identity.in_any_group('cvsadmin'))
+    @identity.require(identity.not_anonymous())
     def add_package(self, package, owner, summary):
         '''Add a new package to the database.
         '''
+        # Check that the tg.identity is allowed to set themselves as owner
+        if not identity.in_any_group('cvsadmin'):
+            return dict(status=False, message='User must be in cvsadmin')
+
         # Make sure the package doesn't already exist
         pkg = model.Package.get_by(name=package)
         if pkg:
@@ -488,14 +502,18 @@ class PackageDispatcher(controllers.Controller):
         approvedStatus = model.StatusTranslation.get_by(statusname='Approved')
         addedStatus = model.StatusTranslation.get_by(statusname='Added')
 
-        develCollection = model.Collection.select_by(name='Fedora',
+        develCollection = model.Collection.get_by(name='Fedora',
                 version='devel')
-        person, group = self.fas.get_user_info(owner)
+        try:
+            person, group = self.fas.get_user_info(owner)
+        except AuthError, e:
+            return dict(status=False, message='Specified owner %s does not have a Fedora Account' % owner)
 
         # Create the package
-        pkg = model.Package(package, summary, approvedStatus.statuscode)
-        pkgListing = model.PackageListing(person.id, approvedStatus.statuscode,
-                develCollection.id)
+        pkg = model.Package(package, summary, approvedStatus.statuscodeid)
+        pkgListing = model.PackageListing(person['id'],
+                approvedStatus.statuscodeid)
+        pkgListing.collection = develCollection
         pkgListing.package = pkg
 
         # Create a log of changes
@@ -507,7 +525,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.summary)
         logs.append(pkgLogMessage)
         pkgLog = model.PackageLog(
-                identity.current.user.user_id, addedStatus.statuscode,
+                identity.current.user.user_id, addedStatus.statuscodeid,
                 pkgLogMessage)
         pkgLog.package = pkg
         pkgLogMessage = '%s (%s) has approved Package %s' % (
@@ -516,7 +534,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkgLogMessage)
         pkgLog = model.PackageLog(
-                identity.current.user.user_id, approvedStatus.statuscode,
+                identity.current.user.user_id, approvedStatus.statuscodeid,
                 pkgLogMessage)
         pkgLog.package = pkg
 
@@ -529,8 +547,8 @@ class PackageDispatcher(controllers.Controller):
                     owner)
         logs.append(pkgLogMessage)
         pkgListLog = model.PackageListingLog(
-                identity.current.user.user_id, addedStatus.statuscode,
-                pkgListLogMessage
+                identity.current.user.user_id, addedStatus.statuscodeid,
+                pkgLogMessage
                 )
         pkgListLog.listing = pkgListing
 
@@ -542,8 +560,8 @@ class PackageDispatcher(controllers.Controller):
                     pkgListing.collection.version)
         logs.append(pkgLogMessage)
         pkgListLog = model.PackageListingLog(
-                identity.current.user.user_id, approvedStatus.statuscode,
-                pkgListLogMessage
+                identity.current.user.user_id, approvedStatus.statuscodeid,
+                pkgLogMessage
                 )
         pkgListLog.listing = pkgListing
 
@@ -552,8 +570,8 @@ class PackageDispatcher(controllers.Controller):
         except sqlalchemy.exceptions.SQLError, e:
             return dict(status=False,
                     message='Unable to create PackageListing(%s, %s, %s, %s)' %
-                        (pkg.id, develCollection.id, person.id,
-                        approvedStatus.statuscode))
+                        (pkg.id, develCollection.id, person['id'],
+                        approvedStatus.statuscodeid))
 
         # Send notification of the new package
         self._send_log_msg('\n'.join(logs),
@@ -564,12 +582,16 @@ class PackageDispatcher(controllers.Controller):
         # Return the new values
         return dict(status=True, package=pkg, packageListing=pkgListing)
 
-    @expose('json')
+    @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.
-    @identity.require(identity.in_any_group('cvsadmin'))
+    @identity.require(identity.not_anonymous())
     def edit_package(self, package, **changes):
         '''Add a new package to the database.
         '''
+        # Check that the tg.identity is allowed to set themselves as owner
+        if not identity.in_any_group('cvsadmin'):
+            return dict(status=False, message='User must be in cvsadmin')
+
         # Log message for all owners
         pkgLogMsg = None
         # Log message for owners of a branch
@@ -583,6 +605,7 @@ class PackageDispatcher(controllers.Controller):
         if not changes:
             return dict(status=True, package=pkg)
 
+        modifiedStatus = model.StatusTranslation.get_by(statusname='Modified')
         # Change the summary
         if 'summary' in changes:
             pkg.summary = changes['summary']
@@ -590,15 +613,18 @@ class PackageDispatcher(controllers.Controller):
                     identity.current.user.display_name,
                     identity.current.user_name, package, changes['summary'])
             log = model.PackageLog(identity.current.user.user_id,
-                    status.statuscodeid, logMessage, packageid=pkg.id)
-            log.packageid = pkg
+                    modifiedStatus.statuscodeid, logMessage)
+            log.package = pkg
             pkgLogMsg = logMessage
 
         # Retrieve the owner for use later
         person = None
         ownerId = None
         if 'owner' in changes:
-            person, group = self.fas.get_user_info(owner)
+            try:
+                person, group = self.fas.get_user_info(changes['owner'])
+            except AuthError, e:
+                return dict(status=False, message='Specified owner %s does not have a Fedora Account' % changes['owner'])
             ownerId = person['id']
 
         if 'collections' in changes:
@@ -612,37 +638,41 @@ class PackageDispatcher(controllers.Controller):
 
             # Retrieve the id of the initial package owner
             if not ownerId:
-                develCollection = model.Collection.select_by(name='Fedora',
+                develCollection = model.Collection.get_by(name='Fedora',
                         version='devel')
                 develPackage = model.PackageListing.get_by(packageid=pkg.id,
                         collectionid=develCollection.id)
                 ownerId = develPackage.owner
 
-            for collection in changes['collections']:
-                for version in changes[collection]:
+            # Turn JSON collection data back to python
+            collectionData = simplejson.loads(changes['collections'])
+            for collectionName in collectionData:
+                for version in collectionData[collectionName]:
                     # Check if collection/version exists
-                    collection = model.Collection.get_by(name=collection,
+                    collection = model.Collection.get_by(name=collectionName,
                             version=version)
                     if not collection:
                         return dict(status=False,
                                 message='No collection %s %s' %
-                                (collection, version))
+                                (collectionName, version))
 
                     # Create the packageListing if necessary
-                    pkgListing = model.PackageListing.filter_by(
+                    pkgListing = model.PackageListing.get_by(
                             collectionid=collection.id, packageid=pkg.id)
                     if not pkgListing:
                         pkgListing = model.PackageListing(ownerId,
-                                approvedStatus.statuscode, packageid=pkg.id,
-                                collectionid=collection.id)
+                                approvedStatus.statuscodeid)
+                        pkgListing.package = pkg
+                        pkgListing.collection = collection
                         logMessage = '%s (%s) added a %s %s branch for %s' % (
                                 identity.current.user.display_name,
                                 identity.current.user_name,
-                                pkg.collection.name, pkg.collection.version,
-                                pkg.package.name)
+                                pkgListing.collection.name,
+                                pkgListing.collection.version,
+                                pkgListing.package.name)
                         pkgLog = model.PackageListingLog(
-                                identity.current.user_id,
-                                addedStatus.statuscode,
+                                identity.current.user.user_id,
+                                addedStatus.statuscodeid,
                                 logMessage
                                 )
                         pkgLog.listing = pkgListing
@@ -653,18 +683,19 @@ class PackageDispatcher(controllers.Controller):
 
         # If ownership, change the owners
         if 'owner' in changes:
+            # Already retrieved owner into person
             for pkgList in listings:
                 pkgList.owner = person['id']
                 logMessage = '%s (%s) changed owner of %s in %s %s to %s' % (
                         identity.current.user.display_name,
                         identity.current.user_name,
-                        pkg.package.name,
-                        pkg.collection.name, pkg.collection.version,
+                        pkgList.package.name,
+                        pkgList.collection.name, pkgList.collection.version,
                         person['username']
                         )
                 pkgLog = model.PackageListingLog(
-                        identity.current.user_id,
-                        ownedStatus.statuscode,
+                        identity.current.user.user_id,
+                        ownedStatus.statuscodeid,
                         logMessage
                         )
                 pkgLog.listing = pkgList
@@ -675,24 +706,30 @@ class PackageDispatcher(controllers.Controller):
         
         # Change the cclist
         if 'ccList' in changes:
+            ccList = simplejson.loads(changes['ccList'])
             for username in ccList:
                 # Lookup the list members in fas
-                person, groups = self.fas.get_user_info(username)
+                try:
+                    person, groups = self.fas.get_user_info(username)
+                except AuthError, e:
+                    return dict(status=False,
+                            message='New cclist member %s is not in FAS' % username)
                 # Add Acls for them to the packages
                 for pkgList in listings:
-                    for acl in ('watchbugzilla', 'wathcommits'):
+                    for acl in ('watchbugzilla', 'watchcommits'):
                         personAcl = self._create_or_modify_acl(pkgList,
                                 person['id'], acl, 'Approved')
                         logMessage = '%s (%s) approved %s on %s (%s %s) for %s' % (
                                 identity.current.user.display_name,
                                 identity.current.user_name,
-                                acl, pkg.package.name,
-                                pkg.collection.name, pkg.collection.version,
+                                acl, pkgList.package.name,
+                                pkgList.collection.name,
+                                pkgList.collection.version,
                                 person['username']
                                 )
-                        pkgLog = model.PackageListingAclLog(
-                                identity.current.user_id,
-                                approvedStatus.statuscode,
+                        pkgLog = model.PersonPackageListingAclLog(
+                                identity.current.user.user_id,
+                                approvedStatus.statuscodeid,
                                 logMessage
                                 )
                         pkgLog.acl = personAcl
@@ -703,9 +740,13 @@ class PackageDispatcher(controllers.Controller):
 
         # Change the comaintainers
         if 'comaintList' in changes:
-            for username in changes['comaintList']:
+            comaintList = simplejson.loads(changes['comaintList'])
+            for username in comaintList:
                 # Lookup the list members in fas
-                person, groups = self.fas.get_user_info(username)
+                try:
+                    person, groups = self.fas.get_user_info(username)
+                except AuthError, e:
+                    return dict(status=False, message='New comaintainer %s does not have a Fedora Account' % username)
                 # Add Acls for them to the packages
                 for pkgList in listings:
                     for acl in ('watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls', 'checkout'):
@@ -717,12 +758,13 @@ class PackageDispatcher(controllers.Controller):
                         logMessage = u'%s (%s) approved %s on %s (%s %s) for %s' % (
                                 identity.current.user.display_name,
                                 identity.current.user_name, acl,
-                                pkg.package.name,
-                                pkg.collection.name, pkg.collection.version,
+                                pkgList.package.name,
+                                pkgList.collection.name,
+                                pkgList.collection.version,
                                 person['username'])
-                        pkgLog = model.PackageListingAclLog(
-                                identity.current.user_id,
-                                approvedStatus.statuscode,
+                        pkgLog = model.PersonPackageListingAclLog(
+                                identity.current.user.user_id,
+                                approvedStatus.statuscodeid,
                                 logMessage
                                 )
                         pkgLog.acl = personAcl
@@ -749,5 +791,5 @@ class PackageDispatcher(controllers.Controller):
                         identity.current.user.display_name, pkg.name,
                         pkgListing.collection.name,
                         pkgListing.collection.version),
-                    identity.current.user, (pkg,))
+                    identity.current.user, (pkgListing,))
         return dict(status=True)

@@ -184,7 +184,7 @@ class PersonPackageListing(SABase):
 
     Table -- PersonPackageListing
     '''
-    def __init__(self, userid, packagelistingid):
+    def __init__(self, userid, packagelistingid=None):
         self.userid = userid
         self.packagelistingid = packagelistingid
 
