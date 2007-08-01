@@ -17,7 +17,7 @@ try:
 except ImportError:
     from client import BaseClient, ServerError
 
-BASEURL='https://admin.fedoraproject.org/pkgdb-dev'
+BASEURL='http://test3.fedora.phx.redhat.com/pkgdb-dev'
 BRANCHER='/cvs/extras/CVSROOT/mkbranchwrapper'
 
 class PackageDBError(ServerError):
@@ -38,8 +38,8 @@ class PackageDBClient(BaseClient):
 
     def get_package_branches(self, pkgname):
         data = self.send_request('/packages/name/%s' % pkgname)
-        if 'msg' in data:
-            raise PackageDBError((data['msg']))
+        if 'message' in data:
+            raise PackageDBError((data['message']))
         branches = []
         for packageListing in data['packageListings']:
             branches.append(packageListing['collection']['branchname'])

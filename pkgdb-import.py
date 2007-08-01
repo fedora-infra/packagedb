@@ -8,9 +8,6 @@ ATM this is true.
 Set CVSROOT=/cvs/pkgs before running
 
 Fill in dbPass and fasPass in the source before running
-
-owners.list MUST be pre-transformed for the special owners prior to running this script.
-
 '''
 
 import sys
@@ -25,12 +22,12 @@ OWNERLIST='/home/fedora/toshio/owners/owners.list'
 EPELLIST='/home/fedora/toshio/owners/owners.epel.list'
 OLPCLIST='/home/fedora/toshio/owners/owners.olpc.list'
 dbName='pkgdb'
-dbHost='test2'
+dbHost='db2'
 dbUser='pkgdbadmin'
 dbPass=''
 
 fasName='fedorausers'
-fasHost='db1'
+fasHost='db2'
 fasUser='apache'
 fasPass=''
 
@@ -135,6 +132,8 @@ class PackageDB(object):
 
     def _get_userid(self, username):
         '''Retrieve a userid from the Account System.'''
+        if username == 'bnocera':
+            username = 'hadess'
         self.fasCmd.execute("select id from person" \
                 " where username = %(name)s", {'name' : username})
         user = self.fasCmd.fetchone()
@@ -624,11 +623,16 @@ class PackageDB(object):
         '''Set up special ownership for some packages
         
         anaconda, anaconda-maint-list@redhat.com anaconda-maint 9901
+        lvm things - lvm-team
         kernel-xen - xen-maint@redhat.com xen-maint 9902
         kernel - kernel-maint@redhat.com kernel-maint 9903
         xorg-x11-* - xgl-maint@redhat.com xgl-maint 9904
         '''
         specials = {'anaconda': (9901, 'anaconda-maint'),
+            'device-mapper': (9905, 'lvm-team'),
+            'device-mapper-multipath': (9905, 'lvm-team'),
+            'dmraid': (9905, 'lvm-team'),
+            'lvm2': (9905, 'lvm-team'),
             'kernel-xen-2.6': (9902, 'xen-maint'),
             'xen' : (9902, 'xen-maint'),
             'kernel': (9903, 'kernel-maint'),
