@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sqlalchemy
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
@@ -28,12 +29,22 @@ class Test(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
 
-    @expose(template="pkgdb.templates.welcome")
+    @expose(template="pkgdb.templates.welcome", allow_json=True)
     @identity.require(identity.in_group("cvsextras"))
     def index(self):
         import time
         # log.debug("Happy TurboGears Controller Responding For Duty")
         return dict(now=time.ctime())
+    
+    @expose('json')
+    def unicode_test(self):
+        chars = []
+        for byte in (77,195,188,110,115,116,101,114):
+            chars.append(chr(byte))
+        word = ''.join(chars)
+        retval = dict(string='Münster', ustring=unicode('Münster','utf-8'), byte=word, u=u'Münster')
+        print retval
+        return retval
 
     @expose(template="pkgdb.templates.try")
     def test(self):
@@ -67,13 +78,21 @@ class Root(controllers.RootController):
     def index(self):
         return dict(title=self.appTitle)
 
-    @expose(template="pkgdb.templates.login")
+    @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, previous_url=None, *args, **kw):
         if not identity.current.anonymous \
             and identity.was_login_attempted() \
             and not identity.get_identity_errors():
-            raise redirect(forward_url)
-
+                # User is logged in
+                if 'tg_format' in request.params and request.params['tg_format'] == 'json':
+                    # When called as a json method, doesn't make any sense to
+                    # redirect to a page.  Returning the logged in identity
+                    # is better.
+                    return dict(user = identity.current.user)
+                if not forward_url:
+                    forward_url=config.get('base_url_filter.base_url') + '/'
+                raise redirect(forward_url)
+        
         forward_url=None
         previous_url=request.path
 

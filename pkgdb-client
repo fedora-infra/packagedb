@@ -1,0 +1,182 @@
+#!/usr/bin/python -tt
+# Author: Toshio Kuratomi <tkuratom@redhat.com>
+# License: GPL
+# Copyright: 2007 Red Hat Inc
+
+import sys
+import optparse
+import getpass
+import urllib2
+import urllib
+import Cookie
+
+try:
+    import simplejson
+except ImportError:
+    import json
+
+try:
+    from fedora.tg.client import BaseClient, AuthError
+except ImportError:
+    from client import BaseClient, AuthError
+
+PACKAGEDBURL='http://test3.fedora.phx.redhat.com/pkgdb-dev'
+
+class PackageDBError(Exception):
+    pass
+
+class ArgumentsError(Exception):
+    pass
+
+def parse_commands():
+    parser = optparse.OptionParser(version = '0.1', usage='''pkgdb-client [options] packagename
+
+Example: pkgdb-client -u toshio -o testowner -d 'Purely a test package' -b devel -b F-7 -b EL-5 -c toshio -c kevin -m wtogami fedoratest
+
+''')
+    parser.add_option('-u', '--username',
+            dest='username',
+            action='store',
+            default=getpass.getuser(),
+            help='Set username to connect to the Package Database')
+    parser.add_option('-p', '--password',
+            dest='password',
+            action='store',
+            help='Set password to connect ot the Password Database *** Warning: more secure to enter this interactively')
+    parser.add_option('-o', '--owner',
+            dest='owner',
+            action='store',
+            help='Primary owner of the package')
+    parser.add_option('-d', '--description',
+            dest='description',
+            action='store',
+            help='Short description of a package')
+    parser.add_option('-b', '--branch',
+            dest='branchList',
+            action='append',
+            help='Branch to create for package.  May be specified multiple times')
+    parser.add_option('-c', '--ccMember',
+            dest='ccList',
+            action='append',
+            help='Person to cc on bugs and commits.  May be specified multiple times')
+
+    parser.add_option('-m', '--maintainer',
+            dest='comaintList',
+            action='append',
+            help='Comaintainers to allow access to')
+    (opts, args) = parser.parse_args()
+
+    # Must specify exactly one package name
+    if len(args) < 1:
+        raise ArgumentsError, 'No package name'
+    elif len(args) > 1:
+        raise ArgumentsError, 'More than one package specified'
+    else:
+        opts.package = args[0]
+
+    return opts
+
+class PackageDB(BaseClient):
+
+    def get_package_info(self, pkgName):
+        '''Get information about the package.'''
+        pkgInfo = self.send_request('/packages/name/%s' % pkgName)
+    
+        return pkgInfo
+
+    def add_edit_package(self, pkg, owner, description, branches, ccList,
+            coMaintList):
+        '''Add a new package to the database.
+        '''
+        # Check if the package exists
+        pkgInfo = self.get_package_info(pkg)
+        if pkgInfo.has_key('message'):
+            # Package doesn't exist yet.  See if we have the information to
+            # create it
+            if owner:
+                data = {'package': pkg, 'owner': owner, 'summary': description}
+                # This call creates the package and an initial branch for
+                # Fedora devel
+                response = self.send_request('/packages/dispatcher/add_package',
+                        auth=True, input=data)
+                if response.has_key('message'):
+                    raise PackageDBError, 'Package Database returned an' \
+                            ' error creating %s: %s' % (pkg, response['message'])
+                owner = None
+                description = None
+            else:
+                raise PackageDBError, 'Package %s does not exist and we do' \
+                        ' not have enough information to create it.' % pkg
+
+        # Change the branches, owners, or anything else that needs changing
+        data = {}
+        if owner:
+            data['owner'] = owner
+        if description:
+            data['summary'] = description
+        if ccList:
+            try:
+                data['ccList'] = simplejson.dumps(ccList)
+            except NameError:
+                data['ccList'] = json.write(ccList)
+        if coMaintList:
+            try:
+                data['comaintList'] = simplejson.dumps(coMaintList)
+            except NameError:
+                data['comaintList'] = json.write(coMaintList)
+        # Parse the Branch abbreviations into collections
+        if branches:
+            data['collections'] = {}
+        for branch in branches:
+            if branch == 'devel':
+                collection = 'Fedora'
+                version = 'devel'
+            else:
+                collection, version = branch.split('-')
+                if collection in ('F', 'FC'):
+                    collection = 'Fedora'
+                elif collection in ('EL', 'EPEL'):
+                    collection = 'Fedora EPEL'
+                elif collection == 'OLPC':
+                    collection = 'Fedora OLPC'
+                else:
+                    raise PackageDBError, 'Collection abbreviation %s is unknown.  Use F, FC, EPEL, or OLPC' % collection
+            # Create branch
+            try:
+                data['collections'][collection].append(version)
+            except KeyError:
+                data['collections'][collection] = [version]
+        
+        # Transform the collections dict into JSON.
+        try:
+            data['collections'] = simplejson.dumps(data['collections'])
+        except NameError:
+            data['collections'] = json.write(data['collections'])
+
+        # Request the changes
+        response = self.send_request('/packages/dispatcher/edit_package/%s' % pkg, 
+                auth=True, input=data)
+        if not response['status']:
+            raise PackageDBError('Unable to save all information for %s: %s' %
+                    (pkg, response['message']))
+
+if __name__ == '__main__':
+    try:
+        options = parse_commands()
+    except ArgumentsError, e:
+        print e
+        sys.exit(1)
+
+    options.password = options.password or None
+    pkgdb = PackageDB(PACKAGEDBURL, options.username, options.password)
+    try:
+        pkgdb.add_edit_package(options.package, options.owner,
+                options.description, options.branchList, options.ccList,
+                options.comaintList)
+    except AuthError, e:
+        pkgdb.password = getpass.getpass('Password: ')
+        pkgdb.add_edit_package(options.package, options.owner,
+                options.description, options.branchList, options.ccList,
+                options.comaintList)
+
+    sys.exit(0)

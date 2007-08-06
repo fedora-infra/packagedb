@@ -104,6 +104,11 @@ commit;
 begin;
   insert into StatusCode default values;
   insert into StatusCodeTranslation (statusCodeId, statusName)
+    values (lastval(), 'Modified');
+commit;
+begin;
+  insert into StatusCode default values;
+  insert into StatusCodeTranslation (statusCodeId, statusName)
     values (lastval(), 'Obsolete');
 commit;
 begin;
@@ -205,7 +210,7 @@ begin;
   create table PackageLogStatusCode as
     select StatusCodeId from PackageStatusCode
     union select StatusCodeId from StatusCodeTranslation
-    where statusName in ('Added', 'Removed');
+    where statusName in ('Added', 'Modified', 'Removed');
   alter table PackageLogStatusCode add primary key (statusCodeId);
 commit;
 create trigger add_status_to_action after insert or delete or update

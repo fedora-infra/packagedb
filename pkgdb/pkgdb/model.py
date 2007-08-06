@@ -10,7 +10,18 @@ bind_meta_data()
 # Python classes
 #
 
-class StatusTranslation(object):
+class SABase(object):
+    def __json__(self):
+        props = {}
+        for key in self.mapper.props.keys():
+            if isinstance(self.mapper.props[key],
+                    orm.properties.PropertyLoader) and not (
+                            self.mapper.props[key].is_backref):
+                continue
+            props[key] = getattr(self, key)
+        return props
+
+class StatusTranslation(SABase):
     '''Map status codes to status names in various languages.
     
     Table -- StatusCodeTranslation
@@ -19,49 +30,66 @@ class StatusTranslation(object):
             description=None):
         self.statuscodeid = statuscodeid
         self.statusname = statusname
-        if language:
-            self.language
+        self.language = language or None
         self.description = description or None
+
+    def __json__(self):
+        '''Translations want to traverse the opposite way as other classes.
+        
+        We link to the translations from the status.  Don't create the reverse.
+        '''
+        return {'statuscodeid': self.statuscodeid,
+                'statusname': self.statusname,
+                'language': self.language,
+                'description': self.description}
 
     def __repr__(self):
         return 'StatusTranslation(%s, "%s", language="%s", description="%s")' \
                 % (self.statuscodeid, self.statusname, self.language,
                         self.description)
 
-class CollectionStatus(object):
+class BaseStatus(SABase):
+    def __init__(self, statuscodeid):
+        self.statuscodeid = statuscodeid
+
+    def __json__(self):
+        return {'statuscodeid': self.statuscodeid,
+                'translations': self.translations
+                }
+
+class CollectionStatus(BaseStatus):
     '''Subset of status codes that are applicable to collections.
 
     Table -- CollectionStatusCode
     '''
-    def __init__(self, statuscodeid):
-        self.statuscodeid = statuscodeid
-
     def __repr__(self):
         return 'CollectionStatus(%s)' % self.statuscodeid
 
-class PackageListingStatus(object):
+class PackageStatus(BaseStatus):
+    '''Subset of status codes that apply to packages.
+
+    Table -- PackageStatusCode
+    '''
+    def __repr__(self):
+        return 'PackageStatus(%s)' % self.statuscodeid
+
+class PackageListingStatus(BaseStatus):
     '''Subset of status codes that are applicable to package listings.
 
     Table -- PackageListingStatusCode
     '''
-    def __init__(self, statuscodeid):
-        self.statuscodeid = statuscodeid
-
     def __repr__(self):
         return 'PackageListingStatus(%s)' % self.statuscodeid
 
-class PackageAclStatus(object):
+class PackageAclStatus(BaseStatus):
     ''' Subset of status codes that apply to Person and Group Package Acls.
 
     Table -- PackageAclStatusCode
     '''
-    def __init__(self, statuscodeid):
-        self.statuscodeid = statuscodeid
-
     def __repr__(self):
         return 'PackageAclStatus(%s)' % self.statuscodeid
 
-class Collection(object):
+class Collection(SABase):
     '''A Collection of packages.
 
     Table -- Collection
@@ -80,7 +108,7 @@ class Collection(object):
 
     def __repr__(self):
         return 'Collection("%s", "%s", "%s", "%s", publishurltemplate="%s",' \
-                ' pendingurltemplate="%s", summary="%s", description=")' % (
+                ' pendingurltemplate="%s", summary="%s", description="%s")' % (
                 self.name, self.version, self.statuscode, self.owner,
                 self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
@@ -102,10 +130,15 @@ class Branch(Collection):
         Collection.__init__(self, args)
     
     def __repr__(self):
-        return 'Branch(%s, "%s", "%s", "%s", "%s")' % (self.collectionid,
-                self.branchname, self.disttag, self.parentid)
+        return 'Branch(%s, "%s", "%s", %s, "%s", "%s", "%s", "%s",' \
+                ' publishurltemplate="%s", pendingurltemplate="%s",' \
+                ' summary="%s", description="%s")' % (self.collectionid,
+                self.branchname, self.disttag, self.parentid,
+                self.name, self.version, self.statuscode, self.owner,
+                self.publishurltemplate, self.pendingurltemplate,
+                self.summary, self.description)
 
-class Package(object):
+class Package(SABase):
     '''Software we are packaging.
 
     This is equal to the software in one of our revision control directories.
@@ -126,12 +159,12 @@ class Package(object):
                 self.name, self.summary, self.statuscode, self.description,
                 self.reviewurl)
 
-class PackageListing(object):
+class PackageListing(SABase):
     '''This associates a package with a particular collection.
 
     Table -- PackageListing
     '''
-    def __init__(self, packageid, collectionid, owner, statuscode,
+    def __init__(self, owner, statuscode, packageid=None, collectionid=None,
             qacontact=None):
         self.packageid = packageid
         self.collectionid = collectionid
@@ -144,14 +177,14 @@ class PackageListing(object):
                 self.packageid, self.collectionid, self.owner,
                 self.statuscode, self.qacontact)
 
-class PersonPackageListing(object):
+class PersonPackageListing(SABase):
     '''Associate a person with a PackageListing.
 
     People who are watching or can modify a packagelisting.
 
     Table -- PersonPackageListing
     '''
-    def __init__(self, userid, packagelistingid):
+    def __init__(self, userid, packagelistingid=None):
         self.userid = userid
         self.packagelistingid = packagelistingid
 
@@ -159,7 +192,7 @@ class PersonPackageListing(object):
         return 'PersonPackageListing(%s, %s)' % (self.userid,
                 self.packagelistingid)
 
-class GroupPackageListing(object):
+class GroupPackageListing(SABase):
     '''Associate a group with a PackageListing.
 
     Table -- GroupPackageListing
@@ -172,7 +205,7 @@ class GroupPackageListing(object):
         return 'GroupPackageListing(%s, %s)' % (self.groupid,
                 self.packagelistingid)
 
-class PersonPackageListingAcl(object):
+class PersonPackageListingAcl(SABase):
     '''Acl on a package that a person owns.
 
     Table -- PersonPackageListingAcl
@@ -186,7 +219,7 @@ class PersonPackageListingAcl(object):
         return 'PersonPackageListingAcl("%s", %s, personpackagelistingid=%s)' \
                 % (self.acl, self.statuscode, self.personpackagelistingid)
 
-class GroupPackageListingAcl(object):
+class GroupPackageListingAcl(SABase):
     '''Acl on a package that a group owns.
 
     Table -- GroupPackageListingAcl
@@ -200,7 +233,7 @@ class GroupPackageListingAcl(object):
         return 'GroupPackageListingAcl("%s", %s, grouppackagelistingid=%s)' % (
                 self.acl, self.statuscode, self.grouppackagelistingid)
 
-class Log(object):
+class Log(SABase):
     '''Base Log record.
 
     This is a Log record.  All logs will be entered via a subclass of this.
@@ -216,10 +249,26 @@ class Log(object):
         return 'Log(%s, description="%s", changetime="%s")' % (self.userid,
                 self.description, self.changetime)
 
+class PackageLog(Log):
+    '''Log of changes to Packages.
+
+    Table -- PackageLog
+    '''
+    def __init__(self, userid, action, description=None, changetime=None,
+            packageid=None):
+        Log.__init__(self, userid, description, changetime)
+        self.action = action
+        self.packageid = packageid
+    
+    def __repr__(self):
+        return 'PackageLog(%s, %s, description="%s", changetime="%s",' \
+                ' packageid=%s)' % (self.userid, self.action,
+                        self.description, self.changetime, self.packageid)
+    
 class PackageListingLog(Log):
     '''Log of changes to the PackageListings.
 
-    Table -- Log
+    Table -- PackageListingLog
     '''
     def __init__(self, userid, action, description=None, changetime=None,
             packagelistingid=None):
@@ -339,6 +388,19 @@ assign_mapper(session.context, PackageListingStatus, PackageListingStatusTable,
                     primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid)
                 )})
 
+# Package Status Table.
+PackageStatusTable = Table('packagestatuscode', metadata, autoload=True)
+assign_mapper(session.context, PackageStatus, PackageStatusTable,
+        properties={'packages' : relation(Package, backref='status'),
+            'translations' : relation(StatusTranslation,
+                order_by=StatusTranslationTable.c.language,
+                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid,
+                foreignkey=StatusTranslationTable.c.statuscodeid,
+                backref=backref('pstatuscode',
+                    foreignkey=PackageStatusTable.c.statuscodeid,
+                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid)
+                )})
+
 #
 # Person and Group ACL information
 #
@@ -379,6 +441,7 @@ assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
 # The log tables all inherit from the base log table.
 
 LogTable = Table('log', metadata, autoload=True)
+PackageLogTable = Table('packagelog', metadata, autoload=True)
 PackageListingLogTable = Table('packagelistinglog', metadata, autoload=True)
 PersonPackageListingAclLogTable = Table('personpackagelistingacllog', metadata,
         autoload=True)
@@ -386,7 +449,11 @@ GroupPackageListingAclLogTable = Table('grouppackagelistingacllog', metadata,
         autoload=True)
 
 logJoin = polymorphic_union (
-        {'pkglistlog' : select((LogTable.join(
+        {'pkglog' : select((LogTable.join(
+            PackageLogTable,
+                LogTable.c.id == PackageLogTable.c.logid),
+            literal_column("'pkglog'").label('kind'))),
+         'pkglistlog' : select((LogTable.join(
             PackageListingLogTable,
                 LogTable.c.id == PackageListingLogTable.c.logid),
             literal_column("'pkglistlog'").label('kind'))),
@@ -425,6 +492,12 @@ assign_mapper(session.context, GroupPackageListingAclLog,
         polymorphic_identity='grouppkglistacllog',
         properties={'acl': relation(GroupPackageListingAcl, backref='logs')})
 
+assign_mapper(session.context, PackageLog, PackageLogTable,
+        inherits=logMapper,
+        inherit_condition=LogTable.c.id==PackageLogTable.c.logid,
+        polymorphic_identity='pkglog',
+        properties={'package': relation(Package, backref='logs')})
+
 assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
         inherits=logMapper,
         inherit_condition=LogTable.c.id==PackageListingLogTable.c.logid,
@@ -437,7 +510,6 @@ assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
 # List of tables not yet mapped::
 # StatusCode
 # CollectionLogStatusCode
-# PackageStatusCode
 # PackageLogStatusCode
 # PackageBuildStatusCode
 # PackageBuildLogStatusCode
@@ -447,5 +519,4 @@ assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
 # PackageBuild
 # PackageBuildListing
 # CollectionLog
-# PackageLog
 # PackageBuildLog

@@ -5,7 +5,9 @@ Caveats:
 Assumes that owners.epel.list has a subset of the packages in owners.list.
 ATM this is true.
 
-Set CVSROOT=/cvs/extras before running
+Set CVSROOT=/cvs/pkgs before running
+
+Fill in dbPass and fasPass in the source before running
 '''
 
 import sys
@@ -25,7 +27,7 @@ dbUser='pkgdbadmin'
 dbPass=''
 
 fasName='fedorausers'
-fasHost='db1'
+fasHost='db2'
 fasUser='apache'
 fasPass=''
 
@@ -67,14 +69,12 @@ class CVSReleases(dict):
                 package = match.group(1)
                 product = match.group(2)
                 release = int(match.group(3))
-                if product == 'FC' and release <= 6:
-                    product = 'Fedora Extras'
-                elif (product == 'FC' and release > 6) or product == 'F':
+                if product == 'FC' or product == 'F':
                     product = 'Fedora'
                 elif product == 'OLPC':
-                    product = 'One Laptop Per Child'
+                    product = 'Fedora OLPC'
                 elif product == 'EL':
-                    product = 'Extras Packages for Enterprise Linux'
+                    product = 'Fedora EPEL'
                 elif product == 'RHL':
                     product = 'Red Hat Linux'
                 self[package].append((product, release))
@@ -132,6 +132,8 @@ class PackageDB(object):
 
     def _get_userid(self, username):
         '''Retrieve a userid from the Account System.'''
+        if username == 'bnocera':
+            username = 'hadess'
         self.fasCmd.execute("select id from person" \
                 " where username = %(name)s", {'name' : username})
         user = self.fasCmd.fetchone()
@@ -196,7 +198,10 @@ class PackageDB(object):
             # If one of these is empty then we have nothing to do
             return
         for user in users:
-            pkgAclData = {'personid' : self._get_userid(user),
+            # Convert to a userId if necessary
+            if type(user) != int:
+                user = self._get_userid(user)
+            pkgAclData = {'personid' : user,
                     'status' : 'Approved'}
             for pkgListId in pkgs:
                 pkgAclData['pkgListId'] = pkgListId
@@ -372,13 +377,13 @@ class PackageDB(object):
 
                 # Retrieve the owner information.  EPEL branches may have a
                 # different owner than the other branches.
-                if collection[0] == 'Extras Packages for Enterprise Linux':
+                if collection[0] == 'Fedora EPEL':
                     # Get owner information from the owner.epel.list
                     if not epelOwners.getOwnerAccounts(pkg):
                         logging.warning('%s has no legal owner in owners.epel.list' % pkg)
                         continue
                     owner = epelOwners.getOwnerAccounts(pkg)[0]
-                elif collection[0] == 'One Laptop Per Child':
+                elif collection[0] == 'Fedora OLPC':
                     # Get owner information from owner.olpc.list
                     if not olpcOwners.getOwnerAccounts(pkg):
                         logging.warning('%s has no legal owner in owners.olpc.list' % pkg)
@@ -427,10 +432,10 @@ class PackageDB(object):
                             " and collectionId = %(collectId)s", pkgListData)
 
                 pkgListId = pkgListNum[0]
-                if collection[0] == 'Extras Packages for Enterprise Linux':
+                if collection[0] == 'Fedora EPEL':
                     # Save this as an EPEL Package
                     epelPkgListNumbers[(pkgListData['collectId'], pkg)] = pkgListId
-                elif collection[0] == 'One Laptop Per Child':
+                elif collection[0] == 'Fedora OLPC':
                     # Save this as an OLPC Package
                     olpcPkgListNumbers[(pkgListData['collectId'], pkg)] = pkgListId
                 else:
@@ -439,18 +444,24 @@ class PackageDB(object):
                 # Set up Restrictions setup by pkg.acl files
 
                 # Get the users in the acl for this collection
-                if collection[0] == 'Extras Packages for Enterprise Linux':
+                if collection[0] == 'Fedora EPEL':
                     aclUsers = fedoraOwners.getAclAccounts(pkg,
                             'EL-' + str(collection[1]))
-                elif collection[0] == 'One Laptop Per Child':
+                elif collection[0] == 'Fedora OLPC':
                     aclUsers = fedoraOwners.getAclAccounts(pkg,
                             'OLPC-' + str(collection[1]))
-                elif collection[0] == 'Fedora Extras':
-                    aclUsers = fedoraOwners.getAclAccounts(pkg,
-                            'FC-' + str(collection[1]))
-                elif collection[0] == 'Fedora':
+                elif collection[0] == 'Fedora' and collection[1] == '7':
+                    # From 7 on, the collection was named Fedora
                     aclUsers = fedoraOwners.getAclAccounts(pkg,
                             'F-' + str(collection[1]))
+                elif collection[0] == 'Fedora' and collection[1] == 'devel':
+                    # devel is simply devel
+                    aclUsers = fedoraOwners.getAclAccounts(pkg,
+                            'devel')
+                elif collection[0] == 'Fedora':
+                    # All other Fedora versions
+                    aclUsers = fedoraOwners.getAclAccounts(pkg,
+                            'FC-' + str(collection[1]))
                 elif collection[0] == 'Red Hat Linux':
                     aclUsers = fedoraOwners.getAclAccounts(pkg,
                             'RHL-' + str(collection[1]))
@@ -469,13 +480,13 @@ class PackageDB(object):
                     olpcMaintainers = olpcOwners.getOwnerAccounts(pkg)
                     # Set up anyone else that is listed in pkg.acl
                     for user in aclUsers:
-                        if collection[0] == 'Extras Packages for Enterprise Linux':
+                        if collection[0] == 'Fedora EPEL':
                             # EPEL branch
                             if user in epelMaintainers:
                                 # This acl is for a maintainer.  Skip as we
                                 # assign their acls below.
                                 continue
-                        elif collection[0] == 'One Laptop Per Child':
+                        elif collection[0] == 'Fedora OLPC':
                             # OLPC Branch
                             if user in olpcMaintainers:
                                 # This acl is for a maintainer.  Skip as we
@@ -539,21 +550,21 @@ class PackageDB(object):
                 " natural join StatusCodeTranslation as sct"
                 " where sct.language = 'C'"
                 " and sct.statusName ='Active')"
-                " where name in ('Fedora', 'Fedora Extras')"
+                " where name = 'Fedora'"
                 " and version in ('5', '6', '7')")
         self.dbCmd.execute("update collection set statuscode=("
                 " select csc.statusCodeId from CollectionStatusCode as csc"
                 " natural join StatusCodeTranslation as sct"
                 " where sct.language = 'C'"
                 " and sct.statusName ='Active')"
-                " where name = 'Extras Packages for Enterprise Linux'"
+                " where name = 'Fedora EPEL'"
                 " and version in ('4', '5')")
         self.dbCmd.execute("update collection set statuscode=("
                 " select csc.statusCodeId from CollectionStatusCode as csc"
                 " natural join StatusCodeTranslation as sct"
                 " where sct.language = 'C'"
                 " and sct.statusName ='Active')"
-                " where name = 'One Laptop Per Child'"
+                " where name = 'Fedora OLPC'"
                 " and version = '2'")
         self.db.commit()
 
@@ -577,29 +588,162 @@ class PackageDB(object):
         for collection in self.dbCmd.fetchall():
             cid = collection[0]
             collections[cid] = {'id' : cid}
-            if collection[1] == 'Fedora':
+            if collection[1] == 'Fedora' and collection[2] == '7':
+                # Fedora 7 onwards use F-#
                 collections[cid]['branchname'] = 'F-' + collection[2]
                 collections[cid]['disttag'] = '.fc' + collection[2]
-            elif collection[2] == 'Fedora Extras':
+            elif collection[1] == 'Fedora' and collection[2] == 'devel':
+                # devel is simply devel
+                collections[cid]['branchname'] = collection[2]
+                collections[cid]['disttag'] = '.fc' + collection[2]
+            elif collection[1] == 'Fedora':
+                # All other Fedoras
                 collections[cid]['branchname'] = 'FC-' + collection[2]
                 collections[cid]['disttag'] = '.fc' + collection[2]
-            elif collection[2] == 'Red Hat Linux':
+            elif collection[1] == 'Red Hat Linux':
                 collections[cid]['branchname'] = 'RHL-' + collection[2]
                 collections[cid]['disttag'] = '.rhl' + collection[2]
-            elif collection[2] == 'Extras Packages for Enterprise Linux':
+            elif collection[1] == 'Fedora EPEL':
                 collections[cid]['branchname'] = 'EL-' + collection[2]
                 collections[cid]['disttag'] = '.el' + collection[2]
-            elif collection[2] == 'One Laptop Per Child':
+            elif collection[1] == 'Fedora OLPC':
                 collections[cid]['branchname'] = 'OLPC-' + collection[2]
                 collections[cid]['disttag'] = '.olpc' + collection[2]
             else:
-                logging.warning('%s is not a known collection.  Please set branch information manually' % cid)
+                logging.warning('%s: %s is not a known collection.  Please set branch information manually' % (collections[cid], cid))
                 del (collections[cid])
                 continue
 
             self.dbCmd.execute("insert into branch" \
                     " (collectionid, branchname, disttag)" \
-                    " values (%(id)s, %(branchname)s, %(disttag)s)", branchInfo)
+                    " values (%(id)s, %(branchname)s, %(disttag)s)", collections[cid])
+        self.db.commit()
+
+    def set_special_owners(self):
+        '''Set up special ownership for some packages
+        
+        anaconda, anaconda-maint-list@redhat.com anaconda-maint 9901
+        lvm things - lvm-team
+        kernel-xen - xen-maint@redhat.com xen-maint 9902
+        kernel - kernel-maint@redhat.com kernel-maint 9903
+        xorg-x11-* - xgl-maint@redhat.com xgl-maint 9904
+        '''
+        specials = {'anaconda': (9901, 'anaconda-maint'),
+            'device-mapper': (9905, 'lvm-team'),
+            'device-mapper-multipath': (9905, 'lvm-team'),
+            'dmraid': (9905, 'lvm-team'),
+            'lvm2': (9905, 'lvm-team'),
+            'kernel-xen-2.6': (9902, 'xen-maint'),
+            'xen' : (9902, 'xen-maint'),
+            'kernel': (9903, 'kernel-maint'),
+            'xorg-sgml-doctools': (9904, 'xgl-maint'),
+            'xorg-x11-apps': (9904, 'xgl-maint'),
+            'xorg-x11-docs': (9904, 'xgl-maint'),
+            'xorg-x11-drivers': (9904, 'xgl-maint'),
+            'xorg-x11-drv-acecad': (9904, 'xgl-maint'),
+            'xorg-x11-drv-aiptek': (9904, 'xgl-maint'),
+            'xorg-x11-drv-amd': (9904, 'xgl-maint'),
+            'xorg-x11-drv-apm': (9904, 'xgl-maint'),
+            'xorg-x11-drv-ark': (9904, 'xgl-maint'),
+            'xorg-x11-drv-ast': (9904, 'xgl-maint'),
+            'xorg-x11-drv-ati': (9904, 'xgl-maint'),
+            'xorg-x11-drv-calcomp': (9904, 'xgl-maint'),
+            'xorg-x11-drv-chips': (9904, 'xgl-maint'),
+            'xorg-x11-drv-cirrus': (9904, 'xgl-maint'),
+            'xorg-x11-drv-citron': (9904, 'xgl-maint'),
+            'xorg-x11-drv-cyrix': (9904, 'xgl-maint'),
+            'xorg-x11-drv-digitaledge': (9904, 'xgl-maint'),
+            'xorg-x11-drv-dmc': (9904, 'xgl-maint'),
+            'xorg-x11-drv-dummy': (9904, 'xgl-maint'),
+            'xorg-x11-drv-dynapro': (9904, 'xgl-maint'),
+            'xorg-x11-drv-elographics': (9904, 'xgl-maint'),
+            'xorg-x11-drv-evdev': (9904, 'xgl-maint'),
+            'xorg-x11-drv-fbdev': (9904, 'xgl-maint'),
+            'xorg-x11-drv-fpit': (9904, 'xgl-maint'),
+            'xorg-x11-drv-glint': (9904, 'xgl-maint'),
+            'xorg-x11-drv-hyperpen': (9904, 'xgl-maint'),
+            'xorg-x11-drv-i128': (9904, 'xgl-maint'),
+            'xorg-x11-drv-i740': (9904, 'xgl-maint'),
+            'xorg-x11-drv-i810': (9904, 'xgl-maint'),
+            'xorg-x11-drv-jamstudio': (9904, 'xgl-maint'),
+            'xorg-x11-drv-keyboard': (9904, 'xgl-maint'),
+            'xorg-x11-drv-magellan': (9904, 'xgl-maint'),
+            'xorg-x11-drv-magictouch': (9904, 'xgl-maint'),
+            'xorg-x11-drv-mga': (9904, 'xgl-maint'),
+            'xorg-x11-drv-microtouch': (9904, 'xgl-maint'),
+            'xorg-x11-drv-mouse': (9904, 'xgl-maint'),
+            'xorg-x11-drv-mutouch': (9904, 'xgl-maint'),
+            'xorg-x11-drv-neomagic': (9904, 'xgl-maint'),
+            'xorg-x11-drv-nsc': (9904, 'xgl-maint'),
+            'xorg-x11-drv-nv': (9904, 'xgl-maint'),
+            'xorg-x11-drv-palmax': (9904, 'xgl-maint'),
+            'xorg-x11-drv-penmount': (9904, 'xgl-maint'),
+            'xorg-x11-drv-rendition': (9904, 'xgl-maint'),
+            'xorg-x11-drv-s3': (9904, 'xgl-maint'),
+            'xorg-x11-drv-s3virge': (9904, 'xgl-maint'),
+            'xorg-x11-drv-savage': (9904, 'xgl-maint'),
+            'xorg-x11-drv-siliconmotion': (9904, 'xgl-maint'),
+            'xorg-x11-drv-sis': (9904, 'xgl-maint'),
+            'xorg-x11-drv-sisusb': (9904, 'xgl-maint'),
+            'xorg-x11-drv-spaceorb': (9904, 'xgl-maint'),
+            'xorg-x11-drv-summa': (9904, 'xgl-maint'),
+            'xorg-x11-drv-tdfx': (9904, 'xgl-maint'),
+            'xorg-x11-drv-tek4957': (9904, 'xgl-maint'),
+            'xorg-x11-drv-trident': (9904, 'xgl-maint'),
+            'xorg-x11-drv-tseng': (9904, 'xgl-maint'),
+            'xorg-x11-drv-ur98': (9904, 'xgl-maint'),
+            'xorg-x11-drv-v4l': (9904, 'xgl-maint'),
+            'xorg-x11-drv-vermilion': (9904, 'xgl-maint'),
+            'xorg-x11-drv-vesa': (9904, 'xgl-maint'),
+            'xorg-x11-drv-vga': (9904, 'xgl-maint'),
+            'xorg-x11-drv-via': (9904, 'xgl-maint'),
+            'xorg-x11-drv-vmmouse': (9904, 'xgl-maint'),
+            'xorg-x11-drv-vmware': (9904, 'xgl-maint'),
+            'xorg-x11-drv-void': (9904, 'xgl-maint'),
+            'xorg-x11-drv-voodoo': (9904, 'xgl-maint'),
+            'xorg-x11-filesystem': (9904, 'xgl-maint'),
+            'xorg-x11-font-utils': (9904, 'xgl-maint'),
+            'xorg-x11-fonts': (9904, 'xgl-maint'),
+            'xorg-x11-proto-devel': (9904, 'xgl-maint'),
+            'xorg-x11-resutils': (9904, 'xgl-maint'),
+            'xorg-x11-server': (9904, 'xgl-maint'),
+            'xorg-x11-server-utils': (9904, 'xgl-maint'),
+            'xorg-x11-twm': (9904, 'xgl-maint'),
+            'xorg-x11-util-macros': (9904, 'xgl-maint'),
+            'xorg-x11-utils': (9904, 'xgl-maint'),
+            'xorg-x11-xauth': (9904, 'xgl-maint'),
+            'xorg-x11-xbitmaps': (9904, 'xgl-maint'),
+            'xorg-x11-xdm': (9904, 'xgl-maint'),
+            'xorg-x11-xfs': (9904, 'xgl-maint'),
+            'xorg-x11-xfwp': (9904, 'xgl-maint'),
+            'xorg-x11-xinit': (9904, 'xgl-maint'),
+            'xorg-x11-xkb-utils': (9904, 'xgl-maint'),
+            'xorg-x11-xsm': (9904, 'xgl-maint'),
+            'xorg-x11-xtrans-devel': (9904, 'xgl-maint')
+        }
+
+        # Find all affected packageListings
+        for pkg in specials.keys():
+            pkgInfo = {'pkg': pkg, 'owner': specials[pkg][0]}
+            self.dbCmd.execute("select pl.id, pl.owner, c.name from" \
+                " PackageListing as pl, Collection as c, Package as p" \
+                " where p.name = %(pkg)s and p.id = pl.packageid" \
+                " and c.id = pl.collectionid", pkgInfo)
+            # Find the branches that are affected
+            for pkgListing in self.dbCmd.fetchall():
+                # Only do this for branches from owners.list
+                if pkgListing[2] == 'Fedora':
+                    # Set the owner to the special
+                    pkgInfo['listId'] = pkgListing[0]
+                    formerOwner = pkgListing[1]
+                    self.dbCmd.execute("update packagelisting set" \
+                            " owner = %(owner)s where id = %(listId)s",
+                            pkgInfo)
+
+                    # Add the former owner as a co-maintainer
+                    # Do not list watch* because the owner is a list
+                    self._add_acls((formerOwner,),(pkgInfo['listId'],),
+                        ('commit', 'build', 'approveacls', 'checkout'))
         self.db.commit()
 
 def exit(code):
@@ -628,5 +772,6 @@ if __name__ == '__main__':
     pkgdb.set_collection_status()
     pkgdb.set_collection_owner()
     pkgdb.set_branch_info()
+    pkgdb.set_special_owners()
 
     exit(0)

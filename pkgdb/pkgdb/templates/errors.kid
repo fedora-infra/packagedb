@@ -7,6 +7,6 @@ layout_params['displayNotes']=False
 
 <div py:match="item.tag == 'content'">
 <h1 py:content='title'>Error Title</h1>
-<p py:content='msg'>Error message</p>
+<p py:content='message'>Error message</p>
 </div>
 </html>
