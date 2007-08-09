@@ -54,6 +54,11 @@ TODO='Not yet implemented'
                 break
         if not aclChanger and tg.identity.user.user_id == pkg.ownerid:
             aclChanger = True
+        if not aclChanger:
+            for group in tg.identity.user.groups:
+                if group.group_name == 'cvsadmin':
+                    aclChanger = True
+                    break
     ?>
     <tr><th>
       Collection
