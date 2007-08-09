@@ -195,10 +195,10 @@ function make_request(action, callback, errback, event) {
     if (form.action[form.action.length - 1] == '/' && action[0] == '/') {
         var url = form.action + action.slice(1);
     } else {
-        var url = form.action + action
+        var url = form.action + action;
     }
 
-    var req = loadJSONDoc(url
+    var req = loadJSONDoc(url,
             {'containerId': requestContainer.getAttribute('name')});
     if (callback !== null) {
         req.addCallback(partial(callback, requestContainer));
