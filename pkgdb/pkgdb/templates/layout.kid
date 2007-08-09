@@ -60,7 +60,7 @@
       <li><a href="${tg.url('/collections/')}">View Collections</a></li>
       <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
       <li><a href="${tg.url('/users/acllist/')}">My ACL Entries</a></li>
-      <li><a href="fedoraproject.org/wiki/Infrastructure/PackageDatabase">Documentation</a></li>
+      <li><a href="http://hosted.fedoraproject.org/projects/packagedb/">Documentation</a></li>
     </ul>
   </div>
   <!-- LeftNavBar END -->
