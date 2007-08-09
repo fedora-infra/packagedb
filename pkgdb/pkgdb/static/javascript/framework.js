@@ -192,8 +192,13 @@ function make_request(action, callback, errback, event) {
             'div', 'requestContainer');
     busy(requestContainer, event);
     var form = getFirstParentByTagAndClassName(requestContainer, 'form');
-    var base = form.action;
-    var req = loadJSONDoc(base + action,
+    if (form.action[form.action.length - 1] == '/' && action[0] == '/') {
+        var url = form.action + action.slice(1);
+    } else {
+        var url = form.action + action
+    }
+
+    var req = loadJSONDoc(url
             {'containerId': requestContainer.getAttribute('name')});
     if (callback !== null) {
         req.addCallback(partial(callback, requestContainer));
@@ -203,7 +208,7 @@ function make_request(action, callback, errback, event) {
     }
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-    logDebug(base+action+'?'+queryString({'containerId': requestContainer.getAttribute('name')}));
+    logDebug(url+'?'+queryString({'containerId': requestContainer.getAttribute('name')}));
 }
 
 /* Initialize the spinner */
