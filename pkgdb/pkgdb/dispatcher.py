@@ -14,6 +14,7 @@ from pkgdb import model
 
 COMMITSLIST=config.get('commits_address')
 ORPHAN_ID=9900
+CVSEXTRAS_ID=100300
 
 def send_msg(msg, subject, recipients):
     '''Send a message from the packagedb.'''
@@ -403,7 +404,7 @@ class PackageDispatcher(controllers.Controller):
             identity.current.user, (pkg,))
 
         return dict(status=True,
-                newAclStatus=changeAcl.status.translations[0].statusname)
+                newAclStatus=statusname)
 
     @expose('json')
     # Check that we have a tg.identity, otherwise you can't set any acls.
@@ -500,6 +501,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message='Package %s already exists' % package)
 
         approvedStatus = model.StatusTranslation.get_by(statusname='Approved')
+        deniedStatus = model.StatusTranslation.get_by(statusname='Denied')
         addedStatus = model.StatusTranslation.get_by(statusname='Added')
 
         develCollection = model.Collection.get_by(name='Fedora',
@@ -515,6 +517,17 @@ class PackageDispatcher(controllers.Controller):
                 approvedStatus.statuscodeid)
         pkgListing.collection = develCollection
         pkgListing.package = pkg
+        cvsextrasListing = model.GroupPackageListing(CVSEXTRAS_ID)
+        cvsextrasListing.packagelisting = pkgListing
+        cvsextrasCommitAcl = model.GroupPackageListingAcl('commit', 
+                deniedStatus.statuscodeid)
+        cvsextrasCommitAcl.grouppackagelisting = cvsextrasListing
+        cvsextrasBuildAcl = model.GroupPackageListingAcl('build',
+                approvedStatus.statuscodeid)
+        cvsextrasBuildAcl.grouppackagelisting = cvsextrasListing
+        cvsextrasCheckoutAcl = model.GroupPackageListingAcl('checkout',
+                approvedStatus.statuscodeid)
+        cvsextrasCheckoutAcl.grouppackagelisting = cvsextrasListing
 
         # Create a log of changes
         logs = []
@@ -564,6 +577,16 @@ class PackageDispatcher(controllers.Controller):
                 pkgLogMessage
                 )
         pkgListLog.listing = pkgListing
+
+        pkgLogMessage = '%s (%s) has approved Package %s' % (
+                identity.current.user.display_name,
+                identity.current.user_name,
+                pkg.name)
+        logs.append(pkgLogMessage)
+        pkgLog = model.PackageLog(
+                identity.current.user.user_id, approvedStatus.statuscodeid,
+                pkgLogMessage)
+        pkgLog.package = pkg
 
         try:
             session.flush()
@@ -664,6 +687,20 @@ class PackageDispatcher(controllers.Controller):
                                 approvedStatus.statuscodeid)
                         pkgListing.package = pkg
                         pkgListing.collection = collection
+                        cvsextrasListing = model.GroupPackageListing(
+                                CVSEXTRAS_ID)
+                        cvsextrasListing.packagelisting = pkgListing
+                        cvsextrasCommitAcl = model.GroupPackageListingAcl(
+                                'commit', deniedStatus.statuscodeid)
+                        cvsextrasCommitAcl.grouppackagelisting=cvsextrasListing
+                        cvsextrasBuildAcl = model.GroupPackageListingAcl(
+                                'build', approvedStatus.statuscodeid)
+                        cvsextrasBuildAcl.grouppackagelisting=cvsextrasListing
+                        cvsextrasCheckoutAcl = model.GroupPackageListingAcl(
+                                'checkout', approvedStatus.statuscodeid)
+                        cvsextrasCheckoutAcl.grouppackagelisting = \
+                                cvsextrasListing
+
                         logMessage = '%s (%s) added a %s %s branch for %s' % (
                                 identity.current.user.display_name,
                                 identity.current.user_name,

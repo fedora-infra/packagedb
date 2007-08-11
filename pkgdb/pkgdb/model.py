@@ -197,7 +197,7 @@ class GroupPackageListing(SABase):
 
     Table -- GroupPackageListing
     '''
-    def __init__(self, groupid, packagelistingid):
+    def __init__(self, groupid, packagelistingid=None):
         self.groupid = groupid
         self.packagelistingid = packagelistingid
 
