@@ -198,7 +198,7 @@ function make_request(action, callback, errback, event) {
         var url = form.action + action
     }
 
-    var req = loadJSONDoc(url
+    var req = loadJSONDoc(url,
             {'containerId': requestContainer.getAttribute('name')});
     if (callback !== null) {
         req.addCallback(partial(callback, requestContainer));
