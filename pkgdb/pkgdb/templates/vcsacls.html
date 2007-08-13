@@ -1,0 +1,19 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <body>
+    <table>
+      <tr py:for="pkg in sorted(packageAcls.keys())">
+        <td py:content="pkg"></td>
+        <span py:for="branch in sorted(packageAcls[pkg].keys())">
+          <td><strong>${branch}</strong><br/>
+            <span py:for="person in packageAcls[pkg][branch]['commit'].people" py:replace="person + ' '"></span><br/>
+            <span py:for="group in packageAcls[pkg][branch]['commit'].groups" py:replace="group + ' '"></span>
+          </td>
+        </span>
+      </tr>
+    </table>
+  </body>
+</html>

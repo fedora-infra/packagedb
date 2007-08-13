@@ -1,0 +1,27 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <body>
+    <h2>Fedora Package Database -- Version 0.3</h2>
+
+    <h3>Overview</h3>
+    <p>The Package Database is a central repository of package information in
+    Fedora.  You will eventually be able to find and change all the metainformation
+    about a package by searching the database.  The current implementation is
+    focused on the data that package developers and release engineers need to
+    create packages and spin them into a distribution.
+    </p>
+
+    <h3>Browse Packages</h3>
+    <ul>
+      <li><a href="${tg.url('/collections/')}">View Packages by Collection</a></li>
+      <li><a href="${tg.url('/packages/')}">Browse all Packages in the Database</a></li>
+    </ul>
+
+    For more information on the packagedb, see it's
+    <a href="http://hosted.fedoraproject.org/projects/packagedb">Project Page</a>.
+  </body>
+</html>
+

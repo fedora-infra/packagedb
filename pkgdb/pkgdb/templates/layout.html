@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:py="http://genshi.edgewall.org/"
+  py:strip="">
+  <head>
+    <title>${title}</title>
+    <style type="text/css" media="screen">
+      @import url("${tg.url("/static/css/fedora.css")}");
+      @import url("${tg.url("/static/css/pkgdb.css")}");
+      @import url("${tg.url("/static/css/style.css")}");
+    </style>
+    <script src="${tg.tg_js}/MochiKit.js"></script>
+    <script type='text/javascript' py:if="not tg.identity.anonymous">
+      tgUserDisplayName = "${tg.identity.user.display_name}";
+      tgUserUserName = "${tg.identity.user.user_name}";
+      tgUserUserId = "${tg.identity.user.user_id}";
+    </script>
+  </head>
+  <body py:match="body" py:attrs="select('@*')">
+    <div id="wrapper">
+      <div id="head">
+        <h1><a href="http://fedoraproject.org/index.html">Fedora</a></h1>
+      </div>
+      <div id="sidebar">
+        <div class="nav">
+          <h2>Navigation</h2>
+          <ul>
+            <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
+            <li><a href="${tg.url('/packages/')}">View Packages</a></li>
+            <li><a href="${tg.url('/collections/')}">View Collections</a></li>
+            <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
+            <li><a href="${tg.url('/users/acllist/')}">My ACL Entries</a></li>
+            <li><a href="http://fedoraproject.org/wiki/Infrastructure/PackageDatabase">Documentation</a></li>
+          </ul>
+        </div>
+      </div>
+      <div id="content">
+        <div py:if="tg.config('identity.on',False) and not 'logging_in' in locals()" id="pageLogin">
+          <span py:if="tg.identity.anonymous">
+            You are not logged in yet <a class="loginButton" href="${tg.url('/login/')}">Login</a>
+          </span>
+          <span py:if="not tg.identity.anonymous">
+            Welcome <a href="${tg.url('/users/info/')}">${tg.identity.user.display_name}</a>
+            <a class="loginButton" href="${tg.url('/logout/')}">Logout</a>
+          </span>
+        </div>
+        <div py:replace="select('*|text()')" />
+      </div>
+    </div>
+    <div id="bottom">
+      <div id="footer">
+        <p class="copy">
+        Copyright &copy; 2007 Red Hat, Inc. and others.  All Rights Reserved.
+        Please send any comments or corrections to the <a href="mailto:webmaster@fedoraproject.org">websites team</a>.
+        </p>
+        <p class="disclaimer">
+        The Fedora Project is maintained and driven by the community and sponsored by Red Hat.  This is a community maintained site.  Red Hat is not responsible for content.
+        </p>
+        <ul>
+          <li class="first"><a href="http://fedoraproject.org/wiki/Legal">Legal</a></li>
+          <li><a href="http://fedoraproject.org/wiki/Legal/TrademarkGuidelines">Trademark Guidelines</a></li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>
+
