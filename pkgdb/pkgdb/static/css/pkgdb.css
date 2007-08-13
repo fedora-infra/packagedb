@@ -1,40 +1,5 @@
 .pkglist {
 	width: 100%;
-	border-width: 0px;
-	border-collapse: collapse;
-	margin: 0.3em;
+	margin: 1.5ex 0;
 	text-align: center;
-}
-.acls {
-	border-style: solid;
-	border-width: 1px;
-	border-collapse: collapse;
-}
-.aclcell {
- 	border-style: solid;
-	border-width: 1px;
-	border-collapse: collapse;
-}
-
-.acluser, .aclgroup {
-	border-style: solid;
-	border-width: 1px;
-	border-collapse: collapse;
-}
-
-.aclgroup {
-	border-style: solid;
-	border-width: 1px;
-	border-collapse: collapse;
-}
-
-.acladd {
-	border-style: solid;
-	border-width: 1px;
-	border-collapse: collapse;
-}
-
-.aclcell span {
-	border-style: none;
-	border-width: 0px;
 }

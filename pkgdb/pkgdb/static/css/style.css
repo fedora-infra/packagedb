@@ -74,3 +74,48 @@
 {
   float: right;
 }
+
+.pkglist
+{
+  border: 1px solid #CCCCCC;
+  width: 100%;
+  margin: 1.5ex 0;
+  text-align: center;
+}
+
+.pkglist th, .pkglist td
+{
+  border: none!important;
+}
+
+.pkglist table th, .pkglist table td
+{
+  border: 1px solid #CCCCCC;
+}
+
+.actions
+{
+  list-style: none;
+  line-height: 1;
+  margin: 1ex 0!important;
+}
+
+.actions li
+{
+  display: inline;
+  margin-right: 1ex;
+}
+
+a.bodhi
+{
+  padding-left: 20px;
+  background: url(../images/bodhi.png) 0 50% no-repeat;
+}
+
+a.koji
+{
+  padding-left: 20px;
+  background: url(../images/koji.png) 0 50% no-repeat;
+}
+
+

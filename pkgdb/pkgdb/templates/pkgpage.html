@@ -9,16 +9,22 @@ TODO='Not yet implemented'
   <body>
     <script type="text/javascript" src="${tg.url('/static/javascript/framework.js')}"></script>
     <script type="text/javascript" src="${tg.url('/static/javascript/pkgpage.js')}"></script>
+
     <h2 py:content="packageListings[0].package.name">Package</h2>
-    <table border="0">
-      <tr><td>
+    <ul class="actions">
+      <li><a class="koji" href="http://koji.fedoraproject.org/koji/search?terms=${packageListings[0].package.name}&amp;type=package&amp;match=glob">Koji</a></li>
+      <li><a class="bodhi" href="https://bodhi.fedoraproject.org/updates/${packageListings[0].package.name}">Bodhi</a></li>
+    </ul>
+
+    <table>
+      <tr><th>
           Status
-        </td>
+        </th>
         <td py:content="packageListings[0].package.status.translations[0].statusname">
       </td></tr>
-      <tr><td>
+      <tr><th>
           Creation Date
-          </td><td py:content="TODO">
+          </th><td py:content="TODO">
           Fill in the Creation Date
       </td></tr>
     </table>
