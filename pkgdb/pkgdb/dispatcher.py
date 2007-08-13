@@ -61,9 +61,15 @@ class PackageDispatcher(controllers.Controller):
             otherEmail=None):
 
         # Store the email addresses in a hash to eliminate duplicates
-        recipients=config.get('email.recipients',
-                {'toshio@fedoraproject.org' : ''})
-        recipients[author.user['email']] = ''
+        recipients = {author.user['email']: ''}
+
+        # Note: We have to copy information from the config system to our
+        # own variables because the config system is writable persistent
+        # storage.  ie: If we don't the list of recipients will keep getting
+        # longer and longer.
+        for recipient in config.get('email.recipients',
+                ('toshio@fedoraproject.org',)):
+            recipients[recipient] = ''
 
         acls = acls or ('approveacls',)
         if otherEmail:
@@ -107,10 +113,6 @@ class PackageDispatcher(controllers.Controller):
         # Find the approved statuscode
         status = model.StatusTranslation.get_by(statusname='Approved')
 
-        # For testing, let mizmo (Mairin Duffy) look at everything through the
-        # admin web interface.
-        if identity.current.user.user_id == 100548:
-            return 'admin'
         # Make sure the current tg user has permission to set acls
         # If the user is a cvsadmin they can
         if identity.in_group('cvsadmin'):
@@ -121,7 +123,7 @@ class PackageDispatcher(controllers.Controller):
         # Wasn't the owner.  See if they have been granted permission
         # explicitly
         for person in pkg.people:
-            if person.userid == userid:
+            if person.userid == identity.current.user.user_id:
                 # Check each acl that this person has on the package.
                 for acl in person.acls:
                     if (acl.acl == 'approveacls' and acl.statuscode
