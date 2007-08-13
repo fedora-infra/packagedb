@@ -107,10 +107,6 @@ class PackageDispatcher(controllers.Controller):
         # Find the approved statuscode
         status = model.StatusTranslation.get_by(statusname='Approved')
 
-        # For testing, let mizmo (Mairin Duffy) look at everything through the
-        # admin web interface.
-        if identity.current.user.user_id == 100548:
-            return 'admin'
         # Make sure the current tg user has permission to set acls
         # If the user is a cvsadmin they can
         if identity.in_group('cvsadmin'):
@@ -121,7 +117,7 @@ class PackageDispatcher(controllers.Controller):
         # Wasn't the owner.  See if they have been granted permission
         # explicitly
         for person in pkg.people:
-            if person.userid == userid:
+            if person.userid == identity.current.user.user_id:
                 # Check each acl that this person has on the package.
                 for acl in person.acls:
                     if (acl.acl == 'approveacls' and acl.statuscode
