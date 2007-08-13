@@ -199,7 +199,7 @@ class PackageDispatcher(controllers.Controller):
         if not changeGroup:
             # Group has no ACLs on this Package yet.  Create a record
             changeGroup = model.GroupPackageListing(groupId)
-            pkgList.group.append(changeGroup)
+            pkgList.groups.append(changeGroup)
             groupAcl = model.GroupPackageListingAcl(newAcl,
                     status.statuscodeid)
             changeGroup.acls.append(groupAcl)
