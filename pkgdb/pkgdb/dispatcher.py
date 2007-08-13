@@ -61,9 +61,15 @@ class PackageDispatcher(controllers.Controller):
             otherEmail=None):
 
         # Store the email addresses in a hash to eliminate duplicates
-        recipients=config.get('email.recipients',
-                {'toshio@fedoraproject.org' : ''})
         recipients[author.user['email']] = ''
+
+        # Note: We have to copy information from the config system to our
+        # own variables because the config system is writable persistent
+        # storage.  ie: If we don't the list of recipients will keep getting
+        # longer and longer.
+        for recipient in config.get('email.recipients',
+                ('toshio@fedoraproject.org',)):
+            recipients[recipient] = ''
 
         acls = acls or ('approveacls',)
         if otherEmail:
