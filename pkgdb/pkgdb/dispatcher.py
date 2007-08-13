@@ -669,7 +669,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Send notification of the new package
         self._send_log_msg('\n'.join(logs),
-                '%s was added package for %s' % (pkg.name, owner),
+                '%s was added for %s' % (pkg.name, owner),
                 identity.current.user, (pkgListing,))
 
         # Return the new values
