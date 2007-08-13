@@ -210,7 +210,7 @@ class PersonPackageListingAcl(SABase):
 
     Table -- PersonPackageListingAcl
     '''
-    def __init__(self, acl, statuscode, personpackagelistingid=None):
+    def __init__(self, acl, statuscode=None, personpackagelistingid=None):
         self.personpackagelistingid = personpackagelistingid
         self.acl = acl
         self.statuscode = statuscode
@@ -224,7 +224,7 @@ class GroupPackageListingAcl(SABase):
 
     Table -- GroupPackageListingAcl
     '''
-    def __init__(self, acl, statuscode, grouppackagelistingid=None):
+    def __init__(self, acl, statuscode=None, grouppackagelistingid=None):
         self.grouppackagelistingid = grouppackagelistingid
         self.acl = acl
         self.statuscode = statuscode

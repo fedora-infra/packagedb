@@ -12,12 +12,10 @@ from fedora.accounts.fas import AuthError
 
 from pkgdb import model
 
-COMMITSLIST=config.get('commits_address')
 ORPHAN_ID=9900
 
-def send_msg(msg, subject, recipients):
+def send_msg(msg, subject, fromAddr, recipients):
     '''Send a message from the packagedb.'''
-    fromAddr = config.get('from_address')
     for person in recipients:
         email = turbomail.Message(fromAddr, person, '[pkgdb] %s' % (subject,))
         email.plain = msg
@@ -63,8 +61,9 @@ class PackageDispatcher(controllers.Controller):
             otherEmail=None):
 
         # Store the email addresses in a hash to eliminate duplicates
-        recipients = {COMMITSLIST: '',
-                author.user['email']: ''}
+        recipients=config.get('email.recipients',
+                {'toshio@fedoraproject.org' : ''})
+        recipients[author.user['email']] = ''
 
         acls = acls or ('approveacls',)
         if otherEmail:
@@ -92,9 +91,10 @@ class PackageDispatcher(controllers.Controller):
         ### For DEBUGing:
         #print 'Would have sent: %s' % subject
         #print 'To: %s' % recipients.keys()
+        #print 'From: %s' % author.user['email']
         #print '%s' % msg
         #return
-        send_msg(msg, subject, recipients.keys())
+        send_msg(msg, subject, author.user['email'], recipients.keys())
 
     def _user_can_set_acls(self, identity, pkg):
         '''Check that the current user can set acls.
@@ -641,13 +641,14 @@ class PackageDispatcher(controllers.Controller):
                 pkgLogMessage)
         pkgLog.package = pkg
 
-        for changedAcl in (cvsextrasCommitAcl, cvsExtrasBuildAcl,
+        for changedAcl in (cvsextrasCommitAcl, cvsextrasBuildAcl,
                 cvsextrasCheckoutAcl):
             pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
                     identity.current.user.display_name,
                     identity.current.user_name,
                     changedAcl.acl,
-                    changedAcl.status.translations[0].statusname,
+                    model.StatusTranslation.get_by(
+                        statuscodeid=changedAcl.statuscode).statusname,
 
                     self.groups[changedAcl.grouppackagelisting.groupid],
                     pkgListing.package.name,
@@ -655,7 +656,7 @@ class PackageDispatcher(controllers.Controller):
                     pkgListing.collection.version)
             pkgLog = model.GroupPackageListingAclLog(
                     identity.current.user.user_id,
-                    changedAcl.status.statuscodeid, pkgLogMessage)
+                    changedAcl.statuscode, pkgLogMessage)
             pkgLog.acl = changedAcl
             logs.append(pkgLogMessage)
 
@@ -787,21 +788,22 @@ class PackageDispatcher(controllers.Controller):
                         pkgLog.listing = pkgListing
                         pkgListLogMsg[pkgListing] = [logMessage]
                         for changedAcl in (cvsextrasCommitAcl,
-                                cvsExtrasBuildAcl, cvsextrasCheckoutAcl):
+                                cvsextrasBuildAcl, cvsextrasCheckoutAcl):
                             pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
                                     identity.current.user.display_name,
                                     identity.current.user_name,
                                     changedAcl.acl,
-                                    changedAcl.status.translations[0].statusname,
+                                    model.StatusTranslation.get_by(
+                                        statuscodeid=changedAcl.statuscode).statusname,
                                     self.groups[changedAcl.grouppackagelisting.groupid],
                                     pkgListing.package.name,
                                     pkgListing.collection.name,
                                     pkgListing.collection.version)
                             pkgLog = model.GroupPackageListingAclLog(
                                     identity.current.user.user_id,
-                                    changedAcl.status.statuscodeid, pkgLogMessage)
+                                    changedAcl.statuscode, pkgLogMessage)
                             pkgLog.acl = changedAcl
-                            pkgListLog[pkgListing].append(pkgLogMessage)
+                            pkgListLogMsg[pkgListing].append(pkgLogMessage)
 
 
                     # Save a reference to all pkgListings
