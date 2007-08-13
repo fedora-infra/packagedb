@@ -61,7 +61,7 @@ class PackageDispatcher(controllers.Controller):
             otherEmail=None):
 
         # Store the email addresses in a hash to eliminate duplicates
-        recipients[author.user['email']] = ''
+        recipients = {author.user['email']]: ''}
 
         # Note: We have to copy information from the config system to our
         # own variables because the config system is writable persistent
