@@ -378,7 +378,10 @@ function request_status_change(event) {
     busy(requestContainer);
     var form = getFirstParentByTagAndClassName(requestContainer, 'form');
     var base = form.action;
-    
+    if (base[base.length-1] == '/') {
+        base = base.slice(0,-1);
+    }
+
     /* Retrieve person to make the change for. */
     var aclRow = getFirstParentByTagAndClassName(requestContainer, 'tr',
             'aclrow');
