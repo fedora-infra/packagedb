@@ -14,7 +14,6 @@ from pkgdb import model
 
 COMMITSLIST=config.get('commits_address')
 ORPHAN_ID=9900
-CVSEXTRAS_ID=100300
 
 def send_msg(msg, subject, recipients):
     '''Send a message from the packagedb.'''
@@ -56,7 +55,9 @@ class PackageDispatcher(controllers.Controller):
 
         # Create a list of groups that can possibly commit to packages
         self.groups = {100300: 'cvsextras',
-                101197: 'cvsadmin'}
+                101197: 'cvsadmin',
+                'cvsextras': 100300,
+                'cvsadmin': 101197}
 
     def _send_log_msg(self, msg, subject, author, listings, acls=None,
             otherEmail=None):
@@ -124,15 +125,19 @@ class PackageDispatcher(controllers.Controller):
                 break
         return False
 
-    def _create_or_modify_acl(self, pkgList, personId, newAcl, statusName):
+    def _create_or_modify_acl(self, pkgList, personId, newAcl, status):
         '''Create or modify an acl.
 
         Set an acl for a user.  This takes a packageListing and makes sure
         there's an ACL for them with the given status.  It will create a new
         ACL or modify an existing one depending on what's in the db already.
+
+        Arguments:
+        :pkgList: PackageListing on which to set the ACL.
+        :personId: PersonId to set the ACL for.
+        :newAcl: ACL name to set.
+        :status: Status DB Objcet we're setting the ACL to.
         '''
-        # Lookup the statuscode
-        status = model.StatusTranslation.get_by(statusname=statusName)
         # Create the ACL
         changePerson = None
         for person in pkgList.people:
@@ -164,6 +169,51 @@ class PackageDispatcher(controllers.Controller):
                 changePerson.acls.append(personAcl)
 
         return personAcl
+
+    def _create_or_modify_group_acl(self, pkgList, groupId, newAcl, status):
+        '''Create or modify a group acl.
+
+        Set an acl for a group.  This takes a packageListing and makes sure
+        there's an ACL for it with the given status.  It will create a new
+        ACL or modify an existing one depending on what's in the db already.
+
+        Arguments:
+        :pkgList: PackageListing on which to set the ACL.
+        :groupId: GroupId to set the ACL for.
+        :newAcl: ACL name to set.
+        :status: Status DB Objcet we're setting the ACL to.
+        '''
+        # Create the ACL
+        changeGroup = None
+        for group in pkgList.groups:
+            # Check for the person who's acl we're setting
+            if group.groupid == groupId:
+                changeGroup = group
+                break
+
+        if not changeGroup:
+            # Group has no ACLs on this Package yet.  Create a record
+            changeGroup = model.GroupPackageListing(groupId)
+            pkgList.group.append(changeGroup)
+            groupAcl = model.GroupPackageListingAcl(newAcl,
+                    status.statuscodeid)
+            changeGroup.acls.append(groupAcl)
+        else:
+            # Look for an acl for the group
+            groupAcl = None
+            for acl in changeGroup.acls:
+                if acl.acl == newAcl:
+                    # Found the acl, change its status
+                    groupAcl = acl
+                    acl.statuscode = status.statuscodeid
+                    break
+            if not groupAcl:
+                # Acl was not found.  Create one.
+                groupAcl = model.GroupPackageListingAcl(newAcl,
+                        status.statuscodeid)
+                changeGroup.acls.append(groupAcl)
+
+        return groupAcl
 
     @expose('json')
     def index(self):
@@ -268,7 +318,7 @@ class PackageDispatcher(controllers.Controller):
                     identity.current.user.display_name)
 
         personAcl = self._create_or_modify_acl(pkg, personid, newAcl,
-                statusname)
+                status
 
         # Get the human name and username for the person whose acl we changed
         (user, groups) = self.fas.get_user_info(personid)
@@ -517,7 +567,7 @@ class PackageDispatcher(controllers.Controller):
                 approvedStatus.statuscodeid)
         pkgListing.collection = develCollection
         pkgListing.package = pkg
-        cvsextrasListing = model.GroupPackageListing(CVSEXTRAS_ID)
+        cvsextrasListing = model.GroupPackageListing(self.groups['cvsextras'])
         cvsextrasListing.packagelisting = pkgListing
         cvsextrasCommitAcl = model.GroupPackageListingAcl('commit', 
                 deniedStatus.statuscodeid)
@@ -656,6 +706,8 @@ class PackageDispatcher(controllers.Controller):
             # Get id for statuses
             approvedStatus = model.StatusTranslation.get_by(
                     statusname='Approved')
+            deniedStatus = model.StatusTranslation.get_by(
+                    statusname='Denied')
             addedStatus = model.StatusTranslation.get_by(statusname='Added')
             ownedStatus = model.StatusTranslation.get_by(statusname='Owned')
 
@@ -688,7 +740,7 @@ class PackageDispatcher(controllers.Controller):
                         pkgListing.package = pkg
                         pkgListing.collection = collection
                         cvsextrasListing = model.GroupPackageListing(
-                                CVSEXTRAS_ID)
+                                self.groups['cvsextras'])
                         cvsextrasListing.packagelisting = pkgListing
                         cvsextrasCommitAcl = model.GroupPackageListingAcl(
                                 'commit', deniedStatus.statuscodeid)
@@ -755,7 +807,7 @@ class PackageDispatcher(controllers.Controller):
                 for pkgList in listings:
                     for acl in ('watchbugzilla', 'watchcommits'):
                         personAcl = self._create_or_modify_acl(pkgList,
-                                person['id'], acl, 'Approved')
+                                person['id'], acl, approvedStatus)
                         logMessage = '%s (%s) approved %s on %s (%s %s) for %s' % (
                                 identity.current.user.display_name,
                                 identity.current.user_name,
@@ -789,7 +841,7 @@ class PackageDispatcher(controllers.Controller):
                     for acl in ('watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls', 'checkout'):
 
                         personAcl = self._create_or_modify_acl(pkgList,
-                                person['id'], acl, 'Approved')
+                                person['id'], acl, approvedStatus)
 
                         # Make sure a log is created in the db as well.
                         logMessage = u'%s (%s) approved %s on %s (%s %s) for %s' % (
@@ -809,6 +861,42 @@ class PackageDispatcher(controllers.Controller):
                             pkgListLogMsg[pkgList].append(logMessage)
                         except KeyError:
                             pkgListLogMsg[pkgList] = [logMessage]
+
+        if 'groups' in changes:
+            # Change whether the group can commit to cvs.
+            groupList = simplejson.loads(changes['groups'])
+            for group in groupList:
+                # We don't let every group commit
+                try:
+                    groupId = self.groups[group]
+                except KeyError:
+                    return dict(status=False, message='Group %s is not allowed to commit' % group)
+
+                if groupList[group] == True:
+                    status = approvedStatus
+                else:
+                    status = deniedStatus
+
+                groupAcl = self._create_or_modify_group_acl(pkgList, groupId,
+                    'commit', status)
+
+                # Make sure a log is created in the db as well.
+                logMessage = u'%s (%s) %s %s for commit access on %s (%s %s)' % (
+                        identity.current.user.display_name,
+                        identity.current.user_name, status, group
+                        pkgList.package.name,
+                        pkgList.collection.name,
+                        pkgList.collection.version)
+                pkgLog = model.GroupPackageListingAclLog(
+                        identity.current.user.user_id,
+                        status.statuscodeid,
+                        logMessage
+                        )
+                pkgLog.acl = groupAcl
+                try:
+                    pkgListLogMsg[pkgList].append(logMessage)
+                except KeyError:
+                    pkgListLogMsg[pkgList] = [logMessage]
 
         try:
             session.flush()
