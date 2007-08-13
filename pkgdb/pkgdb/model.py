@@ -302,7 +302,7 @@ class PersonPackageListingAclLog(Log):
 class GroupPackageListingAclLog(Log):
     '''Log changes to an Acl that a group owns.
 
-    Table -- GroupPackageListingAcl
+    Table -- GroupPackageListingAclLog
     '''
     def __init__(self, userid, action, description=None, changetime=None,
             grouppackagelistingaclid=None):
