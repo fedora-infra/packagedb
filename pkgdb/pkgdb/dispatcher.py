@@ -638,6 +638,24 @@ class PackageDispatcher(controllers.Controller):
                 pkgLogMessage)
         pkgLog.package = pkg
 
+        for changedAcl in (cvsextrasCommitAcl, cvsExtrasBuildAcl,
+                cvsextrasCheckoutAcl):
+            pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
+                    identity.current.user.display_name,
+                    identity.current.user_name,
+                    changedAcl.acl,
+                    changedAcl.status.translations[0].statusname,
+
+                    self.groups[changedAcl.grouppackagelisting.groupid],
+                    pkgListing.package.name,
+                    pkgListing.collection.name,
+                    pkgListing.collection.version)
+            pkgLog = model.GroupPackageListingAclLog(
+                    identity.current.user.user_id,
+                    changedAcl.status.statuscodeid, pkgLogMessage)
+            pkgLog.acl = changedAcl
+            logs.append(pkgLogMessage)
+
         try:
             session.flush()
         except sqlalchemy.exceptions.SQLError, e:
@@ -766,6 +784,23 @@ class PackageDispatcher(controllers.Controller):
                                 )
                         pkgLog.listing = pkgListing
                         pkgListLogMsg[pkgListing] = [logMessage]
+                        for changedAcl in (cvsextrasCommitAcl,
+                                cvsExtrasBuildAcl, cvsextrasCheckoutAcl):
+                            pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
+                                    identity.current.user.display_name,
+                                    identity.current.user_name,
+                                    changedAcl.acl,
+                                    changedAcl.status.translations[0].statusname,
+                                    self.groups[changedAcl.grouppackagelisting.groupid],
+                                    pkgListing.package.name,
+                                    pkgListing.collection.name,
+                                    pkgListing.collection.version)
+                            pkgLog = model.GroupPackageListingAclLog(
+                                    identity.current.user.user_id,
+                                    changedAcl.status.statuscodeid, pkgLogMessage)
+                            pkgLog.acl = changedAcl
+                            pkgListLog[pkgListing.append(pkgLogMessage)
+
 
                     # Save a reference to all pkgListings
                     listings.append(pkgListing)
