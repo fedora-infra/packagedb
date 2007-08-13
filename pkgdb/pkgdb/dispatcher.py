@@ -91,10 +91,10 @@ class PackageDispatcher(controllers.Controller):
         ### For DEBUGing:
         #print 'Would have sent: %s' % subject
         #print 'To: %s' % recipients.keys()
-        #print 'From: %s' % author.user['email']
+        #print 'From: %s %s' % (author.user['human_name'], author.user['email'])
         #print '%s' % msg
         #return
-        send_msg(msg, subject, author.user['email'], recipients.keys())
+        send_msg(msg, subject, (author.user['human_name'], author.user['email']), recipients.keys())
 
     def _user_can_set_acls(self, identity, pkg):
         '''Check that the current user can set acls.
