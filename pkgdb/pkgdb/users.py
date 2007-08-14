@@ -29,7 +29,7 @@ class Users(controllers.Controller):
         
         return dict(title=self.appTitle + ' -- User Overview')
 
-    @expose(template='pkgdb.templates.userpkgs')
+    @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
     def packages(self,fasname=None):
@@ -58,7 +58,7 @@ class Users(controllers.Controller):
    
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 
-    @expose(template='pkgdb.templates.userpkgs')
+    @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
     def acllist(self,fasname=None):
@@ -112,13 +112,3 @@ class Users(controllers.Controller):
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.' % fasname
         return dict(title=self.appTitle + ' -- Invalid Username', message=msg)
-
-    @expose(template='pkgdb.templates.orphans', allow_json=True)
-    @paginate('pkgs', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
-    def orphans(self):
-        orphanedPackages = SelectResults(session.query(model.Package)
-                ).distinct().select(sqlalchemy.and_(
-                model.PackageListing.c.owner==ORPHAN_ID,
-                model.PackageListing.c.packageid==model.Package.c.id))
-        return dict(title=self.appTitle + ' -- Orphan List', pkgs=orphanedPackages)
