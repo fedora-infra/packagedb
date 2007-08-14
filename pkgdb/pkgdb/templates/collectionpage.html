@@ -7,6 +7,7 @@ TODO='Not yet implemented'
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
   <xi:include href="paginator.html" />
+  <xi:include href="pkglist.html" />
   <body>
     <h2 py:content="collection.name, ' ',  collection.version">Collection</h2>
     <table border='0'>
@@ -26,11 +27,7 @@ TODO='Not yet implemented'
     <p py:content="collection.summary">Summary</p>
     <p py:content="collection.description">Description</p>
     ${paginate_nav()}
-    <ul py:for="pkg in packages">
-      <li><a href="${tg.url('/packages/name/' + pkg.name)}"
-        py:content="pkg.name"></a> --
-      <span py:replace="pkg.summary">Package Summary</span></li>
-    </ul>
+    ${pkglist(packages)}
     ${paginate_nav()}
   </body>
 </html>

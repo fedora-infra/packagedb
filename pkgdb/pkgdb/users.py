@@ -30,7 +30,8 @@ class Users(controllers.Controller):
         return dict(title=self.appTitle + ' -- User Overview')
 
     @expose(template='pkgdb.templates.userpkgs')
-    @paginate('pkgs', default_order='name')
+    @paginate('pkgs', default_order='name', limit=100,
+            allow_limit_override=True, max_pages=13)
     def packages(self,fasname=None):
         '''I thought I managed to get this one at last, but it seems not
            I'll tackle it soon though -- Nigel
@@ -51,13 +52,15 @@ class Users(controllers.Controller):
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
         
         myPackages = SelectResults(session.query(model.Package)
-            ).distinct().select(model.PackageListing.c.packageid ==
-            model.Package.c.id).select(model.PackageListing.c.owner == fasid)
+            ).distinct().select(sqlalchemy.and_(
+            model.PackageListing.c.packageid == model.Package.c.id,
+            model.PackageListing.c.owner == fasid))
    
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 
     @expose(template='pkgdb.templates.userpkgs')
-    @paginate('pkgs', default_order='name')
+    @paginate('pkgs', default_order='name', limit=100,
+            allow_limit_override=True, max_pages=13)
     def acllist(self,fasname=None):
 
         if fasname == None:
@@ -75,10 +78,11 @@ class Users(controllers.Controller):
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- ACL Entries'
 
         myAclEntries = SelectResults(session.query(model.Package)).select(
-            model.PackageListing.c.packageid == model.Package.c.id).select(
+            sqlalchemy.and_(
+            model.PackageListing.c.packageid == model.Package.c.id,
             model.PersonPackageListing.c.packagelistingid ==
-            model.PackageListing.c.id).select(
-            model.PersonPackageListing.c.userid == fasid)
+            model.PackageListing.c.id,
+            model.PersonPackageListing.c.userid == fasid))
 
         return dict(title=pageTitle, pkgs=myAclEntries, fasname=fasname)
 
@@ -110,10 +114,11 @@ class Users(controllers.Controller):
         return dict(title=self.appTitle + ' -- Invalid Username', message=msg)
 
     @expose(template='pkgdb.templates.orphans', allow_json=True)
+    @paginate('pkgs', default_order='name', limit=100,
+            allow_limit_override=True, max_pages=13)
     def orphans(self):
-        orphanedPackages = SelectResults(session.query(model.PackageListing)).select(
-        model.PackageListing.c.owner==ORPHAN_ID)
-        pkgs = {}
-        for pkg in orphanedPackages:
-            pkgs[pkg.package.name] = pkg.package.summary
-        return dict(title=self.appTitle + ' -- Orphan List', pkgs=pkgs)
+        orphanedPackages = SelectResults(session.query(model.Package)
+                ).distinct().select(sqlalchemy.and_(
+                model.PackageListing.c.owner==ORPHAN_ID,
+                model.PackageListing.c.packageid==model.Package.c.id))
+        return dict(title=self.appTitle + ' -- Orphan List', pkgs=orphanedPackages)

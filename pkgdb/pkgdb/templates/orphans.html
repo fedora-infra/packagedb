@@ -3,10 +3,11 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
+  <xi:include href="paginator.html" />
+  <xi:include href="pkglist.html" />
   <body>
-    <ul py:for="pkgName in pkgs.keys()">
-      <li><a href="${tg.url('/packages/name/' + pkgName)}" py:content="pkgName"></a>
-      -- ${pkgs[pkgName]}</li>
-    </ul>
+    ${paginate_nav()}
+    ${pkglist(pkgs)}
+    ${paginate_nav()}
   </body>
 </html>
