@@ -9,6 +9,8 @@ from pkgdb import model
 
 from fedora.accounts.fas import AccountSystem, AuthError
 
+ORPHAN_ID=9900
+
 class Users(controllers.Controller):
     def __init__(self, fas, appTitle):
         '''Create a User Controller.
@@ -106,3 +108,12 @@ class Users(controllers.Controller):
                 ' If you received this error from a link on the' \
                 ' fedoraproject.org website, please report it.' % fasname
         return dict(title=self.appTitle + ' -- Invalid Username', message=msg)
+
+    @expose(template='pkgdb.templates.orphans', allow_json=True)
+    def orphans(self):
+        orphanedPackages = SelectResults(session.query(model.PackageListing)).select(
+        model.PackageListing.c.owner==ORPHAN_ID)
+        pkgs = {}
+        for pkg in orphanedPackages:
+            pkgs[pkg.package.name] = pkg.package.summary
+        return dict(title=self.appTitle + ' -- Orphan List', pkgs=pkgs)
