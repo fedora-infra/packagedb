@@ -21,54 +21,10 @@ log = logging.getLogger("pkgdb.controllers")
 # The Fedora Account System Module
 from fedora.accounts.fas import AccountSystem, AuthError
 
-ORPHAN_ID=9900
-CVSEXTRAS_ID=100300
-
-class Test(controllers.Controller):
-    def __init__(self, fas=None, appTitle=None):
-        self.fas = fas
-        self.appTitle = appTitle
-
-    @expose(template="pkgdb.templates.welcome", allow_json=True)
-    @identity.require(identity.in_group("cvsextras"))
-    def index(self):
-        import time
-        # log.debug("Happy TurboGears Controller Responding For Duty")
-        return dict(now=time.ctime())
-    
-    @expose('json')
-    def unicode_test(self):
-        chars = []
-        for byte in (77,195,188,110,115,116,101,114):
-            chars.append(chr(byte))
-        word = ''.join(chars)
-        retval = dict(string='Münster', ustring=unicode('Münster','utf-8'), byte=word, u=u'Münster')
-        print retval
-        return retval
-
-    @expose(template="pkgdb.templates.try")
-    def test(self):
-        return dict(title='Test Page', rows=({'1': 'alligator', '2':'bat'},{'1':'avocado', '2':'bannana'}))
-
-    @expose(template='pkgdb.templates.orphans')
-    def orphans(self):
-        import os
-        t = file('/var/tmp/t', 'w')
-        t.writelines('%s' % request.headers)
-        t.close()
-        pkgs = {}
-        orphanedPackages = SelectResults(session.query(model.PackageListing)).select(
-                model.PackageListing.c.owner==ORPHAN_ID)
-        for pkg in orphanedPackages:
-            pkgs[pkg.package.name] = pkg.package.summary
-
-        return dict(title='List Orphans', pkgs=pkgs)
-
 class Root(controllers.RootController):
     appTitle = 'Fedora Package Database'
     fas = AccountSystem()
 
-    test = Test(fas, appTitle)
     acls = Acls(fas, appTitle)
     collections = Collections(fas, appTitle)
     packages = Packages(fas, appTitle)

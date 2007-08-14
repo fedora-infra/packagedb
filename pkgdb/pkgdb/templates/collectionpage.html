@@ -1,0 +1,36 @@
+<?python
+TODO='Not yet implemented'
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <xi:include href="paginator.html" />
+  <body>
+    <h2 py:content="collection.name, ' ',  collection.version">Collection</h2>
+    <table border='0'>
+      <tr><td>
+          Status
+          </td><td py:content="collection.statusname">
+      </td></tr>
+      <tr><td>
+          Owner
+          </td><td py:content="collection.ownername">
+      </td></tr>
+      <tr><td>
+          Creation Date
+          </td><td py:content="TODO">Fill in the Creation Date
+      </td></tr>
+    </table>
+    <p py:content="collection.summary">Summary</p>
+    <p py:content="collection.description">Description</p>
+    ${paginate_nav()}
+    <ul py:for="pkg in packages">
+      <li><a href="${tg.url('/packages/name/' + pkg.name)}"
+        py:content="pkg.name"></a> --
+      <span py:replace="pkg.summary">Package Summary</span></li>
+    </ul>
+    ${paginate_nav()}
+  </body>
+</html>
