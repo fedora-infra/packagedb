@@ -93,6 +93,12 @@ class PackageDispatcher(controllers.Controller):
                             acl.personpackagelisting.userid)
                     recipients[person['email']] = ''
 
+        # Append a link to the package to the message
+        msg = msg + '\n\nTo make changes to this package see:' \
+              '\n  %s/packages/name/%s' % (
+                      config.get('base_url_filter.base_url'),
+                      listings[0].package.name)
+
         # Send the log
         ### For DEBUGing:
         #print 'Would have sent: %s' % subject
