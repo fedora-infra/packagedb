@@ -90,6 +90,9 @@ class Acls(controllers.Controller):
                 branch[acl] = AclList(people=[identity])
 
     @expose(template="pkgdb.templates.vcsacls", allow_json=True)
+    @expose(template="genshi-text:pkgdb.templates.plain.vcsacls",
+            as_format="plain", accept_format="text/plain",
+            content_type="text/plain; charset=utf-8", format='text')
     def vcs(self):
         '''Return ACLs for the version control system.
 
@@ -133,11 +136,13 @@ class Acls(controllers.Controller):
         del groupAcls
 
         # Get the package owners from the db
+        # Exclude the orphan user from that.
         ownerAcls = sqlalchemy.select((model.Package.c.name,
             model.Branch.c.branchname, model.PackageListing.c.owner),
             sqlalchemy.and_(
                 model.PackageListing.c.packageid==model.Package.c.id,
                 model.PackageListing.c.collectionid==model.Collection.c.id,
+                model.PackageListing.c.owner!=ORPHAN_ID,
                 model.Collection.c.id==model.Branch.c.collectionid
                 ),
             order_by=(model.PackageListing.c.owner,)
@@ -145,9 +150,6 @@ class Acls(controllers.Controller):
 
         # Save them into a python data structure
         for record in ownerAcls.execute():
-            if record[2] == ORPHAN_ID:
-                # We don't want the orphan pseudo user to show up in the acls
-                continue
             # Cache the userId/username  so we don't have to call the fas
             # for all packages
             if userId != record[2]:
@@ -190,6 +192,9 @@ class Acls(controllers.Controller):
         return dict(title=self.appTitle + ' -- VCS ACLs', packageAcls=packageAcls)
 
     @expose(template="pkgdb.templates.bugzillaacls", allow_json=True)
+    @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
+            as_format="plain", accept_format="text/plain",
+            content_type="text/plain; charset=utf-8", format='text')
     def bugzilla(self):
         '''Return the package attributes used by bugzilla.
 
