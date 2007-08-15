@@ -2,11 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
-  <xi:include href="layout.html" />
-  <body>
-    <ul py:for="pkgName in pkgs.keys()">
-      <li><a href="${tg.url('/packages/name/' + pkgName)}" py:content="pkgName"></a>
-      -- ${pkgs[pkgName]}</li>
+
+  <div py:def="pkglist(packages)" class="PackageList">
+    <ul py:for="pkg in packages">
+      <li><a href="${tg.url('/packages/name/' + pkg.name)}"
+        py:content="pkg.name"></a> --
+      <span py:replace="pkg.summary">Package Summary</span></li>
     </ul>
-  </body>
+  </div>
 </html>
