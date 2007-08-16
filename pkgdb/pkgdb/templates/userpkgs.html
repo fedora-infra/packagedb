@@ -10,13 +10,11 @@
     <p py:choose="fasname">
       <span py:when="'orphan'" py:strip="">
       View users: Info |
-      <a href="${tg.url('/users/packages/' + fasname)}">Packages</a> |
-      ACL Listings
+      <a href="${tg.url('/users/packages/' + fasname)}">Packages</a> 
       </span>
       <span py:otherwise="" py:strip="">
       View users: <a href="${tg.url('/users/info/' + fasname)}">Info</a> |
-      <a href="${tg.url('/users/packages/' + fasname)}">Packages</a> |
-      <a href="${tg.url('/users/acllist/' + fasname)}">ACL Listings</a>
+      <a href="${tg.url('/users/packages/' + fasname)}">Packages</a>
       </span>
     </p>
     
