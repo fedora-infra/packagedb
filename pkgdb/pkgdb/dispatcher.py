@@ -228,11 +228,11 @@ class PackageDispatcher(controllers.Controller):
 
         return groupAcl
 
-    @expose('json')
+    @expose(allow_json=True)
     def index(self):
         return dict(methods=self.methods)
 
-    @expose('json')
+    @expose(allow_json=True)
     @identity.require(identity.not_anonymous())
     def toggle_owner(self, containerId):
         # Check that the tg.identity is allowed to set themselves as owner
@@ -287,7 +287,7 @@ class PackageDispatcher(controllers.Controller):
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
                 aclStatusFields=self.aclStatusTranslations)
 
-    @expose('json')
+    @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
     @identity.require(identity.not_anonymous())
     def set_acl_status(self, pkgid, personid, newAcl, statusname):
@@ -358,7 +358,7 @@ class PackageDispatcher(controllers.Controller):
 
         return dict(status=True)
 
-    @expose('json')
+    @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
     @identity.require(identity.not_anonymous())
     def toggle_groupacl_status(self, containerId):
@@ -467,7 +467,7 @@ class PackageDispatcher(controllers.Controller):
         return dict(status=True,
                 newAclStatus=statusname)
 
-    @expose('json')
+    @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.
     @identity.require(identity.not_anonymous())
     def toggle_acl_request(self, containerId):
