@@ -89,10 +89,10 @@ class Acls(controllers.Controller):
             except KeyError, e:
                 branch[acl] = AclList(people=[identity])
 
-    @expose(template="pkgdb.templates.vcsacls", allow_json=True)
     @expose(template="genshi-text:pkgdb.templates.plain.vcsacls",
             as_format="plain", accept_format="text/plain",
             content_type="text/plain; charset=utf-8", format='text')
+    @expose(template="pkgdb.templates.vcsacls", allow_json=True)
     def vcs(self):
         '''Return ACLs for the version control system.
 
@@ -191,10 +191,10 @@ class Acls(controllers.Controller):
 
         return dict(title=self.appTitle + ' -- VCS ACLs', packageAcls=packageAcls)
 
-    @expose(template="pkgdb.templates.bugzillaacls", allow_json=True)
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
             as_format="plain", accept_format="text/plain",
             content_type="text/plain; charset=utf-8", format='text')
+    @expose(template="pkgdb.templates.bugzillaacls", allow_json=True)
     def bugzilla(self):
         '''Return the package attributes used by bugzilla.
 
