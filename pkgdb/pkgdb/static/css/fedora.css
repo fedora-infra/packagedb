@@ -142,3 +142,14 @@ a img
   padding-top: 3ex;
 }
 
+.ToolTip {
+  display: block;
+  positon: absolute;
+  border: 1px solid black;
+  background-color: lightyellow;
+  width: 200px;
+}
+
+.invisible {
+  display: none;
+}
