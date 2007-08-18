@@ -3,28 +3,31 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
+  <head>
+    <script language="javascript" src="${tg.url('/static/javascript/tooltips.js')}"/>
+    <script language="javascript" src="${tg.url('/static/javascript/collectionoverview.js')}"/>
+  </head>
   <body>
     <h2>Collections</h2>
     <table>
-      <tr><th>
-          Collection
-          </th><th>
-          Version
-          </th><th>
-          Number of Packages
+      <tr><th class="ColumnHead" id="collectionhead">
+        Collection
+        </th><th class="ColumnHead" id="versionhead">
+        Version
+        </th><th class="ColumnHead" id="packagehead">
+        Number of Packages
       </th></tr>
       <tr py:for="collection in collections">
-        <td>
+        <td class="collection">
           <a href="${tg.url('/collections/id/' + str(collection.id))}"
             py:content="collection.name">Collection Name</a>
         </td>
-        <td>
+        <td class="version">
           <a href="${tg.url('/collections/id/' + str(collection.id))}"
             py:content="collection.version">Collection Version</a>
         </td>
-        <td>
-          <a href="${tg.url('/collections/id/' + str(collection.id))}"
-            py:content="collection.numpkgs">Number of Packages</a>
+        <td py:content="collection.numpkgs" class="package">
+            Number of Packages
         </td>
       </tr>
     </table>
