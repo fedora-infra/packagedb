@@ -562,7 +562,6 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message='Package %s already exists' % package)
 
         approvedStatus = model.StatusTranslation.get_by(statusname='Approved')
-        deniedStatus = model.StatusTranslation.get_by(statusname='Denied')
         addedStatus = model.StatusTranslation.get_by(statusname='Added')
 
         develCollection = model.Collection.get_by(name='Fedora',
@@ -581,7 +580,7 @@ class PackageDispatcher(controllers.Controller):
         cvsextrasListing = model.GroupPackageListing(self.groups['cvsextras'])
         cvsextrasListing.packagelisting = pkgListing
         cvsextrasCommitAcl = model.GroupPackageListingAcl('commit', 
-                deniedStatus.statuscodeid)
+                approvedStatus.statuscodeid)
         cvsextrasCommitAcl.grouppackagelisting = cvsextrasListing
         cvsextrasBuildAcl = model.GroupPackageListingAcl('build',
                 approvedStatus.statuscodeid)
@@ -772,7 +771,7 @@ class PackageDispatcher(controllers.Controller):
                                 self.groups['cvsextras'])
                         cvsextrasListing.packagelisting = pkgListing
                         cvsextrasCommitAcl = model.GroupPackageListingAcl(
-                                'commit', deniedStatus.statuscodeid)
+                                'commit', approvedStatus.statuscodeid)
                         cvsextrasCommitAcl.grouppackagelisting=cvsextrasListing
                         cvsextrasBuildAcl = model.GroupPackageListingAcl(
                                 'build', approvedStatus.statuscodeid)
