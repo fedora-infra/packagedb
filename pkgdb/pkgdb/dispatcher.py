@@ -539,7 +539,7 @@ class PackageDispatcher(controllers.Controller):
         # Send a log to the commits list as well
         self._send_log_msg(logMessage, '%s: %s has %s %s' % (
                     pkgListing.package.name,
-                    identity.current.user.display_name, aclAction, aclName),
+                    identity.current.user_name, aclAction, aclName),
                     identity.current.user, (pkgListing,))
 
         # Return the new value
@@ -552,7 +552,7 @@ class PackageDispatcher(controllers.Controller):
     def add_package(self, package, owner, summary):
         '''Add a new package to the database.
         '''
-        # Check that the tg.identity is allowed to set themselves as owner
+        # Check that the tg.identity is allowed to set an owner
         if not identity.in_any_group('cvsadmin'):
             return dict(status=False, message='User must be in cvsadmin')
 
@@ -956,13 +956,13 @@ class PackageDispatcher(controllers.Controller):
         # Send a log to people interested in this package as well
         if pkgLogMsg:
             self._send_log_msg(pkgLogMsg, '%s summary updated by %s' % (
-                pkg.name, identity.current.user.display_name),
+                pkg.name, identity.current.user_name),
                 identity.current.user, pkg.listings)
         for pkgListing in pkgListLogMsg.keys():
             self._send_log_msg('\n'.join(pkgListLogMsg[pkgListing]),
                     '%s (%s, %s) updated by %s' % (pkg.name,
                         pkgListing.collection.name,
                         pkgListing.collection.version,
-                        identity.current.user.display_name),
+                        identity.current.user.user_name),
                     identity.current.user, (pkgListing,))
         return dict(status=True)
