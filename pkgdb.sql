@@ -6,7 +6,7 @@
 -- add_status_log()
 -- package_build_agreement()
 
-drop database pkgdb;
+-- drop database pkgdb;
 create database pkgdb with encoding 'UTF8';
 \c pkgdb
 
