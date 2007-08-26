@@ -53,18 +53,23 @@ class Users(controllers.Controller):
 
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
 
-        myPackages = SelectResults(session.query(model.Package)).distinct().select(
-          sqlalchemy.and_(
-            model.Package.c.id == model.PackageListing.c.packageid,
-            sqlalchemy.or_(
-              model.PackageListing.c.owner == fasid,
+        myPackages = session.query(model.Package).select(
+          sqlalchemy.union(
+            model.PackageTable.select(
               sqlalchemy.and_(
-                model.PackageListing.c.id == model.PersonPackageListing.c.packagelistingid,
-                model.PersonPackageListing.c.userid == fasid
-                )
+                model.Package.c.id==model.PackageListing.c.packageid,
+                model.PackageListing.c.owner==fasid
+              )
+            ),
+            model.PackageTable.select(
+              sqlalchemy.and_(
+                model.Package.c.id==model.PackageListing.c.packageid,
+                model.PackageListing.c.id==model.PersonPackageListing.c.packagelistingid,
+                model.PersonPackageListing.c.userid==fasid
               )
             )
           )
+        )
 
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 
