@@ -1,3 +1,28 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright © 2007  Nigel Jones
+# Copyright © 2007  Red Hat, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.  You should have
+# received a copy of the GNU General Public License along with this program;
+# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
+# incorporated in the source code or documentation are not subject to the GNU
+# General Public License and may only be used or replicated with the express
+# permission of Red Hat, Inc.
+#
+# Author(s): Nigel Jones <nigelj@fedoraproject.org>
+#            Toshio Kuratomi <tkuratom@redhat.com>
+#
+'''
+Controller to show information about packages by user.
+'''
+
 import sqlalchemy
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
@@ -22,11 +47,11 @@ class Users(controllers.Controller):
         self.appTitle = appTitle
 
     @expose(template='pkgdb.templates.useroverview')
-    @identity.require(identity.in_group("cvsextras"))
     def index(self):
         '''Dish some dirt on the requesting user
         '''
-        
+        raise redirect(config.get('base_url_filter.base_url') + '/users/info/')
+
         return dict(title=self.appTitle + ' -- User Overview')
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
@@ -43,6 +68,8 @@ class Users(controllers.Controller):
             else:
                 fasid = identity.current.user.user_id
                 fasname = identity.current.user.user_name
+        elif fasname == "orphan":
+            fasid = ORPHAN_ID
         else:
             try:
                 fasid = self.fas.get_user_id(fasname)
@@ -50,12 +77,26 @@ class Users(controllers.Controller):
                raise redirect(config.get('base_url_filter.base_url') + '/users/no_user/' + fasname)
 
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
-        
-        myPackages = SelectResults(session.query(model.Package)
-            ).distinct().select(sqlalchemy.and_(
-            model.PackageListing.c.packageid == model.Package.c.id,
-            model.PackageListing.c.owner == fasid))
-   
+
+        myPackages = session.query(model.Package).order_by((model.Package.c.name,)).select(
+          sqlalchemy.union(
+            model.PackageTable.select(
+              sqlalchemy.and_(
+                model.Package.c.id==model.PackageListing.c.packageid,
+                model.PackageListing.c.owner==fasid
+              )
+            ),
+            model.PackageTable.select(
+              sqlalchemy.and_(
+                model.Package.c.id==model.PackageListing.c.packageid,
+                model.PackageListing.c.id==model.PersonPackageListing.c.packagelistingid,
+                model.PersonPackageListing.c.userid==fasid
+              )
+            ),
+            order_by=('name',)
+          )
+        )
+
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
@@ -64,27 +105,9 @@ class Users(controllers.Controller):
     def acllist(self,fasname=None):
 
         if fasname == None:
-            if identity.current.anonymous:
-                raise identity.IdentityFailure("You must be logged in to view your information")
-            else:
-                fasid = identity.current.user.user_id
-                fasname = identity.current.user.user_name
+            raise redirect(config.get('base_url_filter.base_url') + '/users/packages/')
         else:
-            try:
-                fasid = self.fas.get_user_id(fasname)
-            except AuthError:
-               raise redirect(config.get('base_url_filter.base_url') + '/users/no_user/' + fasname)
-
-        pageTitle = self.appTitle + ' -- ' + fasname + ' -- ACL Entries'
-
-        myAclEntries = SelectResults(session.query(model.Package)).select(
-            sqlalchemy.and_(
-            model.PackageListing.c.packageid == model.Package.c.id,
-            model.PersonPackageListing.c.packagelistingid ==
-            model.PackageListing.c.id,
-            model.PersonPackageListing.c.userid == fasid))
-
-        return dict(title=pageTitle, pkgs=myAclEntries, fasname=fasname)
+            raise redirect(config.get('base_url_filter.base_url') + '/users/packages/' + fasname)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self,fasname=None):

@@ -1,72 +1,21 @@
-/* 
- * From MochiKit 1.4
+/*
+ * Copyright © 2007  Red Hat, Inc.
+ *
+ * This copyrighted material is made available to anyone wishing to use, modify,
+ * copy, or redistribute it subject to the terms and conditions of the GNU
+ * General Public License v.2.  This program is distributed in the hope that it
+ * will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+ * implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.  You should have
+ * received a copy of the GNU General Public License along with this program;
+ * if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+ * Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
+ * incorporated in the source code or documentation are not subject to the GNU
+ * General Public License and may only be used or replicated with the express
+ * permission of Red Hat, Inc.
+ *
+ * Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
  */
-
-/** @id MochiKit.DOM.insertSiblingNodesBefore */
-insertSiblingNodesBefore = function (node/*, nodes...*/) {
-    var elem = node;
-    var self = MochiKit.DOM;
-    if (typeof(node) == 'string') {
-        elem = self.getElement(node);
-    }
-    var nodeStack = [
-        self.coerceToDOM(
-            MochiKit.Base.extend(null, arguments, 1),
-            elem
-        )
-    ];
-    var parentnode = elem.parentNode;
-    var concat = MochiKit.Base.concat;
-    while (nodeStack.length) {
-        var n = nodeStack.shift();
-        if (typeof(n) == 'undefined' || n === null) {
-            // pass
-        } else if (typeof(n.nodeType) == 'number') {
-            parentnode.insertBefore(n, elem);
-        } else {
-            nodeStack = concat(n, nodeStack);
-        }
-    }
-    return parentnode;
-}
-
-/** @id MochiKit.DOM.getFirstParentByTagAndClassName */
-getFirstParentByTagAndClassName = function (elem, tagName, className) {
-    var self = MochiKit.DOM;
-    elem = self.getElement(elem);
-    if (typeof(tagName) == 'undefined' || tagName === null) {
-        tagName = '*';
-    } else {
-        tagName = tagName.toUpperCase();
-    }
-    if (typeof(className) == 'undefined' || className === null) {
-        className = null;
-    }
-
-    var classList = '';
-    var curTagName = '';
-    while (elem && elem.tagName) {
-        elem = elem.parentNode;
-        if (tagName == '*' && className === null) {
-            return elem;
-        }
-        classList = elem.className.split(' ');
-        curTagName = elem.tagName.toUpperCase();
-        if (className === null && tagName == curTagName) {
-            return elem;
-        } else if (className !== null) {
-            for (var i = 0; i < classList.length; i++) {
-                if (tagName == '*' && classList[i] == className) {
-                    return elem;
-                } else if (tagName == curTagName && classList[i] == className) {
-                    return elem;
-                }
-            }
-        }
-    }
-    return elem;
-}
-/* End from MochiKit 1.4.1 */
 
 /*
  * Create a spinner to show that the element is busy processing.

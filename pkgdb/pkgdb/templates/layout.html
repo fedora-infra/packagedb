@@ -11,6 +11,7 @@
       @import url("${tg.url("/static/css/style.css")}");
     </style>
     <script src="${tg.tg_js}/MochiKit.js"></script>
+    <script src="${tg.url('/static/javascript/mochikit1.4.js')}"></script>
     <script type='text/javascript' py:if="not tg.identity.anonymous">
       tgUserDisplayName = "${tg.identity.user.display_name}";
       tgUserUserName = "${tg.identity.user.user_name}";
@@ -30,7 +31,7 @@
             <li><a href="${tg.url('/packages/')}">View Packages</a></li>
             <li><a href="${tg.url('/collections/')}">View Collections</a></li>
             <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
-            <li><a href="${tg.url('/users/acllist/')}">My ACL Entries</a></li>
+            <li><a href="${tg.url('/users/packages/orphan')}">Orphan Packages</a></li>
             <li><a href="http://hosted.fedoraproject.org/projects/packagedb">Project Page</a></li>
           </ul>
         </div>

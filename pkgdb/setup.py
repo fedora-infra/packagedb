@@ -9,16 +9,16 @@ setup(
     version=version,
     
     # uncomment the following lines if you fill them out in release.py
-    #description=description,
-    #author=author,
-    #author_email=email,
-    #url=url,
-    #download_url=download_url,
-    #license=license,
+    description=description,
+    author=author,
+    author_email=email,
+    url=url,
+    download_url=download_url,
+    license=license,
     
     install_requires = [
         "TurboGears >= 1.0b2",
-        "SQLAlchemy >= 0.3.2",
+        "SQLAlchemy >= 0.3.10",
     ],
     scripts = ["start-pkgdb.py"],
     zip_safe=False,
@@ -42,7 +42,7 @@ setup(
         # 'python.templating.engines',
         
         # If this is a full application, uncomment the next line
-        # 'turbogears.app',
+        'turbogears.app',
     ],
     classifiers = [
         'Development Status :: 3 - Alpha',
@@ -52,7 +52,7 @@ setup(
         'Framework :: TurboGears',
         # if this is an application that you'll distribute through
         # the Cheeseshop, uncomment the next line
-        # 'Framework :: TurboGears :: Applications',
+        'Framework :: TurboGears :: Applications',
         
         # if this is a package that includes widgets that you'll distribute
         # through the Cheeseshop, uncomment the next line

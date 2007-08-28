@@ -12,8 +12,16 @@ TODO='Not yet implemented'
 
     <h2 py:content="packageListings[0].package.name">Package</h2>
     <ul class="actions">
-      <li><a class="koji" href="http://koji.fedoraproject.org/koji/search?terms=${packageListings[0].package.name}&amp;type=package&amp;match=glob">Koji</a></li>
-      <li><a class="bodhi" href="https://admin.fedoraproject.org/updates/${packageListings[0].package.name}">Bodhi</a></li>
+      <?python
+        import urllib
+        kojiurl = 'http://koji.fedoraproject.org/koji/search?' + (
+            urllib.urlencode({'terms': packageListings[0].package.name,
+            'type': 'package', 'match': 'glob'}))
+        bodhiurl = 'http://admin.fedoraproject.org/updates/' + (
+            urllib.quote_plus(packageListings[0].package.name))
+      ?>
+      <li><a class="koji" href="${kojiurl}">Koji</a></li>
+      <li><a class="bodhi" href="${bodhiurl}">Bodhi</a></li>
     </ul>
 
     <table>

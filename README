@@ -21,8 +21,7 @@ owners.list
 :Data: Package names, summary, owner, qacontact, watchers
 :Duration: One-time; Obsoletes
 :Priority: Essential
-:Status: Information is largely imported.  Need to perform a similar step for
-  owners.epel.list.  A few people in initialcc do not have Fedora accounts.
+:Status: Done
 
 owners.list contains the bulk of new information that we are interested in.
 This file should contain information on all packages whether they are current
@@ -43,6 +42,7 @@ CVS Repository
 :Data: Collections that the package is present in, package metadata present in the spec file (URL, upstream source, etc.)
 :Duration: One-time; SyncReversal
 :Priority: Essential
+:Status: Done
 
 The VCS repository (currently CVS) is the source of most information pertaining
 to the package itself.  Most of this information is better taken from the
