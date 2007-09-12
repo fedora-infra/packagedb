@@ -111,6 +111,7 @@ class Packages(controllers.Controller):
                 for acl in person.acls:
                     if acl.status.translations[0].statusname != 'Obsolete':
                         person.aclOrder[acl.acl] = acl
+                        person.aclOrder[acl.acl].jsonProps = {'PersonPackageListingAcl': ('status',), 'PackageAclStatus': ('translations',)}
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
@@ -122,7 +123,17 @@ class Packages(controllers.Controller):
                     group.aclOrder[acl] = None
                 for acl in group.acls:
                     group.aclOrder[acl.acl] = acl
+                    group.aclOrder[acl.acl].jsonProps = {'GroupPackageListingAcl': ('status',), 'PackageAclStatus': ('translations',)}
 
+        pkgListings.jsonProps = {'PackageListing': ('package', 'collection',
+                    'people', 'groups', 'status', 'qacontactname'),
+                'PackageListingStatus': ('translations',),
+                'PersonPackageListing': ('aclOrder', 'name', 'user'),
+                'GroupPackageListing': ('aclOrder', 'name'),
+                'Package': ('status',), 'PackageStatus': ('translations',),
+                'Collection': ('status',),
+                'CollectionStatus': ('translations',),
+                }
         return dict(title='%s -- %s' % (self.appTitle, package.name),
                 packageListings=pkgListings, aclNames=aclNames,
                 aclStatus=aclStatusTranslations)
