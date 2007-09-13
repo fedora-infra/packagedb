@@ -126,7 +126,7 @@ class Packages(controllers.Controller):
                     group.aclOrder[acl.acl].jsonProps = {'GroupPackageListingAcl': ('status',), 'PackageAclStatus': ('translations',)}
 
         pkgListings.jsonProps = {'PackageListing': ('package', 'collection',
-                    'people', 'groups', 'status', 'qacontactname'),
+                    'people', 'groups', 'status', 'qacontactname', 'owneruser'),
                 'PackageListingStatus': ('translations',),
                 'PersonPackageListing': ('aclOrder', 'name', 'user'),
                 'GroupPackageListing': ('aclOrder', 'name'),
