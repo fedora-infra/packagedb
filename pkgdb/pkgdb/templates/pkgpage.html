@@ -87,25 +87,27 @@ TODO='Not yet implemented'
           <td><a href="${tg.url('/collections/id/' + str(pkg.collection.id))}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
             </td><td>
-            <div py:if="pkg.ownerid == 9900"
-              py:attrs="{'name': str(pkg.id)}"
-              class="requestContainer owner orphaned">
-              <span class="ownerName">${pkg.ownername}</span>
-              <span py:if="'cvsextras' in tg.identity.groups and pkg.collection.status.translations[0].statusname!='EOL'">
-                <input type="button" name="unorphan"
-                class="ownerButton unorphanButton"
-                value="Take Ownership"/>
-              </span>
-            </div>
-            <div py:if="pkg.ownerid != 9900"
-              py:attrs="{'name': str(pkg.id)}"
-              class="requestContainer owner owned">
-              <span class="ownerName"><a href="${tg.url('/users/info/' + pkg.owneruser)}">${pkg.ownername}</a></span>
-              <span py:if="not tg.identity.anonymous and (tg.identity.user.user_id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
-                <input type="button" name="orphan"
-                class="ownerButton orphanButton"
-                value="Release Ownership"/>
-              </span>
+            <div py:choose="pkg.ownerid" py:strip="">
+              <div py:when="9900"
+                py:attrs="{'name': str(pkg.id)}"
+                class="requestContainer owner orphaned">
+                <span class="ownerName">${pkg.ownername}</span>
+                <span py:if="'cvsextras' in tg.identity.groups and pkg.collection.status.translations[0].statusname!='EOL'">
+                  <input type="button" name="unorphan"
+                    class="ownerButton unorphanButton"
+                    value="Take Ownership"/>
+                </span>
+              </div>
+              <div py:otherwise=""
+                py:attrs="{'name': str(pkg.id)}"
+                class="requestContainer owner owned">
+                <span class="ownerName"><a href="${tg.url('/users/info/' + pkg.owneruser)}">${pkg.ownername}</a></span>
+                <span py:if="not tg.identity.anonymous and (tg.identity.user.user_id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
+                  <input type="button" name="orphan"
+                    class="ownerButton orphanButton"
+                    value="Release Ownership"/>
+                </span>
+              </div>
             </div>
             </td><td py:content="pkg.qacontactname">
             </td><td py:content="pkg.status.translations[0].statusname">
@@ -133,31 +135,25 @@ TODO='Not yet implemented'
                     py:if="not person.aclOrder[acl]"/>
                   </div>
                   <!-- If the user can set acls, give drop downs for status -->
-                  <div py:if="aclChanger"
-                    py:attrs="{'name': str(pkg.id) + ':' + acl}"
-                    class='aclStatus requestContainer'>
-                    <select class="aclStatusList" py:attrs="{'name' : acl}">
-                      <span py:for="status in aclStatus">
-                        <option selected="true"
-                        py:if="person.aclOrder.get(acl) and person.aclOrder[acl].status.translations[0].statusname==status"
-                        py:content="status"
-                        py:attrs="{'value': status,
-                        'name': status}"></option>
-                        <option py:if="not (person.aclOrder.get(acl) and person.aclOrder[acl].status.translations[0].statusname==status)"
-                        py:content="status"
-                        py:attrs="{'value': status,
-                        'name': status}"></option>
-                      </span>
-                    </select>
+                  <div py:choose="" py:strip="">
+                    <div py:when="aclChanger"
+                      py:attrs="{'name': str(pkg.id) + ':' + acl}"
+                      class='aclStatus requestContainer'>
+                      <select class="aclStatusList" py:attrs="{'name' : acl}">
+                        <option py:for="status in aclStatus" py:content="status"
+                          py:attrs="{'value': status, 'name': status,
+                          'selected': tg.selector(person.aclOrder.get(acl) and person.aclOrder[acl].status.translations[0].statusname==status)}"
+                        />
+                      </select>
+                    </div>
+                    <span py:otherwise="" py:choose="" class="aclStatus"
+                      py:attrs="{'name' : str(pkg.id) + ':' + acl}">
+                      <span py:when="person.aclOrder.get(acl)"
+                      py:replace="person.aclOrder[acl].status.translations[0].statusname" />
+                    </span>
                   </div>
-                  <span py:if="not aclChanger and person.aclOrder.get(acl)"
-                    py:content="person.aclOrder[acl].status.translations[0].statusname" 
-                    py:attrs="{'name' : str(pkg.id) + ':' + acl}" class="aclStatus"></span>
-                  <span py:if="not aclChanger and not person.aclOrder.get(acl)"
-                    py:attrs="{'name' : str(pkg.id) + ':' + acl}" class="aclStatus"></span>
                 </td>
               </tr>
-
               <tr py:for="group in pkg.groups" class="aclgrouprow">
                 <td py:content="group.name" class="aclgroup"
                   py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
@@ -172,24 +168,17 @@ TODO='Not yet implemented'
                     ':commit'}"
                     class="requestContainer groupAclStatus">
                     group members can commit?
-                    <input type="checkbox" checked="true" class="groupAclStatusBox"
-                    py:if="group.aclOrder.get('commit') and
-                    group.aclOrder['commit'].status.translations[0].statusname=='Approved'"/>
                     <input type="checkbox" class="groupAclStatusBox"
-                    py:if="not group.aclOrder.get('commit') or
-                    group.aclOrder['commit'].status.translations[0].statusname!='Approved'"/>
+                      py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved')}"/>
                   </div>
                   <div py:if="not aclChanger"
                     py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
                     + ':commit'}"
                     class="groupAclStatus requestContainer">
                     group members can commit?
-                    <input type="checkbox" checked="true" disabled="true"
-                    class="groupAclStatusLabelBox"
-                    py:if="group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved'"/>
-                    <input type="checkbox" disabled="true" class="groupAclStatusLabelBox"
-                    py:if="not group.aclOrder.get('commit') or 
-                    group.aclOrder['commit'].status.translations[0].statusname!='Approved'"/>
+                    <input type="checkbox" class="groupAclStatusLabelBox"
+                      disabled="true"
+                      py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved')}"/>
                   </div>
                 </td>
               </tr>

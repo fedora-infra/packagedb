@@ -35,9 +35,27 @@ from turbojson.jsonify import jsonify
 
 @jsonify.when("isinstance(obj, sqlalchemy.ext.selectresults.SelectResults)")
 def jsonify_sa_select_results(obj):
+    '''Transform selectresults into lists.
+    
+    The one special thing is that we bind the special jsonProps into each
+    descendent.  This allows us to specify a jsonProps on the toplevel
+    query result and it will pass to all of its children.
+    '''
+    if 'jsonProps' in obj.__dict__:
+        for element in obj:
+            element.jsonProps = obj.jsonProps
     return list(obj)
 
 @jsonify.when("isinstance(obj, sqlalchemy.orm.attributes.InstrumentedList)")
 def jsonify_salist(obj):
+    '''Transform SQLAlchemy InstrumentedLists into json.
+    
+    The one special thing is that we bind the special jsonProps into each
+    descendent.  This allows us to specify a jsonProps on the toplevel
+    query result and it will pass to all of its children.
+    '''
+    if 'jsonProps' in obj.__dict__:
+        for element in obj:
+           element.jsonProps = obj.jsonProps
     return map(jsonify, obj)
 
