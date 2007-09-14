@@ -47,20 +47,26 @@ class Packages(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
         self.dispatcher = PackageDispatcher(self.fas)
+        self.removedStatus = model.StatusTranslation.get_by(
+                statusname='Removed', language='C').statuscodeid
 
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
     def index(self):
-        # Retrieve the complete list of packages
-        packages = SelectResults(session.query(model.Package))
+        # Retrieve the list of packages minus removed packages
+        packages = SelectResults(session.query(model.Package)).select_by(
+                model.Package.c.statuscode!=self.removedStatus)
+
         return dict(title=self.appTitle + ' -- Package Overview',
                 packages=packages)
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName):
         # Return the information about a package.
-        package = model.Package.get_by(name=packageName)
+        package = model.Package.get_by(
+                model.Package.c.statuscode!=self.removedStatus,
+                name=packageName)
         if not package:
             if 'tg_format' in request.params and request.params['tg_format'] == 'json':
                 return dict(message='No package named %s' % packageName)
