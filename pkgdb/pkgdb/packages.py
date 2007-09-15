@@ -71,8 +71,13 @@ class Packages(controllers.Controller):
             if 'tg_format' in request.params and request.params['tg_format'] == 'json':
                 return dict(message='No package named %s' % packageName)
             else:
-                raise redirect(config.get('base_url_filter.base_url') +
-                    '/packages/not_packagename', redirect_params={'packageName' : packageName})
+                return dict(tg_template='pkgdb.templates.errors',
+                        title=self.appTitle + ' -- Invalid Package Name',
+                        message= 'The packagename you were linked to (%s)' \
+                        ' does not appear in the Package Database.' \
+                        ' If you received this error from a link on the' \
+                        ' fedoraproject.org website, please report it.' %
+                        packageName)
 
         # Possible ACLs
         aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
@@ -89,7 +94,6 @@ class Packages(controllers.Controller):
         pkgListings = SelectResults(session.query(model.PackageListing)).select(
                 model.PackageListingTable.c.packageid==package.id
                 )
-
         for pkg in pkgListings:
             # Get real ownership information from the fas
             (user, group) = self.fas.get_user_info(pkg.owner)
@@ -149,34 +153,21 @@ class Packages(controllers.Controller):
         try:
             packageId = int(packageId)
         except ValueError:
-            raise redirect(config.get('base_url_filter.base_url') + '/packages/not_id')
+            return dict(tg_template='pkgdb.templates.errors',
+                    title=self.appTitle + ' -- Invalid Package Id',
+                    message='The packageId you were linked to is not a valid' \
+                    ' id.  If you received this error from a link on the' \
+                    ' fedoraproject.org website, please report it.'
+                    )
+
         pkg = model.Package.get_by(id=packageId)
         if not pkg:
-            raise redirect(config.get('base_url_filter.base_url') +
-                    '/packages/unknown', redirect_params={'packageId': packageId})
+            return dict(tg_template='pkgdb.templates.errors',
+                    title=self.appTitle + ' -- Unknown Package',
+                    message='The packageId you were linked to, %s, does not' \
+                    ' exist. If you received this error from a link on the' \
+                    ' fedoraproject.org website, please report it.' % packageId
+                    )
 
         raise redirect(config.get('base_url_filter.base_url') +
                 '/packages/name/' + pkg.name)
-
-    @expose(template='pkgdb.templates.errors')
-    def unknown(self, packageId):
-        msg = 'The packageId you were linked to, %s, does not exist.' \
-                ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.' % packageId
-        return dict(title=self.appTitle + ' -- Unknown Package', message=msg)
-
-    @expose(template='pkgdb.templates.errors')
-    def not_packagename(self, packageName):
-        msg = 'The packagename you were linked to (%s) does not appear' \
-                ' in the Package Database.' \
-                ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.' % packageName
-        return dict(title=self.appTitle + ' -- Invalid Package Name',
-                message=msg)
-
-    @expose(template='pkgdb.templates.errors')
-    def not_id(self):
-        msg = 'The packageId you were linked to is not a valid id.' \
-                ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.'
-        return dict(title=self.appTitle + ' -- Invalid Package Id', message=msg)
