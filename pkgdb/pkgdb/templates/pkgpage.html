@@ -53,26 +53,32 @@ TODO='Not yet implemented'
         py:attrs="{'name': str(pkg.id)}">
         <?python
         # Determine whether the present user is already involved with this
-        # packagelisting and if they're allowed to change acls
-        aclChanger = False
-        interested = False
+        # packagelisting and if they are allowed to change acls
+        interested = False # Does the person already have an acl line?
+        aclChanger = False # Is the person allowed to make changes?
         if tg.identity.anonymous:
-          pass
+            # Anonymous users can only look
+            pass
         else:
-          for person in pkg.people:
-            if person.userid == tg.identity.user.user_id:
-              interested = True
-            if (person.aclOrder.get('approveacls') and
-              person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
-              aclChanger = True
-              break
-          if not aclChanger and tg.identity.user.user_id == pkg.ownerid:
-            aclChanger = True
-          if not aclChanger:
-            for group in tg.identity.user.groups:
-              if group.group_name == 'cvsadmin':
+            if tg.identity.user.user_id == pkg.ownerid:
+                # Package owners can make changes and add themselves to acls
                 aclChanger = True
-                break
+            else:
+                for person in pkg.people:
+                    if person.userid == tg.identity.user.user_id:
+                        # Person has an acl on the package
+                        interested = True
+                        if (person.aclOrder.get('approveacls') and
+                                person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
+                            # Person has approveacls acl.
+                            aclChanger = True
+                        break
+            if not aclChanger:
+                for group in tg.identity.user.groups:
+                    if group.group_name == 'cvsadmin':
+                        # Person is an admin and thus can make changes
+                        aclChanger = True
+                        break
         ?>
         <tr><th>
             Collection
