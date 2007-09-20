@@ -172,7 +172,7 @@ class PackageDispatcher(controllers.Controller):
         :pkgList: PackageListing on which to set the ACL.
         :personId: PersonId to set the ACL for.
         :newAcl: ACL name to set.
-        :status: Status DB Objcet we're setting the ACL to.
+        :status: Status DB Object we're setting the ACL to.
         '''
         # Create the ACL
         changePerson = None
