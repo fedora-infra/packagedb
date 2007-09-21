@@ -68,16 +68,17 @@ class Packages(controllers.Controller):
                 model.Package.c.statuscode!=self.removedStatus,
                 name=packageName)
         if not package:
-            if 'tg_format' in request.params and request.params['tg_format'] == 'json':
-                return dict(message='No package named %s' % packageName)
-            else:
-                return dict(tg_template='pkgdb.templates.errors', status=False,
+            error = dict(status=False,
                         title=self.appTitle + ' -- Invalid Package Name',
                         message= 'The packagename you were linked to (%s)' \
                         ' does not appear in the Package Database.' \
                         ' If you received this error from a link on the' \
                         ' fedoraproject.org website, please report it.' %
                         packageName)
+            if not ('tg_format' in request.params and
+                    request.params['tg_format'] == 'json'):
+                error['tg_template'] = 'pkgdb.templates.errors'
+            return error
 
         collection = None
         if collectionName:
@@ -85,12 +86,15 @@ class Packages(controllers.Controller):
                     ).select_by(name=collectionName)
             if collectionVersion:
                 collection = collection.select_by(version=collectionVersion)
-            if not collection.count():
-                return dict(tg_template='pkgdb.templates.errors', status=False,
-                        title=self.appTitle + ' -- Not in Collection',
-                        message='The package %s is not in Collection %s %s.' %
-                        (packageName, collectionName, collectionVersion or '')
-                        )
+            if not len(collection.list()):
+                error = dict(status=False,
+                        title=self.appTitle + ' -- Not a Collection',
+                        message='%s %s is not a Collection.' %
+                        (collectionName, collectionVersion or ''))
+                if not ('tg_format' in request.params and
+                        request.params['tg_format'] == 'json'):
+                    error['tg_template'] = 'pkgdb.templates.errors'
+                return error
 
         # Possible ACLs
         aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
@@ -112,6 +116,16 @@ class Packages(controllers.Controller):
             pkgListings = pkgListings.select_by(
                     model.PackageListingTable.c.collectionid.in_(
                     *[c.id for c in collection]))
+            if not pkgListings.count():
+                error = dict(status=False,
+                        title=self.appTitle + ' -- Not in Collection',
+                        message='The package %s is not in Collection %s %s.' %
+                        (packageName, collectionName, collectionVersion or '')
+                        )
+                if not ('tg_format' in request.params and
+                        request.params['tg_format'] == 'json'):
+                    error['tg_template'] = 'pkgdb.templates.errors'
+                return error
 
         for pkg in pkgListings:
             # Get real ownership information from the fas
