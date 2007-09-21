@@ -1,225 +1,60 @@
-==========
-Next Steps
-==========
+================
+Fedora PackageDB
+================
 
 :Author: Toshio Kuratomi
-:Contact: toshio-tiki-lounge-com
-:Date: Sunday, 21 January, 2007
+:Contact: toshio@fedoraproject.org
+:Date: Friday, 21 September, 2007
+:Version: 0.3.1
+
+The `PackageDB` keeps track of package ownership within Fedora.
 
 .. contents::
 
-Import Data
-===========
+-------
+Project
+-------
 
-Currently, information about the packages comes from several sources.  We
-need to import data from those sources into the packageDB.
+The `PackageDB` was started in January of 2007 to remove some of the hurdles
+that made it more time consuming to maintain packages in Fedora after CVS
+acls were introduced.  The intial goal was to take information about who owned,
+comaintained, and was allowed to commit changes to a package and put it in a
+database where owners could edit it.
 
-owners.list
------------
+The system began to be used by cvsadmins in July of 2007, and was opened for
+general use in September.  At present it allows general users to manage the
+ownership of packages and allows admins to add new packages or change things
+when the owner is unresponsive.  A webUI is open for everyone and a simplistic
+commandline client works for admin requests.
 
-:Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/pkgs cvs co owners; cat owners/owners.list
-:Data: Package names, summary, owner, qacontact, watchers
-:Duration: One-time; Obsoletes
-:Priority: Essential
-:Status: Done
+.. _`PackageDB`: https://hosted.fedoraproject.org/projects/packagedb
 
-owners.list contains the bulk of new information that we are interested in.
-This file should contain information on all packages whether they are current
-in the repository or not.
+Future goals
+============
 
-This importer is almost complete.  A bit more work needs to be done to combine
-the information here with information from the CVS Repository.  With a
-combination of these we should have all the basic information necessary for
-the first stage of the package DB.
+We're trying to manage our Roadmap_ of new features in trac.  So far it's
+working out well.  If you have a new feature request, please open a
+`trac ticket`_ and we'll add it to the schedule to be worked on.
 
-We are not currently retrieving any information for RHL releases and do not
-plan to.
+.. _`Roadmap`: https://hosted.fedoraproject.org/projects/packagedb/roadmap
+.. _`trac ticket`: https://hosted.fedoraproject.org/projects/packagedb/report/3
 
-CVS Repository
---------------
-
-:Location: CVSROOT:pserver:anonymous@cvs.fedora.redhat.com:/cvs/pkgs
-:Data: Collections that the package is present in, package metadata present in the spec file (URL, upstream source, etc.)
-:Duration: One-time; SyncReversal
-:Priority: Essential
-:Status: Done
-
-The VCS repository (currently CVS) is the source of most information pertaining
-to the package itself.  Most of this information is better taken from the
-built packages, though, as the metadata has already been parsed and pulled into
-the repomd files by that time.
-
-Unique to the CVS repository is knowledge of what packages are present in which
-collections -- FC-{1,2,3,4,5,devel} and FE-{1,2,3,4,5,devel}. RH-{9}, and soon
-EL-{4,5}.  Regardless of whether they were obsoleted or otherwise, disappeared
-in the course of the release.
-
-The cvs repository is also gaining ACL knowledge shortly.  We could pull this
-information either from the files within the cvs tree or from the CVSROOT/avail
-file.
-
-In the future, the packageDB will manage the branches in the VCS Repository.
-
-Package Reviews (mailing list)
-------------------------------
-
-:Location: APPROVED_trim.txt REQUESTS_trim.txt
-:Data: URL, dates, and authors of package reviews
-:Duration: One-time
-:Priority: High
-
-In the early days, packages were approved via the fedora-extras mailing list.
-These approval messages have been abstracted to two files.  We need to enter
-this information into the packagedb so people know which packages need to be
-reviewed before being built for the combined Core + Extras.
-
-The URL goes into the package table.  The date and author go into the
-PackageLog.
-
-Package Reviews (bugzilla)
---------------------------
-
-:Location: bugzilla
-:Data: URL, dates, and authors of package reviews
-:Duration: Ongoing
-:Priority: High
-
-Currently, packages are reviewed in bugzilla.  We need to pull information
-about packages which were formerly reviewed into the packagedb.  Then we need
-to set up a system that continues to sync against it.  Perhaps we could have
-a packagedb front end that opens up a bugzilla report for a new package in
-order to start the process.  The packagedb can periodically scan FE-REVIEW and
-FE-APPROVE tracker bugs to tell when a package changes state.
-
-The URL goes into the package table.  The date and author go into the
-PackageLog.
-
-comps-fcX.xml.in
-----------------
-
-:Location: CVSROOT=:pserver:anonymous@cvs.fedora.redhat.com:/cvs/extras cvs co comps; cat comps/comps-fe6.xml.in
-:Data: Groups that the package belongs to.
-:Duration: One-time; SyncReversal
-:Priority: Add-on
-
-There is one comps.xml.in file per release.  It is used to create the comps.xml
-file that lists what groups packages in the repository are for.
-
-In the future, comps-fcX.xml.in could be generated from the packageDB.
-
-Download Repository
--------------------
-
-:Location: http://download.fedora.redhat.com/pub/fedora/linux/extras/$release/repodata/repomd.xml
-:Data: RPM Metadata extracted into an xml file.  License, URL, upstream, present package EVR.
-:Duration: Ongoing
-:Priority: Add-on
-
-Parsing the Download repository information gives us EVR information which is
-needed for the package_version table.  There is a wealth of other information
-in the files that we could use as well (file listings, summary, etc.) however,
-this is a large extension from the initial stage of the packagedb.
-
-We probably need to cache the repomd files in order to extract information
-sensibly as we're going to be pulling the data from the files on an ongoing
-basis.  Having the cached files allows us to find the differences between the
-old and new information.
-
-Build Server
+------------
+Installation
 ------------
 
-:Location: http://buildsys.fedoraproject.org/logs/fedora-development-extras/19621-gnubiff-2.2.2-3.fc6/x86_64/build.log
-:Data: Logs of failed and completed builds
-:Duration: Ongoing
-:Priority: Add-on
+Although it's not working yet, the goal is to be able to run::
 
-What do we want to do with these?  They are a large source of raw information
-but there's not much in terms of metadata type data.  If we have the db
-horsepower, we could put them into a Full Text Searchable field and put them
-in the db so we can search on them.
+  python setup.py build
+  python setup.py install --root ${path to installation}
 
-Write Web Front End
-===================
+and have a working installation.
 
-The Web front end is the primary interface to the package db.
+--------
+Starting
+--------
 
-Status
-------
-
-* A Turbo Gears skeleton has been constructed.
-* A database schema has been created that works with the
-  postgreSQL-SQLAlchemy-TurboGears combination.
-* Configured apache to pass requests on to the TurboGears instance
-* Wrote a CGI to autostart the TurboGears CGI when a request is made
-* Wrote a TurboGears identity layer to validate users against the Fedora
-  Account System.
-
-TODO
-----
-
-Version 0.1
-~~~~~~~~~~~
-
-* See the two "essentials" from Importing Data.
-  (owners.list is finished.
-  (ACLs are not ready yet.)
-  (EPEL is being put off.  It requires information from cvs and
-  owners.epel.list).
-* Finish filling in read-only pages that allow us to see what's in the database
-  for each package.
-
-Version 0.2
-~~~~~~~~~~~
-
-* Add the ability for authenticated users to change owners.list information:
-
- - Add packages.
- - Set themselves as owner for a package.
- - Set a package as orphaned.
- - Request to watch a package.
-
-Before F7
-~~~~~~~~~
-
-* Add the ability for owners to hand out permissions to other users.
-* Allow owners and trusted users to make changes to the packages listed here.
-* Send email notifications when things change.
-* Write a backend for the cvs repository to pull ACLs from the packageDB.
-* Integrate with the accounts system.
-
-As time permits
-~~~~~~~~~~~~~~~
-
-* Make ACLs a push technology instead of pull.  The first generation of code
-  will have a cron job that pulls ACLs from the packagedb to the CVS acls file.
-  The next generation should have the packageDB set the ACLs in CVS instead.
-
-* Add comps group information to the database schema so we can generate comps
-  from here.
-
-* Write admin functionality:
-
-  - Branch script to make new release branches in the VCS.  Owners can
-    immediately branch for certain releases.  For other releases, owner
-    requests and admin clicks one button to confirm the request.  Script
-    takes care of the actual branch.
-
-* RSS Feeds of package changes.
-
-* Second level notification: Tell package owners when a package they depend
-  on is updated.
-
-* Bugzilla syncing.  Bugzilla can be slow sometimes so it would be best to
-  keep this as an async process (cron job.)  Could implement queued changes,
-  though.
-
-Ideas
-~~~~~
-
-* Hidden branches (for security fixes) need to be integrated somehow.  We may
-  want to include them in this interface but they are a bit more problematic
-  due to the way they operate.
-* Maybe take more information from repomd and subsume some of repoview's
-  functionality?  This would take us into the realm of what Debian's web
-  interface to their package browser does but it may be too many things for
-  this project.
+This is a TurboGears (http://www.turbogears.org) project. It can be
+started by running the start-pkgdb.py script.  By default it uses the values
+in pkgdb/config/app.cfg and dev.cfg to configure itself.  You can specify a
+config file instead of dev.cfg on the command line.
