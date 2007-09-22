@@ -127,7 +127,7 @@ class PackageDispatcher(controllers.Controller):
         #print 'Would have sent: %s' % subject
         #print 'To: %s' % recipients.keys()
         #print 'From: %s %s' % (author.user['human_name'], author.user['email'])
-        #print '%s' % msg
+        #print '%s' % msg.encode('ascii', 'replace')
         #return
         send_msg(msg, subject, (author.user['human_name'], author.user['email']), recipients.keys())
 
