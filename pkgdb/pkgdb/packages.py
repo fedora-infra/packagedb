@@ -127,7 +127,13 @@ class Packages(controllers.Controller):
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
+        # Map of statuscode to statusnames used in this package
+        statusMap = {}
+
         for pkg in pkgListings:
+            statusMap[pkg.statuscode] = pkg.status.translations[0].statusname
+            statusMap[pkg.collection.statuscode] = \
+                    pkg.collection.status.translations[0].statusname
             # Get real ownership information from the fas
             (user, group) = self.fas.get_user_info(pkg.owner)
             ### FIXME: Handle the case where the owner is unknown
@@ -152,9 +158,10 @@ class Packages(controllers.Controller):
                 for acl in aclNames:
                     person.aclOrder[acl] = None
                 for acl in person.acls:
-                    if acl.status.translations[0].statusname != 'Obsolete':
+                    statusname = acl.status.translations[0].statusname
+                    statusMap[acl.statuscode] = statusname
+                    if statusname != 'Obsolete':
                         person.aclOrder[acl.acl] = acl
-                        person.aclOrder[acl.acl].jsonProps = {'PersonPackageListingAcl': ('status',), 'PackageAclStatus': ('translations',)}
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
@@ -165,21 +172,21 @@ class Packages(controllers.Controller):
                 for acl in aclNames:
                     group.aclOrder[acl] = None
                 for acl in group.acls:
+                    statusMap[acl.statuscode] = \
+                            acl.status.translations[0].statusname
                     group.aclOrder[acl.acl] = acl
-                    group.aclOrder[acl.acl].jsonProps = {'GroupPackageListingAcl': ('status',), 'PackageAclStatus': ('translations',)}
 
+        statusMap[pkgListings[0].package.statuscode] = \
+                pkgListings[0].package.status.translations[0].statusname
         pkgListings.jsonProps = {'PackageListing': ('package', 'collection',
-                    'people', 'groups', 'status', 'qacontactname', 'owneruser'),
-                'PackageListingStatus': ('translations',),
+                    'people', 'groups', 'qacontactname', 'owneruser'),
                 'PersonPackageListing': ('aclOrder', 'name', 'user'),
                 'GroupPackageListing': ('aclOrder', 'name'),
-                'Package': ('status',), 'PackageStatus': ('translations',),
-                'Collection': ('status',),
-                'CollectionStatus': ('translations',),
                 }
+
         return dict(title='%s -- %s' % (self.appTitle, package.name),
-                packageListings=pkgListings, aclNames=aclNames,
-                aclStatus=aclStatusTranslations)
+                packageListings=pkgListings, statusMap = statusMap,
+                aclNames=aclNames, aclStatus=aclStatusTranslations)
 
     @expose(template='pkgdb.templates.pkgpage')
     def id(self, packageId):
