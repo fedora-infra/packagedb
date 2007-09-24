@@ -303,8 +303,8 @@ class PackageDispatcher(controllers.Controller):
                             % (containerId))
 
         # Send a log to people interested in this package as well
-        self._send_log_msg(logMessage, '%s %s' % (pkg.package.name,
-            status.statusname), identity.current.user, (pkg,),
+        self._send_log_msg(logMessage, '%s ownership updated' %
+            pkg.package.name, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
 
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
