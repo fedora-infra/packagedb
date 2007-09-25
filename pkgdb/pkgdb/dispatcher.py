@@ -37,7 +37,7 @@ from pkgdb import model
 
 ORPHAN_ID=9900
 MAILSERVER = config.get('email.server', 'bastion.fedora.phx.redhat.com')
-MAILFROM = config.get('email.sender', 'pkgdb@fedoraproject.org')
+MAILFROM = config.get('email.sender', ('PackageDB', 'pkgdb@fedoraproject.org'))
 
 def send_msg(msg, subject, recipients, fromAddr=None):
     '''Send a message from the packagedb.'''
