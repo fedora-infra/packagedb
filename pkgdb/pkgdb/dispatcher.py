@@ -36,9 +36,19 @@ from fedora.accounts.fas import AuthError
 from pkgdb import model
 
 ORPHAN_ID=9900
+MAILSERVER = config.get('email.server', 'bastion.fedora.phx.redhat.com')
+MAILFROM = config.get('email.sender', 'pkgdb@fedoraproject.org')
 
-def send_msg(msg, subject, fromAddr, recipients):
+def send_msg(msg, subject, recipients, fromAddr=None):
     '''Send a message from the packagedb.'''
+    if not fromAddr:
+        fromAddr = MAILFROM
+    ### For DEBUGing:
+    #print 'Would have sent: %s' % subject
+    #print 'To: %s' % recipients
+    #print 'From: %s' % fromAddr
+    #print '%s' % msg.encode('ascii', 'replace')
+    #return
     for person in recipients:
         email = turbomail.Message(fromAddr, person, '[pkgdb] %s' % (subject,))
         email.plain = msg
@@ -123,13 +133,7 @@ class PackageDispatcher(controllers.Controller):
                       listings[0].package.name)
 
         # Send the log
-        ### For DEBUGing:
-        #print 'Would have sent: %s' % subject
-        #print 'To: %s' % recipients.keys()
-        #print 'From: %s %s' % (author.user['human_name'], author.user['email'])
-        #print '%s' % msg.encode('ascii', 'replace')
-        #return
-        send_msg(msg, subject, (author.user['human_name'], author.user['email']), recipients.keys())
+        send_msg(msg, subject, recipients.keys())
 
     def _user_can_set_acls(self, identity, pkg):
         '''Check that the current user can set acls.
@@ -303,8 +307,8 @@ class PackageDispatcher(controllers.Controller):
                             % (containerId))
 
         # Send a log to people interested in this package as well
-        self._send_log_msg(logMessage, '%s %s' % (pkg.package.name,
-            status.statusname), identity.current.user, (pkg,),
+        self._send_log_msg(logMessage, '%s ownership updated' %
+            pkg.package.name, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
 
         return dict(status=True, ownerId=pkg.owner, ownerName=ownerName,
