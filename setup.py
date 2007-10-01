@@ -1,11 +1,42 @@
+import os
+import distutils
+
+import setuptools
 from setuptools import setup, find_packages
 from turbogears.finddata import find_package_data
 
-import os
 execfile(os.path.join("pkgdb", "release.py"))
 
+class build_scripts(distutils.command.build_scripts):
+    '''Build the package, changing the directories in start-pkgdb.py.'''
+    # Set the correct directories in start-pkgdb.py
+    def run(self):
+        '''Substitute special variables with our install lcoations.
+        
+        @CONFDIR@ => /usr/local/etc
+        @DATADIR@ => /usr/local/share
+        '''
+
+        super(build_scripts, self).run()
+
+class install(setuptools.command.install):
+    '''Override setuptools and install the package in the correct place for
+    an application.'''
+
+    def run(self):
+        super(install, self).run()
+        pass
+        # Install to datadir/pkgdb
+        # Install conffile to confdir/pkgdb.cfg
+        pass
+
+class install_app(setuptools.command.install_lib):
+    def run(self):
+        super(install_private_lib, self).run()
+        pass
+
 setup(
-    name="pkgdb",
+    name="packagedb",
     version=version,
     
     # uncomment the following lines if you fill them out in release.py
@@ -16,11 +47,15 @@ setup(
     download_url=download_url,
     license=license,
     
+    cmdclass={'build_scripts': build_scripts,
+              'install': install,
+              'install_private_lib': install_private_lib},
     install_requires = [
         "TurboGears >= 1.0",
         "SQLAlchemy >= 0.3.10, < 0.4alpha",
     ],
     scripts = ["start-pkgdb.py"],
+    config_files=('pkgdb.cfg',),
     zip_safe=False,
     packages=find_packages(),
     package_data = find_package_data(where='pkgdb',
@@ -60,4 +95,3 @@ setup(
     ],
     test_suite = 'nose.collector',
     )
-    
