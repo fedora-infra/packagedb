@@ -1,4 +1,6 @@
 include pkgdb.sql
+include start-pkgdb.in
+exclude start-pkgdb
 include README COPYING ChangeLog
 include *.cfg
 include pkgdb/templates/*.html

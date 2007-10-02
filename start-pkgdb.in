@@ -8,8 +8,8 @@ cherrypy.lowercase_api = True
 import os.path
 import sys
 
-CONFDIR=@CONFDIR@
-PKGDBDIR=os.path.join(@DATADIR@, 'packagedb')
+CONFDIR='@CONFDIR@'
+PKGDBDIR=os.path.join('@DATADIR@', 'packagedb')
 
 # first look on the command line for a desired config file,
 # if it's not on the command line, then
