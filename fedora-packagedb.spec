@@ -48,7 +48,7 @@ rm -rf %{buildroot}
 %doc README COPYING AUTHORS ChangeLog
 %{_datadir}/fedora-packagedb/
 %{_sbindir}/start-pkgdb
-%{_sysconfdir}/pkgdb.cfg
+%config %{_sysconfdir}/pkgdb.cfg
 
 %changelog
 * Tue Sep 25 2007 Toshio Kuratomi <a.badger@gmail.com> - 0.3.1-1
