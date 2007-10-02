@@ -1,2 +1,0 @@
-TurboGears >= 1.0b2
-SQLAlchemy >= 0.3.2
