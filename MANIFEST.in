@@ -10,3 +10,4 @@ include pkgdb/static/javascript/*
 include pkgdb/static/css/*
 include pkgdb/static/images/*
 include pkgdb/static/images/spinner/*
+include fedora-packagedb.spec

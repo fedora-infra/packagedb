@@ -189,7 +189,7 @@ class InstallApp(_install_lib, object):
         self.copy_file('pkgdb.cfg', confdir)
 
 setup(
-    name="packagedb",
+    name="fedora-packagedb",
     version=version,
     
     description=description,

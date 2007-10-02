@@ -46,7 +46,7 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %doc README COPYING AUTHORS ChangeLog
-%{_datadir}/packagedb/
+%{_datadir}/fedora-packagedb/
 %{_sbindir}/start-pkgdb
 %{_sysconfdir}/pkgdb.conf
 
