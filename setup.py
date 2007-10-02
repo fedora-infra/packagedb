@@ -204,7 +204,9 @@ setup(
               'install': Install,
               'install_lib': InstallApp},
     install_requires = [
-        "TurboGears >= 1.0",
+        "TurboGears[future] >= 1.0",
+        "TurboMail",
+        "python_fedora",
         "SQLAlchemy >= 0.3.10, < 0.4alpha",
     ],
     scripts = ["start-pkgdb"],
