@@ -1,3 +1,12 @@
+2007-10-02  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r189
+* fedora-packagedb.spec: Really bump the version to 0.3.1.1
+* start-pkgdb.in: New directory name is fedora-packagedb.
+  - Set sys.path earlier as setting the configfile needs to knwo about it
+    as well.
+
+2007-10-02  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r188
+* ChangeLog: Update ChangeLog for final.
+
 2007-10-02  Toshio Kuratomi <badger@Clingman> - r187
 * pkgdb/release.py: Bump version.
 
