@@ -1,60 +1,38 @@
-2007-10-01  Toshio Kuratomi <badger@Clingman> - r191
-* MANIFEST.in: Include the spec file.
-* fedora-packagedb.spec, setup.py: Change the package name to
-  fedora-packagedb to avoid potential namespace issues.
+2007-10-02  Toshio Kuratomi <badger@Clingman> - r187
+* pkgdb/release.py: Bump version.
 
-2007-10-01  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r190
-* fedora-packagedb.spec: Initial spec file for the packagedb.
+2007-10-02  Toshio Kuratomi <badger@Clingman> - r186
+* fedora-packagedb.spec, setup.py: Add requires.
 
-2007-10-01  Toshio Kuratomi <badger@Clingman> - r189
-* dev.cfg: Renamed to pkgdb.cfg.
-* start-pkgdb.py: Renamed to start-pkgdb.in so we will substitute the
-  directory names in here.
-  - Quote the directories we're substituting at build time.
-* MANIFEST.in: Include the start-pkgdb.in script and exclude the created
-  script, start-pkgdb.
-* setup.py: Override build_scripts and install_lib so that we can install
-  to a more UNIXy location.
-  - Override install and build to pass command line options for our
-    directories into build_scripts and install_lib.
+2007-10-02  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r185
+* Merge a massive reorganization of files.
 
-2007-10-01  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r188
-* setup.py: Start adding hooks for our custom install.
-* start-pkgdb.py: Customize so this script can be placed in /usr/sbin/
-  and the main part of the app in /usr/share.
+2007-09-25  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r184
+* pkgdb/pkgdb/dispatcher.py: Set default sender to contain a "Full Name" so
+  we don't confuse the cvsextras commits list script.
 
-2007-09-25  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r187
-* MANIFEST.in: List files that should be in the distribution tarball.
+2007-09-24  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r183
+* pkgdb/pkgdb/config/app.cfg: Move turbomail configuration to
+  dev.cfg/app.cfg.  This allows us to turn it on for the production server
+  and off for the test server.
+* pkgdb/pkgdb/dispatcher.py: Move debugging statements out to send_msg()
+  because the decision as to who to send from is now there.
+  - Now set sender to the setting email.sender from the config file instead
+    of the person making the change: PackageDB Bug #60.
 
-2007-09-25  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r186
-* Trim unnecessary images.  Change favicon to the Fedora favicon.
-
-2007-09-23  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r185
-* Remove pkgdb.egg-info because it just contains files generated from setup.py
-  by setuptools.
-
-2007-09-23  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r184
-* setup.py: Update requirements.
-
-2007-09-21  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r183
-* clients/genacls.pkgdb, clients/owner-sync-pkgdb, clients/pkgdb-client,
-  clients/pkgdb2branch.py: These are kept on the cvs server in
-  /pkgs/cvs/CVSROOT/admin.
-* clients/pkgdb-import.py: No longer needed now that we've imported owners.list
-  into the pkgdb.  A copy is on the cvs server in case we need it.
-* clients/pkgdb-login.py: Obsolete.  Functionality has been generalized and
-  added to fedora-python.  New clients should import fedora.tg.client.
-
-2007-09-21  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r182
-* README: Update README.  Move most of the information into trac tickets
-  so we can trac them as features.
+2007-09-24  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r182
+* pkgdb/pkgdb/dispatcher.py: Updated wording of ownership change emails to
+  sound less like spam.
 
 2007-09-21  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r181
-* Move the contents of the pkgdb directory into the toplevel.
+* pkgdb/pkgdb/dispatcher.py: Fix printing of email messages during debugging.
 
 2007-09-21  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r180
-* Clean up the toplevel directory by moving the client code to a clients subdir
-  and the selinux policies to an selinux subdir.
+* pkgdb/pkgdb/packages.py: Packages::name(): Optimize the information sent
+  via json.  Instead of sending all of the status and status translations
+  over and over, send a map of statuscodes to their C statusname.  This
+  reduces the size of kernel/Fedora/7?tg_format=json which has a lot of
+  comaintainers by about half.
 
 2007-09-20  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r179
 * pkgdb/pkgdb/packages.py: Packages::name(): Make error messages work for JSON
@@ -1064,7 +1042,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
 * pkgdb/pkgdb/templates/pkgpage.kid: First hack at displaying the acl
   information.
 
-2007-01-26  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r39
+2007-01-27  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r39
 * pkgdb/pkgdb/config/app.cfg: Add basurl_filter to inform cherrypy of the
   /pkgdb/ path prefix.
 * pkgdb/pkgdb/controllers.py: Get paginate working.  This requires paginate
@@ -1081,7 +1059,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
   template.  We can now page through the list of packages instead of seeing it
   all on one page.
 
-2007-01-23  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r38
+2007-01-24  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r38
 * pkgdb/pkgdb/controllers.py:
   - Collection::id(): Use both human name and username to fill the ownername
     field as the human name is not guaranteed to be unique.
@@ -1126,7 +1104,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
 * pkgdb/pkgdb/controllers.py: Import a logger.
   - Use the fedora.accounts.fas module instead of website.
 
-2007-01-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r33
+2007-01-20  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r33
 * pkgdb.conf:
   - Prevent the RewriteRules from applying if we're loading the autostart
     script.  This stops us from attempting to spawn multiple instances of the
@@ -1147,7 +1125,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
 2007-01-19  Toshio Kuratomi <toshio@tiki-lounge.com> - r32
 * Merge changes from our working branch.
 
-2007-01-10  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r31
+2007-01-11  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r31
 * tg-autostart.cgi: kill prior occurrences of the TurboGears app server before
   starting the new instance.
 
@@ -1271,7 +1249,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
 2006-12-04  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r20
 * pkgdb/pkgdb/model.py: Add a URL field for the review ticket.
 
-2006-12-03  Toshio Kuratomi <toshio@tiki-lounge.com> - r19
+2006-12-04  Toshio Kuratomi <toshio@tiki-lounge.com> - r19
 * pkgdb.sql: Fix bugs and typos in the schema.
 
 2006-12-03  Toshio Kuratomi <toshio@tiki-lounge.com> - r18

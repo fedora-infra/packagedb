@@ -13,6 +13,12 @@ Source0:        http://toshio.fedorapeople.org/fedora/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
+Requires: python-TurboMail
+Requires: python-sqlalchemy
+Requires: python-psycopg2
+Requires: python-genshi
+Requires: python-fedora-infrastructure
+
 BuildRequires:  python-devel
 BuildRequires: TurboGears
 %if 0%{?fedora} >= 8
@@ -53,4 +59,7 @@ rm -rf %{buildroot}
 
 %changelog
 * Tue Oct 2 2007 Toshio Kuratomi <a.badger@gmail.com> - 0.3.1.1-1
+- Add Requires.
+
+* Tue Sep 25 2007 Toshio Kuratomi <a.badger@gmail.com> - 0.3.1-1
 - Initial Build.
