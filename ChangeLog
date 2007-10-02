@@ -1,0 +1,1483 @@
+2007-10-01  Toshio Kuratomi <badger@Clingman> - r191
+* MANIFEST.in: Include the spec file.
+* fedora-packagedb.spec, setup.py: Change the package name to
+  fedora-packagedb to avoid potential namespace issues.
+
+2007-10-01  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r190
+* fedora-packagedb.spec: Initial spec file for the packagedb.
+
+2007-10-01  Toshio Kuratomi <badger@Clingman> - r189
+* dev.cfg: Renamed to pkgdb.cfg.
+* start-pkgdb.py: Renamed to start-pkgdb.in so we will substitute the
+  directory names in here.
+  - Quote the directories we're substituting at build time.
+* MANIFEST.in: Include the start-pkgdb.in script and exclude the created
+  script, start-pkgdb.
+* setup.py: Override build_scripts and install_lib so that we can install
+  to a more UNIXy location.
+  - Override install and build to pass command line options for our
+    directories into build_scripts and install_lib.
+
+2007-10-01  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r188
+* setup.py: Start adding hooks for our custom install.
+* start-pkgdb.py: Customize so this script can be placed in /usr/sbin/
+  and the main part of the app in /usr/share.
+
+2007-09-25  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r187
+* MANIFEST.in: List files that should be in the distribution tarball.
+
+2007-09-25  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r186
+* Trim unnecessary images.  Change favicon to the Fedora favicon.
+
+2007-09-23  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r185
+* Remove pkgdb.egg-info because it just contains files generated from setup.py
+  by setuptools.
+
+2007-09-23  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r184
+* setup.py: Update requirements.
+
+2007-09-21  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r183
+* clients/genacls.pkgdb, clients/owner-sync-pkgdb, clients/pkgdb-client,
+  clients/pkgdb2branch.py: These are kept on the cvs server in
+  /pkgs/cvs/CVSROOT/admin.
+* clients/pkgdb-import.py: No longer needed now that we've imported owners.list
+  into the pkgdb.  A copy is on the cvs server in case we need it.
+* clients/pkgdb-login.py: Obsolete.  Functionality has been generalized and
+  added to fedora-python.  New clients should import fedora.tg.client.
+
+2007-09-21  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r182
+* README: Update README.  Move most of the information into trac tickets
+  so we can trac them as features.
+
+2007-09-21  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r181
+* Move the contents of the pkgdb directory into the toplevel.
+
+2007-09-21  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r180
+* Clean up the toplevel directory by moving the client code to a clients subdir
+  and the selinux policies to an selinux subdir.
+
+2007-09-20  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r179
+* pkgdb/pkgdb/packages.py: Packages::name(): Make error messages work for JSON
+  as well as WebUI.
+    + Fix collection handling to return an error if no collection matches the
+      given filter and a separate error is given if no packages exist for a
+      collection.
+
+2007-09-19  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r178
+* pkgdb/pkgdb/dispatcher.py: Fix typo in documentation.
+
+2007-09-17  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r177
+* pkgdb/pkgdb/templates/pkgpage.html: Fix detection of wheter a person can
+  change acls.  Before, it was presenting the acl changing UI if anyone had
+  approveacls, not just the current user.
+  - Add more comments to the code that determines if the current user can
+    change acls.
+
+2007-09-14  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r176
+* pkgdb/pkgdb/packages.py: Packages::name(): Take collectionName and
+  collectionVersion as optional additional parameters.  We use these to
+  filter by distro or distro-release.
+    + return status=False if there's any problems retrieving the package data.
+  - Packages::id(): Return status=False if there's problems.
+
+2007-09-14  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r175
+* pkgdb/pkgdb/packages.py: Packages::name(), Packages::id(): Change from
+  raise redirect to get to an error page to return dict(tg_template=error).
+  This is good for two reasons:
+  1) Not as problematic when dealing with json.
+  2) When changing a URL in the browser's addressbar and mispelling something,
+     this makes it easier to edit the entry in the addressbar to be correct.
+
+2007-09-14  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r174
+* pkgdb/pkgdb/packages.py: Packages::index(), Packages::name(): Skip packages
+  which have Status Removed.
+
+2007-09-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r173
+* pkgdb/pkgdb/packages.py: Add owneruser to the list of values that are
+  jsonified for packageListings.
+
+2007-09-12  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r172
+* pkgdb/pkgdb/dispatcher.py: The devel branch shouldn't send email about the
+  test commits that happen here.  Disable it.
+
+2007-09-12  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r171
+* pkgdb/pkgdb/json.py: Propagate the jsonProps variable to all descendent
+  elements.
+* pkgdb/pkgdb/model.py: SABase::__json__(): Update to a new scheme.  Take any
+  SA mapped class and create json output for it.  For the fields which are
+  directly backed by the database, the fields are automatically pulled in.
+  For other fields, check the jsonProps instance variable to see if the
+  programmer has explicitly requested that the variable be propogated.
+  - StatusTranslations::.__json__(), BaseStatus::.__json__(): No longer need
+    special cased json functions here as the base classes __json__ handles
+    it fine.
+* pkgdb/pkgdb/packages.py: Packages::name(): Use the new code __json__()
+  methods to handle this.
+
+2007-09-12  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r170
+* pkgdb/pkgdb/templates/pkgpage.html: Simplify the template a little by using
+  tg.selector(), tg.checker(), and genshi's py:choose.
+
+2007-08-26  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r169
+* pkgdb/pkgdb/templates/pkgpage.html: Properly escape the urls sent to
+  koji and bodhi.  (Fixes Bug #53).
+
+2007-08-26  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r168
+* pkgdb/pkgdb/static/javascript/mochikit1.4.js: Split mochikit 1.4 functions
+  out of framework.js so we can clearly specify what's under the MochiKit
+  license and what's under our license.
+* README: Small update to status.
+* genacls.pkgdb, owner-sync-pkgdb, pkgdb-client, pkgdb-import.py,
+  pkgdb-login.py, pkgdb.sql, pkgdb/pkgdb/acls.py, pkgdb/pkgdb/collections.py,
+  pkgdb/pkgdb/controllers.py, pkgdb/pkgdb/dispatcher.py, pkgdb/pkgdb/json.py,
+  pkgdb/pkgdb/model.py, pkgdb/pkgdb/packages.py, pkgdb/pkgdb/release.py,
+  pkgdb/pkgdb/static/css/fedora.css, pkgdb/pkgdb/static/css/pkgdb.css,
+  pkgdb/pkgdb/static/css/style.css,
+  pkgdb/pkgdb/static/javascript/collectionoverview.js,
+  pkgdb/pkgdb/static/javascript/framework.js,
+  pkgdb/pkgdb/static/javascript/pkgpage.js,
+  pkgdb/pkgdb/static/javascript/tooltip.js, pkgdb/pkgdb/templates/layout.html,
+  pkgdb/pkgdb/templates/overview.html, pkgdb/pkgdb/users.py, pkgdb/setup.py,
+  pkgdb2branch.py: Add GPLv2 License and copyright notices .
+
+2007-08-26  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r167
+* pkgdb.conf: Configuration is now managed in puppet.  Please see the puppet
+  repository for changes.
+
+2007-08-26  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r166
+* tg-autostart.cgi: We now use supervisor.
+
+2007-08-26  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r165
+* Merge new users changes from NigelJ.
+* pkgdb/pkgdb/users.py: Order the packagelist by packagename.
+
+2007-08-23  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r164
+* pkgdb/pkgdb/dispatcher.py: Change from using display name to human name in
+  subject of emails as mailman's topic filtering doesn't handle unicode.
+
+2007-08-23  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r163
+* pkgdb/pkgdb/dispatcher.py: Merge changes from stable branch to open acls
+  to cvsextras for new packages.
+
+2007-08-23  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r162
+* pkgdb.sql: Comment out hte drop database call for safety.
+
+2007-08-17  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r161
+* pkgdb/pkgdb/static/javascript/collectionoverview.js: Signal handlers to
+  show tooltips when the user hovers over a column heading.
+* pkgdb/pkgdb/static/javascript/tooltip.js: Widget for displaying tooltips.
+* pkgdb/pkgdb/static/css/fedora.css: Style for tooltips and a class invisible
+  to set any widget as invisible.
+* pkgdb/pkgdb/templates/collectionoverview.html: Change to show an explanation
+  of what a column means when a user hovers over a column.
+
+2007-08-17  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r160
+* pkgdb/pkgdb/templates/pkgpage.html: Fix setting cvsextras when there are
+  no people in aclGroups.
+
+2007-08-16  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r159
+* pkgdb/pkgdb/templates/errors.html: Fix kid-ism that was causing error page
+  to throw an error.
+
+2007-08-15  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r158
+* pkgdb/pkgdb/dispatcher.py: Make all exposed methods take a tg_format
+  query parameter to accept json.
+
+2007-08-15  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r157
+* pkgdb/pkgdb/acls.py: Have to @expose(allow_json=True) after any other
+  expose statements.  Fixes vcs and bugzilla.
+
+2007-08-15  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r156
+* pkgdb/pkgdb/templates/plain, pkgdb/pkgdb/templates/plain/__init__.py: New
+  module for plain text templates.
+* pkgdb/pkgdb/templates/plain/bugzillaacls.txt: Template for plain text
+  representation of bugzilla acls.
+  pkgdb/pkgdb/templates/plain/vcsacls.txt: Template for plain text
+  representation of vcs acls.  Note that vcs acls could now be generated
+  directly from this (and a header).
+  pkgdb/pkgdb/acls.py: Acls::vcs(): Add ability to retrieve plain text.
+    + Exclude the orphan user through SQL, not python.
+  - Acls::bugzilla(): Add a method for retrieving plain text.
+* pkgdb/pkgdb/templates/orphans.html: No longer needed since the functionality
+  has been merged into the users area.
+
+2007-08-14  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r155
+* pkgdb/pkgdb/templates/orphans.html: Remove orphans as we're now doing it
+  through userpkgs.
+* pkgdb/pkgdb/templates/userpkgs.html: If we get the orphan user, don't link
+  to info and acllist pages.
+* pkgdb/pkgdb/users.py: Allow users to override the paginate defaults.
+  - Allow the lists to return json.
+
+2007-08-14  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r154
+* pkgdb/pkgdb/templates/pkglist.html, pkgdb/pkgdb/templates/collectionpage.html,
+  pkgdb/pkgdb/templates/orphans.html, pkgdb/pkgdb/templates/pkgoverview.html,
+  pkgdb/pkgdb/templates/useroverview.html,
+  pkgdb/pkgdb/templates/userpkgs.html: Move pkglist into its own file.
+* pkgdb/pkgdb/users.py: Users::packages(), Users::acllist():
+    + Allow users to override paginate.  Set default to 100 packages.
+    + Minor cleanup to query.  Use and_() instead of multiple queries.
+  - User::orphans(): Rewrite to work with paginate.
+
+2007-08-14  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r153
+* pkgdb/pkgdb/dispatcher.py: Add a link to the packageDB page where ACLs
+  are changed when emailing a log message.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r152
+* pkgdb/pkgdb/users.py: Resurrect the orphan packages code.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r151
+* pkgdb/pkgdb/templates/master.kid, pkgdb/pkgdb/templates/welcome.kid,
+  pkgdb/pkgdb/controllers.py: Remove the test class and the kid templates
+  that it depended on.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r150
+* pkgdb/pkgdb/templates/paginator.html: Pull the navigation element for
+  pagination into a macro in its own file.
+  - Have the navigation bar not display if there's only one page.
+* pkgdb/pkgdb/templates/collectionpage.html,
+  pkgdb/pkgdb/templates/pkgoverview.html, pkgdb/pkgdb/templates/pkgpage.html,
+  pkgdb/pkgdb/templates/userpkgs.html: Move the navigation element to a
+  macro.
+  - Put the navigation element at the top and bottom of the list of things
+    that are paginated.
+  - Clean up notes on future implementation and put those into tickets
+    in trac instead.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r149
+* pkgdb/pkgdb/templates/layout.html: Link to the hosted project instead of
+  the wiki for external documentation.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r148
+* merge fixes from the stable branch.
+
+2007-08-13  Toshio Kuratomi <badger@Clingman> - r147
+* pkgdb/pkgdb/static/images/bodhi.png, pkgdb/pkgdb/static/images/koji.png:
+  Images to go with the links to Koji and Bodhi.
+* pkgdb/pkgdb/static/css/pkgdb.css, pkgdb/pkgdb/static/css/style.css:
+  Updagte for a cleaner pkgpage.
+* pkgdb/pkgdb/templates/login.html: Don't need tg.url when dealing with
+  ${previous_url}.
+* pkgdb/pkgdb/templates/pkgpage.html: Add links to koji nad bodhi.
+
+2007-08-13  Toshio Kuratomi <badger@Clingman> - r146
+* COPYING: Copy of the GPLv2.
+
+2007-08-13  Toshio Kuratomi <badger@Clingman> - r145
+* Merge in ricky's template changes.
+* pkgdb/pkgdb/static/css/style.css, pkgdb/pkgdb/static/css/fedora.css: New
+  css to bring us the same look and feel as the rest of Fedora Infrastructure.
+* pkgdb/pkgdb/templates/bugzillaacls.kid =>
+  pkgdb/pkgdb/templates/bugzillaacls.html,
+  pkgdb/pkgdb/templates/collectionoverview.kid =>
+  pkgdb/pkgdb/templates/collectionoverview.html,
+  pkgdb/pkgdb/templates/collectionpage.kid =>
+  pkgdb/pkgdb/templates/collectionpage.html,
+  pkgdb/pkgdb/templates/errors.kid => pkgdb/pkgdb/templates/errors.html,
+  pkgdb/pkgdb/templates/layout.kid => pkgdb/pkgdb/templates/layout.html,
+  pkgdb/pkgdb/templates/login.kid => pkgdb/pkgdb/templates/login.html,
+  pkgdb/pkgdb/templates/orphans.kid => pkgdb/pkgdb/templates/orphans.html,
+  pkgdb/pkgdb/templates/overview.kid => pkgdb/pkgdb/templates/overview.html,
+  pkgdb/pkgdb/templates/pkgoverview.kid =>
+  pkgdb/pkgdb/templates/pkgoverview.html,
+  pkgdb/pkgdb/templates/pkgpage.kid => pkgdb/pkgdb/templates/pkgpage.html,
+  pkgdb/pkgdb/templates/useroverview.kid =>
+  pkgdb/pkgdb/templates/useroverview.html,
+  pkgdb/pkgdb/templates/userpkgs.kid => pkgdb/pkgdb/templates/userpkgs.html,
+  pkgdb/pkgdb/templates/vcsacls.kid => pkgdb/pkgdb/templates/vcsacls.html:
+  Convert kid templates to genshi.
+* pkgdb/pkgdb/config/app.cfg: Make the default template engine genshi.
+* pkgdb/pkgdb/sqlobject-history: Remove unneeded directory.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r144
+* pkgdb/pkgdb/dispatcher.py: Fix a typo where groups needed to be plural.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r143
+* pkgdb/pkgdb/dispatcher.py: Use author's real name as well as email
+  address when sending a message about changes.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r142
+* pkgdb/dev.cfg, pkgdb/pkgdb/config/app.cfg: From address is now whatever user
+  made the change.   Default recipients is now a hash where the keys are the
+  recipients to include.
+* pkgdb/pkgdb/dispatcher.py: send_msg(): from address is now the user making
+  the change.
+  - PackageDispatcher._send_log_msg(): Retrieve default recipients from the
+    config file.  Should now send to the commits list (ticket #24).
+  - add_package(), edit_package(): Fix capitalization of cvsextrasBuildAcl.
+    + Since the backref, changeAcl.status isn't set, have to retrieve the
+      acl name for the log from the database.
+* pkgdb/pkgdb/model.py: PersonPackageListingAcl, GroupPackageListingAcl:
+  Make the statuscode optional so it can be set later.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r141
+*  pkgdb/pkgdb/dispatcher.py: Remove extraneous "package" in email subject.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r140
+* pkgdb/pkgdb/dispatcher.py: set_acl_status(): Fix typo: close argument list.
+  - set_acl_status(), toggle_groupacl_status(), toggle_acl_request(),
+    add_package(), edit_package(): Change format of email subject to have
+    less information and put pkg name first Bug #35.
+  - edit_package(): Changing groups has to be done on every branch that is
+    sent to us.  Add a loop to deal with that.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r139
+* pkgdb/pkgdb/model.py: Fix docstring to reference correct DB table.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r138
+* pkgdb/pkgdb/static/javascript/pkgpage.js: set_acl_approval_box(): Make
+  sure we don't generate double slashes in our urls.
+
+2007-08-13  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r137
+* pkgdb/pkgdb/dispatcher.py: PackageDispatcher::add_package() edit_package():
+  Log creation of new cvsextras acls.
+
+2007-08-12  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r136
+* pkgdb/pkgdb/dispatcher.py:
+  - Remove CVSEXTRAS_ID and use the existing PackageDispatcher::groups
+    attribute instead.
+  - PackageDispatcher::__init__(): Add reverse mappings to self.groups so
+    we can retrieve by group id or by name.
+  - PackageDispatcher::_create_or_modify_acl(): Pass in a status DB object
+    instead of statusName.  Everyplace we use this we're already going to
+    have looked this up so there's no need to do it again.
+  - PackageDispatcher()::_create_or_modify_group_acl(): New method that
+    creates or modifies a group acl.  toggle_group_acl() is redundant with
+    this and needs to be changed as discussed in ticket #38
+  - PackageDispatcher::edit_package(): Add code to handle groups.
+
+2007-08-12  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r135
+* Merge comma fix.
+
+2007-08-10  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r134
+* pkgdb/pkgdb/dispatcher.py: Define the CVSEXTRAS id so we don't have to look it
+  up.
+  - toggle_groupacl_status(): Value being returned as new status was not
+    uptodate.  Change to the actual new status.
+  - add_package(), edit_package(): Create group acls for the cvsextras group. 
+    Make it so that it can't commit by default but is present.
+* pkgdb/pkgdb/model.py: GroupPackageListing: allow packagelistingid to be
+  specified after the fact.
+
+2007-08-10  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r133
+* pkgdb/pkgdb/static/javascript/framework.js: make_request(): Add a comma
+  to fix a bug when we changed the argument list.
+
+2007-08-09  Toshio Kuratomi <badger@Clingman> - r132
+* pkgdb/pkgdb/static/javascript/framework.js: make_request(): Fix construction
+  of the url so that we don't have double slashes (which confuse the server).
+
+2007-08-09  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r131
+* pkgdb/pkgdb/templates/layout.kid: Fix the Documentation link.
+* pkgdb/pkgdb/templates/pkgpage.kid: Fix the webUI to allow cvsadmins to
+  set acls.
+
+2007-08-06  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r130
+* pkgb/pkgdb/templates/overview.kid: Revamp the frontpage for release.  News,
+  plans, development, etc moved to the hosted project.
+
+2007-08-01  Toshio Kuratomi <badger@Clingman> - r129
+* owner-sync-pkgdb: Sync owner information from the packagedb to koji.
+  Canonical location for this script is currently on cvs-int in CVSROOT/admin.
+* pkgdb-client: Add or update packages from the commandline if you are a
+  cvsadmin.  Canonical location for this script is currently on cvs-int in
+  CVSROOT/admin.
+* pkgdb-import.py: Update to new db server db2.
+  - Workaround a broken pkg.acl entry.
+  - Special case the lvm packages.
+* pkgdb2branch.py: Update BASEURL to point at test3.
+  - Check for message on error instead of msg.
+
+2007-08-01  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r128
+* pkgdb.sql: Add a new status 'Modified', for use in Logs to show that metadata
+  has changed.
+* pkgdb/pkgdb/dispatcher.py: _create_or_modify_acl(): Set the personAcl on the
+  list of acls in the personpackagelisting and the personpackagelisting in the
+  list of people in the packagelisting.  This is because all our logic iterates
+  through the lists to tell whether to create a new record or not.
+  - toggle_owners(), set_acl_status(), toggle_groupacl_status(), add_package(),
+    edit_package(): Check for the proper groups (cvsextras, cvsadmin) after we
+    get into the function proper.  This is because the authorization not
+    allowed page will just confuse the AJAX call.
+  - add_package(), edit_package(): Replace select_by with get_by as we're
+    searching for a single record on unique keys in all cases.
+    + Check retrieval of user information from the fas.  If we get an error,
+      cancel the transaction and send an error back to the calling function.
+    + Fix reference to person.id from FAS to be person['id'].
+    + Set Collection information in new pkgListings via the property.
+    + Fix references to statuscode to be statuscodeid.
+  - edit_package(): Use the modified status for the log when changing summary.
+    + For objects passed in to the function (collections, ccList, comaintList)
+      decode the objects from JSON.
+    + Fix a conflict of two pieces of information using the variable name
+      collection.
+    + Fix logMessage generation to use pkgListing to pull information instead
+      of pkg which doesn't have the necessary information about collections.
+    + Fix references to identity.current.user_id to be
+      identity.current.user.user_id.
+    + Fix typo wathcommits => watchcommits.
+* pkgdb/pkgdb/model.py: PersonPackageListing(): Make the packagelistingid
+  optional in the constructor so we can add it later via the property.
+
+2007-07-30  Toshio Kuratomi <toshio@tiki-lounge.com> - r127
+* pkgdb/pkgdb/templates/errors.kid: Modify the error page template to use
+  message instead of msg.
+
+2007-07-30  Toshio Kuratomi <toshio@tiki-lounge.com> - r126
+* pkgdb/pkgdb/packages.py, pkgdb/pkgdb/users.py: Change msg into message in
+  return values so that client code can look in message for error messages.
+  Maybe we want to use tg_flash for this in the future.
+
+2007-07-30  Toshio Kuratomi <badger@Clingman> - r125
+* pkgdb2branch.py: Rewrite invokation of mkbranchwrapper to work with popen2
+  as well as subprocess (for python 2.3).
+
+2007-07-30  Toshio Kuratomi <badger@Clingman> - r124
+* pkgdb2branch.py: New commandline client to take information from the packagedb
+  and make cvs branches from it.
+
+2007-07-28  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r123
+* pkgdb/pkgdb/dispatcher.py: _create_or_modify_acl(), set_acl_status(): Status
+  is needed for both methods, extract it in both places and fix capitalization
+  to use it properly.
+
+2007-07-28  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r122
+* pkgdb/pkgdb/dispatcher.py: Corrections to use of get_by() when using
+  keyword arguments.
+
+2007-07-28  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r121
+* Merge corrections to documentation from warren.
+
+2007-07-28  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r120
+* pkgdb/pkgdb/dispatcher.py:
+  - _send_log_msg(): Add an otherEmail argument that is a list of other Email
+    addresses to send to.
+    + Make the pkglisting argument a list of pkgListings.  That way when we
+      send a message to everyone on a pkg, the information can be sent to the
+      correct people.  This affects *every* method call to _send_log_msg().
+  - _user_can_set_acls(): Hardcode a check to allow mizmo the ability to access
+    the admin interface so she can see everything that takes place there.
+  - _create_or_modify_acl(): Abstract the acl setting code so it can be called
+    from other methods.
+  - toggle_owner(): Set the log to reference the packagelisting.
+  - set_acl_status(): Move acl setting code to _create_or_modify_acl().
+  - add_package(): New method to add a package to the db.  Only usable by
+    cvsadmin right now.
+  - edit_package(): New method to allow cvadmins to edit the packages.
+* pkgdb/pkgdb/model.py: Package(): Let the id's be set after init.
+  - Add PackageLog().
+
+2007-07-28  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r119
+* pkgdb.conf: Remove the configuration to autostart the script.  We're moving to
+  supervisor this weekend.
+* pkgdb/dev.cfg: Turn on sqlalchemy debug echoing.
+
+2007-07-20  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r118
+* pkgdb/pkgdb/dispatcher.py: _send_log_msg(): Add an otherEmail argument
+  for a list of arbitrary email addresses to send the message to.
+    + A few bugfixes to add to the recipient list only when the new recipient
+      exists.
+  - Bugfix calls to _user_can_set_acls() to pass in the whole identity instead
+    of just the userid.
+  - toggle_acl_request(): Bugfix to call _send_log_msg() instead of send_msg().
+
+2007-07-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r117
+* pkgdb/pkgdb/dispatcher.py: _send_log_msg(): Give an acl field as well.  This
+  lets us specify that people on any number of different acls will get
+  notified.
+
+2007-07-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r116
+* pkgdb/dev.cfg: Database has moved from test2 to db2.
+* pkgdb/pkgdb/dispatcher.py: PackageDispatcher::_send_log_msg(): New method
+  to send log messages to owners and people in approveacls.
+  - PackageDispatcher::_user_can_set_acls(): Updated to also return True if
+    the user is in cvsadmin.
+    + Now returns a string 'admin', 'owner', 'comaintainer' if the user can
+      change acls.
+  - PackageDispatcher::toggle_owner(): Use _user_can_set_acls() to decide if
+    the user can take over the package.
+  - All exposed methods use _send_log_message() now.
+
+2007-07-09  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r115
+* pkgdb/pkgdb/dispatcher.py: Import AuthError from fas.
+* pkgdb/pkgdb/packages.py: import request from cherrypy.
+  - Packages::__init__(): Move the dispatcher definition to within __init__()
+    so we can give it self.fas as an argument.
+  - Packages::name(): Return an error message if we are trying to get json
+    formatted data and there's no package by that name.
+* pkgdb/pkgdb/static/javascript/pkgpage.js: Couple debung statements
+* pkgdb/pkgdb/templates/pkgpage.kid: Fix a regression where the acluser
+  field needs to have a name attribute.
+
+2007-07-09  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r114
+* pkgdb/pkgdb/packages.py: Remove unneeded cherrypy.request and setting of
+  package.*c.* = True.
+
+2007-07-09  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r113
+* pkgdb/pkgdb/json.py:
+  - jsonify_sa_select_results(): method to serialize sqlalchemy SelectResults.
+  - jsonify_salist(): method to parse SQLAlchemy InstrumentedLists.
+* pkgdb/pkgdb/model.py:
+  - SABase(): New class that is the Base of all sqlalchemy mapped classes.  It
+    has a base __json__() method that usually does the right thing.
+  - StatusCodeTranslation(): Gets its own __json__ class that does the
+    opposite as SABase WRT to properties.  This helps stop infinite recursions.
+  - BaseStatus(): New class that is the base of the Status classes.  It has a
+    __json__() method that links it to the translations.
+    + __init__() method that is common to all the StatusCode classes.
+  - PackageStatus(): New class for the status codes that apply to packages.
+  - Branch::__repr__(): Fix the output to show the information from Collection
+    as well.
+* pkgdb/pkgdb/packages.py: Packages::name() and Packages::id(): Reimplement
+  the functionality of id in name to make that the default lookup mechanism.
+  - Allow name() to return a json string.
+  - Simplify to return values by relying on sqlalchemy's mapper instead of
+    returning information from more sql'ish calls.
+  - No longer need to return package and packageid since the information is
+    reachable from the packageListings table.
+* pkgdb/pkgdb/templates/pkgpage.kid: Modified to only get information from the
+  packageListings variable.  This allows us to not pass packages and packageid.
+
+2007-07-06  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r112
+* pkgdb-login.py: Merge sample client code to connect to the packagedb from
+  the commandline.
+
+2007-07-06  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r111
+* pkgdb/dev.cfg: Remove fedora.accountspath as we now use fedora.accounts
+  from python-fedora.
+  - Update the dburi to test2.
+  - Set sqlalchemy.convert_unicode to True so we convert database strings to
+    python unicode automatically.
+* pkgdb/pkgdb/acls.py: bind a few variables so we don't have to keep doing
+  [] dereferences.
+* pkgdb/pkgdb/controllers.py: Write a method to help test for unicode
+  conformance.
+* pkgdb/sample-prod.cfg: Add some updates from dev.cfg.
+
+2007-07-03  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r110
+* pkgdb/pkgdb/controllers.py: Test::index(): Allow json format.
+  - Root::login(): Changes to allow logging in from the command line.
+
+2007-06-28  Toshio Kuratomi <toshio@tiki-lounge.com> - r109
+* pkgdb-import.py: Change packagedb host to test2.
+  - Change Collection names to match bugzilla product names.
+  - New method set_special_owners() that sets ownership to a mailing list for
+    certain special packages.
+
+2007-06-26  nigelj <nigelj@test3.fedora.phx.redhat.com> - r108
+Remove pkgmine.kid, add userpkgs.kid, and change users.py to reflect
+
+2007-06-26  nigelj <nigelj@test3.fedora.phx.redhat.com> - r107
+pkgpage.kid: Add link to maintainers user page
+layout.kid: Add link to users page
+packages.py: Add pkg.owneruser/person.user for templating
+users.py: All my additions (no_user,acllist,packages etc)
+
+2007-06-26  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r106
+* pkgdb/pkgdb/acls.py: Acls::_add_to_bugzilla_acl_list(): Fix renamed variable.
+    + Fix the level at which the cclist is called.  There is only one acl for
+      bugzilla as opposed to several for vcs.
+  - Acls::vcs(): We were skipping adding the owner to the acl after an orphaned
+    package had been scanned.  Change to properly skip adding the owner if the
+    present package is orphaned.
+  - Acls::bugzilla(): Correct capitalization of userId.
+    + When selecting the owner, get it from PackageListing, not Package.
+    + We were retrieving all of the watchbugzilla acls for every package.
+      Corrected to only retrieve the acls once.
+* pkgdb/pkgdb/templates/bugzillaacls.kid: Fix up the bugzillaacls template to
+  display the information nicely.
+
+2007-06-26  Toshio Kuratomi <toshio@tiki-lounge.com> - r105
+* Merge from upstream.
+
+2007-06-26  Toshio Kuratomi <toshio@tiki-lounge.com> - r104
+* pkgdb/pkgdb/templates/bugzillaacls.kid: Template for bugzilla ACLs.
+* pkgdb/pkgdb/acls.py: BugzillaInfo() class for returning a record for a
+  bugzilla product-component pair.
+  - Acls::_add_to_bugzilla_acl_list(): New method to add an acl to a
+    BugzillaInfo record.
+  - Acls::_add_person_to_acl() renamed to _add_to_vcs_acl_list().
+    + Make the method generic enough to accept either people or groups.
+  - Acls::vcs(): Use _add_to_vcs_acl_list() for groups.
+  - Acls::bugzilla(): Return information needed to create and maintain bugzilla
+    records.
+
+2007-06-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r103
+* pkgdb/pkgdb/static/javascript/framework.js: spin_spinner(): Fix a bug
+  quoting a key for a dict.
+
+2007-06-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r102
+* pkgdb/pkgdb/acls.py: New file with a controller, Acls() that shows the
+  acls on packages.  Currently just one method that shows the acls on the
+  cvs repository.
+* pkgdb/pkgdb/collections.py: Pull the Collections controller out of
+  controllers.py into its own file.
+* pkgdb/pkgdb/templates/vcsacls.kid: template for displaying cvs acls.
+* pkgdb/pkgdb/config/app.cfg: Set the idle timeout to 20 minutes.
+* pkgdb/pkgdb/controllers.py: Push the Collections controller to its own file.
+  - Mount the acls controller and user controller as well.
+* pkgdb/pkgdb/dispatcher.py: The ORPHAN_ID constant is needed here too.
+* pkgdb/pkgdb/users.py: packages(): Add the fasName as an argument.
+
+2007-06-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r101
+* genacls.pkgdb: Output the cvs acl script's avail file via the packagedb.
+
+2007-06-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r100
+* pkgdb-import.py: Updated and renamed from owners.py.
+  - Now parses all the owners.list and pkg.acl files via nottings owners.py
+    module.  This is stored in the extras/CVSROOT/admin.
+
+2007-06-18  nigelj <nigelj@test3.fedora.phx.redhat.com> - r99
+- Add new links to menubar on left
+- Place 'My Packages' somewhere decent
+
+2007-06-18  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r98
+* pkgdb/pkgdb/controllers.py, pkgdb/pkgdb/dispatcher.py: Move turbomail import
+  into dispatcher.
+  - Move common parts of turbomail calls into its own function.
+
+2007-06-18  nigelj <nigelj@test3.fedora.phx.redhat.com> - r97
+I thought I got this finalised, I'll sort it out later
+
+2007-06-18  nigelj <nigelj@test3.fedora.phx.redhat.com> - r96
+Fix up test/mine I'll move it when it becomes complete (and after some discussion)
+
+2007-06-17  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r95
+* Syncing of pkg.acl and new owners.list is done.  However, bugzilla has to be
+  redone to take advantage of bugzilla's xml-rpc interface.
+
+2007-06-17  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r94
+* pkgdb.conf: Add an entry for josemm to work on his own branch and be able to
+  see what's going on.
+
+2007-06-17  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r93
+* pkgdb/pkgdb/dispatcher.py, pkgdb/pkgdb/packages.py,
+  pkgdb/pkgdb/controllers.py: Pull the Packages() and PackageDispatcher()
+  classes into their own files
+
+2007-06-17  nigelj <nigelj@test3.fedora.phx.redhat.com> - r92
+- Allow cvsadmin to orphan
+- Show 'my packages' (needs bug fixes)
+-- N.J.
+
+2007-06-12  nigelj <nigelj@test3.fedora.phx.redhat.com> - r91
+Small changes to nav bar on left, including a right nav bar like in FAS
+
+2007-06-12  nigelj <nigelj@test3.fedora.phx.redhat.com> - r90
+* Changed secure images/urls to point to admin.fp.o
+* Changed copyright/trademark links
+* Added Package DB home link
+
+2007-03-24  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r89
+* pkgdb/pkgdb/static/javascript/pkgpage.js: set_acl_approval_box(): Add a
+  requestContainer around the acl checkboxes.  This allows the make_request
+  framework to function correctly.
+
+2007-03-24  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r88
+* pkgdb/pkgdb/static/javascript/pkgpage.js: request_acl_gui(): Fix generation
+  of the checkboxes so that it has an empty aclStatus span.  Otherwise we have
+  errors when taking ownership.
+
+2007-03-23  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r87
+* pkgdb/dev.cfg: set baseurl as apache was giving out pkgdb instead of pkgdb-dev
+* pkgdb/pkgdb/controllers.py: Packages::name(): Add error handling if the
+  packagename is not known.
+  - Packages::not_packagename(): New function to handle unknown packagename's
+    being tried.
+
+2007-03-23  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r86
+* pkgdb/pkgdb/templates/orphans.kid: Template to display orphaned packages.
+
+2007-03-23  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r85
+* pkgdb/pkgdb/controllers.py: Test::orphans(): List by name and send summary
+  info as well.
+* pkgdb/pkgdb/templates/collectionpage.kid,
+  pkgdb/pkgdb/templates/pkgoverview.kid: Construct URLs based on name rather
+  than id.
+* pkgdb/pkgdb/templates/overview.kid: Add a timeline.
+
+2007-03-22  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r84
+* pkgdb/pkgdb/controllers.py: An orphan reporting page at test/orphans.  Needs
+  work to be more useful.
+  - Packages::name(): New method to allow us to find packages via package name
+    in the URL.
+* pkgdb/pkgdb/templates/collectionoverview.kid,
+  pkgdb/pkgdb/templates/collectionpage.kid,
+  pkgdb/pkgdb/templates/pkgoverview.kid, pkgdb/pkgdb/templates/pkgpage.kid:
+  Remove the layout_params block and some outdated notes.
+* pkgdb/pkgdb/templates/layout.kid: Add a "You are not logged in" message.
+* pkgdb/pkgdb/templates/overview.kid: Update with new 0.2.90.1 features.
+
+2007-03-22  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r83
+* pkgdb/pkgdb/templates/layout.kid: Remove the right side bar.
+  - Give useful links in the left menu bar.
+  - Real changes to this are going to wait on a redesign from the website/art
+    team or Maírín Duffy.
+* pkgdb/pkgdb/templates/overview.kid: Bump version to 0.2.90.1.
+
+2007-03-22  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r82
+* pkgdb/pkgdb/static/javascript/pkgpage.js: Remove a debug class.
+
+2007-03-22  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r81
+* pkgdb/pkgdb/controllers.py: PackageDispatcher::__init__(): Remove
+  aclStatusMap as we've replaced all instances of it with a call directly into
+  the database.
+  - set_acl_status(): Rename personPackage to changePerson in one portion of
+    the method.  That way if we ever reference changePerson in the rest of the
+    method we'll be sure it's defined here.
+    + Rewrite some code to allow directly setting a person record instead of
+      appending to the end of an acl list.
+    + Add package and collection information to the log message so we know
+      what the acl was set on.
+  - toggle_groupacl_status(): Speed this up by not setting changeAcl.status.
+    This lets changeAcl.status go out of sync byt it is 10x faster.
+    + Remove the use of aclStatusMap.
+    + Perform logging.
+  - toggle_acl_request(): Remove use of aclStatusMap.
+    + Perform logging.
+* pkgdb/pkgdb/model.py: GroupPackageListingAcl::__init__(): Make
+  grouppackagelistingid optional.
+* pkgdb/pkgdb/static/javascript/pkgpage.js: check_acl_request(): Fix saving of
+  the aclStatus container so it has both the acl name and pkgId.
+* pkgdb/pkgdb/templates/overview.kid: Log to db is finished.
+  - Notification of acl/owner changes can be sent to commits-list at any time
+    so that's finished.
+  - Add note to have UI for people to review changes to the PackageDB.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r80
+* pkgdb/pkgdb/controllers.py: PackageDispatcher::_user_can_set_acls(): Switch
+  from using aclStatusMap to getting the values from statustranslation table.
+  - Add notes where we want to send reports to a per package group of people
+    as well.
+  - packageDispatcher::set_acl_status(): Fix the identity check to use
+    in_any_gorup instead of in_group.
+    of the required groups.
+    + Fix a typo in an assignment (= instead of ==).
+    + Fix typo in defining the logMessage (, instead of .).
+    + Make logMessage and subject of email clearer.
+  - packageDispatcher::toggle_groupacl_status(): Fix identity check to use
+    in_any_group instead of in_group.
+* pkgdb/pkgdb/static/javascript/pkgpage.js: request_status_change(): Change
+  status to statusname when requesting information from /set_acl_status.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r79
+* pkgdb/pkgdb/controllers.py: PackageDispatcher: Initial preparations for
+  allowing package acls to be set by people in cvsadmin:
+    + __init__(): Add cvsadmin to self.groups
+    + For each method requiring an identity, add cvsadmin as well.
+  - set_acl_status(): Log to database and email that a change has occurred.
+    + Convert to using status.statuscodeid from the db instead of statusMap.
+  - toggle_groupacl_status(): Change the order of arguments for
+    GroupPackageListingAcl.
+* pkgdb/pkgdb/model.py: Change all the comments for the mapper classes into
+  docstrings.
+  - Make __repr__() strings aware of kwargs.
+  - Add classes and mappers for Person and Group PackageListingAclLogs.
+* pkgdb/pkgdb/templates/overview.kid: Add allowing cvsadmin to make changes
+  to an Urgent category.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r78
+* pkgdb.sql: Correct some comments now that the ACL structure has been updated.
+* pkgdb/pkgdb/controllers.py: PackageDispatcher::toggle_owner(): Have the
+  log message use human readable names instead of the pakcage/person id.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r77
+* pkgdb.sql: Add Owned and Orphaned statuses to StatusCode and
+  PackageListingStatusCode.
+  - CollectionLog: Change packageId to collectionId (Fix cut and paste error)
+  - grant select and insert on CollectionLog.
+  - Add a comma to grant select statement.
+* pkgdb/pkgdb/controllers.py: import turbomail
+  - Set Global vars, FROMADDR and TOADDR from the turbogears config.  I think
+    we'll switch everything to using turbogears.config in the near future.
+  - Uncomment turbogears.enqueue.  We're doing local testing for now.
+* turbogears.mod, turbogears.pp, turbogears.te: Changes to allow turbomail to
+  connect to the smtp server.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r76
+* Merge a bugfix from the production branch.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r75
+* pkgdb.conf: Add static/ directory defintions for both pkgdb and pkgdb-dev
+  so that we can get both.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r74
+* pkgdb/pkgdb/model.py: Add the literal_column() fix to the log mappers.
+* pkgdb/pkgdb/templates/overview.kid: Bump version to 0.2.90.0.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r73
+* Merge fixes in from the production branch.
+
+2007-03-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r72
+* Merge with the production branch.
+
+2007-03-20  Toshio Kuratomi <toshio@tiki-lounge.com> - r71
+* pkgdb/pkgdb/config/app.cfg: Set up TurboMails settings.
+* pkgdb/pkgdb/controllers.py: PackageDispatcher::toggle_owner(): Initial cut
+  at saving a log message in the database and sending notification via email.
+* pkgdb/pkgdb/model.py: New mapper classes Log and PackageListingLog.  These
+  are for log tables in the database.
+
+2007-03-15  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r70
+* pkgdb/pkgdb/templates/overview.kid: Write up the changes for 0.2.
+
+2007-03-15  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r69
+* pkgdb/pkgdb/static/javascript/framework.js: Remove a few debugging statements
+* pkgdb/pkgdb/static/javascript/pkgpage.js: set_acl_approval_box(): When
+  rewriting the requestContainer, be sure we include the pkgid in the id.
+    + When retrieving the selected item from the select list, user select.value
+      Instead of trying to parse the options for the one that's selected.
+* pkgdb/pkgdb/templates/pkgpage.kid: Add a name attribute to the aclStatusList
+  that is the aclname.
+  - Be sure we include the pkg.id in the name for the spans that replace the
+    aclStatusList when it's in read-only mode.
+
+2007-03-15  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r68
+* pkgdb/pkgdb/static/javascript/pkgpage.js: set_acl_approval_box(): Add code
+  to change the groupacl boxes as well.
+  - check_groupacl_request(): Recreate the checkbox on success so that the
+    browser picks up the correct state of the checkbox.
+
+2007-03-15  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r67
+* pkgdb/pkgdb/static/javascript/pkgpage.js: set_acl_approval_box(): Fix
+  problem where we were looking for an aclStatus when we should have been
+  looking for aclStatusList.
+* pkgdb/pkgdb/templates/pkgpage.kid: Add a span to display an empty label
+  when the acl is not defined.
+  - Rename the group's aclcell to groupaclcell so it isn't picked up by js
+    code that is looking for all the person acls.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r66
+* pkgdb/pkgdb/controllers.py: PackageDispatcher::__init__(): Make group id an
+  integer.
+  - PackageDispatcher::toggle_groupacl_status(): Return an error to the client
+    instead of trying to raise it.
+    + Fix an =/== typo.
+    + Fix a missing comma.
+    + return success at the end of the method.
+* pkgdb/pkgdb/static/javascript/pkgpage.js: New functions:
+  check_groupacl_request() and revert_groupacl_request() which take care of
+  toggling groupacls on and off.
+  - request_approve_deny_groupacl(): Callback to commit changes to the group
+    acls to the server.
+  - init(): Add an event handler for the groupacl checkboxes.
+* pkgdb/pkgdb/templates/pkgpage.kid: Change groupAclStatus requestContainers
+  back into divs as the javascript expects that.
+  - Move the label inside the div.
+  - Add the groupid to the name attribute of the requestContainer.
+  - Change checkboxes from groupAclPresentBox to groupAclStatus(Label)Box.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r65
+* pkgdb/pkgdb/controllers.py: PackageDispatcher::__init__(): Create a groups
+  variable that holds the groups that can commit to Packages.
+  - PackageDispatcher::_user_can_set_acls(): Extract a method that checks
+    whether a given user is allowed to change acls for a given packagelisting.
+  - set_acl_status(): Move the check of whether the user can set the acl into
+    its own function.
+  - toggle_groupacl_status(): toggle the groupacl flag between Approved and
+    Denied.  We might want to make this more generic in the future but it'll
+    work for our present needs.
+* pkgdb/pkgdb/templates/pkgpage.kid: Fix typo acell => aclcell.
+  - Change the container from a div to a span.
+  - Add the groupid to the name attribute.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r64
+* pkgdb.sql: Notes on how to populate the testdb with group information.
+* pkgdb/pkgdb/templates/pkgpage.kid: Move the aclChange information out to the
+  toplevel.  There's nothing being processed here that requires being in a
+  loop.
+  - Fix display of the Group Acl information.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r63
+* Since we've removed build and checkout from the list of acls to grant, we
+  have to remove them from here as well.  This should be done via a JSON call
+  but oh well.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r62
+* pkgdb/pkgdb/templates/pkgpage.kid: Add code to check whether the person has
+  already expressed interest in a package.  If they haven't give them a button
+  to request acls.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r61
+* pkgdb/pkgdb/templates/pkgpage.kid: Move the decision about aclChanger
+  outside of a loop.
+  - Fix processing of status labels.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r60
+* pkgdb/pkgdb/controllers.py: Special case acls of Obsolete status to be blank
+  for the user.
+* pkgdb/pkgdb/templates/pkgpage.kid: Remove an extranaous check for the orphan
+  user.
+  - Resort to a ?python processing directive to check whether a person is
+    allowed to approveacls.  kid doesn't want to mix tg.identity with filter/
+    lambda otherwise we could have done it that way.
+  - Get things working through setting status via the dropdown menus.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r59
+* pkgdb/pkgdb/controllers.py: Fix return of the new aclStatus.
+* pkgdb/pkgdb/templates/pkgpage.kid: Make sure the template works up to
+  displaying and allowing the user to update their acl requests.
+
+2007-03-14  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r58
+* pkgdb.sql: Add a comment to convert the status => status code as well.
+* pkgdb/dev.cfg: Change the database we talk to for the development version.
+* pkgdb/pkgdb/templates/pkgpage.kid:
+  - Change erroneous statuscode references to status.
+  - Get the template working up to displaying the names of people who hold ACLs
+
+2007-03-14  Toshio Kuratomi <toshio@tiki-lounge.com> - r57
+* pkgdb/pkgdb/controllers.py: PackageDispatcher::id(): Setup acls to be
+  accessible from the template via aclName.
+  - Set up groups similarly to people.
+* pkgdb/pkgdb/templates/pkgpage.kid: Update for the new acl structure.  This
+  will need debugging.
+
+2007-03-13  Toshio Kuratomi <toshio@tiki-lounge.com> - r56
+* pkgdb/pkgdb/controllers.py: Remove AclOwners as it isn't used anymore.
+  - Packages::id(): Retrieve information from the FAS about the packagelisting
+    people as we still want to use this in the view.
+
+2007-03-13  Toshio Kuratomi <toshio@tiki-lounge.com> - r55
+* pkgdb/pkgdb/controllers.py: Remove build and checkout acls from the list of
+  acls to send to the view.  We won't do build until we integrate with koji.
+  We won't do checkout for now as we aren't embargoing anything.
+
+2007-03-13  Toshio Kuratomi <toshio@tiki-lounge.com> - r54
+* pkgdb/pkgdb/controllers.py: Packacges::id(): Pull out the section that
+  reformats acls so they're easy to lookup per user.  We now save the
+  information in the database per user so this isn't necessary.
+
+2007-03-12  Toshio Kuratomi <toshio@tiki-lounge.com> - r53
+* pkgdb/pkgdb/controllers.py: Update toggle_acl_request to use the new acl
+  schema.
+
+2007-03-12  Toshio Kuratomi <toshio@tiki-lounge.com> - r52
+* pkgdb/pkgdb/controllers.py: Update PackageDispatcher::set_acl_status() to
+  work with the new acl schema.
+
+2007-03-12  Toshio Kuratomi <toshio@tiki-lounge.com> - r51
+* pkgdb/pkgdb/controllers.py: Change status to statuscode.
+* pkgdb/pkgdb/model.py: Remove the commented PackageAclTable,
+  PersonPackageAclTable, and GroupPackageAclTable definitions.
+
+2007-03-12  Toshio Kuratomi <toshio@tiki-lounge.com> - r50
+* pkgdb.sql: Change all status entries to statuscode.  Statuscode will be used
+  when referencing the numeric id of a status.  Status will be used within the
+  sqlalchemy appings to link to the status tables.
+  - PackageACL, PersonPackageACL, GroupPackageACL: Deleted these.  See below
+    for the summary of how this has changed.
+  - PersonPackageListing, GroupPackageListing, PersonPackageListingAcl,
+    GroupPackageListingAcl: We have rearranged the ACL tables.  All the
+    operations we've performed so far have needed to know which people/groups
+    hold acls on a package rather than which acls are held on a package.  So
+    it makes more sense to have the packagelisting directly connected to the
+    person/group.  ACLs depend off of these tables.
+  - no_group_acl_update_trigger, no_person_acl_update_trigger: Set this to
+    trigger on the new acl tables instead of the old PackageAcl table.
+  - PersonPackageACLLog, GroupPackageACLLog, PersonPackageListingAclLog,
+    GroupPackageListingAclLog: These tables were renamed and updated with
+    foreign key constraints on the new acl tables.
+  - grant select, insert, and update to the new ACL tables.
+  - grant select and insert to the new log tables.
+  - Add some notes on how to migrate old data to the new table structure.
+* pkgdb/pkgdb/model.py: General cleanups.  Add comments to all our classes.
+  - Add __repr__ functions to all our classes.
+  - Replace the old ACL representations with the new ones.
+  - Rename all status's from the database to statuscode fields.  Rename
+    statuscode properties to status.
+  - Update the list of tables that do not yet have mappers.
+
+2007-03-09  Toshio Kuratomi <toshio@tiki-lounge.com> - r49
+* Merge against the devel branch.
+
+2007-03-01  Toshio Kuratomi <toshio@tiki-lounge.com> - r48
+* Merge a fix for the GroupPackageAcl constructor.
+
+2007-02-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r47
+* Merge from the development branch.  This should bring us to all the features
+  from owners.list except the ability to approve Acls.
+
+2007-02-20  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r46
+* Merge from the development tree.  This finishes the intro-level interface
+  surrounding changing the owner.
+
+2007-02-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r45
+* Merge a few cosmetic issues from devel.
+
+2007-02-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r44
+* Merge from the development branch.  Only difference is not to set the port
+  and URL to the devel versions.
+
+2007-02-10  Toshio Kuratomi <toshio@tiki-lounge.com> - r43
+* Merge with the devel tree.
+
+2007-02-10  Toshio Kuratomi <toshio@tiki-lounge.com> - r42
+* README: Update: owners.list nearly done, No plans to import RHL data,
+  ACLs need to be imported from CVS, fix the download location for repomd.xml,
+  Add a TODO to push ACLs from packagedb changes instead of pulling them in via
+  a cron job.
+* owners.py: We now have an account for extras-orphan, comment it out so the
+  script imports this properly.
+* pkgdb.sql: Lowercase tablenames in the functions.
+
+2007-01-29  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r41
+* pkgdb.conf:  Add ProxyPreserveHost directive.
+* pkgdb.sql: Add plpgsql language.
+* pkgdb/pkgdb/config/app.cfg: Move base_url_* to the global section.  Use an
+  explicit base_url as redirects are giving us problems.
+* pkgdb/pkgdb/controllers.py: For redirects, have to retrieve the base_url from
+  the config file as the base of the url.
+  - AclOwners(): Add an acls set of fields to the class.
+  - Packages::id():
+    + Define the aclNames.
+    + Pass the people in with a dict of the acls they have.
+    + Pass the aclNames into the template.
+  - Packages::unknown(): Fix some typos.
+  - Packages::not_id(): Added for pakcage ids that don't exist.
+  - Root::login(): Add a title.
+  - Root::logout(): get the redirect using request.headers so that it goes
+    to the proper url.
+* pkgdb/pkgdb/model.py: PackageACL, PersonPackageACL, and GroupPackageACL
+  have been added, take them out of the TODO list.
+* pkgdb/pkgdb/templates/layout.kid: Import a stylesheet for the pkgdb.
+  - Add some style for the login box.
+  - Add a login button to the top of every page.
+* pkgdb/pkgdb/templates/login.kid: Have login.kid inherit from our Fedora
+  layout template.
+* pkgdb/pkgdb/templates/master.kid: Use tg.url to make this work.  master.kid
+  isn't used on our master site, though, so this should probably be deleted
+  soon.
+* pkgdb/pkgdb/templates/pkgpage.kid: Make a separate table for each pkglisting.
+  - Make the acl tables more appealing.
+
+2007-01-28  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r40
+* pkgdb/pkgdb/controllers.py: Add an acl owners class to pass acl information
+  into the templates.  Not sure if we want to define this in the model as an
+  sqlalchemy "view".
+  - Packages::index() Add the paginate dcorator so we can actually display all
+    the packaes in a sane manner.
+  - Packages::id(): Retrieve co-wnership information from the database as well.
+* pkgdb/pkgdb/model.py: Set up three new mappers for PackageAcl,
+  PersonPackageAcl, and groupPackageAcl.
+* pkgdb/pkgdb/templates/pkgoverview.kid: Create a list of all the packages we
+  know about.
+* pkgdb/pkgdb/templates/pkgpage.kid: First hack at displaying the acl
+  information.
+
+2007-01-26  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r39
+* pkgdb/pkgdb/config/app.cfg: Add basurl_filter to inform cherrypy of the
+  /pkgdb/ path prefix.
+* pkgdb/pkgdb/controllers.py: Get paginate working.  This requires paginate
+  and session from turbogears and selectresults from sqlalchemy.
+  - Decorate colletion::id() with paginate.  Set the defaults to 100 records
+    and display at most thirteen pages.  This should be more normal for
+    Fedora Developers.
+  - Use a SelectResult to retrieve the packages/packagelistings for this
+    collection.  SelectResults works with paginate.
+* pkgdb/pkgdb/model.py:  Add the foreign key relation between Package and
+  PackageListing to the mapper so we can reference the values hierarchically
+  in python.
+* pkgdb/pkgdb/templates/collectionpage.kid: Add paginate awareness to the
+  template.  We can now page through the list of packages instead of seeing it
+  all on one page.
+
+2007-01-23  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r38
+* pkgdb/pkgdb/controllers.py:
+  - Collection::id(): Use both human name and username to fill the ownername
+    field as the human name is not guaranteed to be unique.
+  - Package::id(): Fix a typo '=' => '=='.
+    + Retrieve human names for pkg.ownername and pkg.qacontact.
+    + Send the results of pkgListingRows.fetchall() instead of the raw cursor
+      as the cursor will be losed by the time it gets to kid.
+* pkgdb/pkgdb/templates/pkgpage.kid: Define TODO as a Not Implemented message.
+  - Remove spaces in our anchor links.
+  - Merge the headings and data into one table.
+  - Remove notes of things that have been implemented.
+
+2007-01-21  Toshio Kuratomi <toshio@tiki-lounge.com> - r37
+* README: Update for the current status.
+* pkgdb/pkgdb/controllers.py: Note that paginate is coming for 1.0.1.
+  - Create queries for the individual package pages.
+  - Add an unknown() page for Package.
+* pkgdb/pkgdb/templates/pkgpage.kid: Fill it with content.
+
+2007-01-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r36
+* pkgdb.conf: Enable apache serving static files for TG.
+
+2007-01-21  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r35
+* pkgdb.conf: Modify rewrite rules so we don't end up with a double slash.
+* pkgdb/pkgdb/controllers.py:
+  - Test(): Require that the user be in cvsextras to view this.
+  - Fix what we expect to be returned from fas.get_user_info().
+  - Revert the previous_url = server.webpath request.path change as the root
+    problem was in a duplicate apache Proxy configuration on this particular
+    computer.
+* pkgdb/pkgdb/templates/collectionpage.kid: Use the human name of the owner
+  instead of their userId.
+
+2007-01-20  Toshio Kuratomi <toshio@tiki-lounge.com> - r34
+* pkgdb.conf: Make sure our encoding is unicode.
+* pkgdb.sql: Change from TG_TABLE_NAME to TG_RELNAME.  TG_RELNAME doesn't
+  appear until postgresql 8.2.
+  - Note that add_status_to_log() and no_acl_update are tested.
+  - New table CollectionLogStatusCode that has Collection actions.
+  - New table CollectionLog to record changes to collections.
+  - Some notes on how to implement categories and groups.
+* pkgdb/pkgdb/controllers.py: Import a logger.
+  - Use the fedora.accounts.fas module instead of website.
+
+2007-01-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r33
+* pkgdb.conf:
+  - Prevent the RewriteRules from applying if we're loading the autostart
+    script.  This stops us from attempting to spawn multiple instances of the
+    pkgdb.
+  - Add /pkgdb/ to the rewritten URL to simplify the munging we do from within
+    the turbogears app.
+* pkgdb/dev.cfg: Add base_url_filter.on and
+  base_url_filter.use_x_forwarded_host which is supposed to do server.webpath
+  type stuff for cherrypy.
+* pkgdb/pkgdb/controllers.py: Change test and Packages into Controllers instead
+  of RootController.
+  - login(): Construct the previous_url from server.webpath + the request.path.
+    This allows Apache proxying to work correctly.
+  - Remove the response.status = 403 code.  This was causing Apache to issue
+    forbidden instead of showing the login page.
+* pkgdb/sample-prod.cfg: Set server.webpath.
+
+2007-01-19  Toshio Kuratomi <toshio@tiki-lounge.com> - r32
+* Merge changes from our working branch.
+
+2007-01-10  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r31
+* tg-autostart.cgi: kill prior occurrences of the TurboGears app server before
+  starting the new instance.
+
+2007-01-04  Toshio Kuratomi <toshio@tiki-lounge.com> - r30
+* pkgdb/pkgdb/controllers.py: Collections::id():
+  - Retrieve Collection information with symbolic statusname instead of code.
+  - Retrieve package information as well.
+* pkgdb/pkgdb/model.py: Add mappers for: StatusTranslation and CollectionStatus.
+  - Add constructors for all the existing classes that will set the table's
+    not null fields.
+* pkgdb/pkgdb/templates/collectionpage.kid: Add Status and Owner, Summary, and
+  Description information.  Add a first Package List.
+
+2007-01-02  Toshio Kuratomi <toshio@tiki-lounge.com> - r29
+* pkgdb.conf: Add a RewriteRule to handle URLs without hte trailing slash.
+* pkgdb/dev.cfg: Add server.webpath so URLs in the TG app have /pkgdb
+  added to them in the proper place.
+* tg-autostart.cgi: Update for the new placement of the packagedb directory on
+  my local test machine.
+
+2007-01-02  Toshio Kuratomi <toshio@tiki-lounge.com> - r28
+* pkgdb/pkgdb.egg-info/requires.txt, pkgdb/setup.py: Need bugfixes present in
+  SQLAlchemy >= 0.3.2.
+* pkgdb/pkgdb/controllers.py, pkgdb/pkgdb/templates/collectionoverview.kid:
+  - Page displaying all the collections of Fedora Packages we know about.
+    This now displays the number of packages in a collection.
+* pkgdb/pkgdb/templates/collectionpage.kid: Placeholder.  This template will
+  display information about a specific collection along with the packages in
+  the collection.
+* pkgdb/pkgdb/templates/errors.kid: An error page.
+* pkgdb/pkgdb/templates/overview.kid: Package Database Front Page.
+* pkgdb/pkgdb/model.py: Remove the class_mapper hack needed for
+  SQLAlchemy <= 0.3.1.
+
+2007-01-01  Toshio Kuratomi <toshio@tiki-lounge.com> - r27
+* README: Add Package Reviews.
+  - Restructure TODO list into Versions when features are likely to be done.
+* pkgdb/dev.cfg: Update to turbogears 1.0b2 and sqlalchemy.
+* pkgdb/pkgdb.egg-info/requires.txt: Update for TurboGears-1.0b2.
+* pkgdb/pkgdb/config/app.cfg: Update for TG-1.0b2 and the identity framework.
+* pkgdb/pkgdb/controllers.py:
+  - Update for TG-1.0b2
+  - Add an overview front page, Collection and Packages hierarchies.
+  - Query the sqlalchemy model for database information.
+* pkgdb/pkgdb/json.py: Update for TG-1.0b2.
+* pkgdb/pkgdb/model.py: Change to SQLAlchemy.
+  - Create OR-Mappers for Collecion, Branch, Package, and PackageListing.
+  - List other Tables that we'll want to map.
+  - Visit tables as generated by TG-1.0b2.  Need to modify this to work with
+    the Fedora Account System instead of tables within the pkgdb.
+* pkgdb/pkgdb/static/css/style.css, pkgdb/pkgdb/templates/login.kid,
+  pkgdb/pkgdb/templates/master.kid, pkgdb/pkgdb/templates/welcome.kid,
+  pkgdb/pkgdb/tests/test_model.py, pkgdb/sample-prod.cfg, pkgdb/setup.py,
+  pkgdb/start-pkgdb.py: Update to TG-1.0b2.
+
+2006-12-29  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r26
+* owners.py: Owners: Correctly nest when we save the owners data -- previously
+  we were only saving when a package had watchers.
+
+2006-12-28  Toshio Kuratomi <toshio@tiki-lounge.com> - r25
+* owners.py: Add a new preseed account for rvokal@redhat.com.
+
+2006-12-28  Toshio Kuratomi <toshio@tiki-lounge.com> - r24
+* README: Put alerting packagers when a dependency of their package is updated
+  on the wishlist.
+* owners.py: Version 0.2.
+  - Convert from python % format for constructing database queries to pyformat.
+  - Add the path to fedora-accounts on my local machine.
+  - CVSReleases: __init__(): If not given a cvs module file to work with,
+    return that all packages are present in the devel version of the repo.
+  - PackageDB():
+    + _add_acl(): Set an acl for a PackageListing.
+    + import_data():
+      * Update insert queries to use StatusCodes instead of text values.
+      * Only create a new PackageListing entry if one does not already exist.
+      * Create ACLs in the new PackageACL tables instead of the old, broken
+        package_interest style.
+  - __main__(): Create a cvsModule object even if no module filename was given.
+* pkgdb.sql: Allow sequences for primary keys to be updated.
+  - Allow pkgdbadmin to select from all tables.
+* pkgdb/pkgdb/model.py: Add an soClasses attribute to order class creation.
+  This is a hack for sqlobject and will probably go away as we transition
+  to sqlalchemy.
+
+2006-12-27  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r23
+* APPROVED_trim.txt: List of package review approvals that went to
+  fedora-extras-list (pre-bugzilla review days).
+* REQUESTS_trim.txt: List of package review requests that went to
+  fedora-extras-list.
+* build_list: Build a csv file from the APPROVED and REQUESTS files.
+
+2006-12-22  Toshio Kuratomi <toshio@tiki-lounge.com> - r22
+* pkgdb.sql: PersonPackageACL, GroupPackageACL:
+  - Remember to make id a primary key.
+  - Make the packageACLId not null.
+
+2006-12-22  Toshio Kuratomi <toshio@tiki-lounge.com> - r21
+* pkgdb.sql: Version 0.4
+  - Remove all null attributes as null is the default.
+  - Add on delete and on update to all foreign key constraints.
+  - Pull status codes into their own tables to make translation easy.
+  - Triggers to keep the status/action fields of Logs in sync with the
+    status fields of the tables they reference.
+  - Branch: Make branchName and distTag unique.
+  - CollectionSet: Add a priority field to specify the search order when
+    overlaying Collections.
+  - Rename PackageVersion* tables to PackageBuild*.
+  - Trigger to make sure that PackageBuildListing references a PackageBuild
+    and PackageListing that point to the same Package.
+  - PackageACL, PersonPackageACL, GroupPackageACL: Revamp so ACL lists now
+    can have one record for every ACL-Package combination.  *PackageACL
+    tables add users and groups to the relevant ACL.
+  - Trigger to make changing the acl field illegal.  This prevents possible
+    changes to the acl to gain extra privleges.
+  - Log: Add a description field.
+  - *PackageACLLog: Split PackageACLLog into PersonPackageACLLog and
+    GroupPackageACLLog.
+  - Add some grant statements.  Need to reaudit these after we settle on what
+    tables will be in the final PackageDB.
+
+2006-12-04  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r20
+* pkgdb/pkgdb/model.py: Add a URL field for the review ticket.
+
+2006-12-03  Toshio Kuratomi <toshio@tiki-lounge.com> - r19
+* pkgdb.sql: Fix bugs and typos in the schema.
+
+2006-12-03  Toshio Kuratomi <toshio@tiki-lounge.com> - r18
+* pkgdb.sql: Commit a new version of the pkgdb schema in SQL.  SQLObject
+  is somewhat limited in what it can do so I'm defining this in SQL.  Will
+  try to load it and then have SQLObject or SQLAlchemy load the model from
+  the database definition.
+
+2006-11-26  Toshio Kuratomi <toshio@tiki-lounge.com> - r17
+* owners.py:
+  - Change the database name from packagedb to pkgdb
+  - Use python's logging module to record errors
+  - When we encounter "Fedora-Extras", treat it as if it were "Fedora Extras"
+  - CVSReleases(): New object to pull information from a cvs modules file
+    about which packages exist on which FC branches.
+  - Finish the importer that adds packages to the database.
+* pkgdb/pkgdb/model.py: Add a buildonly role to the PackageInterest table.
+
+2006-10-16  Toshio Kuratomi <toshio@tiki-lounge.com> - r16
+* pkgdb.conf: Switch from ProxyPass to a RewriteRule.  This fixes some errors
+  where pulling up TG pages would open the front page instead of the correct
+  sub-page.
+* pkgdb/pkgdb/templates/pkgoverview.kid: Revert the URL change.  The errors
+  were occuring because of proxyPass flakiness, not this URL.
+* tg-autostart.cgi: Pass the path on to the TG server when starting the server
+  for the first time.
+
+2006-10-16  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r15
+* http.avc: More AVC messages of things that we have to allow in order to run
+  autostart.
+* pkgdb/pkgdb/templates/pkgoverview.kid: URLs to local resources have to
+  use /pkgdb/ so apache passes the request off to the TG Server.
+
+2006-10-15  Toshio Kuratomi <toshio@tiki-lounge.com> - r14
+* README: Add Priorities to the importer tasks.
+* pkgdb.conf: Add a comment for the testing path on my local computer.
+* tg-autostart.cgi: Remove a debugging print statement.
+
+2006-10-15  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r13
+* http.avc: AVC messages that we have to create and SELinux module for.
+  Use audit2allow -i http.avc -M httpd -i http.avc; semodule -i httpd.ppd
+* pkgdb.conf: Apache conf file to setup proxying to the turbogears instance.
+  Could use some reworking so apache can serve the static data (images, etc)
+  while turbogears serves the dynamic data.
+* tg-autostart.cgi: CGI Script that starts the turbogears instance if it isn't
+  already running.  This is setup in pkgdb.conf so that we first try to read
+  data from the TurboGears instance via Proxy settings.  If the TurboGears
+  isn't running, then invoke this CGI to start it.
+* README: Update withthe pkgdb.conf/tg-autostart.cgi work.
+* pkgdb/dev.cfg: Add server.socket_port and server.socket_host variables as
+  they seem to be needed in order to run the TurboGears instance.
+
+2006-10-13  Toshio Kuratomi <toshio@tiki-lounge.com> - r12
+* README: A roadmap of where we are and where we're going.
+
+2006-10-13  Toshio Kuratomi <toshio@tiki-lounge.com> - r11
+* pkgdb/pkgdb/templates/pkgpage.kid: Mock up of what a package page looks like.
+* pkgdb/pkgdb/controllers.py:
+  - Default TurboGears page is now the test page.
+  - Add package page.
+* pkgdb/pkgdb/templates/pkgoverview.kid: Mock up the search interface.
+
+2006-10-12  Toshio Kuratomi <toshio@tiki-lounge.com> - r10
+* owners.py: Fix up the connection to the database.
+  - import_owners(): begin work to save owners information into the database.
+
+2006-10-12  Toshio Kuratomi <toshio@tiki-lounge.com> - r9
+* pkgdb: Create a TurboGears project via tg-admin quickstart.
+* pkgdb-schema.py: Move to pkgdb/pkgdb/model.py where it will be our
+  TurboGears database.
+* pkgdb/pkgdb/templates/layout.kid: Generic layout for Fedora Pages.
+* pkgdb/pkgdb/templates/pkgoverview.kid: Page for an overview of the
+  PackageDB.
+
+2006-10-05  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r8
+* owners.py: Establish a permanent place to import the website.py module
+  from.
+  - preseed skvidal's account as well.
+
+2006-09-18  Toshio Kuratomi <toshio@tiki-lounge.com> - r7
+* owners.py: Owners::__init__(): print out which name in a line is
+  unrecognized when printing errors.
+    + Start a section for special handling of watchers (so we can make a
+    watcher a group instead of a person)
+  - Owners()::__preseed_accounts(): Add most of the unknown accounts in here.
+
+2006-09-17  Toshio Kuratomi <toshio@tiki-lounge.com> - r6
+* owners.py: Bug fixes from running against the accounts db.
+  - AccountsDB::__init__(), AccountsDB::user_id_from_email(): Save the
+    website module as self.website so other methods have access to the module.
+  - Owners::__init__(): Don't pass keep the newlines when spliting the owner
+    data.
+  - parse_commandline(): Fix detection of whether an output file was selected.
+  - __main__(): Properly pass in the data, not hte closed file handle.
+    + Open the output file for writing, not reading.
+
+2006-09-16  Toshio Kuratomi <toshio@tiki-lounge.com> - r5
+* owners.py: Now have two modes of operation.  Mode one parses owners.list and
+  saves to a pickle file.  Mode two reads a pickle file and saves the data
+  into the database.
+  - AccountsDB/PackageDB import the modules necessary to talk to their
+    databases when the objects are instantiated.
+  - Owners::__init__(): Pass in a string of data from owners.list instead
+    of a filename.  This way we can handle errors on the filename outside
+    of this class.
+    + Change iteration from readlines() to splitlines() to handle the
+      change to a string.
+  - parse_commandline(): New function that handles validating the command
+    line arguments.  The new commanline takes: --file pickleFile or
+    --dsn DSN postgresql connection string and an input file which can either
+    be an owners.list file or a pickleFile.  Since we're using optparse to
+    do this, --help and --version are available as well.
+  - __main__():
+    + Handle stdin and stdout as sources and destinations for data.
+    + __main__() now reads in the file rather than Owners().
+    + If we're given a pickled file from the commandline, save it to the
+      database.  Otherwise treat it as an owners.list file and save it's
+      data into a pickled file.
+
+2006-09-14  Toshio Kuratomi <toshio@tiki-lounge.com> - r4
+* owners.py: Comment psycopg2 as this is not available on the fedora
+  infrastructure servers.
+  - Owners::__init__(): Change collections into a dict as there are no sets in
+    python-2.3 (which is what's on the fedora servers.)
+    + Preseed the known accounts so we can translate bad email addresses in the
+      owners.list into something sensible.
+    + Use string concatenation on self.errors as list.append != print.
+    + Fix typos: accountsdb => accountsDB.
+    + If a qacontact is unknown, set its user_id to 0.
+    + Take care of the case where there are no watchers on a package in
+      owners.list.
+  - Owners::__preseed_accounts(): New private method that preseeds the
+    recognized accounts with email address translations.
+  - main():
+    + Print any errors from parsing the owners.list file.
+    + Note that we need to implement a command line switch to either parse
+      owners.list and translate email addresses to user_id or save the data
+      into the test PackageDB as we're going to have to run this on two
+      different sets of servers.
+* pkgdb-schema.py:
+  - Collections::byNameVersion(): Note that we may be able to implement all
+    or some of this via sqlobject's sqlmeta method.
+  - PackageListing: Make the package-branch owner mandatory.
+
+2006-09-12  Toshio Kuratomi <toshio@tiki-lounge.com> - r3
+* owners.py: Version 0.1
+  - Set values for connecting to the db.
+  - Use the website module for importing the current accounts system info.
+  - AccountsDB abstract the accounts system db into this object so we are a
+    bit safer when the Account System 2 code is released.
+    + This class provides the user_id_from_email() method to get the
+      user_id for an email address.
+  - OwnerError: Exception for errors thrown in the Owners class.
+  - Owners: Class that pulls data out of the owners.list.
+    + __init__(): Extracts and validates data from owners.list.  The
+      constructor also takes care of translating email addresses into account
+      system ids.
+    + This class inherits from dict.  Every entry is keyed off the package
+      name.
+    + Additionally, self.collection tells what collections are used by the
+      packages and self.errors has a record of all the errors in the package.
+    + PackageDB: Class to push data into the Package Database.
+  - main(): Use Owners to load the data from owners.list.
+* pkgdb-schema.py: Bump version 0.2
+  - Collections: Add to the definition of the name field.  This will be used
+    as bugzilla product and to help identify the grouping with a SIG.
+  - PackageListing: Added qacontact from owners.list.  This may become more
+    useful now that the PackageDB is making it more apparent what this can be
+    used for.
+    + Remove created field as the date will be in the PackageListingLog anyway.
+  - PackageVersion: Remove created field as the date will be in
+    PackageVersionLog.
+  - Split PackageInterestLog into PackageInterestPersonLog and
+    PackageInterestGroupLog.
+
+2006-09-10  Toshio Kuratomi <toshio@tiki-lounge.com> - r2
+* owners.py: usage(): Fix a syntax error.
+  - Parse the fields of the owners.list into named variables.
+* pkgdb-schema.py:
+  - Add TurboGears and sqlobject imports and boilerplate so this is a valid
+    model for a TurboGears instance.
+  - Collection: Expand the Collection class to encompass the metainformation
+    in SIGs, assign an owner and version, and some fields for descripions.
+    + Start a byNameVersion() function that allows us to select information
+      from the database via name + version.  This is because SQLObject doesn't
+      support multi-column alternateIDs.
+  - Branch: class that holds additional information about a Collection that
+    allows us to create a new branch in the VCS.
+  - Package: Add an underreview status.
+    + Add summary and description fields.
+  - PackageListing: Add owner field directly to the packageListing table.  The
+    advantage of this is that we can quickly determine orphans and let the
+    database enforce a single owner to a package.  The downside is we now have
+    to look in both PackageInterest and PackageListing to find out who to
+    notify about changes.
+  - PackageVersion: Break version apart into epoch, version, and release.
+  - PackageInterest is now an inheritable base class for the real tables.
+    This is because we now have people and groups that will be interested in
+    the Package so we have to have tables for each.
+  - New classes PackageInterestPerson and PackageInterestGroup.
+  - New class Log that records common items (person and changeTime) for all
+    the logging classes.
+  - *History tables renamed to *Log tables.
+
+2006-08-28  Toshio Kuratomi <toshio@tiki-lounge.com> - r1
+* owners.py: Script to parse owners.list and submit it to a database somehow.
+* pkgdb-schema.py: SQLObject (and also TurboGears) schema for the pkgdatabase.
+  This was originally Elliot Lee's work and I've just commented everything.
+

@@ -1,2 +1,0 @@
-db_module=pkgdb.model
-history_dir=$base/pkgdb/sqlobject-history

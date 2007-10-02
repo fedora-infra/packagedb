@@ -1,0 +1,13 @@
+include pkgdb.sql
+include start-pkgdb.in
+exclude start-pkgdb
+include AUTHORS README COPYING ChangeLog
+include *.cfg
+include pkgdb/templates/*.html
+include pkgdb/templates/plain/*.txt
+include pkgdb/config/*.cfg
+include pkgdb/static/javascript/*
+include pkgdb/static/css/*
+include pkgdb/static/images/*
+include pkgdb/static/images/spinner/*
+include fedora-packagedb.spec
