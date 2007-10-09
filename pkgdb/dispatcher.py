@@ -44,9 +44,10 @@ def send_msg(msg, subject, recipients, fromAddr=None):
     if not fromAddr:
         fromAddr = MAILFROM
     ### For DEBUGing:
-    print 'Would have sent: %s' % subject
+    print 'Would have sent: %s' % subject.encode('ascii', 'replace')
     print 'To: %s' % recipients
-    print 'From: %s' % fromAddr
+    print 'From: %s %s' % (fromAddr[0].encode('ascii', 'replace'),
+            fromAddr[1].encode('ascii', 'replace'))
     print '%s' % msg.encode('ascii', 'replace')
     return
     for person in recipients:
