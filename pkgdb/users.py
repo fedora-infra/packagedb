@@ -37,6 +37,11 @@ from fedora.accounts.fas import AccountSystem, AuthError
 ORPHAN_ID=9900
 
 class Users(controllers.Controller):
+    approvedStatusId = model.StatusTranslation.filter_by(
+            statusname='Approved', language='C').one().statuscodeid
+    EOLStatusId = model.StatusTranslation.filter_by(
+            statusname='EOL', language='C').one().statuscodeid
+
     def __init__(self, fas, appTitle):
         '''Create a User Controller.
 
@@ -57,45 +62,92 @@ class Users(controllers.Controller):
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def packages(self,fasname=None):
-        '''I thought I managed to get this one at last, but it seems not
-           I'll tackle it soon though -- Nigel
-        '''
+    def packages(self, fasname=None, acls='any', EOL=False):
+        '''List packages that the user is interested in.
+           
+        This method returns a list of packages owned by the user in current,
+        non-EOL distributions.  The user has the ability to filter this to
+        provide more or less information by adding query params for acls and
+        EOL.
 
+        Arguments:
+        :fasname: The name of the user to get the package list for.
+                  Default: The logged in user.
+        :acls: Comma separated list of acls that we're looking for the user to
+                have on the package to list it.  Default: any acls.
+        :EOL: If set, list packages that are in EOL distros.
+        Returns: A list of packages.
+        '''
+        # Set EOL to false for a few obvious values
+        if not EOL or EOL.lower() in ('false', 'f', '0'):
+            EOL = False
+        else:
+            EOL = bool(EOL)
+
+        # Make acls into a list
+        acls = acls.split(',')
+
+        # Have to either get fasname from the URL or current user
         if fasname == None:
             if identity.current.anonymous:
                 raise identity.IdentityFailure('You must be logged in to view your information')
             else:
                 fasid = identity.current.user.user_id
                 fasname = identity.current.user.user_name
-        elif fasname == "orphan":
-            fasid = ORPHAN_ID
         else:
             try:
                 fasid = self.fas.get_user_id(fasname)
             except AuthError:
-               raise redirect(config.get('base_url_filter.base_url') + '/users/no_user/' + fasname)
-
+                return dict(title=self.appTitle + ' -- Invalid Username',
+                        tg_template='pkgdb.templates.errors', status=False,
+                        pkgs=[],
+                        message='The username you were linked to (%s) does' \
+                        ' can not be found.  If you received this error from' \
+                        ' a link on the fedoraproject.org website, please' \
+                        ' report it.' % fasname
+                    )
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
 
-        myPackages = session.query(model.Package).order_by((model.Package.c.name,)).select(
-          sqlalchemy.union(
-            model.PackageTable.select(
-              sqlalchemy.and_(
-                model.Package.c.id==model.PackageListing.c.packageid,
-                model.PackageListing.c.owner==fasid
-              )
-            ),
-            model.PackageTable.select(
+        # Create the clauses of the package finding query
+        clauses = []
+        if 'any' in acls or 'owner' in acls:
+            # Return any package for which the user is the owner
+            clauses.append(model.Package.query().filter(
+                    sqlalchemy.and_(
+                        model.Package.c.id==model.PackageListing.c.packageid,
+                        model.PackageListing.c.owner==fasid
+                        ),
+                    ))
+            if 'owner' in acls:
+                del acls[acls.index('owner')]
+
+        if acls:
+            # Return any package on which the user has an Approved acl.
+            clauses.append(model.Package.query().filter(
               sqlalchemy.and_(
                 model.Package.c.id==model.PackageListing.c.packageid,
                 model.PackageListing.c.id==model.PersonPackageListing.c.packagelistingid,
-                model.PersonPackageListing.c.userid==fasid
+                model.PersonPackageListing.c.userid==fasid,
+                model.PersonPackageListing.c.id==model.PersonPackageListingAcl.c.personpackagelistingid,
+                model.PersonPackageListingAcl.c.statuscode==self.approvedStatusId
               )
-            ),
-            order_by=('name',)
-          )
-        )
+            ))
+            if 'any' not in acls:
+                # Return only those acls which the user wants listed
+                clauses[-1] = clauses[-1].filter(model.PersonPackageListingAcl.c.acl.in_(*acls))
+
+        if not EOL:
+            # We don't want EOL releases, filter those out of each clause
+            clauses = map(lambda clause: clause.filter(sqlalchemy.and_(
+                        model.PackageListing.c.collectionid==model.Collection.c.id,
+                        model.Collection.c.statuscode!=self.EOLStatusId)),
+                    clauses)
+
+        query = map(lambda clause: clause.compile(), clauses)
+        if len(query) == 2:
+            myPackages = model.Package.select(sqlalchemy.union(query[0], query[1], order_by=('package_name',)))
+        elif len(query) == 1:
+            myPackages = model.Package.select(sqlalchemy.union(query[0], order_by=('package_name',)))
 
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 
