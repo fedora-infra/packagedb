@@ -33,6 +33,7 @@ import logging
 
 from pkgdb import model
 from pkgdb import json
+from pkgdb import release
 
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
@@ -55,7 +56,7 @@ class Root(controllers.RootController):
 
     @expose(template='pkgdb.templates.overview')
     def index(self):
-        return dict(title=self.appTitle)
+        return dict(title=self.appTitle, version=release.version)
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, previous_url=None, *args, **kw):
