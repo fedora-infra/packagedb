@@ -1,3 +1,28 @@
+2007-10-09  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r194
+* fedora-packagedb.spec, pkgdb/release.py: Bump release number to 0.3.1.2
+* pkgdb/controllers.py, pkgdb/templates/overview.html: Take the PackageDB
+  Version from the release.py file.
+
+2007-10-09  Toshio リッチ Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r193
+* pkgdb/users.py: Get approvedStatus and EOLStatus on class creation.
+  - Users::packages(): Revamp to take an acl and an EOL parameter.  These
+    control whether we filter out EOL distributions from the list and what acls
+    we want to generate a list for.
+  - Remove special handling of the orphan userid as the normal code path will
+    handle this.
+  - Return the error by changing the template instead of raising a redirect.
+    This makes URLs better.
+
+2007-10-09  Toshio リッチ Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r192
+* pkgdb/dispatcher.py: Encode the debugging statements to ascii, explicitly
+  handling non-ascii characters in the output.
+
+2007-10-09  Toshio リッチ Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r191
+* setup.py: Make setup.py executable on its own.
+
+2007-10-02  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r190
+* ChangeLog: One last update.
+
 2007-10-02  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r189
 * fedora-packagedb.spec: Really bump the version to 0.3.1.1
 * start-pkgdb.in: New directory name is fedora-packagedb.
