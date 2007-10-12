@@ -34,28 +34,12 @@ import simplejson
 from fedora.accounts.fas import AuthError
 
 from pkgdb import model
+from pkgdb.notifier import EventLogger
 
 ORPHAN_ID=9900
-MAILSERVER = config.get('email.server', 'bastion.fedora.phx.redhat.com')
-MAILFROM = config.get('email.sender', ('PackageDB', 'pkgdb@fedoraproject.org'))
-
-def send_msg(msg, subject, recipients, fromAddr=None):
-    '''Send a message from the packagedb.'''
-    if not fromAddr:
-        fromAddr = MAILFROM
-    ### For DEBUGing:
-    print 'Would have sent: %s' % subject.encode('ascii', 'replace')
-    print 'To: %s' % recipients
-    print 'From: %s %s' % (fromAddr[0].encode('ascii', 'replace'),
-            fromAddr[1].encode('ascii', 'replace'))
-    print '%s' % msg.encode('ascii', 'replace')
-    return
-    for person in recipients:
-        email = turbomail.Message(fromAddr, person, '[pkgdb] %s' % (subject,))
-        email.plain = msg
-        turbomail.enqueue(email)
 
 class PackageDispatcher(controllers.Controller):
+    eventLogger = EventLogger()
     def __init__(self, fas = None):
         self.fas = fas
         controllers.Controller.__init__(self)
@@ -134,7 +118,7 @@ class PackageDispatcher(controllers.Controller):
                       listings[0].package.name)
 
         # Send the log
-        send_msg(msg, subject, recipients.keys())
+        self.eventLogger.send_msg(msg, subject, recipients.keys())
 
     def _user_can_set_acls(self, identity, pkg):
         '''Check that the current user can set acls.
