@@ -19,7 +19,7 @@
 #
 '''
 Root Controller for the PackageDB.  All controllers are mounted directly or
-indirctly from here.
+indirectly from here.
 '''
 
 import sqlalchemy

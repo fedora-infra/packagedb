@@ -1,0 +1,31 @@
+[updates7-i386]
+name=Fedora 7 - i386 - Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/7/i386/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-released-f7&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora
+
+[updates7-x86_64]
+name=Fedora 7 - x86_64 - Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/7/x86_64/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-released-f7&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora
+
+[updates7-ppc]
+name=Fedora 7 - ppc - Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/7/ppc/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-released-f7&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora
+
+[updates7-source]
+name=Fedora 7 - Updates Source
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/7/SRPMS/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-released-source-f7&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora

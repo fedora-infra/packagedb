@@ -1,0 +1,27 @@
+[development-i386]
+name=Fedora - Development
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/development/i386/os/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=rawhide&arch=i386
+enabled=1
+gpgcheck=0
+
+[development-x86_64]
+name=Fedora - Development
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/development/x86_64/os/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=rawhide&arch=x86_64
+enabled=1
+gpgcheck=0
+
+[development-ppc]
+name=Fedora - Development
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/development/ppc/os/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=rawhide&arch=ppc
+enabled=1
+gpgcheck=0
+
+[development-source]
+name=Fedora - Development - Source
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/development/source/SRPMS/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=rawhide-source&arch=i386
+enabled=1
+gpgcheck=0
