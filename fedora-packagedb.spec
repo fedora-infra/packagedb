@@ -18,6 +18,7 @@ Requires: python-sqlalchemy
 Requires: python-psycopg2
 Requires: python-genshi
 Requires: python-fedora-infrastructure
+Requires: python-bugzilla
 
 BuildRequires:  python-devel
 BuildRequires: TurboGears
