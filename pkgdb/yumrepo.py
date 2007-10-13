@@ -22,6 +22,7 @@ Manipulate information from the download repositories.
 '''
 import os
 import yum
+import logging
 
 from turbogears import config
 from turbogears.database import session
@@ -35,6 +36,8 @@ from sqlalchemy.ext.assignmapper import assign_mapper
 
 from pkgdb.json import SABase
 from pkgdb import model
+
+log = logging.getLogger("pkgdb.controllers")
 
 class UnknownRepoMDFormat(Exception):
     '''An unknown repository format was encountered.'''
@@ -230,7 +233,7 @@ class RepoInfo(object):
         self.session.close()
 
         log.warning('\t'.join(noDesc))
-        log.warning('Packages without descriptions:', len(noDesc))
+        log.warning('Packages without descriptions: %s' % len(noDesc))
 
 ### FIXME: DB Tables not yet listed here:
 # CREATE TABLE provides (  name TEXT,  flags TEXT,  epoch TEXT,  version TEXT,
