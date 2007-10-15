@@ -225,12 +225,12 @@ class RepoInfo(object):
             else:
                 noDesc.append(pkg.name)
 
+            # Close our local session
+            self.session.close()
+
         # Flush the new descriptions to the TG context session
         session.flush()
         session.close()
-
-        # Close our local session
-        self.session.close()
 
         log.warning('\t'.join(noDesc))
         log.warning('Packages without descriptions: %s' % len(noDesc))
