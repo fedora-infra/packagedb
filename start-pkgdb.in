@@ -22,7 +22,7 @@ if len(sys.argv) > 1:
     update_config(configfile=sys.argv[1],
         modulename="pkgdb.config")
 elif os.path.exists(os.path.join(os.path.dirname(__file__), "setup.py")):
-    update_config(configfile="dev.cfg",modulename="pkgdb.config")
+    update_config(configfile="pkgdb.cfg",modulename="pkgdb.config")
 else:
     update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),modulename="pkgdb.config")
 
