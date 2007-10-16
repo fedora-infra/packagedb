@@ -106,10 +106,8 @@ class PackageDispatcher(controllers.Controller):
                 model.PersonPackageListing.c.packagelistingid==pkgListing.id,
                 model.PersonPackageListingAcl.c.acl.in_(*acls)))
 
-            print acls
             for acl in aclUsers:
                 if acl.status.translations[0].statusname=='Approved':
-                    print acl
                     (person, groups) = self.fas.get_user_info(
                             acl.personpackagelisting.userid)
                     recipients[person['email']] = ''
@@ -356,10 +354,18 @@ class PackageDispatcher(controllers.Controller):
                     '%s is not allowed to approve Package ACLs' %
                     identity.current.user.display_name)
 
-        personAcl = self._create_or_modify_acl(pkg, personid, newAcl, status)
-
         # Get the human name and username for the person whose acl we changed
         (user, groups) = self.fas.get_user_info(personid)
+        # Make sure the person is allowed on this acl
+        if newAcl not in ('watchbugzilla', 'watchcommits'):
+            # If the person isn't in cvsextras or cvsadmin raise an error
+            if not [x for x in groups if x['name'] in
+                    ('cvsextras', 'cvsadmin')]:
+                return dict(status=False, message='%s is not in a group that'
+                        ' is allowed to hold the %s acl' % (personid, newAcl))
+
+        personAcl = self._create_or_modify_acl(pkg, personid, newAcl, status)
+
         # Make sure a log is created in the db as well.
         logMessage = u'%s (%s) has set the %s acl on %s (%s %s) to %s for %s (%s)' % (
                     identity.current.user.display_name,
@@ -415,12 +421,11 @@ class PackageDispatcher(controllers.Controller):
         approved = self._user_can_set_acls(identity, pkg)
         if not approved:
             return dict(status=False, message=
-                    '%s is not allowed to approve Package ACLs for %s - %s %s' %
+                    '%s is not allowed to approve Package ACLs for %s (%s %s)' %
                     (identity.current.user.display_name, pkg.package.name,
                         pkg.collection.name, pkg.collection.version))
 
-        # Make sure the group exists
-        # Note: We don't let every group in the FAS have access to packages.
+        # Check that the group is one that we allow access to packages
         if groupId not in self.groups:
             return dict(status=False, message='%s is not a group that can'
                     'commit to packages' % groupId)
@@ -573,6 +578,12 @@ class PackageDispatcher(controllers.Controller):
             person, group = self.fas.get_user_info(owner)
         except AuthError, e:
             return dict(status=False, message='Specified owner %s does not have a Fedora Account' % owner)
+
+        # Make sure the owner is in the correct group
+        # If the person isn't in cvsextras or cvsadmin raise an error
+        if not [x for x in groups if x['name'] in ('cvsextras', 'cvsadmin')]:
+            return dict(status=False, message='%s is not in a group that'
+                    ' is allowed to own a package' % personid)
 
         # Create the package
         pkg = model.Package(package, summary, approvedStatus.statuscodeid)
@@ -729,6 +740,13 @@ class PackageDispatcher(controllers.Controller):
                 person, group = self.fas.get_user_info(changes['owner'])
             except AuthError, e:
                 return dict(status=False, message='Specified owner %s does not have a Fedora Account' % changes['owner'])
+            # Make sure the owner is in the correct group
+            # If the person isn't in cvsextras or cvsadmin raise an error
+            if not [x for x in groups if x['name'] in
+                    ('cvsextras', 'cvsadmin')]:
+                return dict(status=False, message='%s is not in a group'
+                        ' that is allowed to own a package' % personid)
+
             ownerId = person['id']
 
         if 'collections' in changes:
@@ -885,6 +903,15 @@ class PackageDispatcher(controllers.Controller):
                     person, groups = self.fas.get_user_info(username)
                 except AuthError, e:
                     return dict(status=False, message='New comaintainer %s does not have a Fedora Account' % username)
+
+                # Make sure the owner is in the correct group
+                # If the person isn't in cvsextras or cvsadmin error
+                if not [x for x in groups if x['name'] in
+                        ('cvsextras', 'cvsadmin')]:
+                    return dict(status=False, message='%s is not in a group'
+                            ' that is allowed acls on this package.' %
+                            personid)
+
                 # Add Acls for them to the packages
                 for pkgList in listings:
                     for acl in ('watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls', 'checkout'):
@@ -920,6 +947,7 @@ class PackageDispatcher(controllers.Controller):
                     groupId = self.groups[group]
                 except KeyError:
                     return dict(status=False, message='Group %s is not allowed to commit' % group)
+
                 for pkgList in listings:
                     if groupList[group] == True:
                         status = approvedStatus
