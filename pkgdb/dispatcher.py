@@ -914,7 +914,7 @@ class PackageDispatcher(controllers.Controller):
 
                 # Add Acls for them to the packages
                 for pkgList in listings:
-                    for acl in ('watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls', 'checkout'):
+                    for acl in ('watchbugzilla', 'watchcommits', 'commit', 'build', 'approveacls'):
 
                         personAcl = self._create_or_modify_acl(pkgList,
                                 person['id'], acl, approvedStatus)
