@@ -1,6 +1,7 @@
 #!/usr/bin/python -tt
 
 import os
+import glob
 import re
 import distutils
 from distutils.dep_util import newer
@@ -93,10 +94,6 @@ class Build(_build, object):
 
     def run(self):
         super(Build, self).run()
-        pass
-        # Install to datadir/pkgdb
-        # Install conffile to confdir/pkgdb.cfg
-        pass
 
 class Install(_install, object):
     '''Override setuptools and install the package in the correct place for
@@ -154,44 +151,9 @@ class InstallApp(_install_lib, object):
         confdir.replace('//','/')
         self.mkpath(confdir)
         self.copy_file('pkgdb.cfg', confdir)
-
-class InstallApp(_install_lib, object):
-    user_options = _install_lib.user_options
-    user_options.append( ('install-conf=', None,
-            'Installation directory for configuration files'))
-    user_options.append( ('install-data=', None,
-            'Installation directory'))
-    user_options.append( ('root=', None,
-            'Install root'))
-
-    def initialize_options(self):
-        self.install_conf = None
-        self.install_data = None
-        self.root = None
-        super(InstallApp, self).initialize_options()
    
-    def finalize_options(self):
-        self.set_undefined_options('install',
-                ('root', 'root'),
-                ('install_conf', 'install_conf'),
-                ('install_data', 'install_data'))
-        print dir(self.distribution.get_name())
-        self.install_dir=os.path.join(self.install_data, self.distribution.get_name())
-        super(InstallApp, self).finalize_options()
-
-    def run(self):
-        super(InstallApp, self).run()
-        
-        ### FIXME: Couldn't think of a better way to do this in limited time
-
-        # Install the configuration file to the confdir
-        confdir = self.root + os.path.sep + self.install_conf
-        confdir.replace('//','/')
-        self.mkpath(confdir)
-        self.copy_file('pkgdb.cfg', confdir)
-
 setup(
-    name="fedora-packagedb",
+    name=name,
     version=version,
     
     description=description,
@@ -216,6 +178,9 @@ setup(
     packages=find_packages(),
     package_data = find_package_data(where='pkgdb',
                                      package='pkgdb'),
+    data_files = [
+        (os.path.join(name, 'yum.repos.d'), glob.glob('yum.repos.d/*'))
+        ],
     keywords = [
         # Use keywords if you'll be adding your package to the
         # Python Cheeseshop
