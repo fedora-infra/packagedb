@@ -1,3 +1,23 @@
+2007-10-17  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r209
+* pkgdb/dispatcher.py: PackageDispatcher::_create_or_modify_group_acl(): Fix
+  typo in name of build acl.
+  - toggle_groupacl_status(): Change variable used in log message from one that
+    was deleted in refactoring.
+  - add_package(): Rename group variable to plural form.
+    + Change variable used in error message to one available at this point in
+      the method.
+  - edit_package(): Rename group variable to plural form.
+    + Allow orphan user to be assigned ownership of the package.
+    + Change variables used in several error messages to variables present
+      when the variable is used.
+* pkgdb/json.py: import orm from sqlalchemy for use in one of the methods.
+
+2007-10-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r208
+* Fixes to build scripts from the stable branch.
+
+2007-10-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r207
+* Update ChangeLog
+
 2007-10-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r206
 * pkgdb/dispatcher.py: No longer set the checkout acl for comaintainers.
   There's currently no acls limiting checkout in cvs and it's not part of the
