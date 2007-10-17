@@ -31,6 +31,7 @@ implemented via the __json__() methods in model.py
 # lists, dicts, numbers and strings
 
 import sqlalchemy
+from sqlalchemy import orm
 from turbojson.jsonify import jsonify
 
 class SABase(object):

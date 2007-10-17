@@ -251,7 +251,7 @@ class PackageDispatcher(controllers.Controller):
         # depend on any acl being set adn for now, the commit acl is being
         # used for build and push
         if newAcl == 'commit':
-            self._create_or_modify_group_acl(pkgList, groupId, 'biuld', status)
+            self._create_or_modify_group_acl(pkgList, groupId, 'build', status)
         return groupAcl
 
     @expose(allow_json=True)
@@ -462,7 +462,7 @@ class PackageDispatcher(controllers.Controller):
                     identity.current.user.display_name,
                     identity.current.user_name, aclName, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, aclStatus,
-                    self.groups[changeGroup.groupid])
+                    self.groups[groupId])
         log = model.GroupPackageListingAclLog(identity.current.user.user_id,
                 status.statuscodeid, logMessage)
         log.acl = groupAcl
@@ -575,7 +575,7 @@ class PackageDispatcher(controllers.Controller):
         develCollection = model.Collection.get_by(name='Fedora',
                 version='devel')
         try:
-            person, group = self.fas.get_user_info(owner)
+            person, groups = self.fas.get_user_info(owner)
         except AuthError, e:
             return dict(status=False, message='Specified owner %s does not have a Fedora Account' % owner)
 
@@ -583,7 +583,7 @@ class PackageDispatcher(controllers.Controller):
         # If the person isn't in cvsextras or cvsadmin raise an error
         if not [x for x in groups if x['name'] in ('cvsextras', 'cvsadmin')]:
             return dict(status=False, message='%s is not in a group that'
-                    ' is allowed to own a package' % personid)
+                    ' is allowed to own a package' % owner)
 
         # Create the package
         pkg = model.Package(package, summary, approvedStatus.statuscodeid)
@@ -737,15 +737,15 @@ class PackageDispatcher(controllers.Controller):
         ownerId = None
         if 'owner' in changes:
             try:
-                person, group = self.fas.get_user_info(changes['owner'])
+                person, groups = self.fas.get_user_info(changes['owner'])
             except AuthError, e:
                 return dict(status=False, message='Specified owner %s does not have a Fedora Account' % changes['owner'])
             # Make sure the owner is in the correct group
             # If the person isn't in cvsextras or cvsadmin raise an error
-            if not [x for x in groups if x['name'] in
-                    ('cvsextras', 'cvsadmin')]:
+            if changes['owner'] != 'orphan' and not [x for x in groups
+                    if x['name'] in ('cvsextras', 'cvsadmin')]:
                 return dict(status=False, message='%s is not in a group'
-                        ' that is allowed to own a package' % personid)
+                        ' that is allowed to own a package' % changes['owner'])
 
             ownerId = person['id']
 
@@ -910,7 +910,7 @@ class PackageDispatcher(controllers.Controller):
                         ('cvsextras', 'cvsadmin')]:
                     return dict(status=False, message='%s is not in a group'
                             ' that is allowed acls on this package.' %
-                            personid)
+                            username)
 
                 # Add Acls for them to the packages
                 for pkgList in listings:
@@ -982,8 +982,9 @@ class PackageDispatcher(controllers.Controller):
         except sqlalchemy.exceptions.SQLError, e:
             # An error was generated
             return dict(status=False,
-                    message='Not able to create acl %s on %s with status %s' \
-                            % (newAcl, pkgid, status))
+                    message='Unable to modify PackageListing %s in %s' \
+                            % (pkgList.id, pkgList.collection.id))
+
         # Send a log to people interested in this package as well
         if pkgLogMsg:
             self._send_log_msg(pkgLogMsg, '%s summary updated by %s' % (
