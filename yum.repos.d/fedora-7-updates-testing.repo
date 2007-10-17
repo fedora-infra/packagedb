@@ -1,0 +1,31 @@
+[updates7-testing-i386]
+name=Fedora 7 - i386 - Test Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/testing/7/i386/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f7&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates7-testing-x86_64]
+name=Fedora 7 - x86_64 - Test Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/testing/7/x86_64/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f7&arch=x86_64
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates7-testing-ppc]
+name=Fedora 7 - ppc - Test Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/testing/7/ppc/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f7&arch=ppc
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates7-testing-source]
+name=Fedora 7 - Test Updates Source
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/testing/7/SRPMS/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-source-f7&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test

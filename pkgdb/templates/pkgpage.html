@@ -66,8 +66,12 @@ TODO='Not yet implemented'
             else:
                 for person in pkg.people:
                     if person.userid == tg.identity.user.user_id:
-                        # Person has an acl on the package
-                        interested = True
+		    	# Person has an acl on the package
+			for acl in aclNames:
+			    if person.aclOrder[acl]:
+			        # At least one of those acls is not-Obsolete
+                                interested = True
+				break
                         if (person.aclOrder.get('approveacls') and
                                 person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
                             # Person has approveacls acl.
@@ -124,7 +128,7 @@ TODO='Not yet implemented'
                 <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
                 </th>
               </tr>
-              <tr py:for="person in pkg.people" class="aclrow">
+	      <tr py:for="person in pkg.people" py:if="reduce(lambda x, y: x or person.aclOrder[y], aclNames, None)" class="aclrow">
                 <td class="acluser"
                   py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
                   <a href="${tg.url('/users/info/' + person.user)}">${person.name}</a>

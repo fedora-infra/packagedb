@@ -61,6 +61,12 @@ class Packages(controllers.Controller):
         return dict(title=self.appTitle + ' -- Package Overview',
                 packages=packages)
 
+    @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
+    def bugs(self, packageName):
+        pass
+        return dict(title='%s -- Fedora Bugs: %s' %
+                (self.appTitle, packageName))
+
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
         # Return the information about a package.

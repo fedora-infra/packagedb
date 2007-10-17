@@ -12,16 +12,17 @@ CONFDIR='@CONFDIR@'
 PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
 
 sys.path.append(PKGDBDIR)
+config.update({'pkgdb.basedir': PKGDBDIR})
 
 # first look on the command line for a desired config file,
 # if it's not on the command line, then
 # look for setup.py in this directory. If it's not there, this script is
 # probably installed
 if len(sys.argv) > 1:
-    update_config(configfile=sys.argv[1], 
+    update_config(configfile=sys.argv[1],
         modulename="pkgdb.config")
-elif exists(join(os.path.dirname(__file__), "setup.py")):
-    update_config(configfile="dev.cfg",modulename="pkgdb.config")
+elif os.path.exists(os.path.join(os.path.dirname(__file__), "setup.py")):
+    update_config(configfile="pkgdb.cfg",modulename="pkgdb.config")
 else:
     update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),modulename="pkgdb.config")
 

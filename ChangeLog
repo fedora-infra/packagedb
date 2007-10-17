@@ -1,3 +1,119 @@
+2007-10-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r206
+* pkgdb/dispatcher.py: No longer set the checkout acl for comaintainers.
+  There's currently no acls limiting checkout in cvs and it's not part of the
+  UI so we don't want it set.  Technically, the checkout acl for cvsextras
+  covers the current situation.
+
+2007-10-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r205
+* start-pkgdb.in: Fix a bug looking for the old config file name instead of
+  pkgdb.cfg.
+
+2007-10-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r204
+* pkgdb/templates/overview.html: Fix a typo.
+
+2007-10-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r203
+* pkgdb/dispatcher.py: Remove some debugging statements.
+  - PackageDispatcher::set_acl_status(), add_package(), edit_package(): Check
+    that the person is allowed to own or have commit acls on a package before
+    assigning them those powers.
+
+2007-10-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r202
+* pkgdb/dispatcher.py: Remove SelectResults as it's not necessary for use with
+  SA-0.3.10.
+  - PackageDispatcher::__init__(): Move groups that can have package acls to
+    the class level.
+  - _send_log_msg(): Return aclUsers via Query instead of SelectResults.
+  - _create_or_modify_acl(), _create_or_modify_group_acl(): When the commit
+    acl changes, change the build acl to match.
+  - set_acl_status(): Don't check whether the user is in cvsextras or cvsadmin
+    as we check later whether they're allowed to make changes.
+  - toggle_groupacl_status(): Don't check whether the user is in cvsextras or
+    cvsadmin as we check later whether they're allowed to make changes.
+    + Use _create_or_modify_group_acl() to change the group acl instead of
+      duplicating code here.
+    + Minor changes to the variables we're logging since we got rid of many
+      local variables when we use _create_or_modify_group_acl().
+  - toggle_acl_request(): Use _create_or_modify_acl() to make changes instead
+    of duplicating code here.
+* pkgdb/templates/pkgpage.html: Filter out acls that we don't display when
+  deciding whether to show an entry for a user in the acl list.
+
+2007-10-15  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r201
+* pkgdb/yumrepo.py: Fix ticket#87, descriptions mixed up.  Looks like the SA
+  session code has a hash collision somewhere that it's not handling the way
+  we expect.  closing the session after every package instead of a complete
+  package sync fixes the problem.
+
+2007-10-13  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r200
+* pkgdb/yumrepo.py: Logging fixes.
+
+2007-10-12  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r199
+* pkgdb/templates/pkgbugs.html: Template from Seth Vidal for displaying bugs
+  on Fedora Packages.
+* fedora-packagedb.spec: Require python-bugzilla.
+* pkgdb/packages.py: Add a bugs controller method.
+
+2007-10-12  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r198
+* start-pkgdb.in: Add a config option that tells where the pkgdb code is
+  installed.
+  - Due to changes to how we import os.path, change some function calls.
+
+2007-10-12  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r197
+* pkgdb/notifier.py, pkgdb/dispatcher.py: Move the email handling to an
+  EventLogger class in its own file.  This can eventually be changed to
+  send notification to a server, send email, log to the db, etc.
+
+2007-10-12  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r196
+* pkgdb/yumrepo.py: New files with several classes for dealing with yum repos.
+  - RepoUpdater: is intended for grabbing yum repoMD files from the repository.
+    It may need to be run from a separate process (via cron) due to it using
+    an extra 1-2 MB of memory whenever it kicks off.
+  - RepoInfo: Creates an SA model to connect to the repo primaryMD sqlite
+    caches.  Currently has one method to sync package descriptions against the
+    repository information.
+* pkgdb/controllers.py: Fix a typo in a comment.
+* pkgdb/json.py, pkgdb/model.py: Move SABase from the model to json.py.  This
+  allows us to more easily inherit SABase in different files.  (Like the
+  models in yumrepo.)
+* yum.repos.d/, yum.repos.d/fedora-3-extras.repo,
+  yum.repos.d/fedora-4-extras.repo, yum.repos.d/fedora-5-extras.repo,
+  yum.repos.d/fedora-6-extras.repo, yum.repos.d/fedora-7-updates-testing.repo,
+  yum.repos.d/fedora-7-updates.repo, yum.repos.d/fedora-7.repo,
+  yum.repos.d/fedora-development.repo, yum.repos.d/fedora-epel-4-testing.repo,
+  yum.repos.d/fedora-epel-4.repo, yum.repos.d/fedora-epel-5-testing.repo,
+  yum.repos.d/fedora-epel-5.repo, yum.repos.d/fedora-olpc-2.repo: Yum
+  repository information files.  These allow us to use yum to download the
+  repository metadata from the yum repos for Fedora.  We are grabbing nearly
+  everything relevant to the package db (FE3+, F7, F-devel, EL4+, and OLPC).
+
+2007-10-09  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r195
+* ChangeLog: Update ChangeLog.
+
+2007-10-09  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r194
+* fedora-packagedb.spec, pkgdb/release.py: Bump release number to 0.3.1.2
+* pkgdb/controllers.py, pkgdb/templates/overview.html: Take the PackageDB
+  Version from the release.py file.
+
+2007-10-09  Toshio リッチ Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r193
+* pkgdb/users.py: Get approvedStatus and EOLStatus on class creation.
+  - Users::packages(): Revamp to take an acl and an EOL parameter.  These
+    control whether we filter out EOL distributions from the list and what acls
+    we want to generate a list for.
+  - Remove special handling of the orphan userid as the normal code path will
+    handle this.
+  - Return the error by changing the template instead of raising a redirect.
+    This makes URLs better.
+
+2007-10-09  Toshio リッチ Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r192
+* pkgdb/dispatcher.py: Encode the debugging statements to ascii, explicitly
+  handling non-ascii characters in the output.
+
+2007-10-09  Toshio リッチ Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r191
+* setup.py: Make setup.py executable on its own.
+
+2007-10-02  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r190
+* ChangeLog: One last update.
+
 2007-10-02  Toshio Ernie Kuratomi <toshio@publictest1.fedora.phx.redhat.com> - r189
 * fedora-packagedb.spec: Really bump the version to 0.3.1.1
 * start-pkgdb.in: New directory name is fedora-packagedb.

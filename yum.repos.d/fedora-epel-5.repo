@@ -1,0 +1,27 @@
+[epel5-i386]
+name=Extras Packages for Enterprise Linux 5 - i386
+baseurl=http://download.fedora.redhat.com/pub/epel/5/i386/
+enabled=1
+gpgcheck=0
+gpgkey=http://download.fedora.redhat.com/pub/epel/RPM-GPG-KEY-EPEL
+
+[epel5-x86_64]
+name=Extras Packages for Enterprise Linux 5 - x86_64
+baseurl=http://download.fedora.redhat.com/pub/epel/5/x86_64/
+enabled=1
+gpgcheck=0
+gpgkey=http://download.fedora.redhat.com/pub/epel/RPM-GPG-KEY-EPEL
+
+[epel5-ppc]
+name=Extras Packages for Enterprise Linux 5 - ppc
+baseurl=http://download.fedora.redhat.com/pub/epel/5/ppc/
+enabled=1
+gpgcheck=0
+gpgkey=http://download.fedora.redhat.com/pub/epel/RPM-GPG-KEY-EPEL
+
+[epel5-source]
+name=Extras Packages for Enterprise Linux 5 - source
+baseurl=http://download.fedora.redhat.com/pub/epel/5/SRPMS/
+enabled=1
+gpgcheck=0
+gpgkey=http://download.fedora.redhat.com/pub/epel/RPM-GPG-KEY-EPEL
