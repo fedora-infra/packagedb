@@ -2,6 +2,7 @@
 
 version = '0.3.1.2'
 
+name = 'fedora-packagedb'
 description = 'The Fedora Package Database'
 long_description = '''
 Keep track of owner, maintainer, and parties interested in the development of
