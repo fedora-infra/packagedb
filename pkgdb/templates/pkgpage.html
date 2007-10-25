@@ -12,16 +12,10 @@ TODO='Not yet implemented'
 
     <h2 py:content="packageListings[0].package.name">Package</h2>
     <ul class="actions">
-      <?python
-        import urllib
-        kojiurl = 'http://koji.fedoraproject.org/koji/search?' + (
-            urllib.urlencode({'terms': packageListings[0].package.name,
-            'type': 'package', 'match': 'glob'}))
-        bodhiurl = 'http://admin.fedoraproject.org/updates/' + (
-            urllib.quote_plus(packageListings[0].package.name))
-      ?>
-      <li><a class="koji" href="${kojiurl}">Koji</a></li>
-      <li><a class="bodhi" href="${bodhiurl}">Bodhi</a></li>
+      <li><a class="koji" href="${'http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms='
+        + tg.quote_plus(packageListings[0].package.name)}">Koji</a></li>
+      <li><a class="bodhi" href="${'https://admin.fedoraproject.org/updates/'
+        + tg.quote_plus(packageListings[0].package.name)}">Bodhi</a></li>
     </ul>
 
     <table>
@@ -66,12 +60,12 @@ TODO='Not yet implemented'
             else:
                 for person in pkg.people:
                     if person.userid == tg.identity.user.user_id:
-		    	# Person has an acl on the package
-			for acl in aclNames:
-			    if person.aclOrder[acl]:
-			        # At least one of those acls is not-Obsolete
+                        # Person has an acl on the package
+                        for acl in aclNames:
+                            if person.aclOrder[acl]:
+                                # At least one of those acls is not-Obsolete
                                 interested = True
-				break
+                                break
                         if (person.aclOrder.get('approveacls') and
                                 person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
                             # Person has approveacls acl.
@@ -128,7 +122,7 @@ TODO='Not yet implemented'
                 <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
                 </th>
               </tr>
-	      <tr py:for="person in pkg.people" py:if="reduce(lambda x, y: x or person.aclOrder[y], aclNames, None)" class="aclrow">
+              <tr py:for="person in pkg.people" py:if="[acl for acl in aclNames if person.aclOrder[acl]]" class="aclrow">
                 <td class="acluser"
                   py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
                   <a href="${tg.url('/users/info/' + person.user)}">${person.name}</a>
