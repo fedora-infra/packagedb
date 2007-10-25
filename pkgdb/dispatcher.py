@@ -36,6 +36,7 @@ from pkgdb import model
 from pkgdb.notifier import EventLogger
 
 ORPHAN_ID=9900
+MAXSYSTEMUID=9999
 
 class PackageDispatcher(controllers.Controller):
     eventLogger = EventLogger()
@@ -362,7 +363,8 @@ class PackageDispatcher(controllers.Controller):
             if not [x for x in groups if x['name'] in
                     ('cvsextras', 'cvsadmin')]:
                 return dict(status=False, message='%s is not in a group that'
-                        ' is allowed to hold the %s acl' % (personid, newAcl))
+                        ' is allowed to hold the %s acl' % (user['username'],
+                            newAcl))
 
         personAcl = self._create_or_modify_acl(pkg, personid, newAcl, status)
 
@@ -581,7 +583,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure the owner is in the correct group
         # If the person isn't in cvsextras or cvsadmin raise an error
-        if not [x for x in groups if x['name'] in ('cvsextras', 'cvsadmin')]:
+        if not [x for x in groups if x['name'] in ('cvsextras', 'cvsadmin')] and person['id'] > MAXSYSTEMUID:
             return dict(status=False, message='%s is not in a group that'
                     ' is allowed to own a package' % owner)
 
@@ -742,8 +744,7 @@ class PackageDispatcher(controllers.Controller):
                 return dict(status=False, message='Specified owner %s does not have a Fedora Account' % changes['owner'])
             # Make sure the owner is in the correct group
             # If the person isn't in cvsextras or cvsadmin raise an error
-            if changes['owner'] != 'orphan' and not [x for x in groups
-                    if x['name'] in ('cvsextras', 'cvsadmin')]:
+            if not [x for x in groups if x['name'] in ('cvsextras', 'cvsadmin')] and person['id'] > MAXSYSTEMUID:
                 return dict(status=False, message='%s is not in a group'
                         ' that is allowed to own a package' % changes['owner'])
 
@@ -904,7 +905,7 @@ class PackageDispatcher(controllers.Controller):
                 except AuthError, e:
                     return dict(status=False, message='New comaintainer %s does not have a Fedora Account' % username)
 
-                # Make sure the owner is in the correct group
+                # Make sure the comaintainer is in the correct group
                 # If the person isn't in cvsextras or cvsadmin error
                 if not [x for x in groups if x['name'] in
                         ('cvsextras', 'cvsadmin')]:
