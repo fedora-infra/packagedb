@@ -18,8 +18,104 @@
  * Author(s): Ricky Zhou <ricky@fedoraproject.org>
  *            Toshio Kuratomi <tkuratom@redhat.com>
  */
-.pkglist {
-	width: 100%;
-	margin: 1.5ex 0;
-	text-align: center;
+
+/*
+ * Override a few things from the Fedora Stylesheet
+ */
+#sidebar
+{
+  width: 25ex;
+}
+
+#content
+{
+  margin-left: 25ex!important;
+}
+
+#content table th
+{
+  border: 1px solid #bbb;
+}
+
+#content table td
+{
+  border: 1px solid #ddd;
+}
+
+#content table
+{
+  margin: 1ex 0;
+}
+
+/*
+ * These could be reused in all of our TurboGears apps.
+ */
+#pageLogin
+{
+  float: right;
+}
+
+.actions
+{
+  list-style: none;
+  line-height: 1;
+  margin: 1ex 0!important;
+}
+
+.actions li
+{
+  display: inline;
+  margin-right: 1ex;
+}
+
+a.bodhi
+{
+  padding-left: 20px;
+  background: url(../images/bodhi.png) 0 50% no-repeat;
+}
+
+a.koji
+{
+  padding-left: 20px;
+  background: url(../images/koji.png) 0 50% no-repeat;
+}
+
+a.bugz
+{
+  padding-left: 20px;
+  background: url(../images/bugz.png) 0 50% no-repeat;
+}
+
+.ToolTip
+{
+  display: block;
+  positon: absolute;
+  border: 1px solid black;
+  background-color: lightyellow;
+  width: 200px;
+}
+
+.invisible
+{
+  display: none;
+}
+
+/*
+ * Package DB Specific styles
+ */
+.pkglist
+{
+  border: 1px solid #CCCCCC;
+  width: 100%;
+  text-align:center;
+}
+
+.pkglist th, .pkglist td
+{
+  border: none!important;
+}
+
+.acls .acluser, .acls .aclgroup
+{
+  text-align: left;
 }

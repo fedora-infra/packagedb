@@ -6,9 +6,8 @@
   <head>
     <title>${title}</title>
     <style type="text/css" media="screen">
-      @import url("${tg.url("/static/css/fedora.css")}");
+      @import url("http://fedoraproject.org/css/fedora.css");
       @import url("${tg.url("/static/css/pkgdb.css")}");
-      @import url("${tg.url("/static/css/style.css")}");
     </style>
     <script src="${tg.tg_js}/MochiKit.js"></script>
     <script src="${tg.url('/static/javascript/mochikit1.4.js')}"></script>
@@ -24,7 +23,7 @@
         <h1><a href="http://fedoraproject.org/index.html">Fedora</a></h1>
       </div>
       <div id="sidebar">
-        <div class="nav">
+        <div id="nav">
           <h2>Navigation</h2>
           <ul>
             <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
