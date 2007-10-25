@@ -28,11 +28,16 @@ import sqlalchemy.mods.selectresults
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
+import bugzilla
+
 from pkgdb import model
 from dispatcher import PackageDispatcher
 
 from cherrypy import request
 import json
+
+BZURL ='https://bugzilla.redhat.com/xmlrpc.cgi'
+BZURL = 'https://bzprx.vip.phx.redhat.com/xmlrpc.cgi'
 
 class Packages(controllers.Controller):
     '''Display information related to individual packages.
@@ -63,9 +68,13 @@ class Packages(controllers.Controller):
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
     def bugs(self, packageName):
-        pass
-        return dict(title='%s -- Fedora Bugs: %s' %
-                (self.appTitle, packageName))
+        bzServer = bugzilla.Bugzilla(url=BZURL)
+        query = {'product': 'Fedora',
+                'component': packageName,
+                'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
+        return dict(title='%s -- Open Bugs for %s' %
+                (self.appTitle, packageName), package=packageName,
+                bugs=bzServer.query(query))
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
