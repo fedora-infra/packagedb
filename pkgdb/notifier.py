@@ -47,6 +47,7 @@ class EventLogger(object):
         '''Send an email from the packagedb.'''
         if not fromAddr:
             fromAddr = self.MAILFROM
+
         if config.get('mail.on', False):
             print 'We should not be here on the test instance.'
             return
@@ -56,11 +57,13 @@ class EventLogger(object):
                 email.plain = msg
                 turbomail.enqueue(email)
         else:
-            print 'Would have sent: %s' % subject.encode('ascii', 'replace')
-            print 'To: %s' % recipients
-            print 'From: %s %s' % (fromAddr[0].encode('ascii', 'replace'),
-                    fromAddr[1].encode('ascii', 'replace'))
-            print '%s' % msg.encode('ascii', 'replace')
+            log.warning('Would have sent: %s' %
+                    subject.encode('ascii', 'replace'))
+            log.warning('To: %s' % recipients)
+            log.warning('From: %s %s' %
+                    (fromAddr[0].encode('ascii', 'replace'),
+                    fromAddr[1].encode('ascii', 'replace')))
+            log.warning('%s' % msg.encode('ascii', 'replace'))
 
     # The eventual plan is to abstract this one layer.  The application alerts
     # us to an event via a notify() method.  The notify() method needs to know
