@@ -86,6 +86,12 @@ a.bugz
   background: url(../images/bugz.png) 0 50% no-repeat;
 }
 
+a.pkgdb
+{
+  padding-left: 20px;
+  background: url(../images/pkgdb.png) 0 50% no-repeat;
+}
+
 .ToolTip
 {
   display: block;
@@ -103,19 +109,19 @@ a.bugz
 /*
  * Package DB Specific styles
  */
-.pkglist
+.pkglist, .buglist
 {
   border: 1px solid #CCCCCC;
   width: 100%;
   text-align:center;
 }
 
-.pkglist th, .pkglist td
+.pkglist th, .pkglist td, .buglist th, .buglist td
 {
   border: none!important;
 }
 
-.acls .acluser, .acls .aclgroup
+.acls .acluser, .acls .aclgroup, .buglist .bug
 {
   text-align: left;
 }

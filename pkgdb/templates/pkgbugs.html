@@ -5,53 +5,27 @@
   xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
   <body>
-    <!--[if lt IE 7]>
-    <style type="text/css">
-      #wrapper
-      {
-      height: 100%;
-      }
-    </style>
-    <![endif]-->
-    <style type="text/css">
-      table
-        {
-          width: 100%
-        }
-
-      #buglist
-        {
-          margin-left: 2ex!important;
-        }
-
-      td, th
-        {
-           border: none!important;
-        }
-      td.bug
-       {
-       border: none;
-       }
-    </style>
-        <h2>$package bugs</h2>
-        <table>
-          <tr>
-            <td>
-              <h4>${len(bugs)} bugs found</h4>
-              <table class="buglist">
-               <tr>
-                <th>number</th>
-                <th>status</th>
-                <th>description</th>
-               </tr>
-               <tr py:for="bug in bugs">
-               <td class="bug"><a href="$bug.url">$bug.bug_id</a></td>
-               <td class="bug">${bug.bug_status.lower()}</td>
-               <td class="bug"><a href="$bug.url">$bug.short_short_desc</a></td>
-               </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
+    <h2>$package bugs</h2>
+<ul class="actions">
+      <li><a class="koji" href="${'http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms='
+        + tg.quote_plus(package)}">Build Status</a></li>
+      <li><a class="bodhi" href="${'https://admin.fedoraproject.org/updates/'
+        + tg.quote_plus(package)}">Update Status</a></li>
+      <li><a class="pkgdb" href="${tg.url('/packages/name/' + package)}"
+          >Package Info</a></li>
+    </ul>
+    <h4>${len(bugs)} bugs found</h4>
+    <table class="buglist">
+      <tr>
+        <th>Number</th>
+        <th>Status</th>
+        <th>Description</th>
+      </tr>
+      <tr py:for="bug in bugs">
+        <td class="bug"><a href="$bug.url">$bug.bug_id</a></td>
+        <td class="bug">${bug.bug_status.lower()}</td>
+        <td class="bug"><a href="$bug.url">$bug.short_short_desc</a></td>
+      </tr>
+    </table>
   </body>
 </html>

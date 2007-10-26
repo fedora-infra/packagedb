@@ -39,6 +39,16 @@ import json
 BZURL ='https://bugzilla.redhat.com/xmlrpc.cgi'
 BZURL = 'https://bzprx.vip.phx.redhat.com/xmlrpc.cgi'
 
+class BzBug(object):
+    def __init__(self, bug):
+        self.bug_id = bug.bug_id
+        self.url = bug.url
+        self.bug_status = unicode(bug.bug_status, 'utf-8')
+        try:
+            self.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
+        except TypeError:
+            self.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
+
 class Packages(controllers.Controller):
     '''Display information related to individual packages.
     '''
@@ -50,6 +60,7 @@ class Packages(controllers.Controller):
         :appTitle: Title of the web app.
         '''
         self.fas = fas
+        self.bzServer = bugzilla.Bugzilla(url=BZURL)
         self.appTitle = appTitle
         self.dispatcher = PackageDispatcher(self.fas)
         self.removedStatus = model.StatusTranslation.get_by(
@@ -68,13 +79,16 @@ class Packages(controllers.Controller):
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
     def bugs(self, packageName):
-        bzServer = bugzilla.Bugzilla(url=BZURL)
         query = {'product': 'Fedora',
                 'component': packageName,
                 'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
+        rawBugs = self.bzServer.query(query)
+        bugs = []
+        for bug in rawBugs:
+            bugs.append(BzBug(bug))
         return dict(title='%s -- Open Bugs for %s' %
                 (self.appTitle, packageName), package=packageName,
-                bugs=bzServer.query(query))
+                bugs=bugs)
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
