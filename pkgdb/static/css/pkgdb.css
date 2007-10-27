@@ -121,7 +121,7 @@ a.pkgdb
   border: none!important;
 }
 
-.acls .acluser, .acls .aclgroup, .buglist .bug
+.acls .acluser, .groupacls .aclgroup, .buglist .bug
 {
   text-align: left;
 }

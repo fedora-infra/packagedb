@@ -17,7 +17,7 @@ TODO='Not yet implemented'
       <li><a class="bodhi" href="${'https://admin.fedoraproject.org/updates/'
         + tg.quote_plus(packageListings[0].package.name)}">Update Status</a></li>
       <li><a class="bugz"
-	      href="${tg.url('/packages/bugs/' + packageListings[0].package.name)}"
+        href="${tg.url('/packages/bugs/' + packageListings[0].package.name)}"
           >Bug Reports</a></li>
     </ul>
 
@@ -120,12 +120,21 @@ TODO='Not yet implemented'
             </td><td py:content="pkg.status.translations[0].statusname">
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
-            <table class="acls" width="100%">
-              <tr>
-                <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
-                </th>
-              </tr>
-              <tr py:for="person in pkg.people" py:if="[acl for acl in aclNames if person.aclOrder[acl]]" class="aclrow">
+          <table class="acls" width="100%">
+            <tr>
+              <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
+              </th>
+            </tr>
+            <!-- Sort the people list and give us a list of the indexes into
+                 the list to access them in sorted order
+              -->
+            <py:with vars="peopleIndex = [p[1] for p in sorted(
+              [(pi[0].user, pi[1]) for pi in
+              zip(pkg.people, range(0, len(pkg.people)))])]">
+              <tr py:for="userIndex in peopleIndex"
+                py:if="[acl for acl in aclNames if pkg.people[userIndex].aclOrder[acl]]"
+                py:with="person = pkg.people[userIndex]"
+                class="aclrow">
                 <td class="acluser"
                   py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
                   <a href="${tg.url('/users/info/' + person.user)}">${person.name}</a>
@@ -161,44 +170,49 @@ TODO='Not yet implemented'
                   </div>
                 </td>
               </tr>
-              <tr py:for="group in pkg.groups" class="aclgrouprow">
-                <td py:content="group.name" class="aclgroup"
-                  py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
-                  Name
-                </td>
-                <!-- If the user has permission to edit the acls, give them a
-                checkbox to edit this
-                -->
-                <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
-                  <div py:if="aclChanger"
-                    py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid) +
-                    ':commit'}"
-                    class="requestContainer groupAclStatus">
-                    group members can commit?
-                    <input type="checkbox" class="groupAclStatusBox"
-                      py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved')}"/>
-                  </div>
-                  <div py:if="not aclChanger"
-                    py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
-                    + ':commit'}"
-                    class="groupAclStatus requestContainer">
-                    group members can commit?
-                    <input type="checkbox" class="groupAclStatusLabelBox"
-                      disabled="true"
-                      py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved')}"/>
-                  </div>
-                </td>
-              </tr>
-              <tr py:if="not tg.identity.anonymous and not interested">
-                <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
-                  <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
-                  + ':' + str(tg.identity.user.user_id)}"
-                  class="addMyselfButton"
-                  value="Add myself to package"/>
-                </td>
-              </tr>
-            </table>
+            </py:with>
+          </table>
         </td></tr>
+        <tr py:if="not tg.identity.anonymous or pkg.groups" colspan="4"><td colspan="4">
+          <table class="groupacls" width="100%">
+            <tr py:for="group in pkg.groups" class="aclgrouprow">
+              <td py:content="group.name" class="aclgroup"
+                py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
+                Name
+              </td>
+              <!-- If the user has permission to edit the acls, give them a
+              checkbox to edit this
+              -->
+              <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
+                <div py:if="aclChanger"
+                  py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid) +
+                  ':commit'}"
+                  class="requestContainer groupAclStatus">
+                  group members can commit?
+                  <input type="checkbox" class="groupAclStatusBox"
+                    py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved')}"/>
+                </div>
+                <div py:if="not aclChanger"
+                  py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
+                  + ':commit'}"
+                  class="groupAclStatus requestContainer">
+                  group members can commit?
+                  <input type="checkbox" class="groupAclStatusLabelBox"
+                    disabled="true"
+                    py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved')}"/>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+        <tr py:if="not tg.identity.anonymous and not interested">
+          <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
+            <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
+            + ':' + str(tg.identity.user.user_id)}"
+            class="addMyselfButton"
+            value="Add myself to package"/>
+          </td>
+        </tr>
       </table>
     </form>
   </body>
