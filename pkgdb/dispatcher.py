@@ -38,6 +38,9 @@ from pkgdb.notifier import EventLogger
 ORPHAN_ID=9900
 MAXSYSTEMUID=9999
 
+class AclNotAllowedError(Exception):
+    pass
+
 class PackageDispatcher(controllers.Controller):
     eventLogger = EventLogger()
 
@@ -152,6 +155,52 @@ class PackageDispatcher(controllers.Controller):
                 break
         return False
 
+    def _acl_can_be_held_by_user(self, acl, user=None):
+        '''Return true if the user is allowed to hold the specified acl.
+
+        Args:
+        :acl: The acl to verify
+        :user: The user to check.  Either a user, group tuple from FAS or None.
+               If None, the current identity will be used.
+        '''
+        # Anyone can hold watchbugzilla or watchcommits
+        if acl in ('watchbugzilla', 'watchcommits'):
+            return True
+
+        if acl == 'owner':
+            if user:
+                if user[0]['id'] <= MAXSYSTEMUID:
+                    # Any pseudo user can be the package owner
+                    return True
+                elif [group for group in user[1] if group['name'] in
+                        ('cvsextras', 'cvsadmin')]:
+                    # If the user is in cvsextras or cvsadmin they are allowed
+                    return True
+                raise AclNotAllowed(
+                        '%s must be in cvsextras or cvsadmin to own a package' %
+                        user[0]['username'])
+            # Anyone in cvsextras or cvsadmin can potentially own the package
+            elif identity.in_any_group('cvsextras', 'cvsadmin'):
+                return True
+            raise AclNotAllowed(
+                    '%s must be in cvsextras or cvsadmin to own a package' %
+                    identity.current.user_name)
+
+        # For any other acl, check whether the person is in an allowed group
+        if user:
+            # If the person isn't in cvsextras or cvsadmin raise an error
+            if [group for group in user[1] if group['name'] in
+                    ('cvsextras', 'cvsadmin')]:
+                return True
+            raise AclNotAllowed(
+                    '%s must be in cvsextras or cvsadmin to hold the %s acl' %
+                    (user[0]['username'], acl))
+        elif identity.in_any_group('cvsextras', 'cvsadmin'):
+            return True
+        raise AclNotAllowed(
+                '%s must be in cvsextras or cvsadmin to hold the %s acl' %
+                (identity.current.user_name, acl))
+
     def _create_or_modify_acl(self, pkgList, personId, newAcl, status):
         '''Create or modify an acl.
 
@@ -262,16 +311,19 @@ class PackageDispatcher(controllers.Controller):
     @expose(allow_json=True)
     @identity.require(identity.not_anonymous())
     def toggle_owner(self, containerId):
-        # Check that the tg.identity is allowed to set themselves as owner
-        if not identity.in_any_group('cvsextras', 'cvsadmin'):
-            return dict(status=False, message='User must be in cvsextras or cvsadmin')
-
-        # Check that the pkgid is orphaned
+        '''Orphan package or set the owner to the logged in user.'''
+        # Check that the pkg exists
         pkg = model.PackageListing.get_by(id=containerId)
         if not pkg:
             return dict(status=False, message='No such package %s' % containerId)
         approved = self._user_can_set_acls(identity, pkg)
         if pkg.owner == ORPHAN_ID:
+            # Check that the tg.identity is allowed to set themselves as owner
+            try:
+                self._acl_can_be_held_by_user('owner')
+            except AclNotAllowedError, e
+                return dict(status=False, message=str(e))
+
             # Take ownership
             pkg.owner = identity.current.user.user_id
             ownerName = '%s (%s)' % (identity.current.user.display_name,
@@ -355,16 +407,18 @@ class PackageDispatcher(controllers.Controller):
                     '%s is not allowed to approve Package ACLs' %
                     identity.current.user.display_name)
 
+        #
+        # Make sure the person is allowed on this acl
+        #
+
         # Get the human name and username for the person whose acl we changed
         (user, groups) = self.fas.get_user_info(personid)
-        # Make sure the person is allowed on this acl
-        if newAcl not in ('watchbugzilla', 'watchcommits'):
-            # If the person isn't in cvsextras or cvsadmin raise an error
-            if not [x for x in groups if x['name'] in
-                    ('cvsextras', 'cvsadmin')]:
-                return dict(status=False, message='%s is not in a group that'
-                        ' is allowed to hold the %s acl' % (user['username'],
-                            newAcl))
+        # Always allowed to remove an acl
+        if statusname not in ('Denied', 'Obsolete'):
+            try:
+                self._acl_can_be_held_by_user(newAcl, (user, groups))
+            except AclNotAllowedError, e:
+                return dict(status=False, message=str(e))
 
         personAcl = self._create_or_modify_acl(pkg, personid, newAcl, status)
 
@@ -493,18 +547,9 @@ class PackageDispatcher(controllers.Controller):
         if not pkgListing:
             return dict(status=False, message='No such package listing %s' % pkgListId)
 
-        # Person must be in cvsextras or cvsadmin to receive acls on anything
-        # other than watchbugzilla/watchcommits
-        if aclName not in ('watchbugzilla', 'watchcommits'):
-            if not identity.in_any_group('cvsextras', 'cvsadmin'):
-                return dict(status=False, message='User %s is not in a group'
-                        ' that is allowed to hold package acls.' %
-                        identity.current.user.user_name)
-
-        model.PersonPackageListingAcl
-        # Determine whether we need to set a new acl or not
+        # Determine whether we need to set a new acl
         aclStatus = 'Awaiting Review'
-        # Determine if the group already has an acl
+        # Determine if the user already has an acl
         try:
             acl = session.query(model.PersonPackageListingAcl).filter_by(
                 sqlalchemy.and_(model.PersonPackageListingAcl.c.personpackagelistingid==model.PersonPackageListing.c.id,
@@ -517,6 +562,14 @@ class PackageDispatcher(controllers.Controller):
         else:
             if acl.status.translations[0].statusname != 'Obsolete':
                 aclStatus = 'Obsolete'
+
+        if aclStatus != 'Obsolete':
+            # Person must be in cvsextras or cvsadmin to receive acls on
+            # anything other than watchbugzilla/watchcommits
+            try:
+                self._acl_can_be_held_by_user(aclName)
+            except AclNotAllowedError, e
+                return dict(status=False, message=str(e))
 
         status = model.StatusTranslation.get_by(statusname=aclStatus)
         # Assign person to package
@@ -583,9 +636,10 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure the owner is in the correct group
         # If the person isn't in cvsextras or cvsadmin raise an error
-        if not [x for x in groups if x['name'] in ('cvsextras', 'cvsadmin')] and person['id'] > MAXSYSTEMUID:
-            return dict(status=False, message='%s is not in a group that'
-                    ' is allowed to own a package' % owner)
+        try:
+            self._acl_can_be_held_by_user('owner', (person, groups))
+        except AclNotAllowedError, e
+            return dict(status=False, message=str(e))
 
         # Create the package
         pkg = model.Package(package, summary, approvedStatus.statuscodeid)
@@ -705,7 +759,7 @@ class PackageDispatcher(controllers.Controller):
     def edit_package(self, package, **changes):
         '''Add a new package to the database.
         '''
-        # Check that the tg.identity is allowed to set themselves as owner
+        # Check that the tg.identity is allowed to make changes to the package
         if not identity.in_any_group('cvsadmin'):
             return dict(status=False, message='User must be in cvsadmin')
 
@@ -743,10 +797,11 @@ class PackageDispatcher(controllers.Controller):
             except AuthError, e:
                 return dict(status=False, message='Specified owner %s does not have a Fedora Account' % changes['owner'])
             # Make sure the owner is in the correct group
-            # If the person isn't in cvsextras or cvsadmin raise an error
-            if not [x for x in groups if x['name'] in ('cvsextras', 'cvsadmin')] and person['id'] > MAXSYSTEMUID:
-                return dict(status=False, message='%s is not in a group'
-                        ' that is allowed to own a package' % changes['owner'])
+            # If the person isn't in cvsextras or cvsadmin raise an error 
+            try:
+                self._acl_can_be_held_by_user('owner', (person, groups))
+            except AclNotAllowedError, e
+                return dict(status=False, message=str(e))
 
             ownerId = person['id']
 
@@ -907,11 +962,10 @@ class PackageDispatcher(controllers.Controller):
 
                 # Make sure the comaintainer is in the correct group
                 # If the person isn't in cvsextras or cvsadmin error
-                if not [x for x in groups if x['name'] in
-                        ('cvsextras', 'cvsadmin')]:
-                    return dict(status=False, message='%s is not in a group'
-                            ' that is allowed acls on this package.' %
-                            username)
+                try:
+                    self._acl_can_be_held_by_user('approveacls', (person, groups))
+                except AclNotAllowedError, e
+                    return dict(status=False, message=str(e))
 
                 # Add Acls for them to the packages
                 for pkgList in listings:
