@@ -335,6 +335,7 @@ function request_acl_gui(event) {
             return;
         }
     }
+    var aclTable = getElementsByTagAndClassName('table', 'acls', pkgListTable)[0];
 
     // FIXME: We should have the acls handed over in a JSON array in the
     // template so that we could operate on it as javascript now.  But we
@@ -348,7 +349,7 @@ function request_acl_gui(event) {
     for (var aclNum in acls) {
         // FIXME: If the user is also the owner, create aclStatus as a select
         // list instead of a span so they can approve acls for themselves.
-        // Have to ad the pkg owner information to the table somewhere.
+        // Have to add the pkg owner information to the table somewhere.
         // Probaby <span class='ownerName'
         //    name='pkgListId:ownerId'>display_name (username)</span>
         // is the place to store that.
@@ -368,7 +369,7 @@ function request_acl_gui(event) {
      * Insert the GUI element and remove the button that requests the GUI be
      * shown.
      */
-    insertSiblingNodesBefore(buttonRow, newAclRow);
+    appendChildNodes(aclTable, newAclRow);
     removeElement(buttonRow);
 }
 
@@ -433,14 +434,18 @@ function request_status_change(event) {
  * This mostly involves setting event handlers to be called when the user
  * clicks on something.
  */
-function init(event) {
+jQuery(document).ready(function() {
+    logDebug('In Init');
+    /* Restore $() to whatever other library wants it */
+    jQuery.noConflict();
+
     /* Global commits hash.  When a change from the user is anticipated, add
      * relevant information to this hash.  After the change is committed or
      * cancelled, remove it.
      */
-    logDebug('In Init');
     commits = {};
 
+    //jQuery('input').class('ownerButton')
     var ownerButtons = getElementsByTagAndClassName('input', 'ownerButton');
     for (var buttonNum in ownerButtons) {
         var request_owner_change = partial(make_request, '/toggle_owner',
@@ -470,6 +475,4 @@ function init(event) {
     for (var addButtonNum in addMyselfButtons) {
         connect(addMyselfButtons[addButtonNum], 'onclick', request_acl_gui);
     }
-}
-
-connect(window, 'onload', init);
+});

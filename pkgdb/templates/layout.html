@@ -16,6 +16,7 @@
       tgUserUserName = "${tg.identity.user.user_name}";
       tgUserUserId = "${tg.identity.user.user_id}";
     </script>
+    <script src="${tg.url('/static/javascript/jquery-1.2.1.js')}"></script>
   </head>
   <body py:match="body" py:attrs="select('@*')">
     <div id="wrapper">
