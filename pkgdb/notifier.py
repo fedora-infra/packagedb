@@ -57,13 +57,13 @@ class EventLogger(object):
                 email.plain = msg
                 turbomail.enqueue(email)
         else:
-            log.warning('Would have sent: %s' %
+            log.debug('Would have sent: %s' %
                     subject.encode('ascii', 'replace'))
-            log.warning('To: %s' % recipients)
-            log.warning('From: %s %s' %
+            log.debug('To: %s' % recipients)
+            log.debug('From: %s %s' %
                     (fromAddr[0].encode('ascii', 'replace'),
                     fromAddr[1].encode('ascii', 'replace')))
-            log.warning('%s' % msg.encode('ascii', 'replace'))
+            log.debug('%s' % msg.encode('ascii', 'replace'))
 
     # The eventual plan is to abstract this one layer.  The application alerts
     # us to an event via a notify() method.  The notify() method needs to know
