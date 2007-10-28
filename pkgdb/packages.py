@@ -21,33 +21,17 @@
 Controller for displaying Package Information.
 '''
 
-import sqlalchemy
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
 
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
-import bugzilla
-
 from pkgdb import model
-from dispatcher import PackageDispatcher
+from pkgdb.dispatcher import PackageDispatcher
+from pkgdb.bugs import Bugs
 
 from cherrypy import request
-import json
-
-BZURL ='https://bugzilla.redhat.com/xmlrpc.cgi'
-BZURL = 'https://bzprx.vip.phx.redhat.com/xmlrpc.cgi'
-
-class BzBug(object):
-    def __init__(self, bug):
-        self.bug_id = bug.bug_id
-        self.url = bug.url
-        self.bug_status = unicode(bug.bug_status, 'utf-8')
-        try:
-            self.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
-        except TypeError:
-            self.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
 
 class Packages(controllers.Controller):
     '''Display information related to individual packages.
@@ -60,9 +44,9 @@ class Packages(controllers.Controller):
         :appTitle: Title of the web app.
         '''
         self.fas = fas
-        self.bzServer = bugzilla.Bugzilla(url=BZURL)
         self.appTitle = appTitle
-        self.dispatcher = PackageDispatcher(self.fas)
+        self.bugs = Bugs(appTitle)
+        self.dispatcher = PackageDispatcher(fas)
         self.removedStatus = model.StatusTranslation.get_by(
                 statusname='Removed', language='C').statuscodeid
 
@@ -76,19 +60,6 @@ class Packages(controllers.Controller):
 
         return dict(title=self.appTitle + ' -- Package Overview',
                 packages=packages)
-
-    @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
-    def bugs(self, packageName):
-        query = {'product': 'Fedora',
-                'component': packageName,
-                'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
-        rawBugs = self.bzServer.query(query)
-        bugs = []
-        for bug in rawBugs:
-            bugs.append(BzBug(bug))
-        return dict(title='%s -- Open Bugs for %s' %
-                (self.appTitle, packageName), package=packageName,
-                bugs=bugs)
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):

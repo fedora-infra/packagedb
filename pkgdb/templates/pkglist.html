@@ -3,9 +3,9 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
 
-  <div py:def="pkglist(packages)" class="PackageList">
+  <div py:def="pkglist(packages, mode='name')" class="PackageList">
     <ul py:for="pkg in packages">
-      <li><a href="${tg.url('/packages/name/' + pkg.name)}"
+      <li><a href="${tg.url('/packages/%s/%s' % (mode, pkg.name))}"
         py:content="pkg.name"></a> --
       <span py:replace="pkg.summary">Package Summary</span></li>
     </ul>
