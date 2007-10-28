@@ -1,3 +1,130 @@
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r230
+* fedora-packagedb.spec, pkgdb/release.py: Bump release to 0.3.2.
+
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r229
+* pkgdb/bugs.py: Split the bug code into its own controller.
+  - Create an overview page that lists all packages via index().
+  - Display buglist for a package via the default() method.
+* pkgdb/static/images/pkgdb.png: Small icon for the packageDB.
+* pkgdb/templates/bugoverview.html: Template for the bug overview page.
+* pkgdb/packages.py: Split bug information into bugs.py:Bug() class.
+  - Move setting the Bugzilla URL to the config file.
+* pkgdb/templates/pkglist.html: Take a mode argument.  If mode == 'name',
+  create links to the package information page.  If mode == 'bugs', create
+  link to the package bugs page.
+
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r228
+* pkgdb/notifier.py: Log messages when mail is disabled to the debug filter
+  instead of the warning filter.
+
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r227
+* pkgdb.cfg: Make settings more generic... replace hosts with localhost, use
+  generic email addresses, etc.
+  - Set the bugzilla url.
+* pkgdb/config/app.cfg: Move sqlalchemy.convert_unicode here as the code assumes
+  that sqlalchemy will do the unicode conversion for us.
+
+2007-10-27  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r226
+* pkgdb/dispatcher.py: Fix syntax error when catching the AclNotAllowdError.
+
+2007-10-27  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r225
+* pkgdb/dispatcher.py: AclNotAllowedError: New exception that raises when
+  a person is not allowed on an acl.
+  - _acl_can_be_held_by_user(): Take an acl and either an user/group tuple
+    from fas or work on the current identity to decide if the user is allowed
+    on the acl.
+  - toggle_owner(), set_acl_status(), toggle_acl_request(), add_package(),
+    edit_package(): Use _acl_can_be_held_by_user() instead of duplicating
+    code in all these functions.
+    + Always allow removing an acl (Obsolete or Deny) whether or not the user
+      is allowed on the acl (in case they were added due to a flaw while
+      importing the owners in the firt place.)
+
+2007-10-26  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r224
+* pkgdb/static/css/pkgdb.css: Add a groupacls class that's treated like the
+  acls group.
+* pkgdb/templates/pkgpage.html: Tabs to spaces.
+  - Sort the list of users so that they are alphabetical by user.
+  - Separate the acls for users, groups, and the add myself to package button
+    into separate tables.
+
+2007-10-26  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r223
+* pkgdb/static/javascript/pkgpage.js: Correctly position the new acl row
+  right after the existing user acls when a user hits the add myself to
+  package button.
+  - Load the initial event handler using jquery.
+* pkgdb/templates/layout.html: Include the jquery library.
+
+2007-10-25  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r222
+* pkgdb/packages.py: BzBug: New class that changes the fields we use in the
+  bugzilla return data into unicode.  We should fix this in python-bugzilla
+  at some point.
+  - Packages::__init__(): Setup the bugzilla server here.
+  - Packages::bugs(): Convert query fields to unicode before sending to the
+    template.
+* pkgdb/static/css/pkgdb.css: Entry for the packageDB link, handle the buglist
+  the same way as the pkglist.
+* pkgdb/templates/pkgbugs.html: Remove style information from the template and
+  reindent.
+
+2007-10-25  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r221
+* pkgdb/static/images/bugz.png: Icon for the bug information.
+* pkgdb/packages.py: Packages::bugs(): Port skvidal's Fedora bug retrieval
+  code into the method.
+* pkgdb/templates/pkgbugs.html: Port skvidal's Fedora bug temlate into a
+  pkgdb template.
+
+2007-10-25  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r220
+* pkgdb/notifier.py: Use the logging methods to record turbomail debugging
+  information.
+
+2007-10-25  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r219
+* pkgdb/static/css/fedora.css, pkgdb/static/css/style.css: Migrate to using the
+  vanilla fedora.css file plus overrides in the pkgdb.css.
+* pkgdb/static/css/pkgdb.css: Add all the css needed for the pkgdb to function
+  here.
+* pkgdb/templates/collectionpage.html: Properly label the headers in the
+  collection information table.
+* pkgdb/templates/layout.html: Switch to using fedoraproject.org/css/fedora.css
+  for the majority of the look.
+
+2007-10-25  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r218
+* pkgpage/templates/pkgpage.html: Rename links to Bodhi/Koji to be more
+  friendly to end users.
+  - Add a link to package bugs.
+
+2007-10-25  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r217
+* pkgdb/templates/pkgpage.html: Various cleanups: No longer use a PI to define
+  koji and bodhi urls.
+  - Substitute spaces for tabs.
+  - Change a reduce(lambda) construct into a list comprehension.
+
+2007-10-24  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r216
+* pkgdb/notifiery.py: Merge notifier changes from -devel.
+
+2007-10-24  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r215
+* pkgdb/dispatcher.py: Allow any pseudo user account to own a package, not
+  just orphan.
+  - Make the error message when trying to set a non-cvsextras user to be
+    slightly less cryptic.
+
+2007-10-24  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r214
+* pkgdb/static/javascript/jquery-1.2.1.js: Add the jquery library.
+
+2007-10-24  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r213
+* Require sqlalchemy between 0.3 and 0.4.
+
+2007-10-19  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r212
+* pkgdb/templates/collectionoverview.html: Correct the name of the tooltip.js
+  javascript library to include.
+
+2007-10-19  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r211
+* pkgdb/static/javascript/famework.js: Spinner now lives in pkgdb/static in
+  the dev instance as well.
+
+2007-10-17  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r210
+* ChangeLog: Update.
+
 2007-10-17  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r209
 * pkgdb/dispatcher.py: PackageDispatcher::_create_or_modify_group_acl(): Fix
   typo in name of build acl.
