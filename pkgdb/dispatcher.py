@@ -321,7 +321,7 @@ class PackageDispatcher(controllers.Controller):
             # Check that the tg.identity is allowed to set themselves as owner
             try:
                 self._acl_can_be_held_by_user('owner')
-            except AclNotAllowedError, e
+            except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
 
             # Take ownership
@@ -568,7 +568,7 @@ class PackageDispatcher(controllers.Controller):
             # anything other than watchbugzilla/watchcommits
             try:
                 self._acl_can_be_held_by_user(aclName)
-            except AclNotAllowedError, e
+            except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
 
         status = model.StatusTranslation.get_by(statusname=aclStatus)
@@ -638,7 +638,7 @@ class PackageDispatcher(controllers.Controller):
         # If the person isn't in cvsextras or cvsadmin raise an error
         try:
             self._acl_can_be_held_by_user('owner', (person, groups))
-        except AclNotAllowedError, e
+        except AclNotAllowedError, e:
             return dict(status=False, message=str(e))
 
         # Create the package
@@ -800,7 +800,7 @@ class PackageDispatcher(controllers.Controller):
             # If the person isn't in cvsextras or cvsadmin raise an error 
             try:
                 self._acl_can_be_held_by_user('owner', (person, groups))
-            except AclNotAllowedError, e
+            except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
 
             ownerId = person['id']
@@ -964,7 +964,7 @@ class PackageDispatcher(controllers.Controller):
                 # If the person isn't in cvsextras or cvsadmin error
                 try:
                     self._acl_can_be_held_by_user('approveacls', (person, groups))
-                except AclNotAllowedError, e
+                except AclNotAllowedError, e:
                     return dict(status=False, message=str(e))
 
                 # Add Acls for them to the packages
