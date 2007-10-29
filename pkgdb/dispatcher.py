@@ -179,14 +179,14 @@ class PackageDispatcher(controllers.Controller):
                         self.groupnames]:
                     # If the user is in cvsextras or cvsadmin they are allowed
                     return True
-                raise AclNotAllowed(
-                        '%s must be in one of %s to own a package' %
+                raise AclNotAllowedError(
+                        '%s must be in one of these groups: %s to own a package' %
                         (user[0]['username'], self.groupnames))
             # Anyone in cvsextras or cvsadmin can potentially own the package
             elif identity.in_any_group(*self.groupnames):
                 return True
-            raise AclNotAllowed(
-                    '%s must be in one of %s to own a package' %
+            raise AclNotAllowedError(
+                    '%s must be in one of these groups: %s to own a package' %
                     (identity.current.user_name, self.groupnames))
 
         # For any other acl, check whether the person is in an allowed group
@@ -195,13 +195,13 @@ class PackageDispatcher(controllers.Controller):
             if [group for group in user[1] if group['name'] in
                     self.groupnames]:
                 return True
-            raise AclNotAllowed(
-                    '%s must be in one of %s to hold the %s acl' %
+            raise AclNotAllowedError(
+                    '%s must be in one of these groups: %s to hold the %s acl' %
                     (user[0]['username'], self.groupnames, acl))
         elif identity.in_any_group(*self.groupnames):
             return True
-        raise AclNotAllowed(
-                '%s must be in one of %s to hold the %s acl' %
+        raise AclNotAllowedError(
+                '%s must be in one of these groups: %s to hold the %s acl' %
                 (identity.current.user_name, self.groupnames, acl))
 
     def _create_or_modify_acl(self, pkgList, personId, newAcl, status):
