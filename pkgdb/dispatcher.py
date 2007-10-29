@@ -48,12 +48,15 @@ class PackageDispatcher(controllers.Controller):
     # In the future the list of groups that can commit to packages should
     # be stored in a database somewhere.  Either packagedb or FAS should
     # have a flag.
+    # Nearer term, we want to split name=>id mapping from id=>name mapping.
+    # Waiting for the cvsextras=>packager rename will make this easier though.
 
     # Create a list of groups that can possibly commit to packages
     groups = {100300: 'cvsextras',
             101197: 'cvsadmin',
             'cvsextras': 100300,
             'cvsadmin': 101197}
+    groupnames =('cvsextras', 'packager', 'cvsadmin')
 
     def __init__(self, fas = None):
         self.fas = fas
@@ -173,33 +176,33 @@ class PackageDispatcher(controllers.Controller):
                     # Any pseudo user can be the package owner
                     return True
                 elif [group for group in user[1] if group['name'] in
-                        ('cvsextras', 'cvsadmin')]:
+                        self.groupnames]:
                     # If the user is in cvsextras or cvsadmin they are allowed
                     return True
                 raise AclNotAllowed(
-                        '%s must be in cvsextras or cvsadmin to own a package' %
-                        user[0]['username'])
+                        '%s must be in one of %s to own a package' %
+                        (user[0]['username'], self.groupnames))
             # Anyone in cvsextras or cvsadmin can potentially own the package
-            elif identity.in_any_group('cvsextras', 'cvsadmin'):
+            elif identity.in_any_group(*self.groupnames):
                 return True
             raise AclNotAllowed(
-                    '%s must be in cvsextras or cvsadmin to own a package' %
-                    identity.current.user_name)
+                    '%s must be in one of %s to own a package' %
+                    (identity.current.user_name, self.groupnames))
 
         # For any other acl, check whether the person is in an allowed group
         if user:
             # If the person isn't in cvsextras or cvsadmin raise an error
             if [group for group in user[1] if group['name'] in
-                    ('cvsextras', 'cvsadmin')]:
+                    self.groupnames]:
                 return True
             raise AclNotAllowed(
-                    '%s must be in cvsextras or cvsadmin to hold the %s acl' %
-                    (user[0]['username'], acl))
-        elif identity.in_any_group('cvsextras', 'cvsadmin'):
+                    '%s must be in one of %s to hold the %s acl' %
+                    (user[0]['username'], self.groupnames, acl))
+        elif identity.in_any_group(*self.groupnames):
             return True
         raise AclNotAllowed(
-                '%s must be in cvsextras or cvsadmin to hold the %s acl' %
-                (identity.current.user_name, acl))
+                '%s must be in one of %s to hold the %s acl' %
+                (identity.current.user_name, self.groupnames, acl))
 
     def _create_or_modify_acl(self, pkgList, personId, newAcl, status):
         '''Create or modify an acl.
@@ -564,8 +567,7 @@ class PackageDispatcher(controllers.Controller):
                 aclStatus = 'Obsolete'
 
         if aclStatus != 'Obsolete':
-            # Person must be in cvsextras or cvsadmin to receive acls on
-            # anything other than watchbugzilla/watchcommits
+            # Check that the person is in a correct group to receive the acl
             try:
                 self._acl_can_be_held_by_user(aclName)
             except AclNotAllowedError, e:
@@ -635,7 +637,6 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message='Specified owner %s does not have a Fedora Account' % owner)
 
         # Make sure the owner is in the correct group
-        # If the person isn't in cvsextras or cvsadmin raise an error
         try:
             self._acl_can_be_held_by_user('owner', (person, groups))
         except AclNotAllowedError, e:
@@ -797,7 +798,6 @@ class PackageDispatcher(controllers.Controller):
             except AuthError, e:
                 return dict(status=False, message='Specified owner %s does not have a Fedora Account' % changes['owner'])
             # Make sure the owner is in the correct group
-            # If the person isn't in cvsextras or cvsadmin raise an error 
             try:
                 self._acl_can_be_held_by_user('owner', (person, groups))
             except AclNotAllowedError, e:
@@ -961,7 +961,6 @@ class PackageDispatcher(controllers.Controller):
                     return dict(status=False, message='New comaintainer %s does not have a Fedora Account' % username)
 
                 # Make sure the comaintainer is in the correct group
-                # If the person isn't in cvsextras or cvsadmin error
                 try:
                     self._acl_can_be_held_by_user('approveacls', (person, groups))
                 except AclNotAllowedError, e:
