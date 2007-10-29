@@ -49,8 +49,6 @@ class EventLogger(object):
             fromAddr = self.MAILFROM
 
         if config.get('mail.on', False):
-            print 'We should not be here on the test instance.'
-            return
             for person in recipients:
                 email = turbomail.Message(fromAddr, person,
                         '[pkgdb] %s' % (subject,))
