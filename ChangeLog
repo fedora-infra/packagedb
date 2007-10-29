@@ -1,3 +1,15 @@
+2007-10-29  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r237
+* pkgdb.cfg: Change another hostname to localhost.
+* pkgdb/notifier.py: Remove a short piece of debugging that kept email from
+  being sent.
+
+2007-10-29  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r236
+* pkgdb/dispatcher.py: Fix an error in exception handling for allowing
+  a user to take an acl.
+
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r235
+* ChangeLog: Update once more.
+
 2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r234
 * pkgdb/dispatcher.py: Allow packager as well as cvsextras to do the right
   thing once we rename the group.
