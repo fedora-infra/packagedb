@@ -1,3 +1,10 @@
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r234
+* pkgdb/dispatcher.py: Allow packager as well as cvsextras to do the right
+  thing once we rename the group.
+
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r233
+* ChangeLog: Update once more.
+
 2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r232
 * pkgdb/templates/layout.html: Add the bug list page to the navigation links.
 
