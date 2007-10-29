@@ -1,3 +1,9 @@
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r232
+* pkgdb/templates/layout.html: Add the bug list page to the navigation links.
+
+2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r231
+* ChangeLog: Update for 0.3.2 release.
+
 2007-10-28  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r230
 * fedora-packagedb.spec, pkgdb/release.py: Bump release to 0.3.2.
 
