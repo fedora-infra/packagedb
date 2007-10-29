@@ -11,18 +11,24 @@ TODO='Not yet implemented'
   <body>
     <h2 py:content="collection.name, ' ',  collection.version">Collection</h2>
     <table border='0'>
-      <tr><td>
+      <tr>
+        <th>
           Status
-          </td><td py:content="collection.statusname">
-      </td></tr>
-      <tr><td>
+        </th>
+        <td py:content="collection.statusname"/>
+      </tr>
+      <tr>
+        <th>
           Owner
-          </td><td py:content="collection.ownername">
-      </td></tr>
-      <tr><td>
+        </th>
+        <td py:content="collection.ownername"/>
+      </tr>
+      <tr>
+        <th>
           Creation Date
-          </td><td py:content="TODO">Fill in the Creation Date
-      </td></tr>
+        </th>
+        <td py:content="TODO">Fill in the Creation Date</td>
+      </tr>
     </table>
     <p py:content="collection.summary">Summary</p>
     <p py:content="collection.description">Description</p>

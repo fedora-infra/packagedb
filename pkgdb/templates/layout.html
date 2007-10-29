@@ -6,9 +6,8 @@
   <head>
     <title>${title}</title>
     <style type="text/css" media="screen">
-      @import url("${tg.url("/static/css/fedora.css")}");
+      @import url("http://fedoraproject.org/css/fedora.css");
       @import url("${tg.url("/static/css/pkgdb.css")}");
-      @import url("${tg.url("/static/css/style.css")}");
     </style>
     <script src="${tg.tg_js}/MochiKit.js"></script>
     <script src="${tg.url('/static/javascript/mochikit1.4.js')}"></script>
@@ -17,6 +16,7 @@
       tgUserUserName = "${tg.identity.user.user_name}";
       tgUserUserId = "${tg.identity.user.user_id}";
     </script>
+    <script src="${tg.url('/static/javascript/jquery-1.2.1.js')}"></script>
   </head>
   <body py:match="body" py:attrs="select('@*')">
     <div id="wrapper">
@@ -24,15 +24,17 @@
         <h1><a href="http://fedoraproject.org/index.html">Fedora</a></h1>
       </div>
       <div id="sidebar">
-        <div class="nav">
+        <div id="nav">
           <h2>Navigation</h2>
           <ul>
             <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
-            <li><a href="${tg.url('/packages/')}">View Packages</a></li>
             <li><a href="${tg.url('/collections/')}">View Collections</a></li>
-            <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
+            <li><a href="${tg.url('/packages/')}">View Packages</a></li>
+	    <li><a href="${tg.url('/packages/bugs/')}">View Bugs</a></li>
+	    <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
             <li><a href="${tg.url('/users/packages/orphan')}">Orphan Packages</a></li>
             <li><a href="http://hosted.fedoraproject.org/projects/packagedb">Project Page</a></li>
+            <li><a href="http://hosted.fedoraproject.org/projects/packagedb/newticket">Report Bugs</a></li>
           </ul>
         </div>
       </div>

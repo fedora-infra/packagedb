@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.1.2
+Version:        0.3.2
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -14,7 +14,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
 Requires: python-TurboMail
-Requires: python-sqlalchemy
+Requires: python-sqlalchemy >= 0.3.10, < 0.4
 Requires: python-psycopg2
 Requires: python-genshi
 Requires: python-fedora-infrastructure
@@ -59,6 +59,9 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
 
 %changelog
+* Sun Oct 28 2007 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.2-1
+- New upstream release.
+
 * Tue Oct 9 2007 Toshio Kuratomi <a.badger@gmail.com> - 0.3.1.2-1
 - New upstream release.
 

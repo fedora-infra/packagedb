@@ -21,7 +21,6 @@
 Controller for displaying Package Information.
 '''
 
-import sqlalchemy
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
 
@@ -29,10 +28,10 @@ from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
 from pkgdb import model
-from dispatcher import PackageDispatcher
+from pkgdb.dispatcher import PackageDispatcher
+from pkgdb.bugs import Bugs
 
 from cherrypy import request
-import json
 
 class Packages(controllers.Controller):
     '''Display information related to individual packages.
@@ -46,7 +45,8 @@ class Packages(controllers.Controller):
         '''
         self.fas = fas
         self.appTitle = appTitle
-        self.dispatcher = PackageDispatcher(self.fas)
+        self.bugs = Bugs(appTitle)
+        self.dispatcher = PackageDispatcher(fas)
         self.removedStatus = model.StatusTranslation.get_by(
                 statusname='Removed', language='C').statuscodeid
 
@@ -60,12 +60,6 @@ class Packages(controllers.Controller):
 
         return dict(title=self.appTitle + ' -- Package Overview',
                 packages=packages)
-
-    @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
-    def bugs(self, packageName):
-        pass
-        return dict(title='%s -- Fedora Bugs: %s' %
-                (self.appTitle, packageName))
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
