@@ -14,7 +14,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
 Requires: python-TurboMail
-Requires: python-sqlalchemy >= 0.3.10, < 0.4
+Requires: python-sqlalchemy >= 0.3.10, python-sqlalchemy < 0.4
 Requires: python-psycopg2
 Requires: python-genshi
 Requires: python-fedora-infrastructure
