@@ -4,16 +4,12 @@
   xmlns:py="http://genshi.edgewall.org/"
   xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
+  <xi:include href="pkgheader.html"/>
+
   <body>
     <h2>$package bugs</h2>
-<ul class="actions">
-      <li><a class="koji" href="${'http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms='
-        + tg.quote_plus(package)}">Build Status</a></li>
-      <li><a class="bodhi" href="${'https://admin.fedoraproject.org/updates/'
-        + tg.quote_plus(package)}">Update Status</a></li>
-      <li><a class="pkgdb" href="${tg.url('/packages/name/' + package)}"
-          >Package Info</a></li>
-    </ul>
+    ${pkgheader(package, 'bugz')}
+
     <h4>${len(bugs)} bugs found</h4>
     <table class="buglist">
       <tr>
