@@ -125,6 +125,9 @@ class RepoInfo(object):
     # Test what happens if we have a repo.sqlite file open and use RepoUpdater
     # to change it.
     
+    approvedStatus = model.StatusTranslation.filter_by(statusname='Approved',
+            language='C').one().statuscodeid
+
     def __init__(self):
         '''Setup the links to repositories and the table mappings.
         '''
@@ -196,17 +199,82 @@ class RepoInfo(object):
         noDesc = []
 
         # Retrieve all the packages without a description
-        pkgs = model.Package.select_by(model.Package.c.description==None)
+        pkgs = model.Package.filter_by(
+                model.Package.c.statuscode==self.approvedStatus)
 
-        # development-source has a very high chance of containing the package
-        # so search it first
-        repoList = self.repoFiles.keys()
-        repoList.remove('development-source')
-        repoList.insert(0, 'development-source')
+        # Since we update the information, we need to be sure we search from
+        # most current information to least current information
+        # Order to search:
+        # development
+        # updates,fedora[latest two releases]
+        # olpc[latest]
+        # epel[latest two releases]
+        # everything else
 
-        # For each package query the source repos for a package description
+        # Separate the repos
+        develRepos = []
+        updateRepos = []
+        fedoraRepos = []
+        olpcRepos = []
+        epelRepos = []
+        otherRepos = []
+        for repo in self.repoFiles.keys():
+            if repo.startswith('updates'):
+                updateRepos.append(repo)
+            elif repo.startswith('fedora'):
+                fedoraRepos.append(repo)
+            elif repo.startswith('development'):
+                develRepos.append(repo)
+            elif repo.startswith('epel'):
+                epelRepos.append(repo)
+            elif repo.startswith('olpc'):
+                olpcRepos.append(repo)
+            else:
+                otherRepos.append(repo)
+        develRepos.sort(reverse=True)
+        updateRepos.sort(reverse=True)
+        fedoraRepos.sort(reverse=True)
+        epelRepos.sort(reverse=True)
+        olpcRepos.sort(reverse=True)
+        otherRepos.sort(reverse=True)
+
+        # All development repos first
+        repoList = develRepos
+
+        # Pull off the update and fedora repos for the latest two releases
+        for numReleases in range(0,2):
+            release = updateRepos[0][len('updates'):updateRepos[0].index('-')]
+            updateStr = 'updates%s-' % release
+            while updateRepos and updateRepos[0].startswith(updateStr):
+                repoList.append(updateRepos[0])
+                del updateRepos[0]
+            fedoraStr = 'fedora%s-' % release
+            while fedoraRepos and fedoraRepos[0].startswith(fedoraStr):
+                repoList.append(fedoraRepos[0])
+                del fedoraRepos[0]
+
+        # One release for olpc
+        olpcStr = olpcRepos[0][0:olpcRepos[0].index('-')+1]
+        while olpcRepos and olpcRepos[0].startswith(olpcStr):
+            repoList.append(olpcRepos[0])
+            del olpcRepos[0]
+
+        # Two for epel
+        for numRelease in range(0,2):
+            epelStr = epelRepos[0][0:epelRepos[0].index('-')+1]
+            while epelRepos and epelRepos[0].startswith(epelStr):
+                repoList.append(epelRepos[0])
+                del epelRepos[0]
+
+        # Now add all the remainders to repoList
+        repoList.extend(updateRepos)
+        repoList.extend(fedoraRepos)
+        repoList.extend(olpcRepos)
+        repoList.extend(epelRepos)
+        repoList.extend(otherRepos)
+
+        # For each package query the repos for a package description
         for pkg in pkgs:
-            desc = None
             for repoName in repoList:
                 self._bind_to_repo(repoName, 'primary')
                 try:
@@ -217,12 +285,13 @@ class RepoInfo(object):
                     pass
                 else:
                     # Found!  We can stop searching now
-                    desc = packages.description
+                    if pkg.description != packages.description:
+                        pkg.description = packages.description
+                    if pkg.summary != packages.summary:
+                        pkg.summary = packages.summary
                     break
 
-            if desc:
-                pkg.description = desc
-            else:
+            if not pkg.description:
                 noDesc.append(pkg.name)
 
             # Close our local session
@@ -232,8 +301,9 @@ class RepoInfo(object):
         session.flush()
         session.close()
 
-        log.warning('\t'.join(noDesc))
+        noDesc.sort()
         log.warning('Packages without descriptions: %s' % len(noDesc))
+        log.warning('\t'.join(noDesc))
 
 ### FIXME: DB Tables not yet listed here:
 # CREATE TABLE provides (  name TEXT,  flags TEXT,  epoch TEXT,  version TEXT,
