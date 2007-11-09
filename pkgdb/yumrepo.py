@@ -196,9 +196,7 @@ class RepoInfo(object):
     def sync_package_descriptions(self):
         '''Add a new package to the database.
         '''
-        noDesc = []
-
-        # Retrieve all the packages without a description
+        # Retrieve all the packages which are active
         pkgs = model.Package.filter_by(
                 model.Package.c.statuscode==self.approvedStatus)
 
@@ -273,10 +271,11 @@ class RepoInfo(object):
         repoList.extend(epelRepos)
         repoList.extend(otherRepos)
 
-        # For each package query the repos for a package description
-        for pkg in pkgs:
-            for repoName in repoList:
-                self._bind_to_repo(repoName, 'primary')
+        # For each repo check the packages for an updated description
+        for repoName in repoList:
+            self._bind_to_repo(repoName, 'primary')
+            newPkgList = []
+            for pkg in pkgs:
                 try:
                     packages = self.session.query(Packages
                             ).filter_by(name=pkg.name).one()
@@ -284,23 +283,24 @@ class RepoInfo(object):
                     # No information here, search another
                     pass
                 else:
-                    # Found!  We can stop searching now
+                    # Found!  We can stop searching for this package now
                     if pkg.description != packages.description:
                         pkg.description = packages.description
                     if pkg.summary != packages.summary:
                         pkg.summary = packages.summary
-                    break
+                    continue
+                newPkgList.append(pkg)
+                self.session.close()
 
-            if not pkg.description:
-                noDesc.append(pkg.name)
-
-            # Close our local session
-            self.session.close()
+            # Only continue looking for packages we haven't found
+            pkgs = newPkgList
 
         # Flush the new descriptions to the TG context session
         session.flush()
         session.close()
 
+        # List packages which haven't changed
+        noDesc = [pkg.name for pkg in pkgs if not pkg.description]
         noDesc.sort()
         log.warning('Packages without descriptions: %s' % len(noDesc))
         log.warning('\t'.join(noDesc))
