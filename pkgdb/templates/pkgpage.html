@@ -88,7 +88,7 @@ TODO='Not yet implemented'
           <td>
             <a py:if="pkg.status.translations[0].statusname=='Approved'"  class="cvs"
               href="${'http://cvs.fedoraproject.org/viewcvs/rpms/%s/%s/%s.spec?view=markup'
-	      % (pkgUrlName, pkg.collection.version, pkgUrlName)}">
+	      % (pkgUrlName, pkg.collection.branchname, pkgUrlName)}">
 	      <span class="invisible">Spec File</span></a>
             <a href="${tg.url('/collections/id/' + str(pkg.collection.id))}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
