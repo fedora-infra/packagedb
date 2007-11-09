@@ -5,6 +5,10 @@
   py:strip="">
   <head>
     <title>${title}</title>
+    <link href="${tg.url('/static/images/favicon.ico')}"
+      type="image/vnd.microsoft.icon" rel="shortcut icon"/> 
+      <link href="${tg.url('/static/images/favicon.ico')}"
+      type="image/x-icon" rel="shortcut icon"/> 
     <style type="text/css" media="screen">
       @import url("https://fedoraproject.org/css/fedora.css");
       @import url("${tg.url("/static/css/pkgdb.css")}");
@@ -30,8 +34,8 @@
             <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
             <li><a href="${tg.url('/collections/')}">View Collections</a></li>
             <li><a href="${tg.url('/packages/')}">View Packages</a></li>
-	    <li><a href="${tg.url('/packages/bugs/')}">View Bugs</a></li>
-	    <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
+            <li><a href="${tg.url('/packages/bugs/')}">View Bugs</a></li>
+            <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
             <li><a href="${tg.url('/users/packages/orphan')}">Orphan Packages</a></li>
             <li><a href="https://hosted.fedoraproject.org/projects/packagedb">Project Page</a></li>
             <li><a href="https://hosted.fedoraproject.org/projects/packagedb/newticket">Report Bugs</a></li>
