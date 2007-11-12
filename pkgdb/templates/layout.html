@@ -13,14 +13,14 @@
       @import url("https://fedoraproject.org/css/fedora.css");
       @import url("${tg.url("/static/css/pkgdb.css")}");
     </style>
-    <script src="${tg.tg_js}/MochiKit.js"></script>
-    <script src="${tg.url('/static/javascript/mochikit1.4.js')}"></script>
-    <script type='text/javascript' py:if="not tg.identity.anonymous">
+    <script src="${tg.tg_js}/MochiKit.js" type="text/javascript"></script>
+    <script src="${tg.url('/static/javascript/mochikit1.4.js')}" type="text/javascript"></script>
+    <script type="text/javascript" py:if="not tg.identity.anonymous">
       tgUserDisplayName = "${tg.identity.user.display_name}";
       tgUserUserName = "${tg.identity.user.user_name}";
       tgUserUserId = "${tg.identity.user.user_id}";
     </script>
-    <script src="${tg.url('/static/javascript/jquery-1.2.1.js')}"></script>
+    <script src="${tg.url('/static/javascript/jquery-1.2.1.js')}" type="text/javascript"></script>
   </head>
   <body py:match="body" py:attrs="select('@*')">
     <div id="wrapper">
