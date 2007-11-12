@@ -38,8 +38,8 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
              */
             if (aclStatus['nodeName']=='SPAN') {
                 /* Create the new select list */
-                var aclName = aclStatus.getAttribute('name');
-                var aclStatusName = scrapeText(aclStatus);
+                var aclName = aclStatus.getAttribute('name').strip();
+                var aclStatusName = scrapeText(aclStatus).strip();
                 var newAclStatusList = SELECT({'name': aclName,
                         'class' : 'aclStatusList'});
                 connect(newAclStatusList, 'onchange', request_status_change);
