@@ -18,6 +18,14 @@
  */
 
 /*
+ * Javascript doesn't provide a strip function so implement one
+ */
+String.prototype.strip = String.prototype.strip || function(chars) {
+    chars = chars ? chars : "\\s";
+    return this.replace(new RegExp("^["+chars+"]*|["+chars+"]*$", "g"), "");
+}
+
+/*
  * Create a spinner to show that the element is busy processing.
  */
 function create_spinner(initialImage) {
