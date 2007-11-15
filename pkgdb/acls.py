@@ -53,6 +53,11 @@ class BugzillaInfo(object):
                 }
 
 class Acls(controllers.Controller):
+    approvedStatus = model.StatusTranslation.filter_by(
+            statusname='Approved', language='C').one().statuscodeid
+    removedStatus = model.StatusTranslation.filter_by(
+            statusname='Removed', language='C').one().statuscodeid
+
     def __init__(self, fas=None, appTitle=None):
         self.fas = fas
         self.appTitle = appTitle
@@ -141,13 +146,14 @@ class Acls(controllers.Controller):
             model.Branch.c.branchname), sqlalchemy.and_(
                 model.GroupPackageListing.c.groupid == CVSEXTRAS_ID,
                 model.GroupPackageListingAcl.c.acl=='commit',
-                model.GroupPackageListingAcl.c.statuscode == model.StatusTranslation.c.statuscodeid,
-                model.StatusTranslation.c.statusname=='Approved',
+                model.GroupPackageListingAcl.c.statuscode == self.approvedStatus,
                 model.GroupPackageListingAcl.c.grouppackagelistingid == model.GroupPackageListing.c.id,
                 model.GroupPackageListing.c.packagelistingid == model.PackageListing.c.id,
                 model.PackageListing.c.packageid == model.Package.c.id,
                 model.PackageListing.c.collectionid == model.Collection.c.id,
-                model.Branch.c.collectionid == model.Collection.c.id
+                model.Branch.c.collectionid == model.Collection.c.id,
+                model.PackageListing.c.statuscode != self.removedStatus,
+                model.Package.c.statuscode != self.removedStatus
                 )
             )
         # Save them into a python data structure
@@ -165,7 +171,9 @@ class Acls(controllers.Controller):
                 model.PackageListing.c.packageid==model.Package.c.id,
                 model.PackageListing.c.collectionid==model.Collection.c.id,
                 model.PackageListing.c.owner!=ORPHAN_ID,
-                model.Collection.c.id==model.Branch.c.collectionid
+                model.Collection.c.id==model.Branch.c.collectionid,
+                model.PackageListing.c.statuscode != self.removedStatus,
+                model.Package.c.statuscode != self.removedStatus
                 ),
             order_by=(model.PackageListing.c.owner,)
             )
@@ -194,7 +202,9 @@ class Acls(controllers.Controller):
                 model.PersonPackageListing.c.packagelistingid == model.PackageListing.c.id,
                 model.PackageListing.c.packageid == model.Package.c.id,
                 model.PackageListing.c.collectionid == model.Collection.c.id,
-                model.Branch.c.collectionid == model.Collection.c.id
+                model.Branch.c.collectionid == model.Collection.c.id,
+                model.PackageListing.c.statuscode != self.removedStatus,
+                model.Package.c.statuscode != self.removedStatus
                 ),
             order_by=(model.PersonPackageListing.c.userid,)
             )
@@ -239,13 +249,15 @@ class Acls(controllers.Controller):
         username = None
         userId = None
 
-        # select all packages
+        # select all packages that are active
         packageInfo = sqlalchemy.select((model.Collection.c.name,
             model.Package.c.name, model.PackageListing.c.owner,
             model.PackageListing.c.qacontact, model.Package.c.summary),
             sqlalchemy.and_(
                 model.Collection.c.id==model.PackageListing.c.collectionid,
-                model.Package.c.id==model.PackageListing.c.packageid
+                model.Package.c.id==model.PackageListing.c.packageid,
+                model.Package.c.statuscode==self.approvedStatus,
+                model.PackageListing.c.statuscode==self.approvedStatus
                 ),
             order_by=(model.PackageListing.c.owner,), distinct=True)
 
@@ -281,12 +293,13 @@ class Acls(controllers.Controller):
             model.Collection.c.name, model.PersonPackageListing.c.userid),
             sqlalchemy.and_(
                 model.PersonPackageListingAcl.c.acl == 'watchbugzilla',
-                model.PersonPackageListingAcl.c.statuscode == model.StatusTranslation.c.statuscodeid,
-                model.StatusTranslation.c.statusname == 'Approved',
+                model.PersonPackageListingAcl.c.statuscode == self.approvedStatus,
                 model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id,
                 model.PersonPackageListing.c.packagelistingid == model.PackageListing.c.id,
                 model.PackageListing.c.packageid == model.Package.c.id,
-                model.PackageListing.c.collectionid == model.Collection.c.id
+                model.PackageListing.c.collectionid == model.Collection.c.id,
+                model.Package.c.statuscode==self.approvedStatus,
+                model.PackageListing.c.statuscode==self.approvedStatus
                 ),
             order_by=(model.PersonPackageListing.c.userid,), distinct=True
             )
