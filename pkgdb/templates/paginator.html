@@ -1,33 +1,34 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:py="http://genshi.edgewall.org/"
-      xmlns:xi="http://www.w3.org/2001/XInclude">
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  py:strip="">
 
   <div py:def="paginate_nav" py:if="tg.paginate.page_count &gt; 1"
     class="PaginateNav">
     <span py:choose="1" py:strip="">
-    <span py:when="tg.paginate.current_page" py:strip="">
-      &lt;&lt;
-      &lt;
-    </span>
-    <span py:otherwise="" py:strip="">
-      <a href="${tg.paginate.get_href(1)}">&lt;&lt;</a>
-      <a href="${tg.paginate.get_href(tg.paginate.current_page - 1)}">&lt;</a>
-    </span>
+      <span py:when="tg.paginate.current_page" py:strip="">
+        &lt;&lt;
+        &lt;
+      </span>
+      <span py:otherwise="" py:strip="">
+        <a href="${tg.paginate.get_href(1)}">&lt;&lt;</a>
+        <a href="${tg.paginate.get_href(tg.paginate.current_page - 1)}">&lt;</a>
+      </span>
     </span>
     <py:for each="page in tg.paginate.pages" py:choose="tg.paginate.current_page">
-      <b py:when="page">${page}</b>
-      <a py:otherwise="" href="${tg.paginate.get_href(page)}">${page}</a>
+    <b py:when="page">${page}</b>
+    <a py:otherwise="" href="${tg.paginate.get_href(page)}">${page}</a>
     </py:for>
     <span py:choose="tg.paginate.page_count" py:strip="">
-    <span py:when="tg.paginate.current_page" py:strip="">
-      &gt;
-      &gt;&gt;
-    </span>
-    <span py:otherwise="" py:strip="">
-      <a href="${tg.paginate.get_href(tg.paginate.current_page + 1)}">&gt;</a>
-      <a href="${tg.paginate.get_href(tg.paginate.page_count)}">&gt;&gt;</a>
-    </span>
+      <span py:when="tg.paginate.current_page" py:strip="">
+        &gt;
+        &gt;&gt;
+      </span>
+      <span py:otherwise="" py:strip="">
+        <a href="${tg.paginate.get_href(tg.paginate.current_page + 1)}">&gt;</a>
+        <a href="${tg.paginate.get_href(tg.paginate.page_count)}">&gt;&gt;</a>
+      </span>
     </span>
   </div>
 </html>

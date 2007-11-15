@@ -6,6 +6,10 @@
   <xi:include href="paginator.html" />
   <xi:include href="pkglist.html" />
   <body>
+    <p>Click on a package to view the bug reports opened against it. Or go
+    to the <a href="$bzurl">bugzilla main page</a> to construct your own
+    search.</p>
+
     ${paginate_nav()}
     ${pkglist(packages, 'bugs')}
     ${paginate_nav()}

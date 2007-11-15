@@ -1,4 +1,4 @@
-[fedora-olpc2]
+[olpc2-olpc]
 name=Fedora OLPC 2
 baseurl=http://dev.laptop.org/pub/sugar/rpms/
 enabled=1

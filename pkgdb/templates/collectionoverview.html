@@ -4,17 +4,23 @@
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
   <head>
-    <script language="javascript" src="${tg.url('/static/javascript/tooltip.js')}"/>
+    <style type="text/css" media="screen">
+	    @import url("/pkgdb/static/css/jquery.tooltip.css");
+    </style>
+
+    <script language="javascript" src="${tg.url('/static/javascript/jquery.dimensions.js')}"/>
+    <script language="javascript" src="${tg.url('/static/javascript/jquery.tooltip.js')}"/>
     <script language="javascript" src="${tg.url('/static/javascript/collectionoverview.js')}"/>
+
   </head>
   <body>
     <h2>Collections</h2>
     <table>
-      <tr><th class="ColumnHead" id="collectionhead">
+      <tr><th class="ColumnHead" id="collectionhead" title="Collection - Set of Linux packages created and hosted by the Fedora Project">
         Collection
-        </th><th class="ColumnHead" id="versionhead">
+        </th><th class="ColumnHead" id="versionhead" title="Collection Version - Version of the Collection">
         Version
-        </th><th class="ColumnHead" id="packagehead">
+        </th><th class="ColumnHead" id="packagehead" title="Number of Packages - How many packages are in the cvs repository for this colleciton version.  May not be built for this distribution">
         Number of Packages
       </th></tr>
       <tr py:for="collection in collections">

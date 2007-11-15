@@ -1,0 +1,33 @@
+#!/usr/bin/python -tt
+'''
+sync information from yum repos into the packagedb
+
+This short script downloads information on packages from the yum repository
+and saves it in the packagedb.
+'''
+from turbogears import config, update_config
+import sys
+import os
+
+CONFDIR='@CONFDIR@'
+PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
+sys.path.append(PKGDBDIR)
+
+if len(sys.argv) > 1:
+    update_config(configfile=sys.argv[1],
+        modulename='pkgdb.config')
+elif os.path.exists(os.path.join(os.path.dirname(__file__), '..',
+        'setup.py')):
+    update_config(configfile='pkgdb.cfg',modulename='pkgdb.config')
+else:
+    update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),
+            modulename='pkgdb.config')
+config.update({'pkgdb.basedir': PKGDBDIR})
+
+from pkgdb import yumrepo
+
+if __name__ == '__main__':
+    updater = yumrepo.RepoUpdater()
+    repoSyncer = yumrepo.RepoInfo()
+    repoSyncer.sync_package_descriptions()
+    sys.exit(0)

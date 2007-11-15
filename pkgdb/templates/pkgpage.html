@@ -6,20 +6,14 @@ TODO='Not yet implemented'
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
-  <body>
+  <xi:include href="pkgheader.html"/>
+
+  <body py:with="pkgUrlName=tg.quote_plus(packageListings[0].package.name)">
     <script type="text/javascript" src="${tg.url('/static/javascript/framework.js')}"></script>
     <script type="text/javascript" src="${tg.url('/static/javascript/pkgpage.js')}"></script>
 
     <h2 py:content="packageListings[0].package.name">Package</h2>
-    <ul class="actions">
-      <li><a class="koji" href="${'http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms='
-        + tg.quote_plus(packageListings[0].package.name)}">Build Status</a></li>
-      <li><a class="bodhi" href="${'https://admin.fedoraproject.org/updates/'
-        + tg.quote_plus(packageListings[0].package.name)}">Update Status</a></li>
-      <li><a class="bugz"
-        href="${tg.url('/packages/bugs/' + packageListings[0].package.name)}"
-          >Bug Reports</a></li>
-    </ul>
+    ${pkgheader(packageListings[0].package.name, 'pkgdb')}
 
     <table>
       <tr><th>
@@ -91,9 +85,14 @@ TODO='Not yet implemented'
             Status
         </th></tr>
         <tr id="${''.join((pkg.collection.name, pkg.collection.version)).replace(' ','')}">
-          <td><a href="${tg.url('/collections/id/' + str(pkg.collection.id))}"
+          <td>
+            <a py:if="pkg.status.translations[0].statusname=='Approved'"  class="cvs"
+              href="${'http://cvs.fedoraproject.org/viewcvs/rpms/%s/%s/%s.spec?view=markup'
+	      % (pkgUrlName, pkg.collection.branchname, pkgUrlName)}">
+	      <span class="invisible">Spec File</span></a>
+            <a href="${tg.url('/collections/id/' + str(pkg.collection.id))}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
-            </td><td>
+          </td><td>
             <div py:choose="pkg.ownerid" py:strip="">
               <div py:when="9900"
                 py:attrs="{'name': str(pkg.id)}"

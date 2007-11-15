@@ -1,3 +1,105 @@
+2007-11-14  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r253
+* fedora-packagedb.spec, pkgdb/release.py: Update to 0.3.2.1.
+
+2007-11-14  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r252
+* pkgdb/acls.py: Acls:: Get the statuscodes for Approved and Removed.
+  - Acls::bugzilla(): do not output acls for a package that is not Approved.
+  - Acls::vcs(): Do not output acls when the package has been removed.
+
+2007-11-12  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r251
+* pkgdb/static/javascript/pkgpage.js: Strip the aclName and StatusName fields
+  so we make sure we match against acls and statuses correctly.
+
+2007-11-12  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r250
+* pkgdb/static/javascript/framework.js: Add a strip method to the String class.
+  This let's us strip whitespace (or other chars) like in python.
+
+2007-11-11  Ricky Zhou <ricky@fedoraproject.org> - r249
+Fix invalid markup (add type attribute on script and remove stray <html> tags).
+
+2007-11-09  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r248
+* pkgdb/templates/pkgpage.html: Fix links to spec files.  Before, only the
+  links to the devel branch worked.
+
+2007-11-09  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r247
+* pkgdb/static/javascript/tooltip.js: Removed in favor of the jquery code.
+* pkgdb/static/css/jquery.tooltip.css: CSS styling for jquery tooltips.
+* pkgdb/static/images/shadow2.png: Background for fnacy jquery tooltip.
+* pkgdb/static/javascript/jquery.dimensions.js: jquery module for calcuating
+  dimensions of HTML block elements.
+* pkgdb/static/javascript/jquery.tooltip.js: jquery module for displaying
+  tooltips.
+* pkgdb/static/images/favicon.ico: New favicon that looks a bit better.
+* pkgdb/static/javascript/collectionoverview.js: Use jquery instead of our
+  MochiKit to module to display the tooltip.  This will pay off when we
+  consolidate all these jQuery widgets in one static dir for Bodhi, PackageDB,
+  etc.
+* pkgdb/templates/collectionoverview.html: Include the jquery libraries.
+  - Include the tooltip messages as titles of the table headers since that's
+    where jquery expects to find them.
+* pkgdb/templates/layout.html: Add favicon.
+
+2007-11-09  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r246
+* pkgdb/yumrepo.py: sync_package_descriptions(): Optimize a bit.  Bring
+  time down from 2:34s to 1:54s by only opening each repo's database file
+  once.
+
+2007-11-09  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r245
+* server-scripts/: Directory for scripts run on the server.
+* server-scripts/pkgdb-sync-repo.in: script to sync summary and description
+  from the yum repository into the db.  Can be run on a daily cron job.
+* yum.repos.d/fedora-8-updates-testing.repo, yum.repos.d/fedora-8-updates.repo,
+  yum.repos.d/fedora-8.repo: Create new repo files for Fedora 8.
+* pkgdb.cfg: Add a default basedir to the config file.
+* pkgdb/yumrepo.py: RepoInfo: Get approvedStatus from the pkgdb database.
+  - sync_package_descriptions(): Scan all packages so that we can update
+    descriptions which have changed.
+    + Also check summaries.
+    + Go through the repositories in a set order so we don't toggle back and
+      forth with older descriptions.
+* setup.py: Add the pkgdb-sync-repo script.
+* yum.repos.d/fedora-olpc-2.repo: Change the name of the olpc repo to more
+  closely approximate the other repos.
+
+2007-11-08  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r244
+* pkgdb/templates/pkgpage.html: Add some invisible text to the spec file link
+  so text browsers have a chance to display something there.
+
+2007-11-08  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r243
+* pkgdb/templates/pkgheader.html: Pull the links to koji, bodhi, etc into a
+  widget.
+* pkgdb/templates/pkgbugs.html, pkgdb/templates/pkgpage.html: Use the pkgheader
+  widget to create the menu of outside services referencing the package.
+
+2007-11-08  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r242
+* pkgdb/static/images/emblem-cvs-controlled.png: Icon for the CVS Repository
+  taken from gnome-icon-theme.
+* pkgdb/static/css/pkgdb.css: Add style sheet to display the cvs icon.
+* pkgdb/templates/pkgpage.html: Abstract creating a URL excaped version of the
+  package name to a py:with in the body tag.  This allows us to use that
+  everywhere in the template instead of calling quote_plus() each time.
+  - Add a link to the cvs repository (viewcvs) along with Koji, Bodhi, etc.
+  - Add a link to the package spec files for each release that is Approved.
+
+2007-10-31  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r241
+* pkgdb/templates/layout.html: Use https instead of http to retrieve the css.
+
+2007-10-30  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r240
+* pkgdb.cfg: New url/queryurl for differentiating between the server we need
+  to contact to get bug information and the bugzilla url we need for public
+  links.
+* pkgdb/bugs.py: Replace the bzBug() class with a BugList() class.  BugList()
+  takes bugzilla.bug data structures and converts to unicode as well as
+  transforming the queryurls into public urls.
+* pkgdb/templates/bugoverview.html: Add a small header that explains what to
+  do on this page.
+
+2007-10-30  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r239
+* fedora-packagedb.spec: Fix the sqlalchemy Requires.
+
+2007-10-29  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r238
+* ChangeLog: Update.
+
 2007-10-29  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r237
 * pkgdb.cfg: Change another hostname to localhost.
 * pkgdb/notifier.py: Remove a short piece of debugging that kept email from

@@ -32,15 +32,37 @@ import bugzilla
 
 from pkgdb import model
 
-class BzBug(object):
-    def __init__(self, bug):
-        self.bug_id = bug.bug_id
-        self.url = bug.url
-        self.bug_status = unicode(bug.bug_status, 'utf-8')
+class BugList(list):
+    '''Transform and store values in the bugzilla.Bug data structure
+
+    The bugzilla.Bug data structure uses 8-bit strings instead of unicode and
+    will have a private url instead of a public one.  Storing the bugs in this
+    list object will cause these values to be corrected.
+    '''
+
+    def __init__(self, queryUrl, publicUrl):
+        self.queryUrl = queryUrl
+        self.publicUrl = publicUrl
+
+    def __convert(self, bug):
+        if not isinstance(bug, bugzilla.Bug):
+            raise TypeError('Can only store bugzilla.Bug type')
+        if self.queryUrl != self.publicUrl:
+            bug.url = bug.url.replace(self.queryUrl, self.publicUrl)
+        bug.bug_status = unicode(bug.bug_status, 'utf-8')
         try:
-            self.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
+            bug.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
         except TypeError:
-            self.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
+            bug.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
+        return bug
+
+    def __setitem__(self, index, bug):
+        bug = self.__convert(bug)
+        super(BugList, self).__setitem__(index, bug)
+
+    def append(self, bug):
+        bug = self.__convert(bug)
+        super(BugList, self).append(bug)
 
 class Bugs(controllers.Controller):
     '''Display information related to individual packages.
@@ -51,9 +73,11 @@ class Bugs(controllers.Controller):
         :fas: Fedora Account System object.
         :appTitle: Title of the web app.
         '''
-        bzurl = config.get('bugzilla.url',
-                'https://bugzilla.redhat.com/xmlrpc.cgi')
-        self.bzServer = bugzilla.Bugzilla(url=bzurl)
+        self.bzUrl = config.get('bugzilla.url',
+                'https://bugzilla.redhat.com/')
+        self.bzQueryUrl = config.get('bugzilla.queryurl', self.bzUrl)
+
+        self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.appTitle = appTitle
         self.removedStatus = model.StatusTranslation.get_by(
                 statusname='Removed', language='C').statuscodeid
@@ -68,9 +92,7 @@ class Bugs(controllers.Controller):
                 model.Package.c.statuscode!=self.removedStatus)
 
         return dict(title=self.appTitle + ' -- Package Bug Pages',
-                tg_template='pkgdb.templates.bugoverview',
-                packages=packages)
-
+                bzurl=self.bzUrl, packages=packages)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
     def default(self, packageName):
@@ -79,9 +101,10 @@ class Bugs(controllers.Controller):
                 'component': packageName,
                 'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
         rawBugs = self.bzServer.query(query)
-        bugs = []
+        bugs = BugList(self.bzQueryUrl, self.bzUrl)
         for bug in rawBugs:
-            bugs.append(BzBug(bug))
+            bugs.append(bug)
+
         return dict(title='%s -- Open Bugs for %s' %
                 (self.appTitle, packageName), package=packageName,
                 bugs=bugs)
