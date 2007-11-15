@@ -45,7 +45,7 @@ rm -rf %{buildroot}
 %{__python} setup.py install --skip-build --install-conf=%{_sysconfdir} \
     --install-data=%{_datadir} --root %{buildroot}
 install -d %{buildroot}%{_sbindir}
-mv %{buildroot}%{_bindir}/* %{buildroot}%{_sbindir}/
+mv %{buildroot}%{_bindir}/start-pkgdb %{buildroot}%{_sbindir}/
  
 %clean
 rm -rf %{buildroot}
@@ -56,6 +56,7 @@ rm -rf %{buildroot}
 %doc README COPYING AUTHORS ChangeLog
 %{_datadir}/fedora-packagedb/
 %{_sbindir}/start-pkgdb
+%{_bindir}/*
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
 
 %changelog
