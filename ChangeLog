@@ -1,3 +1,10 @@
+2007-11-14  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r255
+* MANIFEST.in: Add the repo sync script.
+* fedora-packagedb.spec: Add the repo sync script.
+
+2007-11-14  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r254
+* ChangeLog: Update the ChangeLog.
+
 2007-11-14  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r253
 * fedora-packagedb.spec, pkgdb/release.py: Update to 0.3.2.1.
 
