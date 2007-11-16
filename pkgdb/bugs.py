@@ -22,15 +22,20 @@
 Controller for displaying Package Bug Information.
 '''
 
+from urllib import quote
+
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
 
-from turbogears import controllers, expose, paginate, config
+from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
 import bugzilla
 
 from pkgdb import model
+
+import logging
+log = logging.getLogger('pkgdb.controllers')
 
 class BugList(list):
     '''Transform and store values in the bugzilla.Bug data structure
@@ -95,8 +100,24 @@ class Bugs(controllers.Controller):
                 bzurl=self.bzUrl, packages=packages)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
-    def default(self, packageName):
+
+    def default(self, packageName, *args, **kwargs):
         '''Display a list of Fedora bugs against a given package.'''
+        # Nasty, nasty hack.  The packagedb, via bugz.fp.o is getting sent
+        # requests to download files.  These refused to go away even when
+        # we fixed up the apache redirects.  Send them to download.fp.o
+        # manually.
+        if args or kwargs:
+            if args:
+                url = 'http://download.fedoraproject.org/' + quote(packageName)\
+                        + '/' + '/'.join([quote(a) for a in args])
+            elif kwargs:
+                url = 'http://mirrors.fedoraproject.org/' + quote(packageName)\
+                        + '?' + '&'.join([quote(q) + '=' + quote(v) for (q, v)
+                            in kwargs.items()])
+            log.warning('Invalid URL: redirecting: %s' % url)
+            raise redirect(url)
+
         query = {'product': 'Fedora',
                 'component': packageName,
                 'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
