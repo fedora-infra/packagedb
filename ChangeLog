@@ -1,3 +1,11 @@
+2007-11-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r257
+* pkgdb/bugs.py: Nasty hack to take care of misdirected requests for isos.
+  - Bugs::default(): If we are given extra arguments in the URL, construct
+    a url that goes to either mirrors.fp.o or download.fp.o and redirect there.
+
+2007-11-14  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r256
+* ChangeLog: Update.
+
 2007-11-14  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r255
 * MANIFEST.in: Add the repo sync script.
 * fedora-packagedb.spec: Add the repo sync script.
