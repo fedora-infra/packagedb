@@ -46,7 +46,9 @@ rm -rf %{buildroot}
     --install-data=%{_datadir} --root %{buildroot}
 install -d %{buildroot}%{_sbindir}
 mv %{buildroot}%{_bindir}/start-pkgdb %{buildroot}%{_sbindir}/
- 
+
+mkdir -p %{buildroot}/%{_localstatedir}/log/pkgdb
+
 %clean
 rm -rf %{buildroot}
 
@@ -58,6 +60,7 @@ rm -rf %{buildroot}
 %{_sbindir}/start-pkgdb
 %{_bindir}/*
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
+%{_localstatedir}/log/pkgdb
 
 %changelog
 * Wed Nov 14 2007 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.2.1-1

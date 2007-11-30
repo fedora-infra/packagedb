@@ -59,7 +59,7 @@ class BugList(list):
             bug.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
         except TypeError:
             bug.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
-        return bug
+        return {'url': bug.url, 'bug_status': bug.bug_status, 'short_short_desc': bug.short_short_desc, 'bug_id': bug.bug_id}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
