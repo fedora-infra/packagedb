@@ -178,14 +178,13 @@ class Acls(controllers.Controller):
             order_by=(model.PackageListing.c.owner,)
             )
 
+        # Cache the userId/username pairs so we don't have to call the fas for
+        # every package.
+        userList = self.fas.get_users('id')
+
         # Save them into a python data structure
         for record in ownerAcls.execute():
-            # Cache the userId/username  so we don't have to call the fas
-            # for all packages
-            if userId != record[2]:
-                fasPerson, group = self.fas.get_user_info(record[2])
-                username = fasPerson['username']
-                userId = record[2]
+            username = userList[record[2]]['username']
             self._add_to_vcs_acl_list(packageAcls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -210,13 +209,7 @@ class Acls(controllers.Controller):
             )
         # Save them into a python data structure
         for record in personAcls.execute():
-            # Cache the userId/username  so we don't have to call the fas
-            # for all packages
-            if userId != record[2]:
-                fasPerson, group = self.fas.get_user_info(record[2])
-                username = fasPerson['username']
-                userId = record[2]
-
+            username = userList[record[2]]['username']
             self._add_to_vcs_acl_list(packageAcls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -261,6 +254,10 @@ class Acls(controllers.Controller):
                 ),
             order_by=(model.PackageListing.c.owner,), distinct=True)
 
+        # Cache the userId/username pairs so we don't have to call the
+        # fas for every package.
+        userList = self.fas.get_users('id')
+
         for pkg in packageInfo.execute():
             # Lookup the collection
             collectionName = pkg[0]
@@ -278,14 +275,9 @@ class Acls(controllers.Controller):
                 collection[packageName] = package
 
             # Save the package information in the data structure to return
-            if userId != pkg[2]:
-                fasPerson, group = self.fas.get_user_info(pkg[2])
-                username = fasPerson['username']
-                userId = pkg[2]
-            package.owner = username
+            package.owner = userList[pkg[2]]['username']
             if pkg[3]:
-                fasPerson, group = self.fas.get_user_info(pkg[3])
-                package.qacontact = fasPerson['username']
+                package.qacontact = userList[pkg[3]]['username']
             package.summary = pkg[4]
 
         # Retrieve the user acls
@@ -305,13 +297,7 @@ class Acls(controllers.Controller):
             )
         # Save them into a python data structure
         for record in personAcls.execute():
-            # Cache the userId/username  so we don't have to call the fas
-            # for all packages
-            if userId != record[2]:
-                fasPerson, group = self.fas.get_user_info(record[2])
-                username = fasPerson['username']
-                userId = record[2]
-
+            username = userList[record[2]]['username']
             self._add_to_bugzilla_acl_list(bugzillaAcls, 'watchbugzilla',
                     record[0], record[1], username, group=False)
 

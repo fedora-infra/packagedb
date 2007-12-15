@@ -1,3 +1,32 @@
+2007-12-15  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r264
+* fedora-packagedb.spec: Set mode and owner on the log directory.
+
+2007-12-15  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r263
+* ChangeLog: Update for release.
+
+2007-12-15  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r262
+* fedora-packagedb.spec, pkgdb/release.py: Bump version.
+
+2007-12-15  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r261
+* pkgdb/acls.py: Acls::vcs(), Acls::bugzilla(): Use the new
+  AccountSystem::get_users() method to retrieve information about users.
+
+2007-11-29  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r260
+* pkgdb/bugs.py: BugList::__convert(): explicitly return the bug fields we're
+  interested in instead of the complete bug object.  That way JSON encoding of
+  the data works.
+* pkgdb/templates/login.html, pkgdb/templates/overview.html: Minor reformatting
+* pkgdb/templates/pkgheader.html: py:strip() the html tag.
+* fedora-packagedb.spec, pkgdb.cfg: Add directories to log to.
+* pkgdb/yumrepo.py: Log to the pkgdb.repo target.
+  - Allow yum repodata format 9 as well as 10.
+
+2007-11-24  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r259
+* pkgdb/templates/plain/bugzillaacls.txt: Escape backslash and pipe.
+
+2007-11-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r258
+* ChangeLog: Update.
+
 2007-11-16  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r257
 * pkgdb/bugs.py: Nasty hack to take care of misdirected requests for isos.
   - Bugs::default(): If we are given extra arguments in the URL, construct

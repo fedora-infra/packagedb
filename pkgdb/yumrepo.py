@@ -37,7 +37,7 @@ from sqlalchemy.ext.assignmapper import assign_mapper
 from pkgdb.json import SABase
 from pkgdb import model
 
-log = logging.getLogger("pkgdb.controllers")
+log = logging.getLogger('pkgdb.repo')
 
 class UnknownRepoMDFormat(Exception):
     '''An unknown repository format was encountered.'''
@@ -189,8 +189,8 @@ class RepoInfo(object):
         '''Set our model to talk to the db in this particular repo.'''
         self.metadata.bind = self.repoFiles[repo][mdtype]
         info = self.session.query(DB_Info).one()
-        if info.dbversion != 10:
-            raise UnknownRepoMDFormat, 'Expected Repo format 10, got %s' % (
+        if info.dbversion not in (9, 10):
+            raise UnknownRepoMDFormat, 'Expected Repo format 9 or 10, got %s' % (
                     info.dbversion)
 
     def sync_package_descriptions(self):
