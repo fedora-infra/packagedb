@@ -22,6 +22,7 @@ Requires: python-bugzilla
 
 BuildRequires:  python-devel
 BuildRequires: TurboGears
+BuildRequires: python-genshi
 %if 0%{?fedora} >= 8
 BuildRequires:  python-setuptools-devel
 %else
