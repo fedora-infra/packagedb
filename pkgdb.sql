@@ -756,7 +756,7 @@ create table PersonPackageListingAclLog (
     on delete restrict on update cascade
 );
 
--- Log changes to the acls a roup holds on the package.
+-- Log changes to the acls a group holds on the package.
 --
 -- Fields:
 -- :logId: The id of the log entry.
@@ -773,6 +773,26 @@ create table GroupPackageListingACLLog (
   foreign key (groupPackageListingAclId) references GroupPackageListingACL(id)
     on delete restrict on update cascade
 );
+
+-- Views --
+-- We create a few views for selects that we're going to do many times
+-- Mostly this is for counting
+
+-- Show how many active `Packages` are present in each `Collection`
+--
+-- Fields:
+-- :id: Id of the `Collection`.
+-- :name: Name of the `Collection`.
+-- :version: Version of the `Collection`.
+-- :statuscode: Code telling whether the `Collection` is active.
+-- :numpkgs: Number of Approved `Package`s in the `Collection`.
+create view CollectionPackage as 
+  select c.id, c.name, c.version, c.statuscode, count(*) as numpkgs
+    from packagelisting as pl, collection as c where
+    pl.collectionid = c.id
+    and pl.statuscode = 3
+    group by c.id, c.name, c.version, c.statuscode
+    order by c.name, c.version;
 
 -- FIXME: Audit these grant settings to make sure we are giving out just the
 -- permissions that we need.
@@ -801,7 +821,7 @@ grant select
     PackageStatusCode, PackageLogStatusCode, PackageBuildStatusCode,
     PackageBuildLogStatusCode, PackageListingStatusCode,
     PackageListingLogStatusCode, PackageACLStatusCode,
-    PackageACLLogStatusCode
+    PackageACLLogStatusCode, CollectionPackage
   to pkgdbadmin;
 
 -- FIXME: Implement groups/categories/comps

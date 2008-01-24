@@ -21,7 +21,6 @@
 Mapping of python classes to Database Tables.
 '''
 
-from datetime import datetime
 from turbogears.database import metadata, session, bind_meta_data
 from sqlalchemy import *
 from turbogears import identity, config
@@ -34,6 +33,11 @@ bind_meta_data()
 #
 # Python classes
 #
+
+#
+# Statuses
+#
+
 class StatusTranslation(SABase):
     '''Map status codes to status names in various languages.
     
@@ -87,6 +91,10 @@ class PackageAclStatus(BaseStatus):
     def __repr__(self):
         return 'PackageAclStatus(%s)' % self.statuscodeid
 
+#
+# Collections
+#
+
 class Collection(SABase):
     '''A Collection of packages.
 
@@ -136,6 +144,21 @@ class Branch(Collection):
                 self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
 
+class CollectionPackage(SABase):
+    '''Information about how many `Packages` are in a `Collection`
+
+    View -- CollectionPackage
+    '''
+    def __repr__(self):
+        return 'CollectionPackage(id="%s", name="%s", version="%s",' \
+                ' statuscode="%s", numpkgs="%s",' % (
+                self.id, self.name, self.version, self.statuscode,
+                self.numpkgs)
+
+#
+# Packages
+#
+
 class Package(SABase):
     '''Software we are packaging.
 
@@ -174,6 +197,10 @@ class PackageListing(SABase):
         return 'PackageListing(%s, %s, %s, %s, qacontact="%s")' % (
                 self.packageid, self.collectionid, self.owner,
                 self.statuscode, self.qacontact)
+
+#
+# Acls
+#
 
 class PersonPackageListing(SABase):
     '''Associate a person with a PackageListing.
@@ -230,6 +257,10 @@ class GroupPackageListingAcl(SABase):
     def __repr__(self):
         return 'GroupPackageListingAcl("%s", %s, grouppackagelistingid=%s)' % (
                 self.acl, self.statuscode, self.grouppackagelistingid)
+
+#
+# Logs
+#
 
 class Log(SABase):
     '''Base Log record.
@@ -314,7 +345,10 @@ class GroupPackageListingAclLog(Log):
                         self.userid, self.action, self.description,
                         self.changetime, self.grouppackagelistingaclid)
 
-# Mapping status tables
+#
+# Mapping Status Tables
+#
+
 # These are a bit convoluted as we have a 1:1:N relation between
 # SpecificStatusTable:StatusCodeTable:StatusTranslationTable
 StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
@@ -322,7 +356,8 @@ assign_mapper(session.context, StatusTranslation, StatusTranslationTable)
 
 CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
 assign_mapper(session.context, CollectionStatus, CollectionStatusTable,
-        properties={'collections' : relation(Collection, backref='status'),
+        properties={'collections': relation(Collection, backref='status'),
+            'collectionPackages': relation(CollectionPackage, backref='status'),
             'translations': relation(StatusTranslation,
                 order_by=StatusTranslationTable.c.language,
                 primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid,
@@ -358,6 +393,15 @@ collectionMapper = assign_mapper(session.context, Collection, CollectionTable,
 assign_mapper(session.context, Branch, BranchTable, inherits=collectionMapper,
         inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
         polymorphic_identity='b')
+
+#
+# CollectionTable that shows number of packages in a collection
+#
+CollectionPackageTable = Table('collectionpackage', metadata,
+        Column('id', Integer, primary_key=True),
+        Column('statuscode', Integer, ForeignKey('collectionstatuscode.statuscodeid')),
+        autoload=True)
+assign_mapper(session.context, CollectionPackage, CollectionPackageTable)
 
 # Package and PackageListing are straightforward translations.  Look at these
 # if you're looking for a straightforward example.

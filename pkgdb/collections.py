@@ -22,6 +22,7 @@ Controller for showing Package Collections.
 '''
 
 import sqlalchemy
+### FIXME: Get rid of this with TurboGears 1.0.4
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
 
@@ -40,25 +41,18 @@ class Collections(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
 
-    @expose(template='pkgdb.templates.collectionoverview')
+    @expose(template='pkgdb.templates.collectionoverview', allow_json=True)
     def index(self):
         '''List the Collections we know about.
         '''
-        collectionPkg = sqlalchemy.select(
-                (model.PackageListingTable.c.collectionid.label('id'),
-                    sqlalchemy.func.count(1).label('numpkgs')),
-                group_by=(model.PackageListingTable.c.collectionid,)).alias(
-                        'collectionpkg')
-        collections = sqlalchemy.select(
-                (model.CollectionTable, collectionPkg.c.numpkgs),
-                model.CollectionTable.c.id == collectionPkg.c.id,
-                order_by=(model.CollectionTable.c.name,
-                    model.CollectionTable.c.version)).execute()
+        collections = session.query(model.CollectionPackage).order_by(
+                (model.CollectionPackage.c.name,
+                    model.CollectionPackage.c.version))
 
         return dict(title=self.appTitle + ' -- Collection Overview',
                 collections=collections)
 
-    @expose(template='pkgdb.templates.collectionpage')
+    @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
     def id(self, collectionId):
@@ -67,46 +61,68 @@ class Collections(controllers.Controller):
         try:
             collectionId = int(collectionId)
         except ValueError:
-            raise redirect(config.get('base_url_filter.base_url') + '/collections/not_id')
+            error = dict(status = False,
+                    title = self.appTitle + ' -- Invalid Collection Id',
+                    message = 'The collectionId you were linked to is not a' \
+                            ' valid id.  If you received this error from a' \
+                            ' link on the fedoraproject.org website, please' \
+                            ' report it.')
+            if not ('tg_format' in request.params and
+                    request.params['tg_format'] == 'json'):
+                error['tg_template'] = 'pkgdb.templates.errors'
+                return error
+
         ### FIXME: Want to return additional info:
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
-        collection = sqlalchemy.select((model.CollectionTable.c.name,
-            model.CollectionTable.c.version, model.CollectionTable.c.owner,
-            model.CollectionTable.c.summary, model.CollectionTable.c.description,
-            model.StatusTranslationTable.c.statusname),
-            sqlalchemy.and_(
-                model.CollectionTable.c.statuscode==model.StatusTranslationTable.c.statuscodeid,
-                model.StatusTranslationTable.c.language=='C',
-                model.CollectionTable.c.id==collectionId), limit=1).execute()
-        if collection.rowcount <= 0:
-            raise redirect(config.get('base_url_filter.base_url') + '/collections/unknown',
-                    redirect_params={'collectionId':collectionId})
-        collection = collection.fetchone()
+        try:
+            collectionEntry = model.Collection.filter_by(id=collectionId).one()
+        except sqlalchemy.exceptions.InvalidRequestError, e:
+            # Either the id doesn't exist or somehow it references more than
+            # one value
+            error = dict(status = False,
+                    title = self.appTitle + ' -- Invalid Collection Id',
+                    message = 'The collectionId you were linked to, %s, does' \
+                            ' not exist.  If you received this error from a' \
+                            ' link on the fedoraproject.org website, please' \
+                            ' report it.' % collectionId)
+            if not ('tg_format' in request.params and
+                    request.params['tg_format'] == 'json'):
+                error['tg_template'] = 'pkgdb.templates.errors'
+                return error
 
         # Get real ownership information from the fas
-        (user, groups) = self.fas.get_user_info(collection.owner)
-        collection.ownername = '%s (%s)' % (user['human_name'],
+        (user, groups) = self.fas.get_user_info(collectionEntry.owner)
+        ownerName = '%s (%s)' % (user['human_name'],
                 user['username'])
 
+        # Why do we reformat the data returned from the database?
+        # 1) We don't need all the information in the collection object
+        # 2) We need ownerName and statusname which are not in the specific
+        #    table.
+        collection = {'name': collectionEntry.name,
+                'version': collectionEntry.version,
+                'owner': collectionEntry.owner,
+                'ownername': ownerName,
+                'summary': collectionEntry.summary,
+                'description': collectionEntry.description,
+                'statusname': collectionEntry.status.translations[0].statusname
+                }
+
         # Retrieve the packagelist for this collection
+        ### FIXME: Remove all SelectResults
+        # SA-0.4 deprecates SelectResults
+        # TurboGears 1.0.4 will support using orm.query for paginate instead
+        # Should be able to just switch the lines defining packages when that
+        # happens.
+        # packages = session.query(model.Package).filter(
+        #         sqlalchemy.and_(
+        #             model.PackageListing.c.collectionid==collectionId,
+        #             model.PackageListing.c.packageid==model.Package.c.id)
+        #         )
         packages = SelectResults(session.query(model.Package)).select(
                 sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
                     model.PackageListing.c.packageid==model.Package.c.id)
                 )
-        return dict(title='%s -- %s %s' % (self.appTitle, collection.name,
-            collection.version), collection=collection, packages=packages)
-
-    @expose(template='pkgdb.templates.errors')
-    def unknown(self, collectionId):
-        msg = 'The collectionId you were linked to, %s, does not exist.' \
-                ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.' % collectionId
-        return dict(title=self.appTitle + ' -- Unknown Collection', msg=msg)
-
-    @expose(template='pkgdb.templates.errors')
-    def not_id(self):
-        msg = 'The collectionId you were linked to is not a valid id.' \
-                ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.'
-        return dict(title=self.appTitle + ' -- Invalid Collection Id', msg=msg)
+        return dict(title='%s -- %s %s' % (self.appTitle, collection['name'],
+            collection['version']), collection=collection, packages=packages)
