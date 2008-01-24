@@ -1,3 +1,43 @@
+2008-01-23  Toshio Kuratomi <badger@Clingman> - r271
+* fedora-packagedb.spec, pkgdb/release.py: Bump release for new version.
+
+2008-01-23  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r270
+* pkgdb/users.py: Add checks to only select packages if they are active
+  (ie: Not removed, obsolete, etc.)
+
+2008-01-23  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r269
+* Merge new layout.html.  This necessitated adding empty <head> tags to
+  all the page templates.
+
+2008-01-23  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r268
+* pkgdb.sql: Add a view that associates a count of all the packages in each
+  collection.
+* pkgdb/collections.py: Modifications to get rid of SelectResults when we move
+  to TG-1.0.4 (and paginate supports the sqlalchemy.orm.query object).
+  - index(), id(): Allow returning json from these functions.
+  - index(): Use the new view instead of having to join tables ourselves to
+    get the package count.
+  - id(): No longer raise redirect to get the error page, instead substitute
+    the template.
+    + Use new sqlalchemy API for getting the collection information and then
+      save the results into a dictionary for passing back to the template.
+  - unknown(), not_id(): Remove these as we no longer raise a redirect to get
+    to them.
+* pkgdb/json.py: Add handling for Query objects.
+* pkgdb/model.py: Add the new CollectionPackage view.
+* pkgdb/templates/collectionpage.html: collection information is now a dict
+  instead of an object so access its members using bracket notation.
+
+2008-01-23  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r267
+* pkgdb.sql: Remove comments about reorganizing the Acls as that's already
+  done and in the schema.
+
+2007-12-18  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r266
+* pkgdb/templates/layout.html: fedora.css has moved.
+
+2007-12-15  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r265
+* ChangeLog: Update for last minute changes.
+
 2007-12-15  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r264
 * fedora-packagedb.spec: Set mode and owner on the log directory.
 
@@ -1485,7 +1525,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
 * pkgdb/pkgdb/templates/pkgpage.kid: First hack at displaying the acl
   information.
 
-2007-01-27  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r39
+2007-01-26  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r39
 * pkgdb/pkgdb/config/app.cfg: Add basurl_filter to inform cherrypy of the
   /pkgdb/ path prefix.
 * pkgdb/pkgdb/controllers.py: Get paginate working.  This requires paginate
@@ -1502,7 +1542,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
   template.  We can now page through the list of packages instead of seeing it
   all on one page.
 
-2007-01-24  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r38
+2007-01-23  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r38
 * pkgdb/pkgdb/controllers.py:
   - Collection::id(): Use both human name and username to fill the ownername
     field as the human name is not guaranteed to be unique.
@@ -1547,7 +1587,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
 * pkgdb/pkgdb/controllers.py: Import a logger.
   - Use the fedora.accounts.fas module instead of website.
 
-2007-01-20  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r33
+2007-01-19  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r33
 * pkgdb.conf:
   - Prevent the RewriteRules from applying if we're loading the autostart
     script.  This stops us from attempting to spawn multiple instances of the
@@ -1568,7 +1608,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
 2007-01-19  Toshio Kuratomi <toshio@tiki-lounge.com> - r32
 * Merge changes from our working branch.
 
-2007-01-11  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r31
+2007-01-10  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r31
 * tg-autostart.cgi: kill prior occurrences of the TurboGears app server before
   starting the new instance.
 
@@ -1692,7 +1732,7 @@ Small changes to nav bar on left, including a right nav bar like in FAS
 2006-12-04  Toshio Ernie Kuratomi <toshio@test3.fedora.phx.redhat.com> - r20
 * pkgdb/pkgdb/model.py: Add a URL field for the review ticket.
 
-2006-12-04  Toshio Kuratomi <toshio@tiki-lounge.com> - r19
+2006-12-03  Toshio Kuratomi <toshio@tiki-lounge.com> - r19
 * pkgdb.sql: Fix bugs and typos in the schema.
 
 2006-12-03  Toshio Kuratomi <toshio@tiki-lounge.com> - r18

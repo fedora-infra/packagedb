@@ -756,7 +756,7 @@ create table PersonPackageListingAclLog (
     on delete restrict on update cascade
 );
 
--- Log changes to the acls a roup holds on the package.
+-- Log changes to the acls a group holds on the package.
 --
 -- Fields:
 -- :logId: The id of the log entry.
@@ -773,6 +773,26 @@ create table GroupPackageListingACLLog (
   foreign key (groupPackageListingAclId) references GroupPackageListingACL(id)
     on delete restrict on update cascade
 );
+
+-- Views --
+-- We create a few views for selects that we're going to do many times
+-- Mostly this is for counting
+
+-- Show how many active `Packages` are present in each `Collection`
+--
+-- Fields:
+-- :id: Id of the `Collection`.
+-- :name: Name of the `Collection`.
+-- :version: Version of the `Collection`.
+-- :statuscode: Code telling whether the `Collection` is active.
+-- :numpkgs: Number of Approved `Package`s in the `Collection`.
+create view CollectionPackage as 
+  select c.id, c.name, c.version, c.statuscode, count(*) as numpkgs
+    from packagelisting as pl, collection as c where
+    pl.collectionid = c.id
+    and pl.statuscode = 3
+    group by c.id, c.name, c.version, c.statuscode
+    order by c.name, c.version;
 
 -- FIXME: Audit these grant settings to make sure we are giving out just the
 -- permissions that we need.
@@ -801,55 +821,8 @@ grant select
     PackageStatusCode, PackageLogStatusCode, PackageBuildStatusCode,
     PackageBuildLogStatusCode, PackageListingStatusCode,
     PackageListingLogStatusCode, PackageACLStatusCode,
-    PackageACLLogStatusCode
+    PackageACLLogStatusCode, CollectionPackage
   to pkgdbadmin;
-
--- FIXME: Rearrange Acls
--- Analyzing the code we're writing, the way we have Acls currently laid out
--- makes little sense.  We seem to be making this conversion in code everytime
--- we use it:
---   Instead of PkgListing=>Acl=>(Person|Group)
---   PkgListing=>(Person|Group)=>Acl
---
--- If we need to move the data instead of doing a clean resync:
--- 
--- insert into personpackagelisting (userid, packagelistingid) select distinct
--- ppa.userid, pa.packageListingId from packageacl as pa, personpackageacl as
--- ppa where pa.id = ppa.packageaclid;
---
--- insert into personpackagelistingacl (personpackagelistingid, acl,
--- statuscode) select pp.id, pa.acl, ppa.status from personpackagelisting as
--- pp, packageacl as pa, personpackageacl as ppa where pp.userid = ppa.userid
--- and pp.packagelistingid = pa.packagelistingid and pa.id = ppa.packageaclid;
---
--- Groups would be the same but we haven't filled any data for them.
--- insert into grouppackagelisting (groupid, packagelistingid) select distinct
--- gpa.groupid, pa.packageListingId from packageacl as pa, grouppackageacl as
--- gpa where pa.id = gpa.packageaclid;
---
--- And the logs are currently empty.
---
--- drop table packageacl cascade;
--- drop table personpackageacl cascade;
--- drop table grouppackageacl cascade;
---
--- Also have to change status to statuscode
--- alter table collection rename column status to statuscode;
--- alter table package rename column status to statuscode;
--- alter table packagebuild rename column status to statuscode;
--- alter table packagelisting rename column status to statuscode;
--- 
--- To populate group information in our test database:
--- 100300 is the id for cvsextras
--- insert into grouppackagelisting (groupid, packagelistingid) select 100300,
--- id from packagelisting;
--- 10 is the statuscode for denied.  This populates our test db with no one in
--- cvsextras able to commit.  Change to 3 (approved) to open it up
--- insert into grouppackagelistingacl (grouppackagelistingid, acl, statuscode)
--- select id, 'commit', 3 from grouppackagelisting;
---
---
-
 
 -- FIXME: Implement groups/categories/comps
 -- Need to implement subpackages.

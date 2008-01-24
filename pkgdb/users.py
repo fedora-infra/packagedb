@@ -24,10 +24,9 @@ Controller to show information about packages by user.
 '''
 
 import sqlalchemy
-from sqlalchemy.ext.selectresults import SelectResults
-import sqlalchemy.mods.selectresults
 
-from turbogears import controllers, expose, paginate, config, redirect, identity
+from turbogears import controllers, expose, paginate, config, \
+        redirect, identity
 from turbogears.database import session
 
 from pkgdb import model
@@ -37,8 +36,18 @@ from fedora.accounts.fas import AccountSystem, AuthError
 ORPHAN_ID=9900
 
 class Users(controllers.Controller):
+    '''Controller for all things user related.
+    
+    Status Ids to use with queries.
+    '''
     approvedStatusId = model.StatusTranslation.filter_by(
             statusname='Approved', language='C').one().statuscodeid
+    awaitingBranchStatusId = model.StatusTranslation.filter_by(
+            statusname='Awaiting Branch', language='C').one().statuscodeid
+    awaitingReviewStatusId = model.StatusTranslation.filter_by(
+            statusname='Awaiting Review', language='C').one().statuscodeid
+    underReviewStatusId = model.StatusTranslation.filter_by(
+            statusname='Under Review', language='C').one().statuscodeid
     EOLStatusId = model.StatusTranslation.filter_by(
             statusname='EOL', language='C').one().statuscodeid
 
@@ -110,12 +119,20 @@ class Users(controllers.Controller):
 
         # Create the clauses of the package finding query
         clauses = []
+
         if 'any' in acls or 'owner' in acls:
             # Return any package for which the user is the owner
             clauses.append(model.Package.query().filter(
                     sqlalchemy.and_(
                         model.Package.c.id==model.PackageListing.c.packageid,
-                        model.PackageListing.c.owner==fasid
+                        model.Package.c.statuscode.in_(self.approvedStatusId,
+                            self.awaitingReviewStatusId,
+                            self.underReviewStatusId),
+                        model.PackageListing.c.owner==fasid,
+                        model.PackageListing.c.statuscode.in_(
+                            self.approvedStatusId,
+                            self.awaitingBranchStatusId,
+                            self.awaitingReviewStatusId)
                         ),
                     ))
             if 'owner' in acls:
@@ -126,10 +143,14 @@ class Users(controllers.Controller):
             clauses.append(model.Package.query().filter(
               sqlalchemy.and_(
                 model.Package.c.id==model.PackageListing.c.packageid,
+                model.Package.c.statuscode.in_(self.approvedStatusId,
+                    self.awaitingReviewStatusId, self.underReviewStatusId),
                 model.PackageListing.c.id==model.PersonPackageListing.c.packagelistingid,
                 model.PersonPackageListing.c.userid==fasid,
                 model.PersonPackageListing.c.id==model.PersonPackageListingAcl.c.personpackagelistingid,
-                model.PersonPackageListingAcl.c.statuscode==self.approvedStatusId
+                model.PersonPackageListingAcl.c.statuscode==self.approvedStatusId,
+                model.PackageListing.c.statuscode.in_(self.approvedStatusId,
+                    self.awaitingBranchStatusId, self.awaitingReviewStatusId)
               )
             ))
             if 'any' not in acls:

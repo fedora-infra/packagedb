@@ -3,6 +3,7 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
+  <html />
   <body>
     <table border="1" py:for="collection in sorted(bugzillaAcls.keys())">
       <thead><td>Package</td><td>Description</td><td>Owner</td><td>Initial QA</td><td>Initial CCList</td></thead>
