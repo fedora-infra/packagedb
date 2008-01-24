@@ -1,4 +1,5 @@
 #!/usr/bin/python -tt
+__requires__='TurboGears[future]'
 
 import os
 import glob
