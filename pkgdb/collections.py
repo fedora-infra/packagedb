@@ -26,7 +26,7 @@ import sqlalchemy
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
 
-from turbogears import controllers, expose, paginate, config, redirect
+from turbogears import controllers, expose, paginate
 from turbogears.database import session
 
 from pkgdb import model
@@ -77,7 +77,7 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             collectionEntry = model.Collection.filter_by(id=collectionId).one()
-        except sqlalchemy.exceptions.InvalidRequestError, e:
+        except sqlalchemy.exceptions.InvalidRequestError:
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
@@ -121,8 +121,9 @@ class Collections(controllers.Controller):
         #             model.PackageListing.c.packageid==model.Package.c.id)
         #         )
         packages = SelectResults(session.query(model.Package)).select(
-                sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
-                    model.PackageListing.c.packageid==model.Package.c.id)
+                sqlalchemy.and_(
+                    model.PackageListing.c.collectionid == collectionId,
+                    model.PackageListing.c.packageid == model.Package.c.id)
                 )
         return dict(title='%s -- %s %s' % (self.appTitle, collection['name'],
             collection['version']), collection=collection, packages=packages)

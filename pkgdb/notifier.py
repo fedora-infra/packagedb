@@ -30,11 +30,11 @@ log = logging.getLogger('pkgdb.controllers')
 
 class Event(object):
     __attributes__ = ['author', 'change', 'subject', 'description']
-    pass
 
 class EventLogger(object):
     '''Notify others of events.'''
-    MAILFROM = config.get('email.sender', ('PackageDB', 'pkgdb@fedoraproject.org'))
+    MAILFROM = config.get('email.sender',
+            ('PackageDB', 'pkgdb@fedoraproject.org'))
 
     def __init__(self):
         # Eventually this could contact a notification server and use that to

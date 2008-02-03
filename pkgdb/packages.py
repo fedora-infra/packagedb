@@ -100,7 +100,7 @@ class Packages(controllers.Controller):
         aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # Possible statuses for acls:
         aclStatus = SelectResults(session.query(model.PackageAclStatus))
-        aclStatusTranslations=['']
+        aclStatusTranslations = ['']
         for status in aclStatus:
             ### FIXME: At some point, we have to pull other translations out,
             # not just C

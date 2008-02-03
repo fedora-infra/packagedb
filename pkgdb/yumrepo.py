@@ -32,7 +32,6 @@ from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy.orm import Mapper
-from sqlalchemy.ext.assignmapper import assign_mapper
 
 from pkgdb.json import SABase
 from pkgdb import model
@@ -45,16 +44,21 @@ class UnknownRepoMDFormat(Exception):
 
 class DB_Info (SABase):
     '''Metainformation about the yum cache.'''
+    # pylint: disable-msg=R0903
     def __repr__(self):
+        # pylint: disable-msg=E1101
         return 'DBInfo(%s, "%s")' % (self.dbversion, self.checksum)
 
 class Packages(SABase):
     '''Package data in the yum repo.'''
+    # pylint: disable-msg=R0903
     def __str__(self):
+        # pylint: disable-msg=E1101
         return '%s-%s:%s-%s' % (self.name, self.epoch, self.version,
                 self.release)
 
     def __repr__(self):
+        # pylint: disable-msg=E1101
         return 'Packages(pkgKey=%s, pkgId="%s", name="%s", arch="%s",' \
                 ' version="%s", epoch="%s", release="%s", summary="%s",' \
                 ' description="%s", url="%s", time_file="%s",' \
@@ -105,11 +109,13 @@ class RepoUpdater(yum.YumBase):
         self._get_repodata()
 
     def _get_repodata(self):
+        '''Use yum API to retrive new repodata files from remote repositories.
+        '''
         for repo in self.repos.findRepos('*'):
             repo.sack.populate(repo)
             # If we want more than just primary metadata, then pass:
-            # repo.getPackageSack().populate(repo, mdtype='XXX')
-            # where XXX == one of: 'filelists', 'otherdata', 'all'
+            # repo.getPackageSack().populate(repo, mdtype='TYPE')
+            # where TYPE == one of: 'filelists', 'otherdata', 'all'
 
 class RepoInfo(object):
     '''Interact with a set of yum repositories.
@@ -190,8 +196,8 @@ class RepoInfo(object):
         self.metadata.bind = self.repoFiles[repo][mdtype]
         info = self.session.query(DB_Info).one()
         if info.dbversion not in (9, 10):
-            raise UnknownRepoMDFormat, 'Expected Repo format 9 or 10, got %s' % (
-                    info.dbversion)
+            raise UnknownRepoMDFormat, 'Expected Repo format 9 or 10, got %s' \
+                    % (info.dbversion)
 
     def sync_package_descriptions(self):
         '''Add a new package to the database.
@@ -240,7 +246,7 @@ class RepoInfo(object):
         repoList = develRepos
 
         # Pull off the update and fedora repos for the latest two releases
-        for numReleases in range(0,2):
+        for numReleases in range(0, 2): # pylint: disable-msg=W0612
             release = updateRepos[0][len('updates'):updateRepos[0].index('-')]
             updateStr = 'updates%s-' % release
             while updateRepos and updateRepos[0].startswith(updateStr):
@@ -258,7 +264,7 @@ class RepoInfo(object):
             del olpcRepos[0]
 
         # Two for epel
-        for numRelease in range(0,2):
+        for numRelease in range(0, 2): # pylint: disable-msg=W0612
             epelStr = epelRepos[0][0:epelRepos[0].index('-')+1]
             while epelRepos and epelRepos[0].startswith(epelStr):
                 repoList.append(epelRepos[0])

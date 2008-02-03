@@ -20,10 +20,9 @@
 '''
 Mapping of python classes to Database Tables.
 '''
-
 from turbogears.database import metadata, session, bind_meta_data
-from sqlalchemy import *
-from turbogears import identity, config
+from sqlalchemy import (Table, Column, ForeignKey, Integer, select, relation,
+        backref, literal_column, polymorphic_union, not_)
 from sqlalchemy.ext.assignmapper import assign_mapper
 
 from pkgdb.json import SABase
@@ -43,8 +42,19 @@ class StatusTranslation(SABase):
     
     Table -- StatusCodeTranslation
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, statuscodeid, statusname, language=None,
             description=None):
+        '''
+        :statuscodeid: id of the status this translation applies to
+        :statusname: translated string
+        :language: Languages code that this string is for.  if not given.
+            defaults to 'C'
+        :description: a description of what this status means.  May be used in
+            online help.  
+        '''
+        # pylint: disable-msg=R0913
+        super(StatusTranslation, self).__init__()
         self.statuscodeid = statuscodeid
         self.statusname = statusname
         self.language = language or None
@@ -56,7 +66,11 @@ class StatusTranslation(SABase):
                         self.description)
 
 class BaseStatus(SABase):
+    '''Fields common to all Statuses.'''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, statuscodeid):
+        # pylint: disable-msg=R0913
+        super(BaseStatus, self).__init__()
         self.statuscodeid = statuscodeid
 
 class CollectionStatus(BaseStatus):
@@ -64,6 +78,7 @@ class CollectionStatus(BaseStatus):
 
     Table -- CollectionStatusCode
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'CollectionStatus(%s)' % self.statuscodeid
 
@@ -72,6 +87,7 @@ class PackageStatus(BaseStatus):
 
     Table -- PackageStatusCode
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'PackageStatus(%s)' % self.statuscodeid
 
@@ -80,6 +96,7 @@ class PackageListingStatus(BaseStatus):
 
     Table -- PackageListingStatusCode
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'PackageListingStatus(%s)' % self.statuscodeid
 
@@ -88,6 +105,7 @@ class PackageAclStatus(BaseStatus):
 
     Table -- PackageAclStatusCode
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'PackageAclStatus(%s)' % self.statuscodeid
 
@@ -100,9 +118,12 @@ class Collection(SABase):
 
     Table -- Collection
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, name, version, statuscode, owner,
             publishurltemplate=None, pendingurltemplate=None, summary=None,
             description=None):
+        # pylint: disable-msg=R0913
+        super(Collection, self).__init__()
         self.name = name
         self.version = version
         self.statuscode = statuscode
@@ -128,12 +149,14 @@ class Branch(Collection):
 
     Table -- Branch
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, collectionid, branchname, disttag, parentid, *args):
+        # pylint: disable-msg=R0913
+        super(Branch, self).__init__(args)
         self.collectionid = collectionid
         self.branchname = branchname
         self.disttag = disttag
         self.parentid = parentid
-        Collection.__init__(self, args)
     
     def __repr__(self):
         return 'Branch(%s, "%s", "%s", %s, "%s", "%s", "%s", "%s",' \
@@ -149,7 +172,9 @@ class CollectionPackage(SABase):
 
     View -- CollectionPackage
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
+        # pylint: disable-msg=E1101
         return 'CollectionPackage(id="%s", name="%s", version="%s",' \
                 ' statuscode="%s", numpkgs="%s",' % (
                 self.id, self.name, self.version, self.statuscode,
@@ -167,26 +192,32 @@ class Package(SABase):
 
     Table -- Package
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, name, summary, statuscode, description=None,
             reviewurl=None):
+        # pylint: disable-msg=R0913
+        super(Package, self).__init__()
         self.name = name
         self.summary = summary
         self.statuscode = statuscode
         self.description = description
         self.reviewurl = reviewurl
-
+    
     def __repr__(self):
         return 'Package("%s", "%s", %s, description="%s", reviewurl="%s")' % (
                 self.name, self.summary, self.statuscode, self.description,
                 self.reviewurl)
-
+ 
 class PackageListing(SABase):
     '''This associates a package with a particular collection.
 
     Table -- PackageListing
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, owner, statuscode, packageid=None, collectionid=None,
             qacontact=None):
+        # pylint: disable-msg=R0913
+        super(PackageListing, self).__init__()
         self.packageid = packageid
         self.collectionid = collectionid
         self.owner = owner
@@ -209,7 +240,10 @@ class PersonPackageListing(SABase):
 
     Table -- PersonPackageListing
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, packagelistingid=None):
+        # pylint: disable-msg=R0913
+        super(PersonPackageListing, self).__init__()
         self.userid = userid
         self.packagelistingid = packagelistingid
 
@@ -222,7 +256,10 @@ class GroupPackageListing(SABase):
 
     Table -- GroupPackageListing
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, groupid, packagelistingid=None):
+        # pylint: disable-msg=R0913
+        super(GroupPackageListing, self).__init__()
         self.groupid = groupid
         self.packagelistingid = packagelistingid
 
@@ -235,7 +272,10 @@ class PersonPackageListingAcl(SABase):
 
     Table -- PersonPackageListingAcl
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, acl, statuscode=None, personpackagelistingid=None):
+        # pylint: disable-msg=R0913
+        super(PersonPackageListingAcl, self).__init__()
         self.personpackagelistingid = personpackagelistingid
         self.acl = acl
         self.statuscode = statuscode
@@ -249,7 +289,10 @@ class GroupPackageListingAcl(SABase):
 
     Table -- GroupPackageListingAcl
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, acl, statuscode=None, grouppackagelistingid=None):
+        # pylint: disable-msg=R0913
+        super(GroupPackageListingAcl, self).__init__()
         self.grouppackagelistingid = grouppackagelistingid
         self.acl = acl
         self.statuscode = statuscode
@@ -269,7 +312,10 @@ class Log(SABase):
 
     Table -- Log
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, description=None, changetime=None):
+        # pylint: disable-msg=R0913
+        super(Log, self).__init__()
         self.userid = userid
         self.description = description
         self.changetime = changetime
@@ -283,9 +329,11 @@ class PackageLog(Log):
 
     Table -- PackageLog
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, action, description=None, changetime=None,
             packageid=None):
-        Log.__init__(self, userid, description, changetime)
+        # pylint: disable-msg=R0913
+        super(PackageLog, self).__init__(userid, description, changetime)
         self.action = action
         self.packageid = packageid
     
@@ -299,9 +347,11 @@ class PackageListingLog(Log):
 
     Table -- PackageListingLog
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, action, description=None, changetime=None,
             packagelistingid=None):
-        Log.__init__(self, userid, description, changetime)
+        # pylint: disable-msg=R0913
+        super(PackageListingLog, self).__init__(userid, description, changetime)
         self.action = action
         self.packagelistingid = packagelistingid
 
@@ -316,9 +366,12 @@ class PersonPackageListingAclLog(Log):
 
     Table -- PersonPackageListingAcl
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, action, description=None, changetime=None,
             personpackagelistingaclid=None):
-        Log.__init__(self, userid, description, changetime)
+        # pylint: disable-msg=R0913
+        super(PersonPackageListingAclLog, self).__init__(userid, description,
+                changetime)
         self.action = action
         self.personpackagelistingaclid = personpackagelistingaclid
 
@@ -333,9 +386,12 @@ class GroupPackageListingAclLog(Log):
 
     Table -- GroupPackageListingAclLog
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, action, description=None, changetime=None,
             grouppackagelistingaclid=None):
-        Log.__init__(self, userid, description, changetime)
+        # pylint: disable-msg=R0913
+        super(GroupPackageListingAclLog, self).__init__(userid, description,
+                changetime)
         self.action = action
         self.grouppackagelistingaclid = grouppackagelistingaclid
 
@@ -351,6 +407,11 @@ class GroupPackageListingAclLog(Log):
 
 # These are a bit convoluted as we have a 1:1:N relation between
 # SpecificStatusTable:StatusCodeTable:StatusTranslationTable
+
+# I'd like to merely override the pylint regex for this particular section of
+# code as # these variables are special.  They chould be treated more like
+# class definitions than constants.  Oh well.
+# pylint: disable-msg=C0103
 StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
 assign_mapper(session.context, StatusTranslation, StatusTranslationTable)
 
@@ -359,12 +420,14 @@ assign_mapper(session.context, CollectionStatus, CollectionStatusTable,
         properties={'collections': relation(Collection, backref='status'),
             'collectionPackages': relation(CollectionPackage, backref='status'),
             'translations': relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid,
-                foreignkey=StatusTranslationTable.c.statuscodeid,
-                backref=backref('cstatuscode',
-                    foreignkey=CollectionStatusTable.c.statuscodeid,
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid),
+                order_by = StatusTranslationTable.c.language,
+                primaryjoin = StatusTranslationTable.c.statuscodeid \
+                        == CollectionStatusTable.c.statuscodeid,
+                foreignkey = StatusTranslationTable.c.statuscodeid,
+                backref = backref('cstatuscode',
+                    foreignkey = CollectionStatusTable.c.statuscodeid,
+                    primaryjoin = StatusTranslationTable.c.statuscodeid \
+                            == CollectionStatusTable.c.statuscodeid),
                 )})
 
 # Collections and Branches have an inheritance relationship.  ie: Branches are
@@ -399,7 +462,8 @@ assign_mapper(session.context, Branch, BranchTable, inherits=collectionMapper,
 #
 CollectionPackageTable = Table('collectionpackage', metadata,
         Column('id', Integer, primary_key=True),
-        Column('statuscode', Integer, ForeignKey('collectionstatuscode.statuscodeid')),
+        Column('statuscode', Integer,
+            ForeignKey('collectionstatuscode.statuscodeid')),
         autoload=True)
 assign_mapper(session.context, CollectionPackage, CollectionPackageTable)
 
@@ -411,23 +475,27 @@ PackageListingTable = Table('packagelisting', metadata, autoload=True)
 assign_mapper(session.context, Package, PackageTable, properties =
         {'listings':relation(PackageListing, backref='package')})
 assign_mapper(session.context, PackageListing, PackageListingTable,
-        properties={'people' : relation(PersonPackageListing, backref='packagelisting'),
+        properties={'people' : relation(PersonPackageListing,
+            backref='packagelisting'),
             'groups' : relation(GroupPackageListing, backref='packagelisting')})
 
 # Package Listing Status Table.  Like the other status tables, this one has to
 # connect translations to the statuses particular to the PackageListing.  This
 # make it somewhat more convoluted but all the status tables follow the same
 # pattern.
-PackageListingStatusTable = Table('packagelistingstatuscode', metadata, autoload=True)
+PackageListingStatusTable = Table('packagelistingstatuscode', metadata,
+        autoload=True)
 assign_mapper(session.context, PackageListingStatus, PackageListingStatusTable,
         properties={'listings' : relation(PackageListing, backref='status'),
             'translations' : relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid,
-                foreignkey=StatusTranslationTable.c.statuscodeid,
-                backref=backref('plstatuscode',
-                    foreignkey=PackageListingStatusTable.c.statuscodeid,
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid)
+                order_by = StatusTranslationTable.c.language,
+                primaryjoin = StatusTranslationTable.c.statuscodeid \
+                        == PackageListingStatusTable.c.statuscodeid,
+                foreignkey = StatusTranslationTable.c.statuscodeid,
+                backref = backref('plstatuscode',
+                    foreignkey = PackageListingStatusTable.c.statuscodeid,
+                    primaryjoin = StatusTranslationTable.c.statuscodeid \
+                            == PackageListingStatusTable.c.statuscodeid)
                 )})
 
 # Package Status Table.
@@ -435,12 +503,14 @@ PackageStatusTable = Table('packagestatuscode', metadata, autoload=True)
 assign_mapper(session.context, PackageStatus, PackageStatusTable,
         properties={'packages' : relation(Package, backref='status'),
             'translations' : relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid,
-                foreignkey=StatusTranslationTable.c.statuscodeid,
-                backref=backref('pstatuscode',
-                    foreignkey=PackageStatusTable.c.statuscodeid,
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid)
+                order_by = StatusTranslationTable.c.language,
+                primaryjoin = StatusTranslationTable.c.statuscodeid \
+                        == PackageStatusTable.c.statuscodeid,
+                foreignkey = StatusTranslationTable.c.statuscodeid,
+                backref = backref('pstatuscode',
+                    foreignkey = PackageStatusTable.c.statuscodeid,
+                    primaryjoin = StatusTranslationTable.c.statuscodeid \
+                            == PackageStatusTable.c.statuscodeid)
                 )})
 
 #
@@ -471,12 +541,14 @@ assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
                 backref='status'),
             'gacls' : relation(GroupPackageListingAcl, backref='status'),
             'translations' : relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid,
-                foreignkey=StatusTranslationTable.c.statuscodeid,
-                backref=backref('pastatuscode',
-                    foreignkey=PackageAclStatusTable.c.statuscodeid,
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid)
+                order_by = StatusTranslationTable.c.language,
+                primaryjoin = StatusTranslationTable.c.statuscodeid \
+                        == PackageAclStatusTable.c.statuscodeid,
+                foreignkey = StatusTranslationTable.c.statuscodeid,
+                backref = backref('pastatuscode',
+                    foreignkey = PackageAclStatusTable.c.statuscodeid,
+                    primaryjoin = StatusTranslationTable.c.statuscodeid \
+                            == PackageAclStatusTable.c.statuscodeid)
                 )})
 
 # Log tables
@@ -523,7 +595,8 @@ logMapper = assign_mapper(session.context, Log, LogTable,
 assign_mapper(session.context, PersonPackageListingAclLog,
         PersonPackageListingAclLogTable,
         inherits=logMapper,
-        inherit_condition=LogTable.c.id==PersonPackageListingAclLogTable.c.logid,
+        inherit_condition = LogTable.c.id == \
+                PersonPackageListingAclLogTable.c.logid,
         polymorphic_identity='personpkglistacllog',
         properties={'acl': relation(PersonPackageListingAcl, backref='logs')})
 
@@ -546,7 +619,7 @@ assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
         polymorphic_identity='pkglistlog',
         properties={'listing': relation(PackageListing, backref='logs')})
 
-### FIXME: Create sqlalchemy schema.
+### TODO: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example
 # above.
 # List of tables not yet mapped::

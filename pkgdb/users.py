@@ -33,7 +33,7 @@ from pkgdb import model
 
 from fedora.accounts.fas import AccountSystem, AuthError
 
-ORPHAN_ID=9900
+ORPHAN_ID = 9900
 
 class Users(controllers.Controller):
     '''Controller for all things user related.
@@ -175,7 +175,7 @@ class Users(controllers.Controller):
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def acllist(self,fasname=None):
+    def acllist(self, fasname=None):
 
         if fasname == None:
             raise redirect(config.get('base_url_filter.base_url') + '/users/packages/')
@@ -183,7 +183,7 @@ class Users(controllers.Controller):
             raise redirect(config.get('base_url_filter.base_url') + '/users/packages/' + fasname)
 
     @expose(template='pkgdb.templates.useroverview')
-    def info(self,fasname=None):
+    def info(self, fasname=None):
         # If fasname is blank, ask for auth, we assume they want their own?
         if fasname == None:
             if identity.current.anonymous:
@@ -195,7 +195,8 @@ class Users(controllers.Controller):
             try:
                 fasid = self.fas.get_user_id(fasname)
             except AuthError:
-               raise redirect(config.get('base_url_filter.base_url') + '/users/no_user/' + fasname)
+                raise redirect(config.get('base_url_filter.base_url') +
+                        '/users/no_user/' + fasname)
 
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Info'
 
