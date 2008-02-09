@@ -25,7 +25,6 @@ Controller for displaying Package Bug Information.
 from urllib import quote
 
 from sqlalchemy.ext.selectresults import SelectResults
-import sqlalchemy.mods.selectresults
 
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
@@ -46,10 +45,22 @@ class BugList(list):
     '''
 
     def __init__(self, queryUrl, publicUrl):
+        super(BugList, self).__init__()
         self.queryUrl = queryUrl
         self.publicUrl = publicUrl
 
     def __convert(self, bug):
+        '''Convert bugs from the raw form retrieved from python-bugzilla to
+        one that is consumable by a normal python program.
+
+        This involves converting byte strings to unicode type and substituting
+        any private URLs returned into a public URL.  (This occurs when we
+        have to call bugzilla via one name on the internal network but someone
+        clicking on the link in a web page needs to use a different address.)
+
+        Arguments:
+        :bug: A bug record returned from the python-bugzilla interface.
+        '''
         if not isinstance(bug, bugzilla.Bug):
             raise TypeError('Can only store bugzilla.Bug type')
         if self.queryUrl != self.publicUrl:
@@ -59,13 +70,20 @@ class BugList(list):
             bug.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
         except TypeError:
             bug.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
-        return {'url': bug.url, 'bug_status': bug.bug_status, 'short_short_desc': bug.short_short_desc, 'bug_id': bug.bug_id}
+        return {'url': bug.url, 'bug_status': bug.bug_status,
+                'short_short_desc': bug.short_short_desc, 'bug_id': bug.bug_id}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
         super(BugList, self).__setitem__(index, bug)
 
     def append(self, bug):
+        '''Override the default append() to convert URLs and unicode.
+
+        Just like __setitem__(), we need to call our __convert() method when
+        adding a new bug via append().  This makes sure that we convert urls
+        to the public address and convert byte strings to unicode.
+        '''
         bug = self.__convert(bug)
         super(BugList, self).append(bug)
 
@@ -84,8 +102,10 @@ class Bugs(controllers.Controller):
 
         self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.appTitle = appTitle
+        # pylint: disable-msg=E1101
         self.removedStatus = model.StatusTranslation.get_by(
                 statusname='Removed', language='C').statuscodeid
+        # pylint: enable-msg=E1101
 
     @expose(template='pkgdb.templates.bugoverview')
     @paginate('packages', default_order='name', limit=100,
@@ -93,8 +113,10 @@ class Bugs(controllers.Controller):
     def index(self):
         '''Display a list of packages with a link to bug reports for each.'''
         # Retrieve the list of packages minus removed packages
+        # pylint: disable-msg=E1101
         packages = SelectResults(session.query(model.Package)).select_by(
                 model.Package.c.statuscode!=self.removedStatus)
+        # pylint: enable-msg=E1101
 
         return dict(title=self.appTitle + ' -- Package Bug Pages',
                 bzurl=self.bzUrl, packages=packages)
