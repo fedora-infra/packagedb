@@ -154,15 +154,15 @@ class InstallApp(_install_lib, object):
         self.copy_file('pkgdb.cfg', confdir)
    
 setup(
-    name=name,
-    version=version,
+    name=NAME,
+    version=VERSION,
     
-    description=description,
-    author=author,
-    author_email=email,
-    url=url,
-    download_url=download_url,
-    license=license,
+    description=DESCRIPTION,
+    author=AUTHOR,
+    author_email=EMAIL,
+    url=URL,
+    download_url=DOWNLOAD_URL,
+    license=LICENSE,
     
     cmdclass={'build_scripts': BuildScripts,
               'build': Build,
@@ -180,7 +180,7 @@ setup(
     package_data = find_package_data(where='pkgdb',
                                      package='pkgdb'),
     data_files = [
-        (os.path.join(name, 'yum.repos.d'), glob.glob('yum.repos.d/*'))
+        (os.path.join(NAME, 'yum.repos.d'), glob.glob('yum.repos.d/*'))
         ],
     keywords = [
         # Use keywords if you'll be adding your package to the

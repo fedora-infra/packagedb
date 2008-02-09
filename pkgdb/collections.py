@@ -26,12 +26,18 @@ import sqlalchemy
 from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
 
-from turbogears import controllers, expose, paginate, config, redirect
+from turbogears import controllers, expose, paginate
 from turbogears.database import session
 
 from pkgdb import model
+from cherrypy import request
 
 class Collections(controllers.Controller):
+    '''Controller that deals with Collections.
+
+    These are methods that expose Collections to the users.  Collections are
+    usually a specific release of a distribution.  For instance, Fedora 8.
+    '''
     def __init__(self, fas, appTitle):
         '''Create a Packages Controller.
 
@@ -45,9 +51,11 @@ class Collections(controllers.Controller):
     def index(self):
         '''List the Collections we know about.
         '''
+        # pylint: disable-msg=E1101
         collections = session.query(model.CollectionPackage).order_by(
                 (model.CollectionPackage.c.name,
                     model.CollectionPackage.c.version))
+        # pylint: enable-msg=E1101
 
         return dict(title=self.appTitle + ' -- Collection Overview',
                 collections=collections)
@@ -55,7 +63,7 @@ class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def id(self, collectionId):
+    def id(self, collectionId): # pylint: disable-msg=C0103
         '''Return a page with information on a particular Collection
         '''
         try:
@@ -75,8 +83,9 @@ class Collections(controllers.Controller):
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
         try:
+            # pylint: disable-msg=E1101
             collectionEntry = model.Collection.filter_by(id=collectionId).one()
-        except sqlalchemy.exceptions.InvalidRequestError, e:
+        except sqlalchemy.exceptions.InvalidRequestError:
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
@@ -119,8 +128,10 @@ class Collections(controllers.Controller):
         #             model.PackageListing.c.packageid==model.Package.c.id)
         #         )
         packages = SelectResults(session.query(model.Package)).select(
-                sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
-                    model.PackageListing.c.packageid==model.Package.c.id)
+                # pylint: disable-msg=E1101
+                sqlalchemy.and_(
+                    model.PackageListing.c.collectionid == collectionId,
+                    model.PackageListing.c.packageid == model.Package.c.id)
                 )
         return dict(title='%s -- %s %s' % (self.appTitle, collection['name'],
             collection['version']), collection=collection, packages=packages)

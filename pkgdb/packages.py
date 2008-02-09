@@ -22,7 +22,6 @@ Controller for displaying Package Information.
 '''
 
 from sqlalchemy.ext.selectresults import SelectResults
-import sqlalchemy.mods.selectresults
 
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
@@ -47,15 +46,20 @@ class Packages(controllers.Controller):
         self.appTitle = appTitle
         self.bugs = Bugs(appTitle)
         self.dispatcher = PackageDispatcher(fas)
+        # pylint: disable-msg=E1101
         self.removedStatus = model.StatusTranslation.get_by(
                 statusname='Removed', language='C').statuscodeid
+        # pylint: enable-msg=E1101
 
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
     def index(self):
+        '''Return a list of all packages in the database.
+        '''
         # Retrieve the list of packages minus removed packages
         packages = SelectResults(session.query(model.Package)).select_by(
+                # pylint: disable-msg=E1101
                 model.Package.c.statuscode!=self.removedStatus)
 
         return dict(title=self.appTitle + ' -- Package Overview',
@@ -63,8 +67,23 @@ class Packages(controllers.Controller):
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
+        '''Retrieve Packages by their name.
+
+        This method returns ownership and acl information about a package.
+        When given optional arguments the information can be limited by what
+        collections they are present in.
+
+        Arguments:
+        :packageName: Name of the package to lookup
+        :collectionName: If given, limit information to branches for this
+            distribution.
+        :collectionVersion: If given, limit information to this particular
+            version of a distribution.  Has no effect if collectionName is not
+            also specified.
+        '''
         # Return the information about a package.
-        package = model.Package.get_by(
+        package = model.Package.get_by( # pylint: disable-msg=E1101
+                # pylint: disable-msg=E1101
                 model.Package.c.statuscode!=self.removedStatus,
                 name=packageName)
         if not package:
@@ -98,7 +117,7 @@ class Packages(controllers.Controller):
         aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # Possible statuses for acls:
         aclStatus = SelectResults(session.query(model.PackageAclStatus))
-        aclStatusTranslations=['']
+        aclStatusTranslations = ['']
         for status in aclStatus:
             ### FIXME: At some point, we have to pull other translations out,
             # not just C
@@ -186,7 +205,12 @@ class Packages(controllers.Controller):
                 aclNames=aclNames, aclStatus=aclStatusTranslations)
 
     @expose(template='pkgdb.templates.pkgpage')
-    def id(self, packageId):
+    def id(self, packageId): # pylint: disable-msg=C0103
+        '''Return the package with the given id
+
+        Arguments:
+        :packageId: The numeric id for the package to return information for
+        '''
         try:
             packageId = int(packageId)
         except ValueError:
@@ -197,7 +221,7 @@ class Packages(controllers.Controller):
                     ' fedoraproject.org website, please report it.'
                     )
 
-        pkg = model.Package.get_by(id=packageId)
+        pkg = model.Package.get_by(id=packageId) # pylint: disable-msg=E1101
         if not pkg:
             return dict(tg_template='pkgdb.templates.errors', status=False,
                     title=self.appTitle + ' -- Unknown Package',

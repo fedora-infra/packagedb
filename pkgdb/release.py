@@ -1,20 +1,21 @@
-# Release information about pkgdb
+'''
+Information about this pkgdb release
+'''
 
-version = '0.3.2.3'
-
-name = 'fedora-packagedb'
-description = 'The Fedora Package Database'
-long_description = '''
+VERSION = '0.3.2.3'
+NAME = 'fedora-packagedb'
+DESCRIPTION = 'The Fedora Package Database'
+LONG_DESCRIPTION = '''
 Keep track of owner, maintainer, and parties interested in the development of
 a particular software package within Fedora.  This database is a central store
 for important package information nad allows querying of the package
 information from other tools.
 '''
-author = 'Toshio Kuratomi'
-email = 'tkuratom@redhat.com'
-copyright = '2007 Red Hat, Inc.'
+AUTHOR = 'Toshio Kuratomi'
+EMAIL = 'tkuratom@redhat.com'
+COPYRIGHT = '2007 Red Hat, Inc.'
 
 # if it's open source, you might want to specify these
-url = 'https://admin.fedoraproject.org/pkgdb/'
-download_url = 'https://hosted.fedoraproject.org/projects/packagedb/'
-license = 'GPLv2'
+URL = 'https://admin.fedoraproject.org/pkgdb/'
+DOWNLOAD_URL = 'https://hosted.fedoraproject.org/projects/packagedb/'
+LICENSE = 'GPLv2'
