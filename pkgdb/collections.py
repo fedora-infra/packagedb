@@ -67,10 +67,9 @@ class Collections(controllers.Controller):
                             ' valid id.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
                             ' report it.')
-            if not ('tg_format' in request.params and
-                    request.params['tg_format'] == 'json'):
+            if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
-                return error
+            return error
 
         ### FIXME: Want to return additional info:
         # date it was created (join log table: creation date)
@@ -86,10 +85,9 @@ class Collections(controllers.Controller):
                             ' not exist.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
                             ' report it.' % collectionId)
-            if not ('tg_format' in request.params and
-                    request.params['tg_format'] == 'json'):
+            if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
-                return error
+            return error
 
         # Get real ownership information from the fas
         (user, groups) = self.fas.get_user_info(collectionEntry.owner)

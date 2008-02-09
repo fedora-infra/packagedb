@@ -75,8 +75,7 @@ class Packages(controllers.Controller):
                         ' If you received this error from a link on the' \
                         ' fedoraproject.org website, please report it.' %
                         packageName)
-            if not ('tg_format' in request.params and
-                    request.params['tg_format'] == 'json'):
+            if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
 
@@ -91,8 +90,7 @@ class Packages(controllers.Controller):
                         title=self.appTitle + ' -- Not a Collection',
                         message='%s %s is not a Collection.' %
                         (collectionName, collectionVersion or ''))
-                if not ('tg_format' in request.params and
-                        request.params['tg_format'] == 'json'):
+                if request.params.get('tg_format', 'html') != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
@@ -122,8 +120,7 @@ class Packages(controllers.Controller):
                         message='The package %s is not in Collection %s %s.' %
                         (packageName, collectionName, collectionVersion or '')
                         )
-                if not ('tg_format' in request.params and
-                        request.params['tg_format'] == 'json'):
+                if request.params.get('tg_format', 'html') != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
