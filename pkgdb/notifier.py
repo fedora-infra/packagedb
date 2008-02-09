@@ -29,6 +29,8 @@ from turbogears import config
 log = logging.getLogger('pkgdb.controllers')
 
 class Event(object):
+    '''Data structure to constrain an event record to just a few fields.
+    '''
     __attributes__ = ['author', 'change', 'subject', 'description']
 
 class EventLogger(object):
