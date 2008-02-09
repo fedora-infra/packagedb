@@ -471,7 +471,7 @@ class PackageDispatcher(controllers.Controller):
                         user['human_name'], user['username'])
         log = model.PersonPackageListingAclLog(identity.current.user.user_id,
                 status.statuscodeid, logMessage)
-        log.acl = personAcl
+        log.acl = personAcl # pylint: disable-msg=W0201
 
         try:
             session.flush()
@@ -567,7 +567,7 @@ class PackageDispatcher(controllers.Controller):
                     self.groups[groupId])
         log = model.GroupPackageListingAclLog(identity.current.user.user_id,
                 status.statuscodeid, logMessage)
-        log.acl = groupAcl
+        log.acl = groupAcl # pylint: disable-msg=W0201
 
         try:
             session.flush()
@@ -711,6 +711,7 @@ class PackageDispatcher(controllers.Controller):
         pkg = model.Package(package, summary, approvedStatus.statuscodeid)
         pkgListing = model.PackageListing(person['id'],
                 approvedStatus.statuscodeid)
+        # pylint: disable-msg=W0201
         pkgListing.collection = develCollection
         pkgListing.package = pkg
         cvsextrasListing = model.GroupPackageListing(self.groups['cvsextras'])
@@ -724,6 +725,7 @@ class PackageDispatcher(controllers.Controller):
         cvsextrasCheckoutAcl = model.GroupPackageListingAcl('checkout',
                 approvedStatus.statuscodeid)
         cvsextrasCheckoutAcl.grouppackagelisting = cvsextrasListing
+        # pylint: enable-msg=W0201
 
         # Create a log of changes
         logs = []
@@ -736,7 +738,7 @@ class PackageDispatcher(controllers.Controller):
         pkgLog = model.PackageLog(
                 identity.current.user.user_id, addedStatus.statuscodeid,
                 pkgLogMessage)
-        pkgLog.package = pkg
+        pkgLog.package = pkg # pylint: disable-msg=W0201
         pkgLogMessage = '%s (%s) has approved Package %s' % (
                 identity.current.user.display_name,
                 identity.current.user_name,
@@ -760,7 +762,7 @@ class PackageDispatcher(controllers.Controller):
                 identity.current.user.user_id, addedStatus.statuscodeid,
                 pkgLogMessage
                 )
-        pkgListLog.listing = pkgListing
+        pkgListLog.listing = pkgListing # pylint: disable-msg=W0201
 
         pkgLogMessage = '%s (%s) has approved %s in %s %s' % (
                     identity.current.user.display_name,

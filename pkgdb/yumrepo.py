@@ -131,8 +131,10 @@ class RepoInfo(object):
     # Test what happens if we have a repo.sqlite file open and use RepoUpdater
     # to change it.
     
+    # pylint: disable-msg=E1101
     approvedStatus = model.StatusTranslation.filter_by(statusname='Approved',
             language='C').one().statuscodeid
+    # pylint: enable-msg=E1101
 
     def __init__(self):
         '''Setup the links to repositories and the table mappings.
@@ -203,7 +205,8 @@ class RepoInfo(object):
         '''Add a new package to the database.
         '''
         # Retrieve all the packages which are active
-        pkgs = model.Package.filter_by(
+        pkgs = model.Package.filter_by( # pylint: disable-msg=E1101
+                # pylint: disable-msg=E1101
                 model.Package.c.statuscode==self.approvedStatus)
 
         # Since we update the information, we need to be sure we search from

@@ -28,10 +28,11 @@ import sqlalchemy
 from turbogears import controllers, expose, paginate, config, \
         redirect, identity
 from turbogears.database import session
+from cherrypy import request
 
 from pkgdb import model
 
-from fedora.accounts.fas import AccountSystem, AuthError
+from fedora.accounts.fas import AuthError
 
 ORPHAN_ID = 9900
 
@@ -40,6 +41,7 @@ class Users(controllers.Controller):
     
     Status Ids to use with queries.
     '''
+    # pylint: disable-msg=E1101
     approvedStatusId = model.StatusTranslation.filter_by(
             statusname='Approved', language='C').one().statuscodeid
     awaitingBranchStatusId = model.StatusTranslation.filter_by(
@@ -50,6 +52,7 @@ class Users(controllers.Controller):
             statusname='Under Review', language='C').one().statuscodeid
     EOLStatusId = model.StatusTranslation.filter_by(
             statusname='EOL', language='C').one().statuscodeid
+    # pylint: enable-msg=E1101
 
     def __init__(self, fas, appTitle):
         '''Create a User Controller.
@@ -71,7 +74,7 @@ class Users(controllers.Controller):
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def packages(self, fasname=None, acls='any', EOL=False):
+    def packages(self, fasname=None, acls='any', eol=None):
         '''List packages that the user is interested in.
            
         This method returns a list of packages owned by the user in current,
@@ -84,14 +87,14 @@ class Users(controllers.Controller):
                   Default: The logged in user.
         :acls: Comma separated list of acls that we're looking for the user to
                 have on the package to list it.  Default: any acls.
-        :EOL: If set, list packages that are in EOL distros.
+        :eol: If set, list packages that are in EOL distros.
         Returns: A list of packages.
         '''
         # Set EOL to false for a few obvious values
-        if not EOL or EOL.lower() in ('false', 'f', '0'):
-            EOL = False
+        if not eol or eol.lower() in ('false', 'f', '0'):
+            eol = False
         else:
-            EOL = bool(EOL)
+            eol = bool(eol)
 
         # Make acls into a list
         acls = acls.split(',')
@@ -99,7 +102,8 @@ class Users(controllers.Controller):
         # Have to either get fasname from the URL or current user
         if fasname == None:
             if identity.current.anonymous:
-                raise identity.IdentityFailure('You must be logged in to view your information')
+                raise identity.IdentityFailure(
+                        'You must be logged in to view your information')
             else:
                 fasid = identity.current.user.user_id
                 fasname = identity.current.user.user_name
@@ -107,14 +111,16 @@ class Users(controllers.Controller):
             try:
                 fasid = self.fas.get_user_id(fasname)
             except AuthError:
-                return dict(title=self.appTitle + ' -- Invalid Username',
-                        tg_template='pkgdb.templates.errors', status=False,
-                        pkgs=[],
-                        message='The username you were linked to (%s) does' \
-                        ' can not be found.  If you received this error from' \
-                        ' a link on the fedoraproject.org website, please' \
-                        ' report it.' % fasname
-                    )
+                error = dict(status = False,
+                        title = self.appTitle + ' -- Invalid Username',
+                        message = 'The username you were linked to,' \
+                                ' %(username)s does not exist.  If you' \
+                                ' received this error from a link on the' \
+                                ' fedoraproject.org website, please report' \
+                                ' it.' % {'username': fasname})
+                if request.params.get('tg_format', 'html') != 'json':
+                    error['tg_template'] = 'pkgdb.templates.errors'
+                return error
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
 
         # Create the clauses of the package finding query
@@ -122,8 +128,9 @@ class Users(controllers.Controller):
 
         if 'any' in acls or 'owner' in acls:
             # Return any package for which the user is the owner
-            clauses.append(model.Package.query().filter(
-                    sqlalchemy.and_(
+            clauses.append(
+                    # pylint: disable-msg=E1101
+                    model.Package.query().filter(sqlalchemy.and_(
                         model.Package.c.id==model.PackageListing.c.packageid,
                         model.Package.c.statuscode.in_(self.approvedStatusId,
                             self.awaitingReviewStatusId,
@@ -140,54 +147,57 @@ class Users(controllers.Controller):
 
         if acls:
             # Return any package on which the user has an Approved acl.
-            clauses.append(model.Package.query().filter(
-              sqlalchemy.and_(
-                model.Package.c.id==model.PackageListing.c.packageid,
-                model.Package.c.statuscode.in_(self.approvedStatusId,
-                    self.awaitingReviewStatusId, self.underReviewStatusId),
-                model.PackageListing.c.id==model.PersonPackageListing.c.packagelistingid,
-                model.PersonPackageListing.c.userid==fasid,
-                model.PersonPackageListing.c.id==model.PersonPackageListingAcl.c.personpackagelistingid,
-                model.PersonPackageListingAcl.c.statuscode==self.approvedStatusId,
-                model.PackageListing.c.statuscode.in_(self.approvedStatusId,
-                    self.awaitingBranchStatusId, self.awaitingReviewStatusId)
+            clauses.append(
+                    # pylint: disable-msg=E1101
+                    model.Package.query().filter(sqlalchemy.and_(
+                    model.Package.c.id == model.PackageListing.c.packageid,
+                    model.Package.c.statuscode.in_(self.approvedStatusId,
+                        self.awaitingReviewStatusId, self.underReviewStatusId),
+                    model.PackageListing.c.id == \
+                            model.PersonPackageListing.c.packagelistingid,
+                    model.PersonPackageListing.c.userid == fasid,
+                    model.PersonPackageListing.c.id == model
+                            .PersonPackageListingAcl.c.personpackagelistingid,
+                    model.PersonPackageListingAcl.c.statuscode == \
+                            self.approvedStatusId,
+                    model.PackageListing.c.statuscode.in_(
+                        self.approvedStatusId, self.awaitingBranchStatusId,
+                        self.awaitingReviewStatusId)
               )
             ))
             if 'any' not in acls:
                 # Return only those acls which the user wants listed
-                clauses[-1] = clauses[-1].filter(model.PersonPackageListingAcl.c.acl.in_(*acls))
+                clauses[-1] = clauses[-1].filter(
+                        # pylint: disable-msg=E1101
+                        model.PersonPackageListingAcl.c.acl.in_(*acls))
 
-        if not EOL:
+        if not eol:
             # We don't want EOL releases, filter those out of each clause
-            clauses = map(lambda clause: clause.filter(sqlalchemy.and_(
-                        model.PackageListing.c.collectionid==model.Collection.c.id,
-                        model.Collection.c.statuscode!=self.EOLStatusId)),
-                    clauses)
+            clauses = [clause.filter(sqlalchemy.and_(
+                            # pylint: disable-msg=E1101
+                            model.PackageListing.c.collectionid == \
+                                    model.Collection.c.id,
+                            model.Collection.c.statuscode != self.EOLStatusId))
+                        for clause in clauses ]
 
-        query = map(lambda clause: clause.compile(), clauses)
+        query = [clause.compile() for clause in clauses]
         if len(query) == 2:
-            myPackages = model.Package.select(sqlalchemy.union(query[0], query[1], order_by=('package_name',)))
+            myPackages = model.Package.select( # pylint: disable-msg=E1101
+                    sqlalchemy.union(
+                    query[0], query[1], order_by=('package_name',)))
         elif len(query) == 1:
-            myPackages = model.Package.select(sqlalchemy.union(query[0], order_by=('package_name',)))
+            myPackages = model.Package.select( # pylint: disable-msg=E1101
+                    sqlalchemy.union(query[0], order_by=('package_name',)))
 
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
-
-    @expose(template='pkgdb.templates.userpkgs', allow_json=True)
-    @paginate('pkgs', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
-    def acllist(self, fasname=None):
-
-        if fasname == None:
-            raise redirect(config.get('base_url_filter.base_url') + '/users/packages/')
-        else:
-            raise redirect(config.get('base_url_filter.base_url') + '/users/packages/' + fasname)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):
         # If fasname is blank, ask for auth, we assume they want their own?
         if fasname == None:
             if identity.current.anonymous:
-                raise identity.IdentityFailure("You must be logged in to view your information")
+                raise identity.IdentityFailure(
+                        "You must be logged in to view your information")
             else:
                 fasid = identity.current.user.user_id
                 fasname = identity.current.user.user_name
@@ -195,17 +205,17 @@ class Users(controllers.Controller):
             try:
                 fasid = self.fas.get_user_id(fasname)
             except AuthError:
-                raise redirect(config.get('base_url_filter.base_url') +
-                        '/users/no_user/' + fasname)
+                error = dict(status = False,
+                        title = self.appTitle + ' -- Invalid Username',
+                        message = 'The username you were linked to,' \
+                                ' (%username)s does not exist.  If you' \
+                                ' received this error from a link on the' \
+                                ' fedoraproject.org website, please report' \
+                                ' it.' % {'username': fasname})
+                if request.params.get('tg_format', 'html') != 'json':
+                    error['tg_template'] = 'pkgdb.templates.errors'
+                return error
 
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Info'
 
         return dict(title=pageTitle, fasid=fasid, fasname=fasname)
-
-    @expose(template='pkgdb.templates.errors')
-    def no_user(self, fasname=None):
-        msg = 'The username you were linked to (%s) does not appear' \
-                ' can not be found.' \
-                ' If you received this error from a link on the' \
-                ' fedoraproject.org website, please report it.' % fasname
-        return dict(title=self.appTitle + ' -- Invalid Username', message=msg)
