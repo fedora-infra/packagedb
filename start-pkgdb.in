@@ -1,5 +1,5 @@
 #!/usr/bin/python
-__requires__ = 'TurboGears[future]'
+__requires__ = 'fedora_packagedb'
 import pkg_resources
 
 from turbogears import config, update_config, start_server

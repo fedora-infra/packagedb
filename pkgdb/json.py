@@ -30,7 +30,7 @@ implemented via the __json__() methods in model.py
 # @jsonify can convert your objects to following types:
 # lists, dicts, numbers and strings
 
-from sqlalchemy import orm
+import sqlalchemy
 from turbojson.jsonify import jsonify
 
 class SABase(object):
@@ -78,7 +78,7 @@ class SABase(object):
         # Load all the columns from the table
         for key in self.mapper.props.keys(): # pylint: disable-msg=E1101
             if isinstance(self.mapper.props[key], # pylint: disable-msg=E1101
-                    orm.properties.ColumnProperty):
+                    sqlalchemy.orm.properties.ColumnProperty):
                 props[key] = getattr(self, key)
         # Load things that are explicitly listed
         for field in propList:
