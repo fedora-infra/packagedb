@@ -180,7 +180,7 @@ setup(
     package_data = find_package_data(where='pkgdb',
                                      package='pkgdb'),
     data_files = [
-        (os.path.join(name, 'yum.repos.d'), glob.glob('yum.repos.d/*'))
+        (os.path.join(NAME, 'yum.repos.d'), glob.glob('yum.repos.d/*'))
         ],
     keywords = [
         # Use keywords if you'll be adding your package to the
