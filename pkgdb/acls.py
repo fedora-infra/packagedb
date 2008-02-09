@@ -29,6 +29,11 @@ CVSEXTRAS_ID = 100300
 ORPHAN_ID = 9900
 
 class AclList(object):
+    '''List of people and groups who hold this acl.
+    '''
+    ### FIXME: Reevaluate whether we need this data structure at all.  Once
+    # jsonified, it is transformed into a dict of lists so it might not be
+    # good to do it this way.
     def __init__(self, people=None, groups=None):
         self.people = people or []
         self.groups = groups or []
@@ -39,6 +44,8 @@ class AclList(object):
                 }
 
 class BugzillaInfo(object):
+    '''Information necessary to construct a bugzilla record for a package.
+    '''
     def __init__(self, owner=None, summary=None, cclist=None, qacontact=None):
         self.owner = owner
         self.summary = summary
@@ -70,8 +77,18 @@ class Acls(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
 
-    def _add_to_bugzilla_acl_list(self, packageAcls, pkgName, collectionName,
-            identity, group=None):
+    def _add_to_bugzilla_acl_list(self, packageAcls, pkgName,
+            collectionName, identity, group=None):
+        '''Add the given acl to the list of acls for bugzilla.
+
+        Arguments:
+        :packageAcls: The data structure to fill
+        :pkgName: Name of the package we're setting the acl on
+        :collectionName: Name of the bugzilla collection on which we're
+            setting the acl.
+        :identity: The id of the user or group for whom the acl is being set.
+        :group: If set, we're dealing with a group instead of a person.
+        '''
         # Lookup the collection
         try:
             collection = packageAcls[collectionName]
@@ -93,11 +110,21 @@ class Acls(controllers.Controller):
         else:
             try:
                 package.cclist.people.append(identity)
-            except KeyError, e:
+            except KeyError:
                 package.cclist = AclList(people=[identity])
 
     def _add_to_vcs_acl_list(self, packageAcls, acl, pkgName, branchName,
             identity, group=None):
+        '''Add the given acl to the list of acls for the vcs.
+
+        Arguments:
+        :packageAcls: The data structure to fill
+        :acl: The acl to create
+        :pkgName: Name of the package we're setting the acl on
+        :branchName: Name of the branch for which hte acl is being set
+        :identity: The id of the user or group for whom the acl is being set.
+        :group: If set, we're dealing with a group instead of a person.
+        '''
         # Key by package name
         try:
             pkg = packageAcls[pkgName]
@@ -327,7 +354,7 @@ class Acls(controllers.Controller):
         # Save them into a python data structure
         for record in personAcls.execute():
             username = userList[record[2]]['username']
-            self._add_to_bugzilla_acl_list(bugzillaAcls, record[0], record[1],
+            self._add_to_bugzilla_acl_list(bugzillaAcls, record[1],
                     username, group=False)
 
         ### TODO: No group acls at the moment
