@@ -13,7 +13,7 @@ information from other tools.
 '''
 AUTHOR = 'Toshio Kuratomi'
 EMAIL = 'tkuratom@redhat.com'
-COPYRIGHT = '2007 Red Hat, Inc.'
+COPYRIGHT = '2007-2008 Red Hat, Inc.'
 
 # if it's open source, you might want to specify these
 URL = 'https://admin.fedoraproject.org/pkgdb/'
