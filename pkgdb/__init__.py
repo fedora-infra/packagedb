@@ -1,5 +1,5 @@
 '''
-Fedora Pakcage Database
+Fedora Package Database
 
 A web application that manages ownership information for the packages in the
 Fedora Collection.
