@@ -16,6 +16,6 @@ EMAIL = 'tkuratom@redhat.com'
 COPYRIGHT = '2007-2008 Red Hat, Inc.'
 
 # if it's open source, you might want to specify these
-URL = 'https://admin.fedoraproject.org/pkgdb/'
-DOWNLOAD_URL = 'https://hosted.fedoraproject.org/projects/packagedb/'
+URL = 'https://fedorahosted.org/packagedb'
+DOWNLOAD_URL = 'https://fedorahosted.org/releases/p/a/packagedb/'
 LICENSE = 'GPLv2'
