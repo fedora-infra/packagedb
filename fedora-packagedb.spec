@@ -20,7 +20,8 @@ Requires: python-genshi
 Requires: python-fedora-infrastructure >= 0.2.90.22
 Requires: python-bugzilla
 
-BuildRequires:  python-devel
+BuildRequires: python-devel
+BuildRequires: python-genshi
 BuildRequires: TurboGears
 %if 0%{?fedora} >= 8
 BuildRequires:  python-setuptools-devel
