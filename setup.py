@@ -4,7 +4,6 @@ __requires__='TurboGears[future]'
 import os
 import glob
 import re
-import distutils
 from distutils.dep_util import newer
 from distutils import log
 
@@ -171,7 +170,7 @@ setup(
     install_requires = [
         "TurboGears[future] >= 1.0",
         "TurboMail",
-        "python_fedora",
+        "python_fedora >= 0.2.99.2",
         "SQLAlchemy >= 0.3.10, < 0.4alpha",
     ],
     scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo"],
