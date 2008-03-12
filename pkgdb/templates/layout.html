@@ -23,9 +23,9 @@
     <script src="${tg.tg_js}/MochiKit.js" type="text/javascript"></script>
     <script src="${tg.url('/static/javascript/mochikit1.4.js')}" type="text/javascript"></script>
     <script type="text/javascript" py:if="not tg.identity.anonymous">
-      tgUserDisplayName = "${tg.identity.user.display_name}";
-      tgUserUserName = "${tg.identity.user.user_name}";
-      tgUserUserId = "${tg.identity.user.user_id}";
+      tgUserDisplayName = "${tg.identity.user.human_name}";
+      tgUserUserName = "${tg.identity.user.username}";
+      tgUserUserId = "${tg.identity.user.id}";
     </script>
   </head>
   <body py:match="body" py:attrs="select('@*')">
@@ -38,7 +38,7 @@
             You are not logged in yet <a class="loginButton" href="${tg.url('/login/')}">Login</a>
           </span>
           <span py:if="not tg.identity.anonymous">
-            Welcome <a href="${tg.url('/users/info/')}">${tg.identity.user.display_name}</a>
+            Welcome <a href="${tg.url('/users/info/')}">${tg.identity.user.human_name}</a>
             <a class="loginButton" href="${tg.url('/logout/')}">Logout</a>
           </span>
         </div>
