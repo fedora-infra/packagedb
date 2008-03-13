@@ -1,6 +1,6 @@
 # Release information about pkgdb
 
-version = '0.3.2.4'
+version = '0.3.2.5'
 
 name = 'fedora-packagedb'
 description = 'The Fedora Package Database'

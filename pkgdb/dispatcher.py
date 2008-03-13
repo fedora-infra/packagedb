@@ -144,12 +144,12 @@ class PackageDispatcher(controllers.Controller):
         if identity.in_group('cvsadmin'):
             return 'admin'
         # The owner can
-        if identity.current.user.user_id == pkg.owner:
+        if identity.current.user.id == pkg.owner:
             return 'owner'
         # Wasn't the owner.  See if they have been granted permission
         # explicitly
         for person in pkg.people:
-            if person.userid == identity.current.user.user_id:
+            if person.userid == identity.current.user.id:
                 # Check each acl that this person has on the package.
                 for acl in person.acls:
                     if (acl.acl == 'approveacls' and acl.statuscode
@@ -328,8 +328,8 @@ class PackageDispatcher(controllers.Controller):
                 return dict(status=False, message=str(e))
 
             # Take ownership
-            pkg.owner = identity.current.user.user_id
-            ownerName = '%s (%s)' % (identity.current.user.display_name,
+            pkg.owner = identity.current.user.id
+            ownerName = '%s (%s)' % (identity.current.display_name,
                     identity.current.user_name)
             logMessage = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
@@ -341,7 +341,7 @@ class PackageDispatcher(controllers.Controller):
             ownerName = 'Orphaned Package (orphan)'
             logMessage = 'Package %s in %s %s was orphaned by %s (%s)' % (
                     pkg.package.name, pkg.collection.name,
-                    pkg.collection.version, identity.current.user.display_name,
+                    pkg.collection.version, identity.current.display_name,
                     identity.current.user_name)
             status = model.StatusTranslation.get_by(statusname='Orphaned')
         else:
@@ -349,7 +349,7 @@ class PackageDispatcher(controllers.Controller):
                     'Package %s not available for taking' % containerId)
 
         # Make sure a log is created in the db as well.
-        log = model.PackageListingLog(identity.current.user.user_id,
+        log = model.PackageListingLog(identity.current.user.id,
                 status.statuscodeid, logMessage, None, containerId)
         log.packagelistingid = pkg.id
 
@@ -408,7 +408,7 @@ class PackageDispatcher(controllers.Controller):
         if not approved:
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs' %
-                    identity.current.user.display_name)
+                    identity.current.display_name)
 
         #
         # Make sure the person is allowed on this acl
@@ -427,11 +427,11 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure a log is created in the db as well.
         logMessage = u'%s (%s) has set the %s acl on %s (%s %s) to %s for %s (%s)' % (
-                    identity.current.user.display_name,
+                    identity.current.display_name,
                     identity.current.user_name, newAcl, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, statusname,
                     user['human_name'], user['username'])
-        log = model.PersonPackageListingAclLog(identity.current.user.user_id,
+        log = model.PersonPackageListingAclLog(identity.current.user.id,
                 status.statuscodeid, logMessage)
         log.acl = personAcl
 
@@ -481,7 +481,7 @@ class PackageDispatcher(controllers.Controller):
         if not approved:
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs for %s (%s %s)' %
-                    (identity.current.user.display_name, pkg.package.name,
+                    (identity.current.display_name, pkg.package.name,
                         pkg.collection.name, pkg.collection.version))
 
         # Check that the group is one that we allow access to packages
@@ -518,11 +518,11 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure a log is created in the db as well.
         logMessage = '%s (%s) has set the %s acl on %s (%s %s) to %s for %s' % (
-                    identity.current.user.display_name,
+                    identity.current.display_name,
                     identity.current.user_name, aclName, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, aclStatus,
                     self.groups[groupId])
-        log = model.GroupPackageListingAclLog(identity.current.user.user_id,
+        log = model.GroupPackageListingAclLog(identity.current.user.id,
                 status.statuscodeid, logMessage)
         log.acl = groupAcl
 
@@ -556,7 +556,7 @@ class PackageDispatcher(controllers.Controller):
         try:
             acl = session.query(model.PersonPackageListingAcl).filter_by(
                 sqlalchemy.and_(model.PersonPackageListingAcl.c.personpackagelistingid==model.PersonPackageListing.c.id,
-                    model.PersonPackageListing.c.userid==identity.current.user.user_id,
+                    model.PersonPackageListing.c.userid==identity.current.user.id,
                     model.PersonPackageListingAcl.c.acl==aclName,
                     model.PersonPackageListing.c.packagelistingid==pkgListId)
                 ).one()
@@ -576,7 +576,7 @@ class PackageDispatcher(controllers.Controller):
         status = model.StatusTranslation.get_by(statusname=aclStatus)
         # Assign person to package
         personAcl = self._create_or_modify_acl(pkgListing,
-                identity.current.user.user_id, aclName, status)
+                identity.current.user.id, aclName, status)
 
         # Make sure a log is created in the db as well.
         if aclStatus == 'Awaiting Review':
@@ -584,11 +584,11 @@ class PackageDispatcher(controllers.Controller):
         else:
             aclAction = 'given up'
         logMessage = '%s (%s) has %s the %s acl on %s (%s %s)' % (
-                    identity.current.user.display_name,
+                    identity.current.display_name,
                     identity.current.user_name, aclAction, aclName,
                     pkgListing.package.name, pkgListing.collection.name,
                     pkgListing.collection.version)
-        log = model.PersonPackageListingAclLog(identity.current.user.user_id,
+        log = model.PersonPackageListingAclLog(identity.current.user.id,
                 personAcl.statuscode, logMessage)
         log.acl = personAcl
 
@@ -598,7 +598,7 @@ class PackageDispatcher(controllers.Controller):
             # Probably the acl is mispelled
             return dict(status=False,
                     message='Not able to create acl %s for %s on %s' %
-                        (aclName, identity.current.user.user_id,
+                        (aclName, identity.current.user.id,
                         pkgListId))
 
         # Send a log to the commits list as well
@@ -608,7 +608,7 @@ class PackageDispatcher(controllers.Controller):
                     identity.current.user, (pkgListing,))
 
         # Return the new value
-        return dict(status=True, personId=identity.current.user.user_id,
+        return dict(status=True, personId=identity.current.user.id,
                 aclStatusFields=self.aclStatusTranslations, aclStatus=aclStatus)
 
     @expose(allow_json=True)
@@ -663,27 +663,27 @@ class PackageDispatcher(controllers.Controller):
         # Create a log of changes
         logs = []
         pkgLogMessage = '%s (%s) has added Package %s with summary %s' % (
-                identity.current.user.display_name,
+                identity.current.display_name,
                 identity.current.user_name,
                 pkg.name,
                 pkg.summary)
         logs.append(pkgLogMessage)
         pkgLog = model.PackageLog(
-                identity.current.user.user_id, addedStatus.statuscodeid,
+                identity.current.user.id, addedStatus.statuscodeid,
                 pkgLogMessage)
         pkgLog.package = pkg
         pkgLogMessage = '%s (%s) has approved Package %s' % (
-                identity.current.user.display_name,
+                identity.current.display_name,
                 identity.current.user_name,
                 pkg.name)
         logs.append(pkgLogMessage)
         pkgLog = model.PackageLog(
-                identity.current.user.user_id, approvedStatus.statuscodeid,
+                identity.current.user.id, approvedStatus.statuscodeid,
                 pkgLogMessage)
         pkgLog.package = pkg
 
         pkgLogMessage = '%s (%s) has added a %s %s branch for %s with an owner of %s' % (
-                    identity.current.user.display_name,
+                    identity.current.display_name,
                     identity.current.user_name,
                     pkgListing.collection.name,
                     pkgListing.collection.version,
@@ -691,38 +691,38 @@ class PackageDispatcher(controllers.Controller):
                     owner)
         logs.append(pkgLogMessage)
         pkgListLog = model.PackageListingLog(
-                identity.current.user.user_id, addedStatus.statuscodeid,
+                identity.current.user.id, addedStatus.statuscodeid,
                 pkgLogMessage
                 )
         pkgListLog.listing = pkgListing
 
         pkgLogMessage = '%s (%s) has approved %s in %s %s' % (
-                    identity.current.user.display_name,
+                    identity.current.display_name,
                     identity.current.user_name,
                     pkgListing.package.name,
                     pkgListing.collection.name,
                     pkgListing.collection.version)
         logs.append(pkgLogMessage)
         pkgListLog = model.PackageListingLog(
-                identity.current.user.user_id, approvedStatus.statuscodeid,
+                identity.current.user.id, approvedStatus.statuscodeid,
                 pkgLogMessage
                 )
         pkgListLog.listing = pkgListing
 
         pkgLogMessage = '%s (%s) has approved Package %s' % (
-                identity.current.user.display_name,
+                identity.current.display_name,
                 identity.current.user_name,
                 pkg.name)
         logs.append(pkgLogMessage)
         pkgLog = model.PackageLog(
-                identity.current.user.user_id, approvedStatus.statuscodeid,
+                identity.current.user.id, approvedStatus.statuscodeid,
                 pkgLogMessage)
         pkgLog.package = pkg
 
         for changedAcl in (cvsextrasCommitAcl, cvsextrasBuildAcl,
                 cvsextrasCheckoutAcl):
             pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
-                    identity.current.user.display_name,
+                    identity.current.display_name,
                     identity.current.user_name,
                     changedAcl.acl,
                     model.StatusTranslation.get_by(
@@ -733,7 +733,7 @@ class PackageDispatcher(controllers.Controller):
                     pkgListing.collection.name,
                     pkgListing.collection.version)
             pkgLog = model.GroupPackageListingAclLog(
-                    identity.current.user.user_id,
+                    identity.current.user.id,
                     changedAcl.statuscode, pkgLogMessage)
             pkgLog.acl = changedAcl
             logs.append(pkgLogMessage)
@@ -782,9 +782,9 @@ class PackageDispatcher(controllers.Controller):
         if 'summary' in changes:
             pkg.summary = changes['summary']
             logMessage = '%s (%s) set package %s summary to %s' % (
-                    identity.current.user.display_name,
+                    identity.current.display_name,
                     identity.current.user_name, package, changes['summary'])
-            log = model.PackageLog(identity.current.user.user_id,
+            log = model.PackageLog(identity.current.user.id,
                     modifiedStatus.statuscodeid, logMessage)
             log.package = pkg
             pkgLogMsg = logMessage
@@ -859,13 +859,13 @@ class PackageDispatcher(controllers.Controller):
                                 cvsextrasListing
 
                         logMessage = '%s (%s) added a %s %s branch for %s' % (
-                                identity.current.user.display_name,
+                                identity.current.display_name,
                                 identity.current.user_name,
                                 pkgListing.collection.name,
                                 pkgListing.collection.version,
                                 pkgListing.package.name)
                         pkgLog = model.PackageListingLog(
-                                identity.current.user.user_id,
+                                identity.current.user.id,
                                 addedStatus.statuscodeid,
                                 logMessage
                                 )
@@ -874,7 +874,7 @@ class PackageDispatcher(controllers.Controller):
                         for changedAcl in (cvsextrasCommitAcl,
                                 cvsextrasBuildAcl, cvsextrasCheckoutAcl):
                             pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
-                                    identity.current.user.display_name,
+                                    identity.current.display_name,
                                     identity.current.user_name,
                                     changedAcl.acl,
                                     model.StatusTranslation.get_by(
@@ -884,7 +884,7 @@ class PackageDispatcher(controllers.Controller):
                                     pkgListing.collection.name,
                                     pkgListing.collection.version)
                             pkgLog = model.GroupPackageListingAclLog(
-                                    identity.current.user.user_id,
+                                    identity.current.user.id,
                                     changedAcl.statuscode, pkgLogMessage)
                             pkgLog.acl = changedAcl
                             pkgListLogMsg[pkgListing].append(pkgLogMessage)
@@ -899,14 +899,14 @@ class PackageDispatcher(controllers.Controller):
             for pkgList in listings:
                 pkgList.owner = person['id']
                 logMessage = '%s (%s) changed owner of %s in %s %s to %s' % (
-                        identity.current.user.display_name,
+                        identity.current.display_name,
                         identity.current.user_name,
                         pkgList.package.name,
                         pkgList.collection.name, pkgList.collection.version,
                         person['username']
                         )
                 pkgLog = model.PackageListingLog(
-                        identity.current.user.user_id,
+                        identity.current.user.id,
                         ownedStatus.statuscodeid,
                         logMessage
                         )
@@ -932,7 +932,7 @@ class PackageDispatcher(controllers.Controller):
                         personAcl = self._create_or_modify_acl(pkgList,
                                 person['id'], acl, approvedStatus)
                         logMessage = '%s (%s) approved %s on %s (%s %s) for %s' % (
-                                identity.current.user.display_name,
+                                identity.current.display_name,
                                 identity.current.user_name,
                                 acl, pkgList.package.name,
                                 pkgList.collection.name,
@@ -940,7 +940,7 @@ class PackageDispatcher(controllers.Controller):
                                 person['username']
                                 )
                         pkgLog = model.PersonPackageListingAclLog(
-                                identity.current.user.user_id,
+                                identity.current.user.id,
                                 approvedStatus.statuscodeid,
                                 logMessage
                                 )
@@ -975,14 +975,14 @@ class PackageDispatcher(controllers.Controller):
 
                         # Make sure a log is created in the db as well.
                         logMessage = u'%s (%s) approved %s on %s (%s %s) for %s' % (
-                                identity.current.user.display_name,
+                                identity.current.display_name,
                                 identity.current.user_name, acl,
                                 pkgList.package.name,
                                 pkgList.collection.name,
                                 pkgList.collection.version,
                                 person['username'])
                         pkgLog = model.PersonPackageListingAclLog(
-                                identity.current.user.user_id,
+                                identity.current.user.id,
                                 approvedStatus.statuscodeid,
                                 logMessage
                                 )
@@ -1013,7 +1013,7 @@ class PackageDispatcher(controllers.Controller):
 
                     # Make sure a log is created in the db as well.
                     logMessage = u'%s (%s) %s %s for commit access on %s (%s %s)' % (
-                            identity.current.user.display_name,
+                            identity.current.display_name,
                             identity.current.user_name,
                             status.statusname,
                             group,
@@ -1021,7 +1021,7 @@ class PackageDispatcher(controllers.Controller):
                             pkgList.collection.name,
                             pkgList.collection.version)
                     pkgLog = model.GroupPackageListingAclLog(
-                            identity.current.user.user_id,
+                            identity.current.user.id,
                             status.statuscodeid,
                             logMessage
                             )
@@ -1049,6 +1049,6 @@ class PackageDispatcher(controllers.Controller):
                     '%s (%s, %s) updated by %s' % (pkg.name,
                         pkgListing.collection.name,
                         pkgListing.collection.version,
-                        identity.current.user.user_name),
+                        identity.current.user_name),
                     identity.current.user, (pkgListing,))
         return dict(status=True)

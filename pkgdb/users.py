@@ -101,8 +101,8 @@ class Users(controllers.Controller):
             if identity.current.anonymous:
                 raise identity.IdentityFailure('You must be logged in to view your information')
             else:
-                fasid = identity.current.user.user_id
-                fasname = identity.current.user.user_name
+                fasid = identity.current.user.id
+                fasname = identity.current.user_name
         else:
             try:
                 fasid = self.fas.get_user_id(fasname)
@@ -189,8 +189,8 @@ class Users(controllers.Controller):
             if identity.current.anonymous:
                 raise identity.IdentityFailure("You must be logged in to view your information")
             else:
-                fasid = identity.current.user.user_id
-                fasname = identity.current.user.user_name
+                fasid = identity.current.user.id
+                fasname = identity.current.user_name
         else:
             try:
                 fasid = self.fas.get_user_id(fasname)
