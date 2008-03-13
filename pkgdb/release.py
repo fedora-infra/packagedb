@@ -16,5 +16,5 @@ copyright = '2007 Red Hat, Inc.'
 
 # if it's open source, you might want to specify these
 url = 'https://admin.fedoraproject.org/pkgdb/'
-download_url = 'https://hosted.fedoraproject.org/projects/packagedb/'
+download_url = 'https://fedorahosted.org/packagedb/'
 license = 'GPLv2'
