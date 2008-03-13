@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.2.6
+Version:        0.3.2.7
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -64,6 +64,9 @@ rm -rf %{buildroot}
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
 %changelog
+* Wed Mar 12 2008 Ricky Zhou <ricky@fedoraproject.org> - 0.3.2.7-1
+- Another FAS2 bugfix.
+
 * Wed Mar 12 2008 Ricky Zhou <ricky@fedoraproject.org> - 0.3.2.6-1
 - Few more bugfixes.
 
