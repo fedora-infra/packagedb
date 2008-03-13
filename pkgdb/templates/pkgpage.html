@@ -70,7 +70,7 @@ TODO='Not yet implemented'
                         break
             if not aclChanger:
                 for group in tg.identity.groups:
-                    if group.group_name == 'cvsadmin':
+                    if group == 'cvsadmin':
                         # Person is an admin and thus can make changes
                         aclChanger = True
                         break
