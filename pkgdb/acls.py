@@ -180,11 +180,11 @@ class Acls(controllers.Controller):
 
         # Cache the userId/username pairs so we don't have to call the fas for
         # every package.
-        userList = self.fas.get_users('id')
+        userList = self.fas.user_id()
 
         # Save them into a python data structure
         for record in ownerAcls.execute():
-            username = userList[record[2]]['username']
+            username = userList[str(record[2])]
             self._add_to_vcs_acl_list(packageAcls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -209,7 +209,7 @@ class Acls(controllers.Controller):
             )
         # Save them into a python data structure
         for record in personAcls.execute():
-            username = userList[record[2]]['username']
+            username = userList[str(record[2])]
             self._add_to_vcs_acl_list(packageAcls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -256,7 +256,7 @@ class Acls(controllers.Controller):
 
         # Cache the userId/username pairs so we don't have to call the
         # fas for every package.
-        userList = self.fas.get_users('id')
+        userList = self.fas.user_id()
 
         for pkg in packageInfo.execute():
             # Lookup the collection
@@ -275,9 +275,9 @@ class Acls(controllers.Controller):
                 collection[packageName] = package
 
             # Save the package information in the data structure to return
-            package.owner = userList[pkg[2]]['username']
+            package.owner = userList[str(pkg[2])]
             if pkg[3]:
-                package.qacontact = userList[pkg[3]]['username']
+                package.qacontact = userList[str(pkg[3])]
             package.summary = pkg[4]
 
         # Retrieve the user acls
@@ -297,7 +297,7 @@ class Acls(controllers.Controller):
             )
         # Save them into a python data structure
         for record in personAcls.execute():
-            username = userList[record[2]]['username']
+            username = userList[str(record[2])]
             self._add_to_bugzilla_acl_list(bugzillaAcls, 'watchbugzilla',
                     record[0], record[1], username, group=False)
 

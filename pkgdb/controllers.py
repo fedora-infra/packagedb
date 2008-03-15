@@ -43,11 +43,17 @@ from pkgdb.users import Users
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-from fedora.accounts.fas import AccountSystem, AuthError
+#from fedora.accounts.fas import AccountSystem, AuthError
+from pkgdb.fas import AccountSystem
 
 class Root(controllers.RootController):
     appTitle = 'Fedora Package Database'
-    fas = AccountSystem()
+
+    baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
+    username = config.get('fas.username', 'admin')
+    password = config.get('fas.password', 'admin')
+
+    fas = AccountSystem(baseURL, username, password)
 
     acls = Acls(fas, appTitle)
     collections = Collections(fas, appTitle)

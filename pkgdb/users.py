@@ -104,9 +104,10 @@ class Users(controllers.Controller):
                 fasid = identity.current.user.id
                 fasname = identity.current.user_name
         else:
-            try:
-                fasid = self.fas.get_user_id(fasname)
-            except AuthError:
+            user = self.fas.person_by_username(fasname)['id']
+            if user:
+                fasid = user['id']
+            else:
                 return dict(title=self.appTitle + ' -- Invalid Username',
                         tg_template='pkgdb.templates.errors', status=False,
                         pkgs=[],
@@ -192,10 +193,11 @@ class Users(controllers.Controller):
                 fasid = identity.current.user.id
                 fasname = identity.current.user_name
         else:
-            try:
-                fasid = self.fas.get_user_id(fasname)
-            except AuthError:
-               raise redirect(config.get('base_url_filter.base_url') + '/users/no_user/' + fasname)
+            user = self.fas.person_by_username(fasname)
+            if user:
+                fasid = user['id']
+            else:
+                raise redirect(config.get('base_url_filter.base_url') + '/users/no_user/' + fasname)
 
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Info'
 

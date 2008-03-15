@@ -135,13 +135,13 @@ class Packages(controllers.Controller):
             statusMap[pkg.collection.statuscode] = \
                     pkg.collection.status.translations[0].statusname
             # Get real ownership information from the fas
-            (user, group) = self.fas.get_user_info(pkg.owner)
+            user = self.fas.person_by_id(pkg.owner)
             ### FIXME: Handle the case where the owner is unknown
             pkg.ownername = '%s (%s)' % (user['human_name'], user['username'])
             pkg.ownerid = user['id']
             pkg.owneruser = user['username']
             if pkg.qacontact:
-                (user, groups) = self.fas.get_user_info(pkg.qacontact)
+                user = self.fas.person_by_id(pkg.qacontact)
                 pkg.qacontactname = '%s (%s)' % (user['human_name'],
                         user['username'])
             else:
@@ -149,7 +149,7 @@ class Packages(controllers.Controller):
 
             for person in pkg.people:
                 # Retrieve info from the FAS about the people watching the pkg
-                (fasPerson, groups) = self.fas.get_user_info(person.userid)
+                fasPerson = self.fas.person_by_id(person.userid)
                 person.name = '%s (%s)' % (fasPerson['human_name'],
                         fasPerson['username'])
                 person.user = fasPerson['username']
@@ -165,7 +165,7 @@ class Packages(controllers.Controller):
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
-                fasGroup = self.fas.get_group_info(group.groupid)
+                fasGroup = self.fas.group_by_id(group.groupid)
                 group.name = fasGroup['name']
                 # Setup acls to be accessible via aclName
                 group.aclOrder = {}

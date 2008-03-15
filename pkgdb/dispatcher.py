@@ -103,7 +103,7 @@ class PackageDispatcher(controllers.Controller):
         # Get the owners for this package
         for pkgListing in listings:
             if pkgListing.owner != ORPHAN_ID:
-                (owner, group) = self.fas.get_user_info(pkgListing.owner)
+                owner = self.fas.person_by_id(pkgListing.owner)
                 recipients[owner['email']] = ''
 
             # Get the co-maintainers
@@ -115,7 +115,7 @@ class PackageDispatcher(controllers.Controller):
 
             for acl in aclUsers:
                 if acl.status.translations[0].statusname=='Approved':
-                    (person, groups) = self.fas.get_user_info(
+                    person = self.fas.person_by_id(
                             acl.personpackagelisting.userid)
                     recipients[person['email']] = ''
 
@@ -172,16 +172,16 @@ class PackageDispatcher(controllers.Controller):
 
         if acl == 'owner':
             if user:
-                if user[0]['id'] <= MAXSYSTEMUID:
+                if user['id'] <= MAXSYSTEMUID:
                     # Any pseudo user can be the package owner
                     return True
-                elif [group for group in user[1] if group['name'] in
+                elif [group for group in user['approved_memberships'] if group['name'] in
                         self.groupnames]:
                     # If the user is in cvsextras or cvsadmin they are allowed
                     return True
                 raise AclNotAllowedError(
                         '%s must be in one of these groups: %s to own a package' %
-                        (user[0]['username'], self.groupnames))
+                        (user['username'], self.groupnames))
             # Anyone in cvsextras or cvsadmin can potentially own the package
             elif identity.in_any_group(*self.groupnames):
                 return True
@@ -192,12 +192,12 @@ class PackageDispatcher(controllers.Controller):
         # For any other acl, check whether the person is in an allowed group
         if user:
             # If the person isn't in cvsextras or cvsadmin raise an error
-            if [group for group in user[1] if group['name'] in
+            if [group for group in user['approved_memberships'] if group['name'] in
                     self.groupnames]:
                 return True
             raise AclNotAllowedError(
                     '%s must be in one of these groups: %s to hold the %s acl' %
-                    (user[0]['username'], self.groupnames, acl))
+                    (user['username'], self.groupnames, acl))
         elif identity.in_any_group(*self.groupnames):
             return True
         raise AclNotAllowedError(
@@ -394,14 +394,10 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing %s does not exist' % pkgid)
 
         # Make sure the person we're setting the acl for exists
-        try:
-            self.fas.verify_user_pass(personid, '')
-        except AuthError, e:
-            if str(e).startswith('No such user: '):
-                return dict(status=False,
-                        message=str(e))
-            else:
-                raise
+        user = self.fas.person_by_id(personid)
+        if not user:
+            return dict(status=False,
+                message="No such user: %s" % pkgid )
 
         # Check that the current user is allowed to change acl statuses
         approved = self._user_can_set_acls(identity, pkg)
@@ -415,11 +411,11 @@ class PackageDispatcher(controllers.Controller):
         #
 
         # Get the human name and username for the person whose acl we changed
-        (user, groups) = self.fas.get_user_info(personid)
+        person = self.fas.person_by_id(personid)
         # Always allowed to remove an acl
         if statusname not in ('Denied', 'Obsolete'):
             try:
-                self._acl_can_be_held_by_user(newAcl, (user, groups))
+                self._acl_can_be_held_by_user(newAcl, person)
             except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
 
@@ -631,9 +627,8 @@ class PackageDispatcher(controllers.Controller):
 
         develCollection = model.Collection.get_by(name='Fedora',
                 version='devel')
-        try:
-            person, groups = self.fas.get_user_info(owner)
-        except AuthError, e:
+        person = self.fas.person_by_username(owner)
+        if not person:
             return dict(status=False, message='Specified owner %s does not have a Fedora Account' % owner)
 
         # Make sure the owner is in the correct group
@@ -793,13 +788,12 @@ class PackageDispatcher(controllers.Controller):
         person = None
         ownerId = None
         if 'owner' in changes:
-            try:
-                person, groups = self.fas.get_user_info(changes['owner'])
-            except AuthError, e:
+            person = self.fas.person_by_username(changes['owner'])
+            if not person:
                 return dict(status=False, message='Specified owner %s does not have a Fedora Account' % changes['owner'])
             # Make sure the owner is in the correct group
             try:
-                self._acl_can_be_held_by_user('owner', (person, groups))
+                self._acl_can_be_held_by_user('owner', person)
             except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
 
@@ -921,9 +915,8 @@ class PackageDispatcher(controllers.Controller):
             ccList = simplejson.loads(changes['ccList'])
             for username in ccList:
                 # Lookup the list members in fas
-                try:
-                    person, groups = self.fas.get_user_info(username)
-                except AuthError, e:
+                person = self.fas.person_by_username(username)
+                if not person:
                     return dict(status=False,
                             message='New cclist member %s is not in FAS' % username)
                 # Add Acls for them to the packages
@@ -955,14 +948,13 @@ class PackageDispatcher(controllers.Controller):
             comaintList = simplejson.loads(changes['comaintList'])
             for username in comaintList:
                 # Lookup the list members in fas
-                try:
-                    person, groups = self.fas.get_user_info(username)
-                except AuthError, e:
+                person = self.fas.person_by_username(username)
+                if not person:
                     return dict(status=False, message='New comaintainer %s does not have a Fedora Account' % username)
 
                 # Make sure the comaintainer is in the correct group
                 try:
-                    self._acl_can_be_held_by_user('approveacls', (person, groups))
+                    self._acl_can_be_held_by_user('approveacls', person)
                 except AclNotAllowedError, e:
                     return dict(status=False, message=str(e))
 

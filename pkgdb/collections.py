@@ -92,7 +92,7 @@ class Collections(controllers.Controller):
                 return error
 
         # Get real ownership information from the fas
-        (user, groups) = self.fas.get_user_info(collectionEntry.owner)
+        user = self.fas.person_by_id(collectionEntry.owner)
         ownerName = '%s (%s)' % (user['human_name'],
                 user['username'])
 
