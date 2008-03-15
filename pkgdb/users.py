@@ -31,8 +31,6 @@ from turbogears.database import session
 
 from pkgdb import model
 
-from fedora.accounts.fas import AccountSystem, AuthError
-
 ORPHAN_ID=9900
 
 class Users(controllers.Controller):

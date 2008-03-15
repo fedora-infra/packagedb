@@ -1,5 +1,4 @@
 from fedora.tg.client import BaseClient, AuthError, ServerError
-from turbogears import config
 
 class AccountSystem(BaseClient):
 

@@ -43,7 +43,6 @@ from pkgdb.users import Users
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-#from fedora.accounts.fas import AccountSystem, AuthError
 from pkgdb.fas import AccountSystem
 
 class Root(controllers.RootController):

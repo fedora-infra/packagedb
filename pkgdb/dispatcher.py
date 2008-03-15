@@ -30,8 +30,6 @@ from turbogears.database import session
 
 import simplejson
 
-from fedora.accounts.fas import AuthError
-
 from pkgdb import model
 from pkgdb.notifier import EventLogger
 
@@ -86,7 +84,7 @@ class PackageDispatcher(controllers.Controller):
             otherEmail=None):
 
         # Store the email addresses in a hash to eliminate duplicates
-        recipients = {author.email: ''}
+        recipients = {author['email']: ''}
 
         # Note: We have to copy information from the config system to our
         # own variables because the config system is writable persistent
