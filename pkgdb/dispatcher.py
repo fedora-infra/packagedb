@@ -631,7 +631,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure the owner is in the correct group
         try:
-            self._acl_can_be_held_by_user('owner', (person, groups))
+            self._acl_can_be_held_by_user('owner', person)
         except AclNotAllowedError, e:
             return dict(status=False, message=str(e))
 
