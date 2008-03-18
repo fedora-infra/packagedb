@@ -17,7 +17,7 @@ Requires: python-TurboMail
 Requires: python-sqlalchemy >= 0.3.10, python-sqlalchemy < 0.4
 Requires: python-psycopg2
 Requires: python-genshi
-Requires: python-fedora-infrastructure >= 0.2.90.22
+Requires: python-fedora-infrastructure >= 0.2.99.5
 Requires: python-bugzilla
 
 BuildRequires: python-devel

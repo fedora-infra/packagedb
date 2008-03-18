@@ -43,7 +43,7 @@ from pkgdb.users import Users
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-from pkgdb.fas import AccountSystem
+from fedora.accounts.fas2 import AccountSystem
 
 class Root(controllers.RootController):
     appTitle = 'Fedora Package Database'
