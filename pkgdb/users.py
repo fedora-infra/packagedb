@@ -102,7 +102,7 @@ class Users(controllers.Controller):
                 fasid = identity.current.user.id
                 fasname = identity.current.user_name
         else:
-            user = self.fas.person_by_username(fasname)['id']
+            user = self.fas.person_by_username(fasname)
             if user:
                 fasid = user['id']
             else:
