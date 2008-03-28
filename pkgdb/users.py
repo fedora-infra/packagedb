@@ -38,15 +38,15 @@ class Users(controllers.Controller):
     
     Status Ids to use with queries.
     '''
-    approvedStatusId = model.StatusTranslation.filter_by(
+    approvedStatusId = model.StatusTranslation.query.filter_by(
             statusname='Approved', language='C').one().statuscodeid
-    awaitingBranchStatusId = model.StatusTranslation.filter_by(
+    awaitingBranchStatusId = model.StatusTranslation.query.filter_by(
             statusname='Awaiting Branch', language='C').one().statuscodeid
-    awaitingReviewStatusId = model.StatusTranslation.filter_by(
+    awaitingReviewStatusId = model.StatusTranslation.query.filter_by(
             statusname='Awaiting Review', language='C').one().statuscodeid
-    underReviewStatusId = model.StatusTranslation.filter_by(
+    underReviewStatusId = model.StatusTranslation.query.filter_by(
             statusname='Under Review', language='C').one().statuscodeid
-    EOLStatusId = model.StatusTranslation.filter_by(
+    EOLStatusId = model.StatusTranslation.query.filter_by(
             statusname='EOL', language='C').one().statuscodeid
 
     def __init__(self, fas, appTitle):

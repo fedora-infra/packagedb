@@ -47,8 +47,8 @@ class Packages(controllers.Controller):
         self.appTitle = appTitle
         self.bugs = Bugs(appTitle)
         self.dispatcher = PackageDispatcher(fas)
-        self.removedStatus = model.StatusTranslation.get_by(
-                statusname='Removed', language='C').statuscodeid
+        self.removedStatus = model.StatusTranslation.query.filter_by(
+                statusname='Removed', language='C').first().statuscodeid
 
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
@@ -64,9 +64,9 @@ class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
         # Return the information about a package.
-        package = model.Package.get_by(
+        package = model.Package.query.filter_by(
                 model.Package.c.statuscode!=self.removedStatus,
-                name=packageName)
+                name=packageName).first()
         if not package:
             error = dict(status=False,
                         title=self.appTitle + ' -- Invalid Package Name',
@@ -200,7 +200,7 @@ class Packages(controllers.Controller):
                     ' fedoraproject.org website, please report it.'
                     )
 
-        pkg = model.Package.get_by(id=packageId)
+        pkg = model.Package.query.filter_by(id=packageId).first()
         if not pkg:
             return dict(tg_template='pkgdb.templates.errors', status=False,
                     title=self.appTitle + ' -- Unknown Package',

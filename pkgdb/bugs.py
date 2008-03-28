@@ -84,8 +84,8 @@ class Bugs(controllers.Controller):
 
         self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.appTitle = appTitle
-        self.removedStatus = model.StatusTranslation.get_by(
-                statusname='Removed', language='C').statuscodeid
+        self.removedStatus = model.StatusTranslation.query.filter_by(
+                statusname='Removed', language='C').first().statuscodeid
 
     @expose(template='pkgdb.templates.bugoverview')
     @paginate('packages', default_order='name', limit=100,

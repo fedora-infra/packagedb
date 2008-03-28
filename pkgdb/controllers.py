@@ -32,7 +32,6 @@ from cherrypy import request, response
 import logging
 
 from pkgdb import model
-from pkgdb import json
 from pkgdb import release
 
 from pkgdb.acls import Acls
