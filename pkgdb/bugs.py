@@ -24,9 +24,6 @@ Controller for displaying Package Bug Information.
 
 from urllib import quote
 
-from sqlalchemy.ext.selectresults import SelectResults
-import sqlalchemy.mods.selectresults
-
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
@@ -93,8 +90,8 @@ class Bugs(controllers.Controller):
     def index(self):
         '''Display a list of packages with a link to bug reports for each.'''
         # Retrieve the list of packages minus removed packages
-        packages = SelectResults(session.query(model.Package)).select_by(
-                model.Package.c.statuscode!=self.removedStatus)
+        packages = model.Package.query.filter(
+                model.Package.c.statuscode!=self.removedStatus).all()
 
         return dict(title=self.appTitle + ' -- Package Bug Pages',
                 bzurl=self.bzUrl, packages=packages)

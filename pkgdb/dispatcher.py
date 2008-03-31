@@ -22,7 +22,6 @@ Controller to process requests to change package information.
 '''
 
 import sqlalchemy
-import sqlalchemy.mods.selectresults
 
 import turbomail
 from turbogears import controllers, expose, identity, config
@@ -105,8 +104,8 @@ class PackageDispatcher(controllers.Controller):
                 recipients[owner['email']] = ''
 
             # Get the co-maintainers
-            aclUsers = session.query(model.PersonPackageListingAcl
-                ).filter_by(sqlalchemy.and_(
+            aclUsers = model.PersonPackageListingAcl.query.filter(
+                sqlalchemy.and_(
                     model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id,
                 model.PersonPackageListing.c.packagelistingid==pkgListing.id,
                 model.PersonPackageListingAcl.c.acl.in_(*acls)))
@@ -135,7 +134,7 @@ class PackageDispatcher(controllers.Controller):
         value for finer grained access to some resources.
         '''
         # Find the approved statuscode
-        status = model.StatusTranslation.get_by(statusname='Approved')
+        status = model.StatusTranslation.query.filter_by(statusname='Approved').one()
 
         # Make sure the current tg user has permission to set acls
         # If the user is a cvsadmin they can
@@ -314,7 +313,7 @@ class PackageDispatcher(controllers.Controller):
     def toggle_owner(self, containerId):
         '''Orphan package or set the owner to the logged in user.'''
         # Check that the pkg exists
-        pkg = model.PackageListing.get_by(id=containerId)
+        pkg = model.PackageListing.query.filter_by(id=containerId).one()
         if not pkg:
             return dict(status=False, message='No such package %s' % containerId)
         approved = self._user_can_set_acls(identity, pkg)
@@ -332,7 +331,7 @@ class PackageDispatcher(controllers.Controller):
             logMessage = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, ownerName)
-            status = model.StatusTranslation.get_by(statusname='Owned')
+            status = model.StatusTranslation.query.filter_by(statusname='Owned').one()
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = ORPHAN_ID
@@ -341,7 +340,7 @@ class PackageDispatcher(controllers.Controller):
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, identity.current.display_name,
                     identity.current.user_name)
-            status = model.StatusTranslation.get_by(statusname='Orphaned')
+            status = model.StatusTranslation.query.filter_by(statusname='Orphaned').one()
         else:
             return dict(status=False, message=
                     'Package %s not available for taking' % containerId)
@@ -379,14 +378,14 @@ class PackageDispatcher(controllers.Controller):
         # that here.
         if not statusname or not statusname.strip():
             statusname = 'Obsolete'
-        status = model.StatusTranslation.get_by(statusname=statusname)
+        status = model.StatusTranslation.query.filter_by(statusname=statusname).one()
 
         # Change strings into numbers because we do some comparisons later on
         pkgid = int(pkgid)
         personid = int(personid)
 
         # Make sure the package listing exists
-        pkg = model.PackageListing.get_by(id=pkgid)
+        pkg = model.PackageListing.query.filter_by(id=pkgid).one()
         if not pkg:
             return dict(status=False,
                     message='Package Listing %s does not exist' % pkgid)
@@ -465,7 +464,7 @@ class PackageDispatcher(controllers.Controller):
         groupId = int(groupId)
 
         # Make sure the package listing exists
-        pkg = model.PackageListing.get_by(id=pkgListId)
+        pkg = model.PackageListing.query.filter_by(id=pkgListId).one()
         if not pkg:
             return dict(status=False,
                     message='Package Listing %s does not exist' % pkgListId)
@@ -490,7 +489,7 @@ class PackageDispatcher(controllers.Controller):
         aclStatus = 'Approved'
         # Determine if the group already has an acl
         try:
-            acl = session.query(model.GroupPackageListingAcl).filter_by(
+            acl = model.GroupPackageListingAcl.query.filter(
                 sqlalchemy.and_(model.GroupPackageListingAcl.c.grouppackagelistingid==model.GroupPackageListing.c.id,
                     model.GroupPackageListing.c.groupid==groupId,
                     model.GroupPackageListingAcl.c.acl==aclName,
@@ -502,7 +501,7 @@ class PackageDispatcher(controllers.Controller):
             if acl.status.translations[0].statusname == 'Approved':
                 aclStatus='Denied'
 
-        status = model.StatusTranslation.get_by(statusname=aclStatus)
+        status = model.StatusTranslation.query.filter_by(statusname=aclStatus).one()
         # Change the acl
         groupAcl = self._create_or_modify_group_acl(pkg, groupId, aclName,
                 status)
@@ -540,7 +539,7 @@ class PackageDispatcher(controllers.Controller):
     def toggle_acl_request(self, containerId):
         # Make sure package exists
         pkgListId, aclName = containerId.split(':')
-        pkgListing = model.PackageListing.get_by(id=pkgListId)
+        pkgListing = model.PackageListing.query.filter_by(id=pkgListId).one()
         if not pkgListing:
             return dict(status=False, message='No such package listing %s' % pkgListId)
 
@@ -548,7 +547,7 @@ class PackageDispatcher(controllers.Controller):
         aclStatus = 'Awaiting Review'
         # Determine if the user already has an acl
         try:
-            acl = session.query(model.PersonPackageListingAcl).filter_by(
+            acl = model.PersonPackageListingAcl.query.filter(
                 sqlalchemy.and_(model.PersonPackageListingAcl.c.personpackagelistingid==model.PersonPackageListing.c.id,
                     model.PersonPackageListing.c.userid==identity.current.user.id,
                     model.PersonPackageListingAcl.c.acl==aclName,
@@ -567,7 +566,7 @@ class PackageDispatcher(controllers.Controller):
             except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
 
-        status = model.StatusTranslation.get_by(statusname=aclStatus)
+        status = model.StatusTranslation.query.filter_by(statusname=aclStatus).one()
         # Assign person to package
         personAcl = self._create_or_modify_acl(pkgListing,
                 identity.current.user.id, aclName, status)
@@ -616,15 +615,15 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message='User must be in cvsadmin')
 
         # Make sure the package doesn't already exist
-        pkg = model.Package.get_by(name=package)
+        pkg = model.Package.query.filter_by(name=package).one()
         if pkg:
             return dict(status=False, message='Package %s already exists' % package)
 
-        approvedStatus = model.StatusTranslation.get_by(statusname='Approved')
-        addedStatus = model.StatusTranslation.get_by(statusname='Added')
+        approvedStatus = model.StatusTranslation.query.filter_by(statusname='Approved').one()
+        addedStatus = model.StatusTranslation.query.filter_by(statusname='Added').one()
 
-        develCollection = model.Collection.get_by(name='Fedora',
-                version='devel')
+        develCollection = model.Collection.query.filter_by(name='Fedora',
+                version='devel').one()
         person = self.fas.person_by_username(owner)
         if not person:
             return dict(status=False, message='Specified owner %s does not have a Fedora Account' % owner)
@@ -718,8 +717,8 @@ class PackageDispatcher(controllers.Controller):
                     identity.current.display_name,
                     identity.current.user_name,
                     changedAcl.acl,
-                    model.StatusTranslation.get_by(
-                        statuscodeid=changedAcl.statuscode).statusname,
+                    model.StatusTranslation.query.filter_by(
+                        statuscodeid=changedAcl.statuscode).one().statusname,
 
                     self.groups[changedAcl.grouppackagelisting.groupid],
                     pkgListing.package.name,
@@ -763,14 +762,14 @@ class PackageDispatcher(controllers.Controller):
         pkgListLogMsg = {}
 
         # Make sure the package exists
-        pkg = model.Package.get_by(name=package)
+        pkg = model.Package.query.filter_by(name=package).one()
         if not pkg:
             return dict(status=False, message='Package %s does not exist' % package)
         # No changes to make
         if not changes:
             return dict(status=True, package=pkg)
 
-        modifiedStatus = model.StatusTranslation.get_by(statusname='Modified')
+        modifiedStatus = model.StatusTranslation.query.filter_by(statusname='Modified').one()
         # Change the summary
         if 'summary' in changes:
             pkg.summary = changes['summary']
@@ -801,19 +800,19 @@ class PackageDispatcher(controllers.Controller):
             # Save a reference to the pkgListings in here
             listings = []
             # Get id for statuses
-            approvedStatus = model.StatusTranslation.get_by(
-                    statusname='Approved')
-            deniedStatus = model.StatusTranslation.get_by(
-                    statusname='Denied')
-            addedStatus = model.StatusTranslation.get_by(statusname='Added')
-            ownedStatus = model.StatusTranslation.get_by(statusname='Owned')
+            approvedStatus = model.StatusTranslation.query.filter_by(
+                    statusname='Approved').one()
+            deniedStatus = model.StatusTranslation.query.filter_by(
+                    statusname='Denied').one()
+            addedStatus = model.StatusTranslation.query.filter_by(statusname='Added').one()
+            ownedStatus = model.StatusTranslation.query.filter_by(statusname='Owned').one()
 
             # Retrieve the id of the initial package owner
             if not ownerId:
-                develCollection = model.Collection.get_by(name='Fedora',
-                        version='devel')
-                develPackage = model.PackageListing.get_by(packageid=pkg.id,
-                        collectionid=develCollection.id)
+                develCollection = model.Collection.query.filter_by(name='Fedora',
+                        version='devel').one()
+                develPackage = model.PackageListing.query.filter_by(packageid=pkg.id,
+                        collectionid=develCollection.id).one()
                 ownerId = develPackage.owner
 
             # Turn JSON collection data back to python
@@ -821,16 +820,16 @@ class PackageDispatcher(controllers.Controller):
             for collectionName in collectionData:
                 for version in collectionData[collectionName]:
                     # Check if collection/version exists
-                    collection = model.Collection.get_by(name=collectionName,
-                            version=version)
+                    collection = model.Collection.query.filter_by(name=collectionName,
+                            version=version).one()
                     if not collection:
                         return dict(status=False,
                                 message='No collection %s %s' %
                                 (collectionName, version))
 
                     # Create the packageListing if necessary
-                    pkgListing = model.PackageListing.get_by(
-                            collectionid=collection.id, packageid=pkg.id)
+                    pkgListing = model.PackageListing.query.filter_by(
+                            collectionid=collection.id, packageid=pkg.id).one()
                     if not pkgListing:
                         pkgListing = model.PackageListing(ownerId,
                                 approvedStatus.statuscodeid)
@@ -869,8 +868,8 @@ class PackageDispatcher(controllers.Controller):
                                     identity.current.display_name,
                                     identity.current.user_name,
                                     changedAcl.acl,
-                                    model.StatusTranslation.get_by(
-                                        statuscodeid=changedAcl.statuscode).statusname,
+                                    model.StatusTranslation.query.filter_by(
+                                        statuscodeid=changedAcl.statuscode).one().statusname,
                                     self.groups[changedAcl.grouppackagelisting.groupid],
                                     pkgListing.package.name,
                                     pkgListing.collection.name,
