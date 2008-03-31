@@ -76,7 +76,7 @@ class Collections(controllers.Controller):
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
         try:
-            collectionEntry = model.Collection.filter_by(id=collectionId).one()
+            collectionEntry = model.Collection.query.filter_by(id=collectionId).one()
         except sqlalchemy.exceptions.InvalidRequestError, e:
             # Either the id doesn't exist or somehow it references more than
             # one value
