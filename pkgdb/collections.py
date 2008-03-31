@@ -90,8 +90,8 @@ class Collections(controllers.Controller):
 
         # Get real ownership information from the fas
         user = self.fas.person_by_id(collectionEntry.owner)
-        ownerName = '%s (%s)' % (user['human_name'],
-                user['username'])
+        ownerName = '%s (%s)' % (user.get('human_name', 'Unknown'),
+                user.get('username', 'UserID %i' % collectionEntry.owner))
 
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
