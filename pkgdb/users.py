@@ -121,7 +121,7 @@ class Users(controllers.Controller):
 
         if 'any' in acls or 'owner' in acls:
             # Return any package for which the user is the owner
-            clauses.append(model.Package.query().filter(
+            clauses.append(model.Package.query.filter(
                     sqlalchemy.and_(
                         model.Package.c.id==model.PackageListing.c.packageid,
                         model.Package.c.statuscode.in_(self.approvedStatusId,
@@ -139,7 +139,7 @@ class Users(controllers.Controller):
 
         if acls:
             # Return any package on which the user has an Approved acl.
-            clauses.append(model.Package.query().filter(
+            clauses.append(model.Package.query.filter(
               sqlalchemy.and_(
                 model.Package.c.id==model.PackageListing.c.packageid,
                 model.Package.c.statuscode.in_(self.approvedStatusId,
@@ -165,9 +165,9 @@ class Users(controllers.Controller):
 
         query = map(lambda clause: clause.compile(), clauses)
         if len(query) == 2:
-            myPackages = model.Package.select(sqlalchemy.union(query[0], query[1], order_by=('package_name',)))
+            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], query[1], order_by=('package_name',))).all()
         elif len(query) == 1:
-            myPackages = model.Package.select(sqlalchemy.union(query[0], order_by=('package_name',)))
+            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], order_by=('package_name',))).all()
 
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 

@@ -44,7 +44,7 @@ class SABase(object):
         use of this by setting jsonProps in the controller.
 
         Example controller::
-          john = model.Person.get_by(name='John')
+          john = model.Person.query.filter_by(name='John').one()
           # Person has a property, addresses, linking it to an Address class.
           # Address has a property, phone_nums, linking it to a Phone class.
           john.jsonProps = {'Person': ['addresses'],
