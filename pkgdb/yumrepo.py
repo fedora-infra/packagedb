@@ -34,7 +34,7 @@ from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy.orm import Mapper
 from sqlalchemy.ext.assignmapper import assign_mapper
 
-from pkgdb.json import SABase
+from fedora.tg.json import SABase
 from pkgdb import model
 
 log = logging.getLogger('pkgdb.repo')
