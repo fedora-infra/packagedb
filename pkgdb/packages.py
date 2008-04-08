@@ -54,7 +54,7 @@ class Packages(controllers.Controller):
     def index(self):
         # Retrieve the list of packages minus removed packages
         packages = model.Package.query.filter(
-                model.Package.c.statuscode!=self.removedStatus).all()
+                model.Package.c.statuscode!=self.removedStatus)
 
         return dict(title=self.appTitle + ' -- Package Overview',
                 packages=packages)
@@ -83,7 +83,7 @@ class Packages(controllers.Controller):
             collection = model.Collection.query.filter_by(name=collectionName)
             if collectionVersion:
                 collection = collection.filter_by(version=collectionVersion)
-            if not len(collection.all()):
+            if not collection.count()):
                 error = dict(status=False,
                         title=self.appTitle + ' -- Not a Collection',
                         message='%s %s is not a Collection.' %
@@ -106,13 +106,12 @@ class Packages(controllers.Controller):
 
         # Fetch information about all the packageListings for this package
         pkgListings = model.PackageListing.query.filter(
-                model.PackageListingTable.c.packageid==package.id
-                ).all()
+                model.PackageListingTable.c.packageid==package.id)
         if collection:
             # User asked to limit it to specific collections
             pkgListings = pkgListings.filter_by(
                     model.PackageListingTable.c.collectionid.in_(
-                    *[c.id for c in collection])).all()
+                    *[c.id for c in collection]))
             if not pkgListings.count():
                 error = dict(status=False,
                         title=self.appTitle + ' -- Not in Collection',
@@ -127,6 +126,7 @@ class Packages(controllers.Controller):
         # Map of statuscode to statusnames used in this package
         statusMap = {}
 
+        pkgListings = pkgListings.all()
         for pkg in pkgListings:
             pkg.jsonProps = {'PackageListing': ('package', 'collection',
                     'people', 'groups', 'qacontactname', 'owneruser', 'ownerid'),
@@ -139,8 +139,6 @@ class Packages(controllers.Controller):
                     pkg.collection.status.translations[0].statusname
             # Get real ownership information from the fas
             user = self.fas.person_by_id(pkg.owner)
-            ### FIXME: Is this correct for handling the case where the owner
-              #        is unknown?  I think we need a UNKOWN_USER_ID
             pkg.ownername = '%s (%s)' % (user.get('human_name','Unknown'),
                                          user.get('username','UserID %i' % pkg.owner))
             pkg.ownerid = user.get('id', pkg.owner)
@@ -174,8 +172,8 @@ class Packages(controllers.Controller):
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
                 fasGroup = self.fas.group_by_id(group.groupid)
-                group.name = fasGroup.get('name', 
-                                          'Unknown (UserID %i)' % group.groupid)
+                group.name = fasGroup.get('name',
+                                          'Unknown (GroupID %i)' % group.groupid)
                 # Setup acls to be accessible via aclName
                 group.aclOrder = {}
                 for acl in aclNames:

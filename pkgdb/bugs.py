@@ -91,7 +91,7 @@ class Bugs(controllers.Controller):
         '''Display a list of packages with a link to bug reports for each.'''
         # Retrieve the list of packages minus removed packages
         packages = model.Package.query.filter(
-                model.Package.c.statuscode!=self.removedStatus).all()
+                model.Package.c.statuscode!=self.removedStatus)
 
         return dict(title=self.appTitle + ' -- Package Bug Pages',
                 bzurl=self.bzUrl, packages=packages)
