@@ -120,6 +120,6 @@ class Collections(controllers.Controller):
         packages = model.Package.query.filter(
                 sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
                     model.PackageListing.c.packageid==model.Package.c.id)
-                ).all()
+                )
         return dict(title='%s -- %s %s' % (self.appTitle, collection['name'],
             collection['version']), collection=collection, packages=packages)

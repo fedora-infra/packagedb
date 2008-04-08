@@ -165,9 +165,9 @@ class Users(controllers.Controller):
 
         query = map(lambda clause: clause.compile(), clauses)
         if len(query) == 2:
-            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], query[1], order_by=('package_name',))).all()
+            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], query[1], order_by=('package_name',)))
         elif len(query) == 1:
-            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], order_by=('package_name',))).all()
+            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], order_by=('package_name',)))
 
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 
