@@ -83,7 +83,7 @@ class Packages(controllers.Controller):
             collection = model.Collection.query.filter_by(name=collectionName)
             if collectionVersion:
                 collection = collection.filter_by(version=collectionVersion)
-            if not collection.count()):
+            if not collection.count():
                 error = dict(status=False,
                         title=self.appTitle + ' -- Not a Collection',
                         message='%s %s is not a Collection.' %
