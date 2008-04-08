@@ -23,8 +23,6 @@ Send acl information to third party tools.
 
 import sqlalchemy
 from turbogears import controllers, expose
-from turbogears.database import session
-
 from pkgdb import model
 
 CVSEXTRAS_ID=100300
@@ -55,9 +53,9 @@ class BugzillaInfo(object):
                 }
 
 class Acls(controllers.Controller):
-    approvedStatus = model.StatusTranslation.query.filter_by(
+    approvedStatus = model.StatusTranslation.filter_by(
             statusname='Approved', language='C').one().statuscodeid
-    removedStatus = model.StatusTranslation.query.filter_by(
+    removedStatus = model.StatusTranslation.filter_by(
             statusname='Removed', language='C').one().statuscodeid
 
     def __init__(self, fas=None, appTitle=None):
@@ -186,7 +184,7 @@ class Acls(controllers.Controller):
 
         # Save them into a python data structure
         for record in ownerAcls.execute():
-            username = userList[str(record[2])]
+            username = userList[record[2]]
             self._add_to_vcs_acl_list(packageAcls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -211,7 +209,7 @@ class Acls(controllers.Controller):
             )
         # Save them into a python data structure
         for record in personAcls.execute():
-            username = userList[str(record[2])]
+            username = userList[record[2]]
             self._add_to_vcs_acl_list(packageAcls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -277,9 +275,9 @@ class Acls(controllers.Controller):
                 collection[packageName] = package
 
             # Save the package information in the data structure to return
-            package.owner = userList[str(pkg[2])]
+            package.owner = userList[pkg[2]]
             if pkg[3]:
-                package.qacontact = userList[str(pkg[3])]
+                package.qacontact = userList[pkg[3]]
             package.summary = pkg[4]
 
         # Retrieve the user acls
@@ -299,7 +297,7 @@ class Acls(controllers.Controller):
             )
         # Save them into a python data structure
         for record in personAcls.execute():
-            username = userList[str(record[2])]
+            username = userList[record[2]]
             self._add_to_bugzilla_acl_list(bugzillaAcls, 'watchbugzilla',
                     record[0], record[1], username, group=False)
 
