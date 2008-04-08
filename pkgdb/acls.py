@@ -53,9 +53,9 @@ class BugzillaInfo(object):
                 }
 
 class Acls(controllers.Controller):
-    approvedStatus = model.StatusTranslation.filter_by(
+    approvedStatus = model.StatusTranslation.query.filter_by(
             statusname='Approved', language='C').one().statuscodeid
-    removedStatus = model.StatusTranslation.filter_by(
+    removedStatus = model.StatusTranslation.query.filter_by(
             statusname='Removed', language='C').one().statuscodeid
 
     def __init__(self, fas=None, appTitle=None):
