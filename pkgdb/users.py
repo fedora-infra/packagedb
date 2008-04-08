@@ -38,15 +38,15 @@ class Users(controllers.Controller):
     
     Status Ids to use with queries.
     '''
-    approvedStatusId = model.StatusTranslation.filter_by(
+    approvedStatusId = model.StatusTranslation.query.filter_by(
             statusname='Approved', language='C').one().statuscodeid
-    awaitingBranchStatusId = model.StatusTranslation.filter_by(
+    awaitingBranchStatusId = model.StatusTranslation.query.filter_by(
             statusname='Awaiting Branch', language='C').one().statuscodeid
-    awaitingReviewStatusId = model.StatusTranslation.filter_by(
+    awaitingReviewStatusId = model.StatusTranslation.query.filter_by(
             statusname='Awaiting Review', language='C').one().statuscodeid
-    underReviewStatusId = model.StatusTranslation.filter_by(
+    underReviewStatusId = model.StatusTranslation.query.filter_by(
             statusname='Under Review', language='C').one().statuscodeid
-    EOLStatusId = model.StatusTranslation.filter_by(
+    EOLStatusId = model.StatusTranslation.query.filter_by(
             statusname='EOL', language='C').one().statuscodeid
 
     def __init__(self, fas, appTitle):
@@ -121,7 +121,7 @@ class Users(controllers.Controller):
 
         if 'any' in acls or 'owner' in acls:
             # Return any package for which the user is the owner
-            clauses.append(model.Package.query().filter(
+            clauses.append(model.Package.query.filter(
                     sqlalchemy.and_(
                         model.Package.c.id==model.PackageListing.c.packageid,
                         model.Package.c.statuscode.in_(self.approvedStatusId,
@@ -139,7 +139,7 @@ class Users(controllers.Controller):
 
         if acls:
             # Return any package on which the user has an Approved acl.
-            clauses.append(model.Package.query().filter(
+            clauses.append(model.Package.query.filter(
               sqlalchemy.and_(
                 model.Package.c.id==model.PackageListing.c.packageid,
                 model.Package.c.statuscode.in_(self.approvedStatusId,
@@ -165,9 +165,9 @@ class Users(controllers.Controller):
 
         query = map(lambda clause: clause.compile(), clauses)
         if len(query) == 2:
-            myPackages = model.Package.select(sqlalchemy.union(query[0], query[1], order_by=('package_name',)))
+            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], query[1], order_by=('package_name',))).all()
         elif len(query) == 1:
-            myPackages = model.Package.select(sqlalchemy.union(query[0], order_by=('package_name',)))
+            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], order_by=('package_name',))).all()
 
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 

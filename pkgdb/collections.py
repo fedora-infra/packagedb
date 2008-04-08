@@ -22,9 +22,6 @@ Controller for showing Package Collections.
 '''
 
 import sqlalchemy
-### FIXME: Get rid of this with TurboGears 1.0.4
-from sqlalchemy.ext.selectresults import SelectResults
-import sqlalchemy.mods.selectresults
 
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
@@ -45,7 +42,7 @@ class Collections(controllers.Controller):
     def index(self):
         '''List the Collections we know about.
         '''
-        collections = session.query(model.CollectionPackage).order_by(
+        collections = model.CollectionPackage.query.order_by(
                 (model.CollectionPackage.c.name,
                     model.CollectionPackage.c.version))
 
@@ -76,7 +73,7 @@ class Collections(controllers.Controller):
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
         try:
-            collectionEntry = model.Collection.filter_by(id=collectionId).one()
+            collectionEntry = model.Collection.query.filter_by(id=collectionId).one()
         except sqlalchemy.exceptions.InvalidRequestError, e:
             # Either the id doesn't exist or somehow it references more than
             # one value
@@ -93,8 +90,8 @@ class Collections(controllers.Controller):
 
         # Get real ownership information from the fas
         user = self.fas.person_by_id(collectionEntry.owner)
-        ownerName = '%s (%s)' % (user['human_name'],
-                user['username'])
+        ownerName = '%s (%s)' % (user.get('human_name', 'Unknown'),
+                user.get('username', 'UserID %i' % collectionEntry.owner))
 
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
@@ -120,9 +117,9 @@ class Collections(controllers.Controller):
         #             model.PackageListing.c.collectionid==collectionId,
         #             model.PackageListing.c.packageid==model.Package.c.id)
         #         )
-        packages = SelectResults(session.query(model.Package)).select(
+        packages = model.Package.query.filter(
                 sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
                     model.PackageListing.c.packageid==model.Package.c.id)
-                )
+                ).all()
         return dict(title='%s -- %s %s' % (self.appTitle, collection['name'],
             collection['version']), collection=collection, packages=packages)
