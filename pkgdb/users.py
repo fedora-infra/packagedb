@@ -67,7 +67,7 @@ class Users(controllers.Controller):
         return dict(title=self.appTitle + ' -- User Overview')
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
-    @paginate('pkgs', default_order='name', limit=100,
+    @paginate('pkgs', limit=100, default_order='name',
             allow_limit_override=True, max_pages=13)
     def packages(self, fasname=None, acls='any', EOL=False):
         '''List packages that the user is interested in.
@@ -116,58 +116,54 @@ class Users(controllers.Controller):
                     )
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
 
-        # Create the clauses of the package finding query
-        clauses = []
+        query = model.Package.query.join('listings').distinct()
 
+        if not EOL:
+            # We don't want EOL releases, filter those out of each clause
+            query = query.join(['listings', 'collection']).filter(
+                        model.Collection.c.statuscode != self.EOLStatusId)
+
+        queries = []
         if 'any' in acls or 'owner' in acls:
             # Return any package for which the user is the owner
-            clauses.append(model.Package.query.filter(
-                    sqlalchemy.and_(
-                        model.Package.c.id==model.PackageListing.c.packageid,
-                        model.Package.c.statuscode.in_(self.approvedStatusId,
+            queries.append(query.filter(sqlalchemy.and_(
+                        model.Package.c.statuscode.in_((
+                            self.approvedStatusId,
                             self.awaitingReviewStatusId,
-                            self.underReviewStatusId),
+                            self.underReviewStatusId)),
                         model.PackageListing.c.owner==fasid,
-                        model.PackageListing.c.statuscode.in_(
+                        model.PackageListing.c.statuscode.in_((
                             self.approvedStatusId,
                             self.awaitingBranchStatusId,
-                            self.awaitingReviewStatusId)
-                        ),
-                    ))
+                            self.awaitingReviewStatusId))
+                        )))
             if 'owner' in acls:
                 del acls[acls.index('owner')]
 
         if acls:
             # Return any package on which the user has an Approved acl.
-            clauses.append(model.Package.query.filter(
-              sqlalchemy.and_(
-                model.Package.c.id==model.PackageListing.c.packageid,
-                model.Package.c.statuscode.in_(self.approvedStatusId,
+            queries.append(query.join(['listings', 'people']).join(
+                    ['listings','people','acls']).filter(sqlalchemy.and_(
+                    model.Package.c.statuscode.in_(self.approvedStatusId,
                     self.awaitingReviewStatusId, self.underReviewStatusId),
-                model.PackageListing.c.id==model.PersonPackageListing.c.packagelistingid,
-                model.PersonPackageListing.c.userid==fasid,
-                model.PersonPackageListing.c.id==model.PersonPackageListingAcl.c.personpackagelistingid,
-                model.PersonPackageListingAcl.c.statuscode==self.approvedStatusId,
-                model.PackageListing.c.statuscode.in_(self.approvedStatusId,
-                    self.awaitingBranchStatusId, self.awaitingReviewStatusId)
-              )
-            ))
+                    model.PersonPackageListing.c.userid==fasid,
+                    model.PersonPackageListingAcl.c.statuscode==self.approvedStatusId,
+                    model.PackageListing.c.statuscode.in_(self.approvedStatusId,
+                            self.awaitingBranchStatusId, self.awaitingReviewStatusId)
+                    )))
             if 'any' not in acls:
                 # Return only those acls which the user wants listed
-                clauses[-1] = clauses[-1].filter(model.PersonPackageListingAcl.c.acl.in_(*acls))
+                queries[-1] = queries[-1].filter(
+                        model.PersonPackageListingAcl.c.acl.in_(*acls))
 
-        if not EOL:
-            # We don't want EOL releases, filter those out of each clause
-            clauses = map(lambda clause: clause.filter(sqlalchemy.and_(
-                        model.PackageListing.c.collectionid==model.Collection.c.id,
-                        model.Collection.c.statuscode!=self.EOLStatusId)),
-                    clauses)
-
-        query = map(lambda clause: clause.compile(), clauses)
-        if len(query) == 2:
-            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], query[1], order_by=('package_name',)))
-        elif len(query) == 1:
-            myPackages = model.Package.query.filter(sqlalchemy.union(query[0], order_by=('package_name',)))
+        if len(queries) == 2:
+            myPackages = model.Package.query.select_from(
+                            sqlalchemy.union(
+                                    queries[0].statement,
+                                    queries[1].statement
+                                    ))
+        else:
+            myPackages = queries[0]
 
         return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
 
