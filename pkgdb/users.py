@@ -102,18 +102,18 @@ class Users(controllers.Controller):
                 fasid = identity.current.user.id
                 fasname = identity.current.user_name
         else:
-            user = self.fas.person_by_username(fasname)
-            if user:
-                fasid = user['id']
-            else:
+            try:
+                user = self.fas.cache[fasname]
+            except KeyError:
                 return dict(title=self.appTitle + ' -- Invalid Username',
                         tg_template='pkgdb.templates.errors', status=False,
                         pkgs=[],
-                        message='The username you were linked to (%s) does' \
-                        ' can not be found.  If you received this error from' \
+                        message='The username you were linked to (%s) cannot' \
+                        ' be found.  If you received this error from' \
                         ' a link on the fedoraproject.org website, please' \
                         ' report it.' % fasname
                     )
+            fasid = user['id']
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
 
         query = model.Package.query.join('listings').distinct()
@@ -170,7 +170,7 @@ class Users(controllers.Controller):
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def acllist(self,fasname=None):
+    def acllist(self, fasname=None):
 
         if fasname == None:
             raise redirect(config.get('base_url_filter.base_url') + '/users/packages/')
@@ -178,7 +178,7 @@ class Users(controllers.Controller):
             raise redirect(config.get('base_url_filter.base_url') + '/users/packages/' + fasname)
 
     @expose(template='pkgdb.templates.useroverview')
-    def info(self,fasname=None):
+    def info(self, fasname=None):
         # If fasname is blank, ask for auth, we assume they want their own?
         if fasname == None:
             if identity.current.anonymous:
@@ -187,11 +187,12 @@ class Users(controllers.Controller):
                 fasid = identity.current.user.id
                 fasname = identity.current.user_name
         else:
-            user = self.fas.person_by_username(fasname)
-            if user:
-                fasid = user['id']
-            else:
+            try:
+                user = self.fas.cache[fasname]
+            except KeyError:
                 raise redirect(config.get('base_url_filter.base_url') + '/users/no_user/' + fasname)
+
+            fasid = user['id']
 
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Info'
 

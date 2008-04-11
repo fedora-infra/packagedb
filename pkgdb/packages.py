@@ -138,27 +138,35 @@ class Packages(controllers.Controller):
             statusMap[pkg.collection.statuscode] = \
                     pkg.collection.status.translations[0].statusname
             # Get real ownership information from the fas
-            user = self.fas.person_by_id(pkg.owner)
-            pkg.ownername = '%s (%s)' % (user.get('human_name','Unknown'),
-                                         user.get('username','UserID %i' % pkg.owner))
-            pkg.ownerid = user.get('id', pkg.owner)
-            pkg.owneruser = user.get('username', 'Unknown')
+            try:
+                user = self.fas.cache[pkg.owner]
+            except KeyError:
+                user = {'human_name': 'Unknown',
+                        'username': 'UserID %i' % pkg.owner,
+                        'id': pkg.owner}
+            pkg.ownername = '%(human_name)s (%(username)s)' % user
+            pkg.ownerid = user['id']
+            pkg.owneruser = user['username']
 
             if pkg.qacontact:
-                user = self.fas.person_by_id(pkg.qacontact)
-                pkg.qacontactname = '%s (%s)' % (
-                        user.get('human_name', 'Unknown'),
-                        user.get('username', 'UserID %i' % pkg.qacontact))
+                try:
+                    user = self.fas.cache[pkg.qacontact]
+                except KeyError:
+                    user = {'human_name': 'Unknown',
+                            'username': 'UserId %i' % pkg.qacontact}
+                pkg.qacontactname = '%(human_name)s (%(username)s)' % user
             else:
                 pkg.qacontactname = ''
 
             for person in pkg.people:
                 # Retrieve info from the FAS about the people watching the pkg
-                fasPerson = self.fas.person_by_id(person.userid)
-                person.name = '%s (%s)' % (
-                        fasPerson.get('human_name', 'Unknown'),
-                        fasPerson.get('username','UserID %i' % person.userid))
-                person.user = fasPerson.get('username', 'Unknown')
+                try:
+                    fasPerson = self.fas.cache[person.userid]
+                except KeyError:
+                    fasPerson = {'human_name': 'Unknown',
+                            'username': 'UserID %i' % person.userid}
+                person.name = '%(human_name)s (%(username)s)' % fasPerson
+                person.user = fasPerson['username']
                 # Setup acls to be accessible via aclName
                 person.aclOrder = {}
                 for acl in aclNames:

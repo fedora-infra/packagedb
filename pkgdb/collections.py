@@ -88,10 +88,15 @@ class Collections(controllers.Controller):
                 error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
-        # Get real ownership information from the fas
-        user = self.fas.person_by_id(collectionEntry.owner)
-        ownerName = '%s (%s)' % (user.get('human_name', 'Unknown'),
-                user.get('username', 'UserID %i' % collectionEntry.owner))
+        # Get ownership information from the fas
+        try:
+            user = self.fas.cache[collectionEntry.owner]
+        except KeyError:
+            user = {}
+            user['human_name'] = 'Unknown'
+            user['username'] = 'User ID %i' % collectionEntry.owner
+            user['email'] = 'unknown@fedoraproject.org'
+        ownerName = '%(human_name)s (%(username)s)' % user
 
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
@@ -107,16 +112,6 @@ class Collections(controllers.Controller):
                 }
 
         # Retrieve the packagelist for this collection
-        ### FIXME: Remove all SelectResults
-        # SA-0.4 deprecates SelectResults
-        # TurboGears 1.0.4 will support using orm.query for paginate instead
-        # Should be able to just switch the lines defining packages when that
-        # happens.
-        # packages = session.query(model.Package).filter(
-        #         sqlalchemy.and_(
-        #             model.PackageListing.c.collectionid==collectionId,
-        #             model.PackageListing.c.packageid==model.Package.c.id)
-        #         )
         packages = model.Package.query.filter(
                 sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
                     model.PackageListing.c.packageid==model.Package.c.id)

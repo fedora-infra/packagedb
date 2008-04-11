@@ -100,8 +100,12 @@ class PackageDispatcher(controllers.Controller):
         # Get the owners for this package
         for pkgListing in listings:
             if pkgListing.owner != ORPHAN_ID:
-                owner = self.fas.person_by_id(pkgListing.owner)
-                recipients[owner['email']] = ''
+                try:
+                    owner = self.fas.cache[pkgListing.owner]
+                except KeyError:
+                    owner = {}
+                else:
+                    recipients[owner['email']] = ''
 
             # Get the co-maintainers
             aclUsers = model.PersonPackageListingAcl.query.filter(
@@ -112,9 +116,12 @@ class PackageDispatcher(controllers.Controller):
 
             for acl in aclUsers:
                 if acl.status.translations[0].statusname=='Approved':
-                    person = self.fas.person_by_id(
-                            acl.personpackagelisting.userid)
-                    recipients[person['email']] = ''
+                    try:
+                        person = self.fas.cache[acl.personpackagelisting.userid]
+                    except KeyError:
+                        person = {}
+                    else:
+                        recipients[person['email']] = ''
 
         # Append a link to the package to the message
         msg = msg + '\n\nTo make changes to this package see:' \
@@ -391,10 +398,16 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing %s does not exist' % pkgid)
 
         # Make sure the person we're setting the acl for exists
+        # This can't come from cache ATM because it is used to call
+        # _acl_can_be_held_by_user() which needs approved_group data.
         user = self.fas.person_by_id(personid)
         if not user:
             return dict(status=False,
-                message="No such user: %s" % pkgid )
+                message='No such user for ID %(id)s, for package %(pkg)s in' \
+                        ' %(collection)s %(version)s' %
+                        {'id': personid, 'pkg': pkg.package.name,
+                            'collection': pkg.collection.name,
+                            'version': pkg.collection.version})
 
         # Check that the current user is allowed to change acl statuses
         approved = self._user_can_set_acls(identity, pkg)
@@ -407,12 +420,10 @@ class PackageDispatcher(controllers.Controller):
         # Make sure the person is allowed on this acl
         #
 
-        # Get the human name and username for the person whose acl we changed
-        person = self.fas.person_by_id(personid)
         # Always allowed to remove an acl
         if statusname not in ('Denied', 'Obsolete'):
             try:
-                self._acl_can_be_held_by_user(newAcl, person)
+                self._acl_can_be_held_by_user(newAcl, user)
             except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
 
@@ -624,9 +635,14 @@ class PackageDispatcher(controllers.Controller):
 
         develCollection = model.Collection.query.filter_by(name='Fedora',
                 version='devel').one()
+        # This can't be taken from the cache at the moment because it is used
+        # to call _acl_can_be_held_by_user() which needs the approved_group
+        # information
         person = self.fas.person_by_username(owner)
         if not person:
-            return dict(status=False, message='Specified owner %s does not have a Fedora Account' % owner)
+            return dict(status=False,
+                    message='Specified owner ID %s does not have a Fedora' \
+                    ' Account' % owner)
 
         # Make sure the owner is in the correct group
         try:
@@ -785,9 +801,13 @@ class PackageDispatcher(controllers.Controller):
         person = None
         ownerId = None
         if 'owner' in changes:
+            # This can't come from the cache ATM as it is used in a call to
+            # _acl_can_be_held_by_user() which needs group information.
             person = self.fas.person_by_username(changes['owner'])
             if not person:
-                return dict(status=False, message='Specified owner %s does not have a Fedora Account' % changes['owner'])
+                return dict(status=False,
+                        message='Specified owner %s does not have a Fedora'
+                        ' Account' % changes['owner'])
             # Make sure the owner is in the correct group
             try:
                 self._acl_can_be_held_by_user('owner', person)
@@ -912,8 +932,9 @@ class PackageDispatcher(controllers.Controller):
             ccList = simplejson.loads(changes['ccList'])
             for username in ccList:
                 # Lookup the list members in fas
-                person = self.fas.person_by_username(username)
-                if not person:
+                try:
+                    person = self.fas.cache[username]
+                except KeyError:
                     return dict(status=False,
                             message='New cclist member %s is not in FAS' % username)
                 # Add Acls for them to the packages
@@ -945,9 +966,14 @@ class PackageDispatcher(controllers.Controller):
             comaintList = simplejson.loads(changes['comaintList'])
             for username in comaintList:
                 # Lookup the list members in fas
+                # Note: this can't come from the cache ATM as it is used in a
+                # call to _acl_can_be_held_by_user() which needs group
+                # information.
                 person = self.fas.person_by_username(username)
                 if not person:
-                    return dict(status=False, message='New comaintainer %s does not have a Fedora Account' % username)
+                    return dict(status=False,
+                            message='New comaintainer %s does not have a' \
+                            ' Fedora Account' % username)
 
                 # Make sure the comaintainer is in the correct group
                 try:
