@@ -24,8 +24,6 @@ Controller for displaying Package Bug Information.
 
 from urllib import quote
 
-from sqlalchemy.ext.selectresults import SelectResults
-
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
@@ -103,8 +101,8 @@ class Bugs(controllers.Controller):
         self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.appTitle = appTitle
         # pylint: disable-msg=E1101
-        self.removedStatus = model.StatusTranslation.get_by(
-                statusname='Removed', language='C').statuscodeid
+        self.removedStatus = model.StatusTranslation.query.filter_by(
+                statusname='Removed', language='C').first().statuscodeid
         # pylint: enable-msg=E1101
 
     @expose(template='pkgdb.templates.bugoverview')
@@ -114,7 +112,7 @@ class Bugs(controllers.Controller):
         '''Display a list of packages with a link to bug reports for each.'''
         # Retrieve the list of packages minus removed packages
         # pylint: disable-msg=E1101
-        packages = SelectResults(session.query(model.Package)).select_by(
+        packages = model.Package.query.filter(
                 model.Package.c.statuscode!=self.removedStatus)
         # pylint: enable-msg=E1101
 

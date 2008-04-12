@@ -51,12 +51,12 @@ TODO='Not yet implemented'
             # Anonymous users can only look
             pass
         else:
-            if tg.identity.user.user_id == pkg.ownerid:
+            if tg.identity.user.id == pkg.ownerid:
                 # Package owners can make changes and add themselves to acls
                 aclChanger = True
             else:
                 for person in pkg.people:
-                    if person.userid == tg.identity.user.user_id:
+                    if person.userid == tg.identity.user.id:
                         # Person has an acl on the package
                         for acl in aclNames:
                             if person.aclOrder[acl]:
@@ -69,8 +69,8 @@ TODO='Not yet implemented'
                             aclChanger = True
                         break
             if not aclChanger:
-                for group in tg.identity.user.groups:
-                    if group.group_name == 'cvsadmin':
+                for group in tg.identity.groups:
+                    if group == 'cvsadmin':
                         # Person is an admin and thus can make changes
                         aclChanger = True
                         break
@@ -108,7 +108,7 @@ TODO='Not yet implemented'
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner owned">
                 <span class="ownerName"><a href="${tg.url('/users/info/' + pkg.owneruser)}">${pkg.ownername}</a></span>
-                <span py:if="not tg.identity.anonymous and (tg.identity.user.user_id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
+                <span py:if="not tg.identity.anonymous and (tg.identity.user.id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
                     value="Release Ownership"/>
@@ -141,7 +141,7 @@ TODO='Not yet implemented'
                 <td py:for="acl in aclNames" class="aclcell">
                   <!-- If the logged in user is this row, add a checkbox to set it -->
                   <div py:if="not tg.identity.anonymous and
-                    person.userid==tg.identity.user.user_id"
+                    person.userid==tg.identity.user.id"
                     py:attrs="{'name' : str(pkg.id) + ':' + acl}"
                     class="requestContainer aclPresent">
                     <input type="checkbox" checked="true" class="aclPresentBox"
@@ -207,7 +207,7 @@ TODO='Not yet implemented'
         <tr py:if="not tg.identity.anonymous and not interested">
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
-            + ':' + str(tg.identity.user.user_id)}"
+            + ':' + str(tg.identity.user.id)}"
             class="addMyselfButton"
             value="Add myself to package"/>
           </td>

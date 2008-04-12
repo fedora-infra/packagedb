@@ -2,32 +2,28 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.2.3
+Version:        0.3.3
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
 Group:          Development/Languages
 License:        GPLv2
-URL:            http://hosted.fedoraproject.org/projects/packagedb
+URL:            http://fedorahosted.org/packagedb
 Source0:        http://toshio.fedorapeople.org/fedora/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
 Requires: python-TurboMail
-Requires: python-sqlalchemy >= 0.3.10, python-sqlalchemy < 0.4
+Requires: python-sqlalchemy >= 0.4
 Requires: python-psycopg2
 Requires: python-genshi
-Requires: python-fedora-infrastructure >= 0.2.90.22
+Requires: python-fedora >= 0.2.99.7
 Requires: python-bugzilla
 
-BuildRequires:  python-devel
-BuildRequires: TurboGears
+BuildRequires: python-devel
 BuildRequires: python-genshi
-%if 0%{?fedora} >= 8
+BuildRequires: TurboGears
 BuildRequires:  python-setuptools-devel
-%else
-BuildRequires: python-setuptools
-%endif
 
 %description
 The Fedora Packagedb tracks who owns a package in the Fedora Collection.
@@ -64,6 +60,24 @@ rm -rf %{buildroot}
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
 %changelog
+* Fri Apr 11 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.3-1
+- SQLAlchemy-0.4 release.
+
+* Wed Mar 14 2008 Ricky Zhou <ricky@fedoraproject.org> - 0.3.2.8-1
+- FAS2 compatibility release.
+
+* Wed Mar 12 2008 Ricky Zhou <ricky@fedoraproject.org> - 0.3.2.7-1
+- Another FAS2 bugfix.
+
+* Wed Mar 12 2008 Ricky Zhou <ricky@fedoraproject.org> - 0.3.2.6-1
+- Few more bugfixes.
+
+* Wed Mar 12 2008 Ricky Zhou <ricky@fedoraproject.org> - 0.3.2.5-1
+- More updates for FAS2
+
+* Wed Mar 12 2008 Ricky Zhou <ricky@fedoraproject.org> - 0.3.2.4-1
+- Update for FAS2
+
 * Wed Jan 23 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.2.3-1
 - Bugfix release.
 

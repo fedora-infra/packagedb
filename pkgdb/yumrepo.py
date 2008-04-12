@@ -33,7 +33,7 @@ from sqlalchemy import MetaData, create_engine
 from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy.orm import Mapper
 
-from pkgdb.json import SABase
+from fedora.tg.json import SABase
 from pkgdb import model
 
 log = logging.getLogger('pkgdb.repo')

@@ -27,7 +27,7 @@ ownership of packages and allows admins to add new packages or change things
 when the owner is unresponsive.  A webUI is open for everyone and a simplistic
 commandline client works for admin requests.
 
-.. _`PackageDB`: https://hosted.fedoraproject.org/projects/packagedb
+.. _`PackageDB`: https://fedorahosted.org/packagedb
 
 Future goals
 ============
@@ -36,8 +36,8 @@ We're trying to manage our Roadmap_ of new features in trac.  So far it's
 working out well.  If you have a new feature request, please open a
 `trac ticket`_ and we'll add it to the schedule to be worked on.
 
-.. _`Roadmap`: https://hosted.fedoraproject.org/projects/packagedb/roadmap
-.. _`trac ticket`: https://hosted.fedoraproject.org/projects/packagedb/report/3
+.. _`Roadmap`: https://fedorahosted.org/packagedb/roadmap
+.. _`trac ticket`: https://fedorahosted.org/packagedb/report/3
 
 ------------
 Installation

@@ -1,3 +1,82 @@
+2008-04-11  Toshio Kuratomi <badger@Clingman> - r131
+* fedora-packagedb.spec: Update the spec.
+
+2008-04-11  Toshio Kuratomi <badger@Clingman> - r130
+* fedora-packagedb.spec, pkgdb/release.py: Bump for new release.
+
+2008-04-11  Toshio Kuratomi <badger@Clingman> - r129
+Merge the SQLAlchemy-0.4 branch to stable.
+
+2008-04-08  Toshio Kuratomi <badger@Clingman> - r128
+* pkgdb/controllers.py: Pull the response code fix from the sa0.4 branch.
+
+2008-04-08  Toshio Kuratomi <badger@Clingman> - r127
+* pkgdb/acls.py: Pull fix from sa0.4 branch for new python-fedora.
+
+2008-03-19  Ricky Zhou <ricky@Max> - r126
+Fix error in users.py
+
+=== packagedb-0.3.2.8 ===
+
+2008-03-18  Ricky Zhou <ricky@Max> - r125
+Move fas.py to python-fedora, update version requirement in the spec.
+
+2008-03-18  Ricky Zhou <ricky@Max> - r124
+Missed a line for the FAS2 changeover.
+
+2008-03-14  Ricky Zhou <ricky@Max> - r123
+Remove unused imports.
+
+2008-03-14  Ricky Zhou <ricky@Max> - r122
+Eliminate FAS1 dependence.  Not tagging this version until more testing can be done.  fas.py might be better in python-fedora later on.
+
+=== packagedb-0.3.2.7 ===
+
+2008-03-13  Ricky Zhou <ricky@Max> - r121
+A few more FAS2 bugfixes.
+
+=== packagedb-0.3.2.6 ===
+
+2008-03-12  Ricky Zhou <ricky@Max> - r120
+Fix one more FAS2 template problem.
+
+2008-03-12  Ricky Zhou <ricky@Max> - r119
+hosted.fp.o/projects/ => hosted.fp.o/
+
+2008-03-12  Ricky Zhou <ricky@Max> - r118
+Various small bugfixes, preparing for release, but not tagging yet.
+
+=== packagedb-0.3.2.5 ===
+
+2008-03-12  Ricky Zhou <ricky@Max> - r117
+Fix a bunch of FAS1-isms that I missed.
+
+=== packagedb-0.3.2.4 ===
+
+2008-03-12  Ricky Zhou <ricky@Max> - r116
+Increment version.
+
+2008-03-12  Ricky Zhou <ricky@Max> - r115
+Prepare for 0.3.2.4 release.
+
+2008-03-12  Ricky Zhou <ricky@Max> - r114
+Update templates to use FAS2's user object.
+
+2008-03-12  Ricky Zhou <ricky@Max> - r113
+Add BuildRequires: python-genshi to build successfully in mock.
+
+2008-03-12  Ricky Zhou <ricky@Max> - r112
+Add configs for FAS2 auth.
+
+=== packagedb-0.3.2.3 ===
+
+2008-01-23  Toshio Kuratomi <badger@Clingman> - r111
+* Merge fix for running setup needing a specific CherryPy version.
+
+2008-01-23  Toshio Kuratomi <badger@Clingman> - r110
+* Merge bugfixes from -devel branch
+* Merge change to allow json on the collections/ and collections/id/X pages.
+
 2008-01-23  Toshio Kuratomi <badger@Clingman> - r271
 * fedora-packagedb.spec, pkgdb/release.py: Bump release for new version.
 
