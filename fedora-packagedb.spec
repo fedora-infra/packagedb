@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.2.8
+Version:        0.3.3
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
