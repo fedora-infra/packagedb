@@ -21,15 +21,13 @@
 Controller for displaying Package Information.
 '''
 
-from sqlalchemy.ext.selectresults import SelectResults
-import sqlalchemy.mods.selectresults
-
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
 from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
+from pkgdb.users import ORPHAN_ID
 
 from cherrypy import request
 
@@ -47,15 +45,15 @@ class Packages(controllers.Controller):
         self.appTitle = appTitle
         self.bugs = Bugs(appTitle)
         self.dispatcher = PackageDispatcher(fas)
-        self.removedStatus = model.StatusTranslation.get_by(
-                statusname='Removed', language='C').statuscodeid
+        self.removedStatus = model.StatusTranslation.query.filter_by(
+                statusname='Removed', language='C').first().statuscodeid
 
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
     def index(self):
         # Retrieve the list of packages minus removed packages
-        packages = SelectResults(session.query(model.Package)).select_by(
+        packages = model.Package.query.filter(
                 model.Package.c.statuscode!=self.removedStatus)
 
         return dict(title=self.appTitle + ' -- Package Overview',
@@ -64,9 +62,9 @@ class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
         # Return the information about a package.
-        package = model.Package.get_by(
-                model.Package.c.statuscode!=self.removedStatus,
-                name=packageName)
+        package = model.Package.query.filter(
+                model.Package.c.statuscode!=self.removedStatus).filter_by(
+                name=packageName).first()
         if not package:
             error = dict(status=False,
                         title=self.appTitle + ' -- Invalid Package Name',
@@ -82,11 +80,10 @@ class Packages(controllers.Controller):
 
         collection = None
         if collectionName:
-            collection = SelectResults(session.query(model.Collection)
-                    ).select_by(name=collectionName)
+            collection = model.Collection.query.filter_by(name=collectionName)
             if collectionVersion:
-                collection = collection.select_by(version=collectionVersion)
-            if not len(collection.list()):
+                collection = collection.filter_by(version=collectionVersion)
+            if not collection.count():
                 error = dict(status=False,
                         title=self.appTitle + ' -- Not a Collection',
                         message='%s %s is not a Collection.' %
@@ -99,7 +96,7 @@ class Packages(controllers.Controller):
         # Possible ACLs
         aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # Possible statuses for acls:
-        aclStatus = SelectResults(session.query(model.PackageAclStatus))
+        aclStatus = model.PackageAclStatus.query.all()
         aclStatusTranslations=['']
         for status in aclStatus:
             ### FIXME: At some point, we have to pull other translations out,
@@ -108,12 +105,11 @@ class Packages(controllers.Controller):
                 aclStatusTranslations.append(status.translations[0].statusname)
 
         # Fetch information about all the packageListings for this package
-        pkgListings = SelectResults(session.query(model.PackageListing)).select(
-                model.PackageListingTable.c.packageid==package.id
-                )
+        pkgListings = model.PackageListing.query.filter(
+                model.PackageListingTable.c.packageid==package.id)
         if collection:
             # User asked to limit it to specific collections
-            pkgListings = pkgListings.select_by(
+            pkgListings = pkgListings.filter(
                     model.PackageListingTable.c.collectionid.in_(
                     *[c.id for c in collection]))
             if not pkgListings.count():
@@ -130,28 +126,46 @@ class Packages(controllers.Controller):
         # Map of statuscode to statusnames used in this package
         statusMap = {}
 
+        pkgListings = pkgListings.all()
         for pkg in pkgListings:
+            pkg.jsonProps = {'PackageListing': ('package', 'collection',
+                    'people', 'groups', 'qacontactname', 'owneruser', 'ownerid'),
+                'PersonPackageListing': ('aclOrder', 'name', 'user'),
+                'GroupPackageListing': ('aclOrder', 'name'),
+                }
+
             statusMap[pkg.statuscode] = pkg.status.translations[0].statusname
             statusMap[pkg.collection.statuscode] = \
                     pkg.collection.status.translations[0].statusname
             # Get real ownership information from the fas
-            user = self.fas.person_by_id(pkg.owner)
-            ### FIXME: Handle the case where the owner is unknown
-            pkg.ownername = '%s (%s)' % (user['human_name'], user['username'])
+            try:
+                user = self.fas.cache[pkg.owner]
+            except KeyError:
+                user = {'human_name': 'Unknown',
+                        'username': 'UserID %i' % pkg.owner,
+                        'id': pkg.owner}
+            pkg.ownername = '%(human_name)s (%(username)s)' % user
             pkg.ownerid = user['id']
             pkg.owneruser = user['username']
+
             if pkg.qacontact:
-                user = self.fas.person_by_id(pkg.qacontact)
-                pkg.qacontactname = '%s (%s)' % (user['human_name'],
-                        user['username'])
+                try:
+                    user = self.fas.cache[pkg.qacontact]
+                except KeyError:
+                    user = {'human_name': 'Unknown',
+                            'username': 'UserId %i' % pkg.qacontact}
+                pkg.qacontactname = '%(human_name)s (%(username)s)' % user
             else:
                 pkg.qacontactname = ''
 
             for person in pkg.people:
                 # Retrieve info from the FAS about the people watching the pkg
-                fasPerson = self.fas.person_by_id(person.userid)
-                person.name = '%s (%s)' % (fasPerson['human_name'],
-                        fasPerson['username'])
+                try:
+                    fasPerson = self.fas.cache[person.userid]
+                except KeyError:
+                    fasPerson = {'human_name': 'Unknown',
+                            'username': 'UserID %i' % person.userid}
+                person.name = '%(human_name)s (%(username)s)' % fasPerson
                 person.user = fasPerson['username']
                 # Setup acls to be accessible via aclName
                 person.aclOrder = {}
@@ -166,7 +180,8 @@ class Packages(controllers.Controller):
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
                 fasGroup = self.fas.group_by_id(group.groupid)
-                group.name = fasGroup['name']
+                group.name = fasGroup.get('name',
+                                          'Unknown (GroupID %i)' % group.groupid)
                 # Setup acls to be accessible via aclName
                 group.aclOrder = {}
                 for acl in aclNames:
@@ -178,11 +193,6 @@ class Packages(controllers.Controller):
 
         statusMap[pkgListings[0].package.statuscode] = \
                 pkgListings[0].package.status.translations[0].statusname
-        pkgListings.jsonProps = {'PackageListing': ('package', 'collection',
-                    'people', 'groups', 'qacontactname', 'owneruser'),
-                'PersonPackageListing': ('aclOrder', 'name', 'user'),
-                'GroupPackageListing': ('aclOrder', 'name'),
-                }
 
         return dict(title='%s -- %s' % (self.appTitle, package.name),
                 packageListings=pkgListings, statusMap = statusMap,
@@ -200,7 +210,7 @@ class Packages(controllers.Controller):
                     ' fedoraproject.org website, please report it.'
                     )
 
-        pkg = model.Package.get_by(id=packageId)
+        pkg = model.Package.query.filter_by(id=packageId).first()
         if not pkg:
             return dict(tg_template='pkgdb.templates.errors', status=False,
                     title=self.appTitle + ' -- Unknown Package',

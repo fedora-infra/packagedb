@@ -22,9 +22,6 @@ Controller for showing Package Collections.
 '''
 
 import sqlalchemy
-### FIXME: Get rid of this with TurboGears 1.0.4
-from sqlalchemy.ext.selectresults import SelectResults
-import sqlalchemy.mods.selectresults
 
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
@@ -45,7 +42,7 @@ class Collections(controllers.Controller):
     def index(self):
         '''List the Collections we know about.
         '''
-        collections = session.query(model.CollectionPackage).order_by(
+        collections = model.CollectionPackage.query.order_by(
                 (model.CollectionPackage.c.name,
                     model.CollectionPackage.c.version))
 
@@ -76,7 +73,7 @@ class Collections(controllers.Controller):
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
         try:
-            collectionEntry = model.Collection.filter_by(id=collectionId).one()
+            collectionEntry = model.Collection.query.filter_by(id=collectionId).one()
         except sqlalchemy.exceptions.InvalidRequestError, e:
             # Either the id doesn't exist or somehow it references more than
             # one value
@@ -91,10 +88,15 @@ class Collections(controllers.Controller):
                 error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
-        # Get real ownership information from the fas
-        user = self.fas.person_by_id(collectionEntry.owner)
-        ownerName = '%s (%s)' % (user['human_name'],
-                user['username'])
+        # Get ownership information from the fas
+        try:
+            user = self.fas.cache[collectionEntry.owner]
+        except KeyError:
+            user = {}
+            user['human_name'] = 'Unknown'
+            user['username'] = 'User ID %i' % collectionEntry.owner
+            user['email'] = 'unknown@fedoraproject.org'
+        ownerName = '%(human_name)s (%(username)s)' % user
 
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
@@ -110,17 +112,7 @@ class Collections(controllers.Controller):
                 }
 
         # Retrieve the packagelist for this collection
-        ### FIXME: Remove all SelectResults
-        # SA-0.4 deprecates SelectResults
-        # TurboGears 1.0.4 will support using orm.query for paginate instead
-        # Should be able to just switch the lines defining packages when that
-        # happens.
-        # packages = session.query(model.Package).filter(
-        #         sqlalchemy.and_(
-        #             model.PackageListing.c.collectionid==collectionId,
-        #             model.PackageListing.c.packageid==model.Package.c.id)
-        #         )
-        packages = SelectResults(session.query(model.Package)).select(
+        packages = model.Package.query.filter(
                 sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
                     model.PackageListing.c.packageid==model.Package.c.id)
                 )

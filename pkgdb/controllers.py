@@ -23,7 +23,6 @@ indirectly from here.
 '''
 
 import sqlalchemy
-from sqlalchemy.ext.selectresults import SelectResults
 import sqlalchemy.mods.selectresults
 from turbogears import controllers, expose, paginate, config
 from turbogears import identity, redirect
@@ -32,7 +31,6 @@ from cherrypy import request, response
 import logging
 
 from pkgdb import model
-from pkgdb import json
 from pkgdb import release
 
 from pkgdb.acls import Acls
@@ -45,6 +43,37 @@ log = logging.getLogger("pkgdb.controllers")
 # The Fedora Account System Module
 from fedora.accounts.fas2 import AccountSystem
 
+class UserCache(dict):
+    '''Naive cache for user information.
+
+    This cache can go out of date so use with caution.
+    '''
+    def __init__(self, fas):
+        super(UserCache, self).__init__()
+        self.fas = fas
+
+    def force_refresh(self):
+        log.debug('UserCache refresh forced')
+        people = self.fas.people_by_id()
+        self.clear()
+        self.update(people)
+        # Note: no collisions because userid is an int and username is a string.
+        for user_id in people:
+            self[people[user_id]['username']] = people[user_id]
+
+    def __getitem__(self, user_id):
+        '''Retrieve a user for a userid or username.
+
+        First read from the cache.  If not in the cache, refresh from the
+        server and try again.
+
+        If the user does not exist then, KeyError will be raised.
+        '''
+        log.debug('UserCache: read from cache')
+        if user_id not in self:
+            self.force_refresh()
+        return super(UserCache, self).__getitem__(user_id)
+
 class Root(controllers.RootController):
     appTitle = 'Fedora Package Database'
 
@@ -53,6 +82,7 @@ class Root(controllers.RootController):
     password = config.get('fas.password', 'admin')
 
     fas = AccountSystem(baseURL, username, password)
+    fas.cache = UserCache(fas)
 
     acls = Acls(fas, appTitle)
     collections = Collections(fas, appTitle)

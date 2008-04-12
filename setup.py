@@ -172,7 +172,7 @@ setup(
         "TurboGears[future] >= 1.0",
         "TurboMail",
         "python_fedora",
-        "SQLAlchemy >= 0.3.10, < 0.4alpha",
+        "SQLAlchemy >= 0.4alpha",
     ],
     scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo"],
     zip_safe=False,

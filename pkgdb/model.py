@@ -21,17 +21,19 @@
 Mapping of python classes to Database Tables.
 '''
 
-from turbogears.database import metadata, session, bind_meta_data
+### FIXME: track down what methods and classes we need from sqlalchemy and
+# only import those instead of doing an import *
 from sqlalchemy import *
+from sqlalchemy.orm import *
+from turbogears.database import metadata, mapper, get_engine
 from turbogears import identity, config
-from sqlalchemy.ext.assignmapper import assign_mapper
 
-from pkgdb.json import SABase
+from fedora.tg.json import SABase
 
-bind_meta_data()
+get_engine()
 
 #
-# Python classes
+# Mapped Classes
 #
 
 #
@@ -346,26 +348,18 @@ class GroupPackageListingAclLog(Log):
                         self.changetime, self.grouppackagelistingaclid)
 
 #
-# Mapping Status Tables
+# Mapped Tables
+#
+
+#
+# Statuses
 #
 
 # These are a bit convoluted as we have a 1:1:N relation between
 # SpecificStatusTable:StatusCodeTable:StatusTranslationTable
 StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
-assign_mapper(session.context, StatusTranslation, StatusTranslationTable)
 
 CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
-assign_mapper(session.context, CollectionStatus, CollectionStatusTable,
-        properties={'collections': relation(Collection, backref='status'),
-            'collectionPackages': relation(CollectionPackage, backref='status'),
-            'translations': relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid,
-                foreignkey=StatusTranslationTable.c.statuscodeid,
-                backref=backref('cstatuscode',
-                    foreignkey=CollectionStatusTable.c.statuscodeid,
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid),
-                )})
 
 # Collections and Branches have an inheritance relationship.  ie: Branches are
 # just Collections that have additional data.
@@ -385,15 +379,6 @@ collectionJoin = polymorphic_union (
         None
         )
 
-collectionMapper = assign_mapper(session.context, Collection, CollectionTable,
-        select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
-        polymorphic_identity='c',
-        properties={'listings': relation(PackageListing, backref='collection')})
-
-assign_mapper(session.context, Branch, BranchTable, inherits=collectionMapper,
-        inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
-        polymorphic_identity='b')
-
 #
 # CollectionTable that shows number of packages in a collection
 #
@@ -401,47 +386,20 @@ CollectionPackageTable = Table('collectionpackage', metadata,
         Column('id', Integer, primary_key=True),
         Column('statuscode', Integer, ForeignKey('collectionstatuscode.statuscodeid')),
         autoload=True)
-assign_mapper(session.context, CollectionPackage, CollectionPackageTable)
 
 # Package and PackageListing are straightforward translations.  Look at these
 # if you're looking for a straightforward example.
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 
-assign_mapper(session.context, Package, PackageTable, properties =
-        {'listings':relation(PackageListing, backref='package')})
-assign_mapper(session.context, PackageListing, PackageListingTable,
-        properties={'people' : relation(PersonPackageListing, backref='packagelisting'),
-            'groups' : relation(GroupPackageListing, backref='packagelisting')})
-
 # Package Listing Status Table.  Like the other status tables, this one has to
 # connect translations to the statuses particular to the PackageListing.  This
 # make it somewhat more convoluted but all the status tables follow the same
 # pattern.
 PackageListingStatusTable = Table('packagelistingstatuscode', metadata, autoload=True)
-assign_mapper(session.context, PackageListingStatus, PackageListingStatusTable,
-        properties={'listings' : relation(PackageListing, backref='status'),
-            'translations' : relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid,
-                foreignkey=StatusTranslationTable.c.statuscodeid,
-                backref=backref('plstatuscode',
-                    foreignkey=PackageListingStatusTable.c.statuscodeid,
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid)
-                )})
 
 # Package Status Table.
 PackageStatusTable = Table('packagestatuscode', metadata, autoload=True)
-assign_mapper(session.context, PackageStatus, PackageStatusTable,
-        properties={'packages' : relation(Package, backref='status'),
-            'translations' : relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid,
-                foreignkey=StatusTranslationTable.c.statuscodeid,
-                backref=backref('pstatuscode',
-                    foreignkey=PackageStatusTable.c.statuscodeid,
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid)
-                )})
 
 #
 # Person and Group ACL information
@@ -454,30 +412,7 @@ PersonPackageListingAclTable = Table('personpackagelistingacl', metadata,
 GroupPackageListingAclTable = Table('grouppackagelistingacl', metadata,
         autoload=True)
 
-assign_mapper(session.context, PersonPackageListing, PersonPackageListingTable,
-        properties={'acls':relation(PersonPackageListingAcl,
-            backref='personpackagelisting')})
-assign_mapper(session.context, GroupPackageListing, GroupPackageListingTable,
-        properties={'acls':relation(GroupPackageListingAcl,
-            backref='grouppackagelisting')})
-assign_mapper(session.context, PersonPackageListingAcl,
-        PersonPackageListingAclTable)
-assign_mapper(session.context, GroupPackageListingAcl,
-        GroupPackageListingAclTable)
-
 PackageAclStatusTable = Table('packageaclstatuscode', metadata, autoload=True)
-assign_mapper(session.context, PackageAclStatus, PackageAclStatusTable,
-        properties={'pacls' : relation(PersonPackageListingAcl,
-                backref='status'),
-            'gacls' : relation(GroupPackageListingAcl, backref='status'),
-            'translations' : relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid,
-                foreignkey=StatusTranslationTable.c.statuscodeid,
-                backref=backref('pastatuscode',
-                    foreignkey=PackageAclStatusTable.c.statuscodeid,
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid)
-                )})
 
 # Log tables
 # The log tables all inherit from the base log table.
@@ -516,35 +451,101 @@ logJoin = polymorphic_union (
         None
         )
 
-logMapper = assign_mapper(session.context, Log, LogTable,
-        select_table=logJoin, polymorphic_on=logJoin.c.kind,
-        polymorphic_identity='log')
-        
-assign_mapper(session.context, PersonPackageListingAclLog,
-        PersonPackageListingAclLogTable,
+#
+# Mappers between Tables and Classes
+#
+
+mapper(StatusTranslation, StatusTranslationTable)
+mapper(CollectionStatus, CollectionStatusTable, properties = {
+    'collections': relation(Collection, backref='status'),
+    'collectionPackages': relation(CollectionPackage, backref='status'),
+    'translations': relation(StatusTranslation,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid,
+        foreign_keys=[StatusTranslationTable.c.statuscodeid],
+        backref=backref('cstatuscode',
+            foreign_keys=[CollectionStatusTable.c.statuscodeid],
+            primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid),
+        )})
+collectionMapper = mapper(Collection, CollectionTable,
+        select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
+        polymorphic_identity='c',
+        properties={'listings': relation(PackageListing, backref='collection')})
+mapper(Branch, BranchTable, inherits=collectionMapper,
+        inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
+        polymorphic_identity='b')
+mapper(CollectionPackage, CollectionPackageTable)
+mapper(Package, PackageTable, properties = {
+    'listings':relation(PackageListing, backref='package')})
+mapper(PackageListing, PackageListingTable, properties = {
+    'people' : relation(PersonPackageListing, backref='packagelisting'),
+    'groups' : relation(GroupPackageListing, backref='packagelisting')})
+
+mapper(PackageListingStatus, PackageListingStatusTable, properties = {
+    'listings' : relation(PackageListing, backref='status'),
+    'translations' : relation(StatusTranslation,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid,
+        foreign_keys=[StatusTranslationTable.c.statuscodeid],
+        backref=backref('plstatuscode',
+            foreign_keys=[PackageListingStatusTable.c.statuscodeid],
+            primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid)
+        )})
+mapper(PersonPackageListing, PersonPackageListingTable, properties = {
+    'acls':relation(PersonPackageListingAcl,
+        backref='personpackagelisting')})
+mapper(GroupPackageListing, GroupPackageListingTable, properties = {
+    'acls':relation(GroupPackageListingAcl,
+        backref='grouppackagelisting')})
+mapper(PersonPackageListingAcl, PersonPackageListingAclTable)
+mapper(GroupPackageListingAcl, GroupPackageListingAclTable)
+mapper(PackageStatus, PackageStatusTable, properties = {
+    'packages' : relation(Package, backref='status'),
+    'translations' : relation(StatusTranslation,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid,
+        foreign_keys=[StatusTranslationTable.c.statuscodeid],
+        backref=backref('pstatuscode',
+            foreign_keys=[PackageStatusTable.c.statuscodeid],
+            primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid)
+        )})
+
+logMapper = mapper(Log, LogTable, select_table=logJoin,
+        polymorphic_on=logJoin.c.kind, polymorphic_identity='log')
+mapper(PersonPackageListingAclLog, PersonPackageListingAclLogTable,
         inherits=logMapper,
         inherit_condition=LogTable.c.id==PersonPackageListingAclLogTable.c.logid,
         polymorphic_identity='personpkglistacllog',
         properties={'acl': relation(PersonPackageListingAcl, backref='logs')})
-
-assign_mapper(session.context, GroupPackageListingAclLog,
-        GroupPackageListingAclLogTable,
+mapper(GroupPackageListingAclLog, GroupPackageListingAclLogTable,
         inherits=logMapper,
         inherit_condition=LogTable.c.id==GroupPackageListingAclLogTable.c.logid,
         polymorphic_identity='grouppkglistacllog',
         properties={'acl': relation(GroupPackageListingAcl, backref='logs')})
-
-assign_mapper(session.context, PackageLog, PackageLogTable,
+mapper(PackageLog, PackageLogTable,
         inherits=logMapper,
         inherit_condition=LogTable.c.id==PackageLogTable.c.logid,
         polymorphic_identity='pkglog',
         properties={'package': relation(Package, backref='logs')})
-
-assign_mapper(session.context, PackageListingLog, PackageListingLogTable,
+mapper(PackageListingLog, PackageListingLogTable,
         inherits=logMapper,
         inherit_condition=LogTable.c.id==PackageListingLogTable.c.logid,
         polymorphic_identity='pkglistlog',
         properties={'listing': relation(PackageListing, backref='logs')})
+
+mapper(PackageAclStatus, PackageAclStatusTable,
+        properties={'pacls' : relation(PersonPackageListingAcl,
+                backref='status'),
+            'gacls' : relation(GroupPackageListingAcl, backref='status'),
+            'translations' : relation(StatusTranslation,
+                order_by=StatusTranslationTable.c.language,
+                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid,
+                foreign_keys=[StatusTranslationTable.c.statuscodeid],
+                backref=backref('pastatuscode',
+                    foreign_keys=[PackageAclStatusTable.c.statuscodeid],
+                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid)
+                )})
+
 
 ### FIXME: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example
