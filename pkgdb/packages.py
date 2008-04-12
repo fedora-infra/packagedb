@@ -109,7 +109,7 @@ class Packages(controllers.Controller):
                 model.PackageListingTable.c.packageid==package.id)
         if collection:
             # User asked to limit it to specific collections
-            pkgListings = pkgListings.filter_by(
+            pkgListings = pkgListings.filter(
                     model.PackageListingTable.c.collectionid.in_(
                     *[c.id for c in collection]))
             if not pkgListings.count():
