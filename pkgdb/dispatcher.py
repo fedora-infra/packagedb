@@ -77,10 +77,6 @@ class PackageDispatcher(controllers.Controller):
     ownedStatus = model.StatusTranslation.query.filter_by(
             statusname='Owned').one()
 
-    # We use the develCollection enough that we might as well keep a copy
-    develCollection = model.Collection.query.filter_by(
-            name='Fedora', version='devel').one()
-
     def __init__(self, fas = None):
         self.fas = fas
         controllers.Controller.__init__(self)
@@ -719,11 +715,15 @@ class PackageDispatcher(controllers.Controller):
         except AclNotAllowedError, e:
             return dict(status=False, message=str(e))
 
+        # Retrieve the devel Collection so we can use its id later.
+        develCollection = model.Collection.query.filter_by(
+                name='Fedora', version='devel').one()
+
         # Create the package
         pkg = model.Package(package, summary, self.approvedStatus.statuscodeid)
         pkgListing = model.PackageListing(person['id'],
                 self.approvedStatus.statuscodeid)
-        pkgListing.collection = self.develCollection
+        pkgListing.collection = develCollection
         pkgListing.package = pkg
         cvsextrasListing = model.GroupPackageListing(self.groups['cvsextras'])
         cvsextrasListing.packagelisting = pkgListing
@@ -822,7 +822,7 @@ class PackageDispatcher(controllers.Controller):
         except sqlalchemy.exceptions.SQLError, e:
             return dict(status=False,
                     message='Unable to create PackageListing(%s, %s, %s, %s)' %
-                        (pkg.id, self.develCollection.id, person['id'],
+                        (pkg.id, develCollection.id, person['id'],
                         self.approvedStatus.statuscodeid))
 
         # Send notification of the new package
@@ -894,8 +894,12 @@ class PackageDispatcher(controllers.Controller):
 
             # Retrieve the id of the initial package owner
             if not ownerId:
+                # Retrieve the id for the develCollection
+                develCollection = model.Collection.query.filter_by(
+                        name='Fedora', version='devel').one()
+
                 develPackage = model.PackageListing.query.filter_by(packageid=pkg.id,
-                        collectionid=self.develCollection.id).one()
+                        collectionid=develCollection.id).one()
                 ownerId = develPackage.owner
 
             # Turn JSON collection data back to python
