@@ -34,18 +34,24 @@ import urllib2
 import codecs
 import locale
 
-from fedora.accounts.fas import AccountSystem
+from fedora.accounts.fas2 import AccountSystem
 
 # Set this to the production bugzilla account when we're ready to go live
-#BZSERVER = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi'
-BZSERVER = 'https://bugzilla.redhat.com/xmlrpc.cgi'
+BZSERVER = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi'
+#BZSERVER = 'https://bugzilla.redhat.com/xmlrpc.cgi'
+#BZSERVER = 'https://bzprx.vip.phx.redhat.com/xmlrpc.cgi'
 BZUSER=''
 BZPASS=''
+
+# Set this to the production fas account when we're ready to go live
+FASURL='https://admin.fedoraproject.org/accounts/'
+FASUSER=''
+FASPASS=''
 
 PKGDBSERVER = 'https://admin.fedoraproject.org/pkgdb/acls/bugzilla/?tg_format=json'
 
 # Set this to False when we're ready to run it against the bz database
-DRY_RUN = False
+DRY_RUN = True
 
 class DataChangedError(Exception):
     '''Raised when data we are manipulating changes while we're modifying it.'''
@@ -65,7 +71,7 @@ class Bugzilla(object):
         self.server = xmlrpclib.Server(bzServer)
 
         # Connect to the fedora account system
-        self.fas = AccountSystem()
+        self.fas = AccountSystem(FASURL, FASUSER, FASPASS)
 
     def _get_bugzilla_email(self, username):
         try:
@@ -194,7 +200,6 @@ class Bugzilla(object):
                         self.server.bugzilla.editComponent(data, self.username,
                                 self.password)
                     except xmlrpclib.Fault, e:
-                        print data
                         # Output something useful in args
                         e.args = (data, e.faultCode, e.faultString)
                         raise
