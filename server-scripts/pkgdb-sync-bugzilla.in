@@ -25,14 +25,13 @@ This short script takes information about package onwership and imports it
 into bugzilla.
 '''
 
-import sys, os, errno
-import website, crypt
-import getopt, re
+import sys
+import website
+import getopt
 import xmlrpclib
-import json
+import simplejson
 import urllib2
 import codecs
-import locale
 
 from fedora.accounts.fas2 import AccountSystem
 
@@ -239,11 +238,11 @@ if __name__ == '__main__':
 
     opts, args = getopt.getopt(sys.argv[1:], '', ('usage', 'help'))
     if len(args) > 0:
-        print """
+        print '''
 Usage: bz-make-components.py
 
 Sync package information from the package database to bugzilla.
-"""
+'''
         sys.exit(1)
 
     # Initialize the connection to bugzilla
@@ -254,7 +253,7 @@ Sync package information from the package database to bugzilla.
 
     # Get bugzilla information from the package database
     ownerPage = urllib2.urlopen(PKGDBSERVER)
-    bugzillaData = json.read(ownerPage.read())
+    bugzillaData = simplejson.load(ownerPage)
     ownerPage.close()
     acls = bugzillaData['bugzillaAcls']
     del bugzillaData
