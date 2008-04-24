@@ -4,8 +4,8 @@ Fedora PackageDB
 
 :Author: Toshio Kuratomi
 :Contact: toshio@fedoraproject.org
-:Date: Friday, 21 September, 2007
-:Version: 0.3.1
+:Date: Thursday, 24 April, 2008
+:Version: 0.3.3
 
 The `PackageDB` keeps track of package ownership within Fedora.
 
@@ -55,6 +55,29 @@ Starting
 --------
 
 This is a TurboGears (http://www.turbogears.org) project. It can be
-started by running the start-pkgdb.py script.  By default it uses the values
+started by running the start-pkgdb.in script.  By default it uses the values
 in pkgdb/config/app.cfg and dev.cfg to configure itself.  You can specify a
 config file instead of dev.cfg on the command line.
+
+You'll need a bunch of additional packages installed like:
+* python-fedora >= 0.2.99.8 (there's one in KOJI if you can't find it in your normal repositories - http://koji.fedoraproject.org/koji)
+* python-feedparser
+* python-bugzilla
+* postgresql-server
+* python-TurboMail
+
+Before running the actual start-pkgdb.in script, you'll need to run setup.py build and setup.py egg_info
+
+You'll also need some sample data in your postgresql database which you can get like this:
+1. Download the database dump from ???
+2. Start the postgresql-server: /etc/init.d/postgresql start
+3. Create the pkgdbadmin user: sudo -u postgres createuser -P -E pkgdbadmin (this is the one you'll need to set sqlalchemy.dburi to)
+4. Import the dump to postgresql: bzcat pkgdb.dump.bz2 | sudo -u postgres psql
+
+Make sure there's a line in your /var/lib/pgsql/data/pg_hba.conf that says:
+host	all	all	127.0.0.1/32	md5
+It might look like this now:
+host	all 	all	127.0.0.1/32	ident sameuser
+Restart postgres.
+
+Change the fas.username, fas.password and sqlalchemy.dburi fields in pkgdb.conf
