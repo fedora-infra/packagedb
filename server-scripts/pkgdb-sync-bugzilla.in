@@ -32,6 +32,8 @@ import xmlrpclib
 import simplejson
 import urllib2
 import codecs
+from email.Message import Message
+import smtplib
 
 from fedora.accounts.fas2 import AccountSystem
 
@@ -39,13 +41,13 @@ from fedora.accounts.fas2 import AccountSystem
 BZSERVER = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi'
 #BZSERVER = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 #BZSERVER = 'https://bzprx.vip.phx.redhat.com/xmlrpc.cgi'
-BZUSER=''
-BZPASS=''
+BZUSER='<%= bzAdminUser %>'
+BZPASS='<%= bzAdminPassword %>'
 
 # Set this to the production fas account when we're ready to go live
 FASURL='https://admin.fedoraproject.org/accounts/'
-FASUSER=''
-FASPASS=''
+FASUSER='systems'
+FASPASS='<%= systemsUserPassword %>'
 
 PKGDBSERVER = 'https://admin.fedoraproject.org/pkgdb/acls/bugzilla/?tg_format=json'
 
@@ -73,27 +75,18 @@ class Bugzilla(object):
         self.fas = AccountSystem(FASURL, FASUSER, FASPASS)
 
     def _get_bugzilla_email(self, username):
+        '''Return the bugzilla email address for a user.
+
+        First looks in a cache for a username => bugzilla email.  If not found,
+        reloads the cache from fas and tries again.
+        '''
         try:
-            user = self.userCache[username]
+            return self.userCache[username].lower()
         except KeyError:
-            user = {}
-            (person, groups) = self.fas.get_user_info(username)
-            user['email'] = person['bugzilla_email'].lower()
-            self.userCache[username] = user
-            return user['email']
-
-        try:
-            email = user['email']
-        except KeyError:
-            try:
-                (person, groups) = self.fas.get_user_info(username)
-            except fas.AuthError, e:
-                raise ValueError,  'Username %s was not found in fas' % username
-
-            email = person['bugzilla_email'].lower()
-            user['email'] = email
-
-        return email
+            people = self.fas.people_by_id()
+            self.userCache = dict([(p['username'], p['bugzilla_email'])
+                            for p in people.values()])
+            return self.userCache[username].lower()
 
     def add_edit_component(self, package, collection, owner, description,
             qacontact=None, cclist=None):
@@ -238,7 +231,7 @@ def send_email(fromAddress, toAddress, subject, message):
     
     This will be replaced by sending messages to a log later.
     '''
-    msg = email.Message.Message()
+    msg = Message()
     msg.add_header('To', toAddress)
     msg.add_header('From', fromAddress)
     msg.add_header('Subject', subject)
