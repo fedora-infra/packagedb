@@ -15,6 +15,33 @@
 
   </head>
   <body>
+    <h2>Statistics</h2>
+	<p>Packages with no comaintainers in devel: $no_comaintainers</p> 
+	<p>Packages in all Collections: $total</p>
+	<p>Packages belonging to you: $own</p><br />
+	<p>Orphan packages in devel: $orphan_devel</p>
+	<p>Orphan packages in Fedora 8: $orphan_eight</p>
+    
+    <h2>Top 20 0wn3rz</h2>
+    <table>
+      <tr py:for="id, (owner, listing ) in enumerate(zip(top_owners_names, top_owners_list))">
+	<td py:content="id+1">
+	</td>
+	<td>
+	  <a href="${tg.url('/users/packages/' + str(owner))}" py:content="owner">Owner name</a></td>
+	<td py:content="listing.numpkgs">Number of packages owned</td>  
+      </tr>
+    </table>
+    <h2>Top 20 Maintainers (owners or comaintainers)</h2>
+    <table>
+       <tr py:for="id, (userid,listing) in enumerate(zip(maintain_names,maintain_list))">
+	  <td py:content="id+1">
+	  </td>
+	  <td>
+	    <a href="${tg.url('/users/packages/' + str(userid))}" py:content="userid">User name</a></td>
+	<td py:content="listing.numpkgs">Number of packages maintained</td>
+       </tr> 
+    </table>
     <h2>Collections</h2>
     <table>
       <tr><th class="ColumnHead" id="collectionhead" title="Collection - Set of Linux packages created and hosted by the Fedora Project">
