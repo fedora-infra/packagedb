@@ -25,7 +25,7 @@ indirectly from here.
 from turbogears import controllers, expose, config
 from turbogears.i18n.tg_gettext import gettext as _
 from turbogears import identity, redirect
-from cherrypy import request
+from cherrypy import request, response
 import logging
 
 from pkgdb import release
@@ -34,6 +34,7 @@ from pkgdb.acls import Acls
 from pkgdb.collections import Collections
 from pkgdb.packages import Packages
 from pkgdb.users import Users
+from pkgdb.stats import Stats
 
 log = logging.getLogger("pkgdb.controllers")
 
@@ -89,6 +90,7 @@ class Root(controllers.RootController):
     collections = Collections(fas, appTitle)
     packages = Packages(fas, appTitle)
     users = Users(fas, appTitle)
+    stats = Stats(fas, appTitle)
 
     @expose(template='pkgdb.templates.overview')
     def index(self):
