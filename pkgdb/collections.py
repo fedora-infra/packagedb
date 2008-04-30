@@ -23,7 +23,7 @@ Controller for showing Package Collections.
 
 import sqlalchemy
 
-from turbogears import controllers, expose, paginate, identity
+from turbogears import controllers, expose, paginate
 from turbogears.database import session
 
 from pkgdb import model
@@ -53,10 +53,10 @@ class Collections(controllers.Controller):
                 (model.CollectionPackage.c.name,
                     model.CollectionPackage.c.version))
         # pylint: enable-msg=E1101
-    
+
         return dict(title=self.appTitle + ' -- Collection Overview',
-            collections=collections)
-            
+                collections=collections)
+
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
