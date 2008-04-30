@@ -22,7 +22,6 @@ Controller for showing Package Collections.
 '''
 
 import sqlalchemy
-from sqlalchemy.sql import func, desc, and_, or_, not_
 
 from turbogears import controllers, expose, paginate, identity
 from turbogears.database import session
@@ -30,8 +29,6 @@ from turbogears.database import session
 from pkgdb import model
 from cherrypy import request
 
-ORPHAN_ID = 9900
-DEVEL = 8 # collection id
 class Collections(controllers.Controller):
     '''Controller that deals with Collections.
 
@@ -56,84 +53,10 @@ class Collections(controllers.Controller):
                 (model.CollectionPackage.c.name,
                     model.CollectionPackage.c.version))
         # pylint: enable-msg=E1101
-	
-	# determine asid
-#	fasname = None
-#	if fasname == None:
-#	    if identity.current.anonymous:
-#	        raise identity.IdentityFailure(
-#                        'You must be logged in to view your information')
-#            else:
-#                fasid = identity.current.user.id
-#                fasname = identity.current.user_name
-#        else:
-#	    try:
-#		user = self.fas.cache[fasname]
-#            except KeyError:
-#                error = dict(title=self.appTitle + ' -- Invalid Username',
-#                        status = False, pkgs = [],
-#                        message='The username you were linked to (%s) cannot' \
-#                        ' be found.  If you received this error from' \
-#                        ' a link on the fedoraproject.org website, please' \
-#                        ' report it.' % fasname
-#                    )
-#		if request_format != 'json':
-      #              error['tg_template'] = 'pkgdb.templates.errors'
-      #          return error
-      #      fasid = user['id']
-	# 0WN3RZ!1
-	top_owners_select = sqlalchemy.select(
-		[func.count(model.PackageListing.owner).label('numpkgs'), 
-		model.PackageListing.owner], and_(
-		model.PackageListing.collectionid==DEVEL,
-		model.PackageListing.owner!=ORPHAN_ID)).group_by(
-		model.PackageListing.owner).order_by(
-		desc('numpkgs')).limit(20)
-	top_owners_names = []
-	for listing in top_owners_select.execute():
-	    top_owners_names.append(self.fas.cache[int(listing.owner)]['username'])
-
-	# OWN or comaintain
-	maintain_select = sqlalchemy.select(
-        	[func.count(model.PersonPackageListing.userid).label('numpkgs'),
-        	model.PersonPackageListing.userid, 
-		model.PackageListing.collectionid], and_(
-		model.PersonPackageListing.packagelistingid==model.
-		PackageListing.id,
-		model.PackageListing.collectionid==DEVEL)).group_by(
-        	model.PersonPackageListing.userid,
-		model.PackageListing.collectionid).order_by(
-		desc('numpkgs')).limit(20)
-	maintain_names =[]
-	for listing in maintain_select.execute():
-	    maintain_names.append(self.fas.cache[int(listing.userid)]['username'])
-
-	total = model.PackageListing.query.count()
-	no_comaintainers = sqlalchemy.select([model.PackageListing.id], 
-		and_(model.PackageListing.id==model.
-			PersonPackageListing.packagelistingid,
-		model.PackageListing.collectionid==DEVEL, 
-		model.PersonPackageListingAcl.
-			personpackagelistingid==model.PersonPackageListing.id, 
-		not_(or_(model.PersonPackageListingAcl.acl=='commit', 
-		model.PersonPackageListingAcl.acl=='approveacls')))).group_by(
-		model.PackageListing.id).execute().rowcount
-
-	#own = model.PackageListing.query.filter_by(owner=fasid).count()
-	
-	orphan_devel = model.PackageListing.query.filter_by(owner=ORPHAN_ID, collectionid=DEVEL).count()
-	orphan_eight= model.PackageListing.query.filter_by(owner=ORPHAN_ID, collectionid=14).count()	
+    
         return dict(title=self.appTitle + ' -- Collection Overview',
-                collections=collections,
-		total=total,
-		no_comaintainers=no_comaintainers,
-		orphan_devel=orphan_devel, orphan_eight=orphan_eight,
-		own=1337,
-		top_owners_names=top_owners_names, 
-		top_owners_list=top_owners_select.execute(),
-		maintain_names=maintain_names,
-		maintain_list=maintain_select.execute())
-
+            collections=collections)
+            
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
