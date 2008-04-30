@@ -56,16 +56,19 @@ class Stats(controllers.Controller):
         if identity.current.anonymous:
            own = 'need to be logged in'
         else:
-           own = model.PackageListing.query.filter_by(owner=fasid).count()
+           own = model.PackageListing.query.filter(sqlalchemy.and_(
+               model.PackageListing.owner==identity.current.user.id,
+               model.PackageListing.statuscode==3,
+               model.PackageListing.collectionid==DEVEL)).count()
         
         # most packages owned in DEVEL collection
         top_owners_select = sqlalchemy.select(
-        [func.count(model.PackageListing.owner).label('numpkgs'), 
-        model.PackageListing.owner], and_(
-        model.PackageListing.collectionid==DEVEL,
-        model.PackageListing.owner!=ORPHAN_ID)).group_by(
-        model.PackageListing.owner).order_by(
-        desc('numpkgs')).limit(20)
+                [func.count(model.PackageListing.owner).label('numpkgs'),
+                    model.PackageListing.owner], and_(
+                        model.PackageListing.collectionid==DEVEL,
+                        model.PackageListing.owner!=ORPHAN_ID)).group_by(
+                                model.PackageListing.owner).order_by(
+                                        desc('numpkgs')).limit(20)
         top_owners_names = []
         for listing in top_owners_select.execute():
             top_owners_names.append(self.fas.cache[int(listing.owner)]['username'])
@@ -73,7 +76,7 @@ class Stats(controllers.Controller):
         # most packages owned or comaintained in DEVEL collection
         maintain_select = sqlalchemy.select(
             [func.count(model.PersonPackageListing.userid).label('numpkgs'),
-                model.PersonPackageListing.userid, 
+                model.PersonPackageListing.userid,
             model.PackageListing.collectionid], and_(
             model.PersonPackageListing.packagelistingid==model.
             PackageListing.id,
@@ -89,28 +92,27 @@ class Stats(controllers.Controller):
         # total number of packages in pkgdb
         total = model.PackageListing.query.count()
         # number of packages with no comaintainers
-        no_comaintainers = sqlalchemy.select([model.PackageListing.id], 
+        no_comaintainers = sqlalchemy.select([model.PackageListing.id],
             and_(model.PackageListing.id==model.
             PersonPackageListing.packagelistingid,
-            model.PackageListing.collectionid==DEVEL, 
+            model.PackageListing.collectionid==DEVEL,
             model.PersonPackageListingAcl.
-                personpackagelistingid==model.PersonPackageListing.id, 
-            not_(or_(model.PersonPackageListingAcl.acl=='commit', 
+                personpackagelistingid==model.PersonPackageListing.id,
+            not_(or_(model.PersonPackageListingAcl.acl=='commit',
             model.PersonPackageListingAcl.acl=='approveacls')))).group_by(
-            model.PackageListing.id).execute().rowcount    
+            model.PackageListing.id).execute().rowcount
         # orphan packages in DEVEL 
         orphan_devel = model.PackageListing.query.filter_by(
             owner=ORPHAN_ID, collectionid=DEVEL).count()
         # orphan packages in fedora 8
         orphan_eight = model.PackageListing.query.filter_by(
-            owner=ORPHAN_ID, collectionid=14).count()    
+            owner=ORPHAN_ID, collectionid=14).count()
         return dict(title=self.appTitle + ' -- Package Stats',
             total=total,
             no_comaintainers=no_comaintainers,
             orphan_devel=orphan_devel, orphan_eight=orphan_eight,
             own=own,
-            top_owners_names=top_owners_names, 
+            top_owners_names=top_owners_names,
             top_owners_list=top_owners_select.execute(),
             maintain_names=maintain_names,
             maintain_list=maintain_select.execute())
- 
