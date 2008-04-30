@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Nigel Jones
+# Copyright © 2007  Ionuț Arțăriși
 # Copyright © 2007  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
@@ -17,7 +17,6 @@
 # permission of Red Hat, Inc.
 #
 # Author(s): Ionuț Arțăriși <mapleoin@lavabit.com>
-#            Nigel Jones <nigelj@fedoraproject.org>
 #            Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
