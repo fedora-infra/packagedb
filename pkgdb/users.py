@@ -125,7 +125,7 @@ class Users(controllers.Controller):
 
         query = model.Package.query.join('listings').distinct()
 
-        if not EOL:
+        if not eol:
             # We don't want EOL releases, filter those out of each clause
             query = query.join(['listings', 'collection']).filter(
                         model.Collection.c.statuscode != self.EOLStatusId)
