@@ -35,6 +35,7 @@ from pkgdb.collections import Collections
 from pkgdb.packages import Packages
 from pkgdb.users import Users
 from pkgdb.stats import Stats
+from pkgdb.search import Search
 
 log = logging.getLogger("pkgdb.controllers")
 
@@ -91,6 +92,7 @@ class Root(controllers.RootController):
     packages = Packages(fas, appTitle)
     users = Users(fas, appTitle)
     stats = Stats(fas, appTitle)
+    search = Search(fas, appTitle)
 
     @expose(template='pkgdb.templates.overview')
     def index(self):
