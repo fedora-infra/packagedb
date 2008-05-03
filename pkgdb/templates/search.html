@@ -1,0 +1,28 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <head />
+  <body>
+    <br />
+    <h1 py:if='matches.all()==[]'>Sorry! There were no matches.</h1>
+    <div py:if='matches.all()!=[]'>
+        <h1>$count matches found:</h1>
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Collection</th>
+                <th>Owner</th>
+            </tr>
+            <tr py:for='pkg in matches'>
+                <td>$pkg.package.name </td>
+                <td>$pkg.package.description</td>
+                <td>$pkg.collectionid</td>
+                <td>$pkg.owner</td>
+            </tr>
+        </table>
+    </div>
+  </body>
+</html>
