@@ -20,21 +20,20 @@
 #            Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
-Controller to search for packages and users.
+Controller to search for packages and eventually users.
 '''
 
 import sqlalchemy
 from sqlalchemy.sql import and_, or_
 
-from turbogears import controllers, expose, paginate, config, \
-        redirect, identity
+from turbogears import controllers, expose, validate, paginate, config, \
+        redirect
+from turbogears.validators import Int
 from turbogears.database import session
 from cherrypy import request
 
 from pkgdb import model
 from fedora.tg.util import request_format
-
-ORPHAN_ID = 9900
 
 class Search(controllers.Controller):
     '''Controller for searching the pkgdb.
@@ -48,28 +47,35 @@ class Search(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
 
-    @expose(template='pkgdb.templates.search')
+    @expose(template='pkgdb.templates.overview')
     def index(self):
-    # should redirect to pkgdb/packages
-        return dict(title=self.appTitle + ' -- All packages')
+    # should display all packages or redirect to pkgdb/packages 
+    #    return dict(title=self.appTitle + ' -- All packages')
+        redirect("/search/package/0/")
 
     @expose(template='pkgdb.templates.search')
-    def package(self, release, searchwords=''):
-   
+    @validate(validators={'release':Int()})
+    @paginate('packages', default_order=['package.name','collectionid'], limit=50,
+            max_pages=13)
+    def package(self, release, query=''): 
         matches = model.PackageListing.query.filter(and_(
             model.PackageListing.packageid==model.Package.id,or_(
-                model.Package.name.like('%'+searchwords+'%'),
-                    model.Package.description.like('%'+searchwords+'%'))))
-        if int(release) in range(1,10):
+                model.Package.name.like('%'+query+'%'),
+                    model.Package.description.like('%'+query+'%'))))
+        
+        # return only the packages in known collections or all of them
+        if release in range(1,16):
            matches = matches.filter(model.PackageListing.collectionid==release)
-
+           # this is a way to get the name and version of the release 
+           # even when the search has no matches:
+           collection_helper = model.PackageListing.query.filter(
+               model.PackageListing.collectionid==release).first().collection
+           release = collection_helper.name + ' ' + collection_helper.version
+        else:
+           release = 'all'
         count = matches.count() 
-         #if not matches.all() == []:
-        #    matches = 'No matches found'
-             # We don't want EOL releases, filter those out of each clause
-   #     query = query.join(['listings', 'collection']).filter(
-   #                 model.Collection.c.statuscode != self.EOLStatusId)
-
-        return dict(title=self.appTitle + ' -- Search packages for: ' + searchwords,
-                   matches=matches,
-                   count=count)
+        return dict(title=self.appTitle + ' -- Search packages for: ' + query,
+                   query=query,
+                   packages=matches,
+                   count=count,
+                   release=release)
