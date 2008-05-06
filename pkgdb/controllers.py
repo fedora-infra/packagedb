@@ -21,6 +21,7 @@
 Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
+import sqlalchemy
 
 from turbogears import controllers, expose, config
 from turbogears.i18n.tg_gettext import gettext as _
@@ -28,7 +29,7 @@ from turbogears import identity, redirect
 from cherrypy import request, response
 import logging
 
-from pkgdb import release
+from pkgdb import release, model
 
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
@@ -101,7 +102,11 @@ class Root(controllers.RootController):
         This page serves as an overview of the entire PackageDB.  It needs to
         tell developers where to get more information on their packages.
         '''
-        return dict(title=self.appTitle, version=release.VERSION)
+        # a little helper so we don't have to write/update form selects manually
+        releases = sqlalchemy.select([model.Collection.id,
+                    model.Collection.name, model.Collection.version]).execute()
+        return dict(title=self.appTitle, version=release.VERSION,
+                    releases=releases)
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, previous_url=None, *args, **kwargs):
