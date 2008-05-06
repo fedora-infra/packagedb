@@ -3,26 +3,18 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
+  <xi:include href="paginator.html" />
+  <xi:include href="pkglistinglist.html" />
   <head />
   <body>
-    <br />
-    <h1 py:if='matches.all()==[]'>Sorry! There were no matches.</h1>
-    <div py:if='matches.all()!=[]'>
-        <h1>$count matches found:</h1>
-        <table>
-            <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Collection</th>
-                <th>Owner</th>
-            </tr>
-            <tr py:for='pkg in matches'>
-                <td>$pkg.package.name </td>
-                <td>$pkg.package.description</td>
-                <td>$pkg.collectionid</td>
-                <td>$pkg.owner</td>
-            </tr>
-        </table>
+    <div py:if='packages.all()!=[]'>
+    <p>$count matches found in <strong>$release</strong> for package <strong>$query:</strong></p>
+    ${paginate_nav()}
+    ${pkglist(packages)}
+    ${paginate_nav()}
     </div>
+    <p py:if='packages.all()==[]'>
+        We are sorry, but there were no matches to display for: <strong>$query</strong> in collection: <strong>$release</strong>.
+    </p>
   </body>
 </html>
