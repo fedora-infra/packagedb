@@ -53,6 +53,11 @@ class Users(controllers.Controller):
             statusname='EOL', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
+    allAcls = (('owner', 'owner'), ('approveacls', 'approveacls'),
+            ('commit', 'commit'),
+            ('watchcommits', 'watchcommits'),
+            ('watchbugzilla', 'watchbugzilla'))
+
     def __init__(self, fas, appTitle):
         '''Create a User Controller.
 
@@ -73,7 +78,7 @@ class Users(controllers.Controller):
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=100, default_order='name',
             allow_limit_override=True, max_pages=13)
-    def packages(self, fasname=None, acls='any', eol=None):
+    def packages(self, fasname=None, acls=None, eol=None):
         '''List packages that the user is interested in.
            
         This method returns a list of packages owned by the user in current,
@@ -84,8 +89,10 @@ class Users(controllers.Controller):
         Arguments:
         :fasname: The name of the user to get the package list for.
                   Default: The logged in user.
-        :acls: Comma separated list of acls that we're looking for the user to
-                have on the package to list it.  Default: any acls.
+        :acls: List of acls to select.
+               Note: for backwards compatibility, this can also be a comma
+               separated string of acls.
+               Default: all acls.
         :eol: If set, list packages that are in EOL distros.
         Returns: A list of packages.
         '''
@@ -95,8 +102,17 @@ class Users(controllers.Controller):
         else:
             eol = bool(eol)
 
-        # Make acls into a list
-        acls = acls.split(',')
+        if not acls:
+            # Default to all acls
+            acls = [k[0] for k in self.allAcls]
+        elif isinstance(acls, basestring):
+            # For backwards compatibility, make acls into a list if it's a
+            # comma separated string of values
+            acls = acls.split(',')
+
+        # Create a list where store acl name, whether the acl is currently
+        # being filtered for, and the label to use to display the acl.
+        aclList = [(a[0], a[0] in acls, a[1]) for a in self.allAcls]
 
         # Have to either get fasname from the URL or current user
         if fasname == None:
@@ -131,7 +147,7 @@ class Users(controllers.Controller):
                         model.Collection.c.statuscode != self.EOLStatusId)
 
         queries = []
-        if 'any' in acls or 'owner' in acls:
+        if 'owner' in acls:
             # Return any package for which the user is the owner
             queries.append(query.filter(sqlalchemy.and_(
                         model.Package.c.statuscode.in_((
@@ -144,24 +160,25 @@ class Users(controllers.Controller):
                             self.awaitingBranchStatusId,
                             self.awaitingReviewStatusId))
                         )))
-            if 'owner' in acls:
-                del acls[acls.index('owner')]
+            del acls[acls.index('owner')]
 
         if acls:
             # Return any package on which the user has an Approved acl.
             queries.append(query.join(['listings', 'people']).join(
-                    ['listings','people','acls']).filter(sqlalchemy.and_(
-                    model.Package.c.statuscode.in_(self.approvedStatusId,
-                    self.awaitingReviewStatusId, self.underReviewStatusId),
-                    model.PersonPackageListing.c.userid==fasid,
-                    model.PersonPackageListingAcl.c.statuscode==self.approvedStatusId,
-                    model.PackageListing.c.statuscode.in_(self.approvedStatusId,
-                            self.awaitingBranchStatusId, self.awaitingReviewStatusId)
+                    ['listings', 'people', 'acls']).filter(sqlalchemy.and_(
+                    model.Package.c.statuscode.in_((self.approvedStatusId,
+                    self.awaitingReviewStatusId, self.underReviewStatusId)),
+                    model.PersonPackageListing.c.userid == fasid,
+                    model.PersonPackageListingAcl.c.statuscode == \
+                            self.approvedStatusId,
+                    model.PackageListing.c.statuscode.in_(
+                        (self.approvedStatusId,
+                            self.awaitingBranchStatusId,
+                            self.awaitingReviewStatusId))
                     )))
-            if 'any' not in acls:
-                # Return only those acls which the user wants listed
-                queries[-1] = queries[-1].filter(
-                        model.PersonPackageListingAcl.c.acl.in_(*acls))
+            # Return only those acls which the user wants listed
+            queries[-1] = queries[-1].filter(
+                    model.PersonPackageListingAcl.c.acl.in_(acls))
 
         if len(queries) == 2:
             myPackages = model.Package.query.select_from(
@@ -172,7 +189,8 @@ class Users(controllers.Controller):
         else:
             myPackages = queries[0]
 
-        return dict(title=pageTitle, pkgs=myPackages, fasname=fasname)
+        return dict(title=pageTitle, pkgCount=myPackages.count(),
+                pkgs=myPackages, acls=aclList, fasname=fasname)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):
