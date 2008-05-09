@@ -24,7 +24,7 @@ Controller to search for packages and eventually users.
 '''
 
 import sqlalchemy
-from sqlalchemy.sql import and_, or_
+from sqlalchemy.sql import func, and_, or_
 
 from turbogears import controllers, expose, validate, paginate, config, \
         redirect
@@ -57,11 +57,13 @@ class Search(controllers.Controller):
     @validate(validators={'release':Int()})
     @paginate('packages', default_order=['package.name','collectionid'], limit=50,
             max_pages=13)
-    def package(self, release, query=''): 
+    def package(self, release, query=''):
+        # perform case insensitive searches 
+        query = query.lower() 
         matches = model.PackageListing.query.filter(and_(
             model.PackageListing.packageid==model.Package.id,or_(
-                model.Package.name.like('%'+query+'%'),
-                    model.Package.description.like('%'+query+'%'))))
+                func.lower(model.Package.name).like('%'+query+'%'),
+                    func.lower(model.Package.description).like('%'+query+'%'))))
         
         # return only the packages in known collections or all of them
         if release in range(1,16):
