@@ -21,7 +21,7 @@
 Send acl information to third party tools.
 '''
 
-import sqlalchemy
+from sqlalchemy import select, and_
 from turbogears import controllers, expose
 from pkgdb import model
 
@@ -180,10 +180,10 @@ class Acls(controllers.Controller):
 
         # Get the vcs group acls from the db
     
-        groupAcls = sqlalchemy.select((
+        groupAcls = select((
             # pylint: disable-msg=E1101
             model.Package.c.name,
-            model.Branch.c.branchname), sqlalchemy.and_(
+            model.Branch.c.branchname), and_(
                 model.GroupPackageListing.c.groupid == CVSEXTRAS_ID,
                 model.GroupPackageListingAcl.c.acl == 'commit',
                 model.GroupPackageListingAcl.c.statuscode \
@@ -209,11 +209,11 @@ class Acls(controllers.Controller):
 
         # Get the package owners from the db
         # Exclude the orphan user from that.
-        ownerAcls = sqlalchemy.select((
+        ownerAcls = select((
             # pylint: disable-msg=E1101
             model.Package.c.name,
             model.Branch.c.branchname, model.PackageListing.c.owner),
-            sqlalchemy.and_(
+            and_(
                 model.PackageListing.c.packageid==model.Package.c.id,
                 model.PackageListing.c.collectionid==model.Collection.c.id,
                 model.PackageListing.c.owner!=ORPHAN_ID,
@@ -237,11 +237,11 @@ class Acls(controllers.Controller):
         del ownerAcls
 
         # Get the vcs user acls from the db
-        personAcls = sqlalchemy.select((
+        personAcls = select((
             # pylint: disable-msg=E1101
             model.Package.c.name,
             model.Branch.c.branchname, model.PersonPackageListing.c.userid),
-            sqlalchemy.and_(
+            and_(
                 model.PersonPackageListingAcl.c.acl=='commit',
                 model.PersonPackageListingAcl.c.statuscode \
                         == model.StatusTranslation.c.statuscodeid,
@@ -294,12 +294,12 @@ class Acls(controllers.Controller):
         username = None
 
         # select all packages that are active in an active release
-        packageInfo = sqlalchemy.select((
+        packageInfo = select((
             # pylint: disable-msg=E1101
             model.Collection.c.name, model.Package.c.name,
             model.PackageListing.c.owner, model.PackageListing.c.qacontact,
             model.Package.c.summary),
-            sqlalchemy.and_(
+            and_(
                 model.Collection.c.id==model.PackageListing.c.collectionid,
                 model.Package.c.id==model.PackageListing.c.packageid,
                 model.Package.c.statuscode==self.approvedStatus,
@@ -347,10 +347,10 @@ class Acls(controllers.Controller):
             # These are packages that have different owners in different
             # branches.  Need to find one to be the owner of the bugzilla
             # component
-            packageInfo = sqlalchemy.select((model.Collection.c.name,
+            packageInfo = select((model.Collection.c.name,
                 model.Collection.c.version,
                 model.Package.c.name, model.PackageListing.c.owner),
-                sqlalchemy.and_(
+                and_(
                     model.Collection.c.id==model.PackageListing.c.collectionid,
                     model.Package.c.id==model.PackageListing.c.packageid,
                     model.Package.c.statuscode==self.approvedStatus,
@@ -419,11 +419,11 @@ class Acls(controllers.Controller):
 
         # Retrieve the user acls
 
-        personAcls = sqlalchemy.select((
+        personAcls = select((
             # pylint: disable-msg=E1101
             model.Package.c.name,
             model.Collection.c.name, model.PersonPackageListing.c.userid),
-            sqlalchemy.and_(
+            and_(
                 model.PersonPackageListingAcl.c.acl == 'watchbugzilla',
                 model.PersonPackageListingAcl.c.statuscode == \
                         self.approvedStatus,
