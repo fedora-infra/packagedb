@@ -96,10 +96,13 @@ class Bugzilla(object):
         if not cclist or 'people' not in cclist:
             initialCCList = list()
         else:
-            initialCCList = []
-            for ccMember in cclist['people']:
-                ccEmail = self._get_bugzilla_email(ccMember)
-                initialCCList.append(ccEmail)
+            initialCCList = [self._get_bugzilla_email(cc) for cc in \
+                    cclist['people']]
+        # Add owner to the cclist so comaintainers taking over a bug don't
+        # have to do this manually
+        owner = self._get_bugzilla_email(owner).lower()
+        if owner not in initialCCList:
+            initialCCList.append(owner)
 
         # Lookup product
         try:
@@ -148,7 +151,6 @@ class Bugzilla(object):
             data = {}
 
             # Grab bugzilla email for things changable via xmlrpc
-            owner = self._get_bugzilla_email(owner).lower()
             if qacontact:
                 qacontact = self._get_bugzilla_email(qacontact)
             else:
@@ -200,7 +202,6 @@ class Bugzilla(object):
                         raise
         else:
             # Add component
-            owner = self._get_bugzilla_email(owner).lower()
             if qacontact:
                 qacontact = self._get_bugzilla_email(qacontact)
             else:
