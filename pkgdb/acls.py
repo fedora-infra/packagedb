@@ -57,6 +57,10 @@ class Acls(controllers.Controller):
             statusname='Approved', language='C').one().statuscodeid
     removedStatus = model.StatusTranslation.query.filter_by(
             statusname='Removed', language='C').one().statuscodeid
+    activeStatus = model.StatusTranslation.query.filter_by(
+            statusname='Active', language='C').one().statuscodeid
+    develStatus = model.StatusTranslation.query.filter_by(
+            statusname='Under Development', language='C').one().statuscodeid
 
     def __init__(self, fas=None, appTitle=None):
         self.fas = fas
@@ -242,7 +246,7 @@ class Acls(controllers.Controller):
         username = None
         userId = None
 
-        # select all packages that are active
+        # select all packages that are active in an active release
         packageInfo = sqlalchemy.select((model.Collection.c.name,
             model.Package.c.name, model.PackageListing.c.owner,
             model.PackageListing.c.qacontact, model.Package.c.summary),
@@ -250,13 +254,19 @@ class Acls(controllers.Controller):
                 model.Collection.c.id==model.PackageListing.c.collectionid,
                 model.Package.c.id==model.PackageListing.c.packageid,
                 model.Package.c.statuscode==self.approvedStatus,
-                model.PackageListing.c.statuscode==self.approvedStatus
+                model.PackageListing.c.statuscode==self.approvedStatus,
+                model.Collection.c.statuscode.in_((self.activeStatus,
+                    self.develStatus)),
                 ),
-            order_by=(model.PackageListing.c.owner,), distinct=True)
+            order_by=(model.Collection.c.name,), distinct=True)
 
         # Cache the userId/username pairs so we don't have to call the
         # fas for every package.
         userList = self.fas.user_id()
+
+        # List of packages that need more processing to decide who the owner
+        # should be.
+        undupeOwners = []
 
         for pkg in packageInfo.execute():
             # Lookup the collection
@@ -275,23 +285,106 @@ class Acls(controllers.Controller):
                 collection[packageName] = package
 
             # Save the package information in the data structure to return
-            package.owner = userList[pkg[2]]
+            if not package.owner:
+                package.owner = userList[pkg[2]]
+            elif userList[pkg[2]] != package.owner:
+                # There are multiple owners for this package.
+                undupeOwners.append(packageName)
             if pkg[3]:
                 package.qacontact = userList[pkg[3]]
             package.summary = pkg[4]
+
+        if undupeOwners:
+            # These are packages that have different owners in different
+            # branches.  Need to find one to be the owner of the bugzilla
+            # component
+            packageInfo = sqlalchemy.select((model.Collection.c.name,
+                model.Collection.c.version,
+                model.Package.c.name, model.PackageListing.c.owner),
+                sqlalchemy.and_(
+                    model.Collection.c.id==model.PackageListing.c.collectionid,
+                    model.Package.c.id==model.PackageListing.c.packageid,
+                    model.Package.c.statuscode==self.approvedStatus,
+                    model.PackageListing.c.statuscode==self.approvedStatus,
+                    model.Collection.c.statuscode.in_((self.activeStatus,
+                        self.develStatus)),
+                    model.Package.c.name.in_(undupeOwners),
+                    ),
+                order_by=(model.Collection.c.name, model.Collection.c.version),
+                distinct=True)
+
+            # Organize the results so that we have:
+            # [packagename][collectionname][collectionversion] = owner
+            byPkg = {}
+            for pkg in packageInfo.execute():
+                # Order results by package
+                try:
+                    package = byPkg[pkg[2]]
+                except KeyError:
+                    package = {}
+                    byPkg[pkg[2]] = package
+
+                # Then collection
+                try:
+                    collection = package[pkg[0]]
+                except KeyError:
+                    collection = {}
+                    package[pkg[0]] = collection
+
+                # Then collection version == owner
+                collection[pkg[1]] = pkg[3]
+
+            # Find the proper owner
+            for pkg in byPkg:
+                for collection in byPkg[pkg]:
+                    if collection == 'Fedora':
+                        # If devel exists, use its owner
+                        # We can safely ignore orphan because we already know
+                        # this is a dupe and thus a non-orphan exists.
+                        if 'devel' in byPkg[pkg][collection]:
+                            if byPkg[pkg][collection]['devel'] == ORPHAN_ID \
+                                    and len(byPkg[pkg][collection]) > 1:
+                                # If there are other owners, try to use them
+                                # instead of orphan
+                                del byPkg[pkg][collection]['devel']
+                            else:
+                                # Prefer devel above all others
+                                bugzillaAcls[collection][pkg].owner = \
+                                    userList[byPkg[pkg][collection]['devel']]
+                                continue
+
+                    # For any collection except Fedora or Fedora if the devel
+                    # version does not exist, treat releases as numbers and
+                    # take the results from the latest number
+                    releases = [int(r) for r in byPkg[pkg][collection] \
+                            if byPkg[pkg][collection][r] != ORPHAN_ID]
+                    if not releases:
+                        # Every release was an orphan
+                         bugzillaAcls[collection][pkg].owner = \
+                                 userList[ORPHAN_ID]
+                    else:
+                        releases.sort()
+                        bugzillaAcls[collection][pkg].owner = \
+                                userList[byPkg[pkg][collection][ \
+                                    unicode(releases[-1])]]
 
         # Retrieve the user acls
         personAcls = sqlalchemy.select((model.Package.c.name,
             model.Collection.c.name, model.PersonPackageListing.c.userid),
             sqlalchemy.and_(
                 model.PersonPackageListingAcl.c.acl == 'watchbugzilla',
-                model.PersonPackageListingAcl.c.statuscode == self.approvedStatus,
-                model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id,
-                model.PersonPackageListing.c.packagelistingid == model.PackageListing.c.id,
+                model.PersonPackageListingAcl.c.statuscode == \
+                        self.approvedStatus,
+                model.PersonPackageListingAcl.c.personpackagelistingid == \
+                        model.PersonPackageListing.c.id,
+                model.PersonPackageListing.c.packagelistingid == \
+                        model.PackageListing.c.id,
                 model.PackageListing.c.packageid == model.Package.c.id,
                 model.PackageListing.c.collectionid == model.Collection.c.id,
                 model.Package.c.statuscode==self.approvedStatus,
-                model.PackageListing.c.statuscode==self.approvedStatus
+                model.PackageListing.c.statuscode==self.approvedStatus,
+                model.Collection.c.statuscode.in_((self.activeStatus,
+                    self.develStatus)),
                 ),
             order_by=(model.PersonPackageListing.c.userid,), distinct=True
             )
