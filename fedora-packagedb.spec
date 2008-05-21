@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.3
+Version:        0.3.3.1
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -60,6 +60,9 @@ rm -rf %{buildroot}
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
 %changelog
+* Fri Apr 11 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.3.1-1
+- Minor fixes.
+
 * Fri Apr 11 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.3-1
 - SQLAlchemy-0.4 release.
 
