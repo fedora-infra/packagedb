@@ -47,26 +47,46 @@ class Search(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
 
-    @expose(template='pkgdb.templates.overview')
+    @expose(template='pkgdb.templates.overview', allow_json=True)
     def index(self):
-    # should display all packages or redirect to pkgdb/packages 
-    #    return dict(title=self.appTitle + ' -- All packages')
+        '''Redirects to a page that displays all packages.
+        ''' 
         redirect("/search/package/0/")
 
-    @expose(template='pkgdb.templates.search')
+    @expose(template='pkgdb.templates.search', allow_json=True)
     @validate(validators={'release':Int()})
-    @paginate('packages', default_order=['package.name','collectionid'], limit=50,
-            max_pages=13)
+    @paginate('packages', default_order=['package.name','collectionid'], 
+            limit=50, max_pages=13)
     def package(self, release, query=''):
+        '''Searches for packages
+           
+           This method returns a list of packages (PackageListing objects)
+           matching the given search words. Other information useful in the
+           view is also returned: 
+           :query: words that were used for the search
+           :count: number of packages
+           :release: long name of the release
+             
+           Arguments:
+           :query: this can be one or more words which will be used to
+           search in the packages' name and description for matches. If absent,
+           all packages from all collections will be returned.
+           :release: if the number is a valid PackageListing.collectionid, the
+           search will be limited to that release. Otherwise (eg "0"),
+           the search will return packages from all releases.
+        '''
+ 
         # perform case insensitive searches 
         query = query.lower() 
         matches = model.PackageListing.query.filter(and_(
             model.PackageListing.packageid==model.Package.id,or_(
                 func.lower(model.Package.name).like('%'+query+'%'),
                     func.lower(model.Package.description).like('%'+query+'%'))))
-        
+         
         # return only the packages in known collections or all of them
-        if release in range(1,16):
+        num_of_colls = sqlalchemy.select([model.PackageListing.collectionid], 
+                                    distinct=True).execute().rowcount
+        if release in range(1,num_of_colls):
            matches = matches.filter(model.PackageListing.collectionid==release)
            # this is a way to get the name and version of the release 
            # even when the search has no matches:
