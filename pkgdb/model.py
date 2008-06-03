@@ -205,11 +205,13 @@ class Package(SABase):
         self.statuscode = statuscode
         self.description = description
         self.reviewurl = reviewurl
+        self.shouldopen = shouldopen
     
     def __repr__(self):
-        return 'Package("%s", "%s", %s, description="%s", reviewurl="%s")' % (
+        return 'Package("%s", "%s", %s, description="%s", reviewurl="%s", ' \
+               'shouldopen="%s")' % (
                 self.name, self.summary, self.statuscode, self.description,
-                self.reviewurl)
+                self.reviewurl, self.shouldopen)
  
 class PackageListing(SABase):
     '''This associates a package with a particular collection.
