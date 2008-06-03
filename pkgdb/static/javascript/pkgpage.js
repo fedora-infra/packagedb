@@ -325,9 +325,10 @@ function toggle_shouldopen(ignored, data) {
 	if (data.status == False) toggle_shouldopen_failure(ignored, data);
 }
 
-function toggle_shouldopen_failure(ignored, ignored) {
+function toggle_shouldopen_failure(ignored, data) {
     var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldopen').first();
     shouldOpenBox.checked = !shouldOpenBox.checked
+    display_error(null, data);
 }
 
 
