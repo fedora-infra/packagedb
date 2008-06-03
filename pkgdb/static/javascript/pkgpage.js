@@ -321,6 +321,16 @@ function revert_groupacl_request(aclBoxDiv, data) {
     replaceChildNodes(aclBoxDiv, label, newAclBox);
 }
 
+function toggle_shouldopen(ignored, data) {
+	if (data.status == False) toggle_shouldopen_failure(ignored, data);
+}
+
+function toggle_shouldopen_failure(ignored, ignored) {
+    var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldopen').first();
+    shouldOpenBox.checked = !shouldOpenBox.checked
+}
+
+
 function request_acl_gui(event) {
     var buttonRow = getFirstParentByTagAndClassName(event.target(), 'tr');
     var pkgListTable = getFirstParentByTagAndClassName(buttonRow, 'table',
@@ -460,7 +470,8 @@ jQuery(document).ready(function() {
     }
 
     var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldopen').first();
-    connect(shouldOpenBox, 'onchange', partial(make_request, '/set_shouldopen', null, null));
+    connect(shouldOpenBox, 'onchange', partial(make_request, '/set_shouldopen',
+			    toggle_shouldopen, toggle_shouldopen_failure));
 
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
     for (var aclReqNum in aclReqBoxes) {
