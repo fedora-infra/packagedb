@@ -428,6 +428,7 @@ create table Package (
   description text,
   reviewURL text,
   statuscode integer not null,
+  shouldopen boolean not null default true,
   foreign key (statuscode) references PackageStatusCode(statusCodeId)
     on delete restrict on update cascade
 );
