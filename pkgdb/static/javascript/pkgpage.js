@@ -459,6 +459,9 @@ jQuery(document).ready(function() {
         connect(statusBoxes[statusNum], 'onfocus', save_status);
     }
 
+    var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldopen').first();
+    connect(shouldOpenBox, 'onchange', partial(make_request, '/set_shouldopen', null, null));
+
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
     for (var aclReqNum in aclReqBoxes) {
         connect(aclReqBoxes[aclReqNum], 'onclick', request_add_drop_acl);
