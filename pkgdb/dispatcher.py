@@ -833,21 +833,23 @@ class PackageDispatcher(controllers.Controller):
         # Return the new values
         return dict(status=True, package=pkg, packageListing=pkgListing)
 
-    def set_shouldopen(self, package, open=(True|False)):
+    def set_shouldopen(self, package, shouldopen=True):
         # Make sure the package exists
         try:
             pkg = model.Package.query.filter_by(name=package).one()
         except InvalidRequestError:
             return dict(status=False,
                     message='Package %s does not exist' % package)
-        pkg.shouldopen = open
-        try:
-            session.flush()
-        except sqlalchemy.exceptions.SQLError, e:
-            # An error was generated
-            return dict(status=False,
-                    message='Unable to modify PackageListing %s in %s' \
-                            % (pkgList.id, pkgList.collection.id))
+        if pkg.shouldopen != shouldopen:
+            pkg.shouldopen = shouldopen
+            try:
+                session.flush()
+            except sqlalchemy.exceptions.SQLError, e:
+                # An error was generated
+                return dict(status=False,
+                        message='Unable to modify PackageListing %s in %s' \
+                                % (pkgList.id, pkgList.collection.id))
+        return (status=True, shouldopen)
 
     @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.
