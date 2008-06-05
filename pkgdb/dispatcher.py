@@ -850,7 +850,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False,
                     message='Unable to modify PackageListing %s in %s' \
                             % (pkgList.id, pkgList.collection.id))
-        return (status=True, shouldopen)
+        return dict(status=True, shouldopen=shouldopen)
 
     @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.
