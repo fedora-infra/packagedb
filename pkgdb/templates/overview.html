@@ -25,18 +25,26 @@
     <script type="text/javascript">
                      <!--
                      function jump(){
-                         window.location='/search/package/' +document.forms[0].release.value + '/' + document.forms[0].query.value;
+                         window.location='/search/package/' + document.forms[0].searchon.value + '/' + document.forms[0].release.value + '/' + document.forms[0].searchwords.value;
                          return false
                      }
                      //-->
-                </script> 
+    </script> 
     <form action="${tg.url('/search/package/')}" method="get" onsubmit="return jump()">
-    <p>Keyword: <input id="package" name="query" size="20" type="text" />
+    <p>Keyword: <input id="package" name="searchwords" size="20" type="text" />
     <input type="submit" value="Search" /></p>
     <p>Release: <select id="release" name="release">
             <option value="0">any</option>
             <option py:for="release in releases" value="$release.id">$release.name $release.version</option>
         </select></p>
+    <p>Search on:
+    <input type="radio" id="both" name="searchon" value="both" checked="checked" />
+    <label for="both">name and description</label>
+    <input type="radio" id="names" name="searchon" value="names" />
+    <label for="names">name</label>
+    <input type="radio" id="description" name="searchon" value="description" />
+    <label for="description">description</label>
+    </p>
     </form>
     <br />
     For more information on the packagedb, see its
