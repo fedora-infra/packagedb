@@ -26,10 +26,20 @@ TODO='Not yet implemented'
           </th><td py:content="TODO">
           Fill in the Creation Date
       </td></tr>
+      <tr><th>
+		    Open package during mass ACL open?
+      </th><td>
+        <form action="${tg.url('/packages/dispatcher/')}" method="POST">
+          <div py:attrs="{'name': str(packageListings[0].package.name)}"
+            class="requestContainer shouldopen">
+            <input type="checkbox" name="shouldopen"
+              py:attrs="{'checked': packageListings.package.shouldopen}" />
+          </div>
+        </form>
+      </td></tr>
     </table>
     <p py:content="packageListings[0].package.summary">Summary</p>
     <p py:content="packageListings[0].package.description">Description</p>
-
     <p>Contents:
     <ul py:for="pkg in packageListings">
       <li><a py:attrs="{'href' : ''.join(
@@ -111,13 +121,7 @@ TODO='Not yet implemented'
                 <span py:if="not tg.identity.anonymous and (tg.identity.user.id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
-                    value="Release Ownership"/>
-                  <div py:attrs="{'name': str(pkg.name)}"
-                    class="requestContainer shouldopen">
-                    <input type="checkbox" name="shouldopen"
-                    py:attrs="{'checked': pkg.shouldopen}"/>
-                  </div>
-		    Open package during mass ACL open?
+                    value="Release Ownership" />
                 </span>
               </div>
             </div>
