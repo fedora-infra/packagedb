@@ -7,7 +7,7 @@
             <dl py:for="pkg in matches">
                 <dt><a href="${tg.url('/packages/%s/%s' % 
             (mode, pkg.package.name))}" py:content="pkg.package.name"></a></dt>
-                <dd><span py:replace="pkg.package.summary">Package Summary
+                <dd><span py:replace="pkg.package.description">Package Summary
                     </span>
                 -- collection: <a href="${tg.url('/packages/name/' + 
                 pkg.package.name + '#' + pkg.collection.name + 
