@@ -22,6 +22,7 @@
 '''
 Controller to search for packages and eventually users.
 '''
+import string
 
 import sqlalchemy
 from sqlalchemy.sql import func, and_, or_
@@ -47,46 +48,41 @@ class Search(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
 
-    @expose(template='pkgdb.templates.overview', allow_json=True)
+    @expose(template='pkgdb.templates.overview')
     def index(self):
-        '''Redirects to a page that displays all packages.
-        ''' 
+    # should display all packages or redirect to pkgdb/packages 
+    #    return dict(title=self.appTitle + ' -- All packages')
         redirect("/search/package/0/")
 
-    @expose(template='pkgdb.templates.search', allow_json=True)
+    @expose(template='pkgdb.templates.search')
     @validate(validators={'release':Int()})
     @paginate('packages', default_order=['package.name','collectionid'], 
             limit=50, max_pages=13)
-    def package(self, release, query=''):
-        '''Searches for packages
-           
-           This method returns a list of packages (PackageListing objects)
-           matching the given search words. Other information useful in the
-           view is also returned: 
-           :query: words that were used for the search
-           :count: number of packages
-           :release: long name of the release
-             
-           Arguments:
-           :query: this can be one or more words which will be used to
-           search in the packages' name and description for matches. If absent,
-           all packages from all collections will be returned.
-           :release: if the number is a valid PackageListing.collectionid, the
-           search will be limited to that release. Otherwise (eg "0"),
-           the search will return packages from all releases.
-        '''
- 
+    def package(self, searchon='both', release=0, searchwords='', and_or='and'):
+        # get an array of different words to search 
+        # and create the SQL-ready query
+        query = searchwords.split() 
+        query = '%' + string.join(query, '%') + '%'
         # perform case insensitive searches 
-        query = query.lower() 
-        matches = model.PackageListing.query.filter(and_(
-            model.PackageListing.packageid==model.Package.id,or_(
-                func.lower(model.Package.name).like('%'+query+'%'),
-                    func.lower(model.Package.description).like('%'+query+'%'))))
-         
+        query = query.lower()
+        # searches using AND operator
+        if searchon == 'description':
+            matches = model.PackageListing.query.filter(and_(
+                model.PackageListing.packageid==model.Package.id,
+                        func.lower(model.Package.description).like(query)))
+        elif searchon == 'names':
+            matches=model.PackageListing.query.filter(and_(
+                model.PackageListing.packageid==model.Package.id,
+                    func.lower(model.Package.name).like(query)))
+        else:
+            matches=model.PackageListing.query.filter(and_(
+                model.PackageListing.packageid==model.Package.id,or_(
+                    func.lower(model.Package.name).like(query),
+                        func.lower(model.Package.description).like(query))))
+        # FIXME searches using OR operator
+        
         # return only the packages in known collections or all of them
-        num_of_colls = sqlalchemy.select([model.PackageListing.collectionid], 
-                                    distinct=True).execute().rowcount
-        if release in range(1,num_of_colls):
+        if release in range(1,16):
            matches = matches.filter(model.PackageListing.collectionid==release)
            # this is a way to get the name and version of the release 
            # even when the search has no matches:
@@ -97,7 +93,8 @@ class Search(controllers.Controller):
            release = 'all'
         count = matches.count() 
         return dict(title=self.appTitle + ' -- Search packages for: ' + query,
-                   query=query,
+                   query=searchwords,
                    packages=matches,
                    count=count,
-                   release=release)
+                   release=release,
+                   searchon=searchon)
