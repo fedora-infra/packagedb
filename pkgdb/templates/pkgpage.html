@@ -112,8 +112,11 @@ TODO='Not yet implemented'
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
                     value="Release Ownership"/>
-		  <input type="checkbox" name="shouldopen"
-		    py:attrs="{'checked': pkg.shouldopen}"/>
+                  <div py:attrs="{'name': str(pkg.name)}"
+                    class="requestContainer shouldopen">
+                    <input type="checkbox" name="shouldopen"
+                    py:attrs="{'checked': pkg.shouldopen}"/>
+                  </div>
 		    Open package during mass ACL open?
                 </span>
               </div>
