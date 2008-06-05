@@ -27,7 +27,6 @@ from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
         StatusTranslation, GroupPackageListingAcl, PackageListing,
         PersonPackageListing, PersonPackageListingAcl,)
 
-CVSEXTRAS_ID = 100300
 ORPHAN_ID = 9900
 
 class AclList(object):
@@ -185,8 +184,8 @@ class Acls(controllers.Controller):
         groupAcls = select((
             # pylint: disable-msg=E1101
             Package.name,
-            Branch.branchname), and_(
-                GroupPackageListing.groupid == CVSEXTRAS_ID,
+            Branch.branchname,
+            GroupPackageListingAcl.groupid), and_(
                 GroupPackageListingAcl.acl == 'commit',
                 GroupPackageListingAcl.statuscode \
                         == self.approvedStatus,
@@ -202,11 +201,15 @@ class Acls(controllers.Controller):
                 )
             )
 
+        groups = {}
+
         # Save them into a python data structure
         for record in groupAcls.execute():
+            if not record[2] in groups:
+                groups[record[2]] = self.fas.group_by_id(record[2])['name']
             self._add_to_vcs_acl_list(packageAcls, 'commit',
                     record[0], record[1],
-                    'cvsextras', group=True)
+                    groups[record[2]], group=True)
         del groupAcls
 
         # Get the package owners from the db
