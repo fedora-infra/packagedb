@@ -835,13 +835,14 @@ class PackageDispatcher(controllers.Controller):
 
     @expose(allow_json=True)
     @identity.require(identity.not_anonymous())
-    def toggle_shouldopen(self, package):
+    def toggle_shouldopen(self, containerId):
         # Make sure the package exists
+        pkgName = containerId
         try:
-            pkg = model.Package.query.filter_by(name=package).one()
+            pkg = model.Package.query.filter_by(name=pkgName).one()
         except InvalidRequestError:
             return dict(status=False,
-                    message='Package %s does not exist' % package)
+                    message='Package %s does not exist' % pkgName)
         pkg.shouldopen = not pkg.shouldopen
         try:
             session.flush()

@@ -32,7 +32,7 @@ TODO='Not yet implemented'
         <form action="${tg.url('/packages/dispatcher/')}" method="POST">
           <div py:attrs="{'name': str(packageListings[0].package.name)}"
             class="requestContainer shouldopen">
-            <input type="checkbox" name="shouldopen"
+            <input type="checkbox" name="shouldopen" class="shouldOpenBox"
               py:attrs="{'checked': packageListings[0].package.shouldopen}" />
           </div>
         </form>

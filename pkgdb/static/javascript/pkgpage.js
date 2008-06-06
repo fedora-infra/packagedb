@@ -326,7 +326,7 @@ function toggle_shouldopen(ignored, data) {
 }
 
 function toggle_shouldopen_failure(ignored, data) {
-    var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldopen').first();
+    var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldOpenBox')[0];
     shouldOpenBox.checked = !shouldOpenBox.checked
     display_error(null, data);
 }
@@ -470,8 +470,8 @@ jQuery(document).ready(function() {
         connect(statusBoxes[statusNum], 'onfocus', save_status);
     }
 
-    var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldopen').first();
-    connect(shouldOpenBox, 'onchange', partial(make_request, '/set_shouldopen',
+    var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldOpenBox')[0];
+    connect(shouldOpenBox, 'onchange', partial(make_request, '/toggle_shouldopen',
 			    toggle_shouldopen, toggle_shouldopen_failure));
 
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
