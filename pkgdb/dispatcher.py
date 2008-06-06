@@ -843,9 +843,13 @@ class PackageDispatcher(controllers.Controller):
         except InvalidRequestError:
             return dict(status=False,
                     message='Package %s does not exist' % pkgName)
+
         # Check that the user has rights to set this field
-        if not (identity.in_group('approveacls') or identity.current.user.id == pkg.owner):
-            return dict(status=False, shouldopen=shouldopen)
+        owners = [x.owner for x in pkg.listings]
+
+        if not (self._user_in_approveacls(pkg) or identity.current.user.id in owners):
+            return dict(status=False, message="Permission denied")
+
         pkg.shouldopen = not pkg.shouldopen
         try:
             session.flush()
@@ -855,6 +859,15 @@ class PackageDispatcher(controllers.Controller):
                     message='Unable to modify PackageListing %s in %s' \
                             % (pkgList.id, pkgList.collection.id))
         return dict(status=True, shouldopen=shouldopen)
+
+    def _user_in_approveacls(self, pkg):
+        for people in [x.people for x in pkg.listings]:
+            for person in people:
+                if person.userid == identity.current.user.id:
+                    for acl in person.acls:
+                        if acl.acl == 'approveacls' and acl.status == approvedStatus.statuscodeid:
+                            return True
+        return False
 
     @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.
