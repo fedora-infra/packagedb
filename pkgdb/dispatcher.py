@@ -843,6 +843,9 @@ class PackageDispatcher(controllers.Controller):
         except InvalidRequestError:
             return dict(status=False,
                     message='Package %s does not exist' % pkgName)
+        # Check that the user has rights to set this field
+        if not (identity.in_group('approveacls') or identity.current.user.id == pkg.owner):
+            return dict(status=False, shouldopen=shouldopen)
         pkg.shouldopen = not pkg.shouldopen
         try:
             session.flush()
