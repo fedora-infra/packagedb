@@ -865,7 +865,7 @@ class PackageDispatcher(controllers.Controller):
             for person in people:
                 if person.userid == identity.current.user.id:
                     for acl in person.acls:
-                        if acl.acl == 'approveacls' and acl.status == approvedStatus.statuscodeid:
+                        if acl.acl == 'approveacls' and acl.status == self.approvedStatus.statuscodeid:
                             return True
         return False
 
