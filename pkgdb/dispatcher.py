@@ -55,9 +55,11 @@ class PackageDispatcher(controllers.Controller):
     # Create a list of groups that can possibly commit to packages
     groups = {100300: 'cvsextras',
             101197: 'cvsadmin',
+            107427: 'uberpackager'
             'cvsextras': 100300,
-            'cvsadmin': 101197}
-    groupnames = ('cvsextras', 'packager', 'cvsadmin')
+            'cvsadmin': 101197,
+            'uberpackager': 107427}
+    groupnames = ('cvsextras', 'packager', 'cvsadmin', 'uberpackager')
 
     # Status codes
     addedStatus = model.StatusTranslation.query.filter_by(
@@ -547,7 +549,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Check that the group is one that we allow access to packages
         if groupId not in self.groups:
-            return dict(status=False, message='%s is not a group that can'
+            return dict(status=False, message='%s is not a group that can '
                     'commit to packages' % groupId)
 
         #
@@ -843,6 +845,15 @@ class PackageDispatcher(controllers.Controller):
         except InvalidRequestError:
             return dict(status=False,
                     message='Package %s does not exist' % pkgName)
+
+        # Check that the user has rights to set this field
+        # cvsadmin, owner on any branch, or approveacls holder
+        if not identity.in_any_group('cvsadmin'):
+            owners = [x.owner for x in pkg.listings]
+            if not (self._user_in_approveacls(pkg) or
+                    identity.current.user.id in owners):
+                return dict(status=False, message="Permission denied")
+
         pkg.shouldopen = not pkg.shouldopen
         try:
             session.flush()
@@ -851,7 +862,16 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False,
                     message='Unable to modify PackageListing %s in %s' \
                             % (pkgList.id, pkgList.collection.id))
-        return dict(status=True, shouldopen=shouldopen)
+        return dict(status=True, shouldopen=pkg.shouldopen)
+
+    def _user_in_approveacls(self, pkg):
+        for people in [x.people for x in pkg.listings]:
+            for person in people:
+                if person.userid == identity.current.user.id:
+                    for acl in person.acls:
+                        if acl.acl == 'approveacls' and acl.status == self.approvedStatus.statuscodeid:
+                            return True
+        return False
 
     @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.

@@ -32,7 +32,7 @@ TODO='Not yet implemented'
       - -->
       <tr py:if="not tg.identity.anonymous and ('cvsadmin' in tg.identity.groups or True)"><th>
 		    Open package during mass ACL open?
-      </th><td py:if="not tg.identity.anonymous and (tg.identity.user.id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
+      </th><td>
         <form action="${tg.url('/packages/dispatcher/')}" method="POST">
           <div py:attrs="{'name': str(packageListings[0].package.name)}"
             class="requestContainer shouldopen">
