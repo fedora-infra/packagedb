@@ -185,7 +185,7 @@ class Acls(controllers.Controller):
             # pylint: disable-msg=E1101
             Package.name,
             Branch.branchname,
-            GroupPackageListingAcl.groupid), and_(
+            GroupPackageListing.groupid), and_(
                 GroupPackageListingAcl.acl == 'commit',
                 GroupPackageListingAcl.statuscode \
                         == self.approvedStatus,
