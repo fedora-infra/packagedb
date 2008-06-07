@@ -55,9 +55,11 @@ class PackageDispatcher(controllers.Controller):
     # Create a list of groups that can possibly commit to packages
     groups = {100300: 'cvsextras',
             101197: 'cvsadmin',
+            107427: 'uberpackager'
             'cvsextras': 100300,
-            'cvsadmin': 101197}
-    groupnames = ('cvsextras', 'packager', 'cvsadmin')
+            'cvsadmin': 101197,
+            'uberpackager': 107427}
+    groupnames = ('cvsextras', 'packager', 'cvsadmin', 'uberpackager')
 
     # Status codes
     addedStatus = model.StatusTranslation.query.filter_by(
@@ -547,7 +549,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Check that the group is one that we allow access to packages
         if groupId not in self.groups:
-            return dict(status=False, message='%s is not a group that can'
+            return dict(status=False, message='%s is not a group that can '
                     'commit to packages' % groupId)
 
         #
