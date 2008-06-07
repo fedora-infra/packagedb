@@ -845,10 +845,12 @@ class PackageDispatcher(controllers.Controller):
                     message='Package %s does not exist' % pkgName)
 
         # Check that the user has rights to set this field
-        owners = [x.owner for x in pkg.listings]
-
-        if not (self._user_in_approveacls(pkg) or identity.current.user.id in owners):
-            return dict(status=False, message="Permission denied")
+        # cvsadmin, owner on any branch, or approveacls holder
+        if not identity.in_any_group('cvsadmin'):
+            owners = [x.owner for x in pkg.listings]
+            if not (self._user_in_approveacls(pkg) or
+                    identity.current.user.id in owners):
+                return dict(status=False, message="Permission denied")
 
         pkg.shouldopen = not pkg.shouldopen
         try:
@@ -858,7 +860,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False,
                     message='Unable to modify PackageListing %s in %s' \
                             % (pkgList.id, pkgList.collection.id))
-        return dict(status=True, shouldopen=shouldopen)
+        return dict(status=True, shouldopen=pkg.shouldopen)
 
     def _user_in_approveacls(self, pkg):
         for people in [x.people for x in pkg.listings]:
