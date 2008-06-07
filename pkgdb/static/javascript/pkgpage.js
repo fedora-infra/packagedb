@@ -322,7 +322,7 @@ function revert_groupacl_request(aclBoxDiv, data) {
 }
 
 function toggle_shouldopen(ignored, data) {
-	if (data.status == False) toggle_shouldopen_failure(ignored, data);
+	if (data.status == false) toggle_shouldopen_failure(ignored, data);
 }
 
 function toggle_shouldopen_failure(ignored, data) {
