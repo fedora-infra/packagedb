@@ -1,7 +1,7 @@
 -- Fedora Package Database
 -- Version 0.5
 
--- Copyright © 2007  Red Hat, Inc. All rights reserved.
+-- Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 --
 -- This copyrighted material is made available to anyone wishing to use, modify,
 -- copy, or redistribute it subject to the terms and conditions of the GNU
@@ -428,6 +428,7 @@ create table Package (
   description text,
   reviewURL text,
   statuscode integer not null,
+  shouldopen boolean not null default true,
   foreign key (statuscode) references PackageStatusCode(statusCodeId)
     on delete restrict on update cascade
 );

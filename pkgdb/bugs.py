@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -27,9 +27,11 @@ from urllib import quote
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
+from sqlalchemy.exceptions import InvalidRequestError
 import bugzilla
 
 from pkgdb import model
+from cherrypy import request
 
 import logging
 log = logging.getLogger('pkgdb.controllers')
@@ -43,10 +45,22 @@ class BugList(list):
     '''
 
     def __init__(self, queryUrl, publicUrl):
+        super(BugList, self).__init__()
         self.queryUrl = queryUrl
         self.publicUrl = publicUrl
 
     def __convert(self, bug):
+        '''Convert bugs from the raw form retrieved from python-bugzilla to
+        one that is consumable by a normal python program.
+
+        This involves converting byte strings to unicode type and substituting
+        any private URLs returned into a public URL.  (This occurs when we
+        have to call bugzilla via one name on the internal network but someone
+        clicking on the link in a web page needs to use a different address.)
+
+        Arguments:
+        :bug: A bug record returned from the python-bugzilla interface.
+        '''
         if not isinstance(bug, bugzilla.Bug):
             raise TypeError('Can only store bugzilla.Bug type')
         if self.queryUrl != self.publicUrl:
@@ -56,33 +70,43 @@ class BugList(list):
             bug.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
         except TypeError:
             bug.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
-        return {'url': bug.url, 'bug_status': bug.bug_status, 'short_short_desc': bug.short_short_desc, 'bug_id': bug.bug_id}
+        return {'url': bug.url, 'bug_status': bug.bug_status,
+                'short_short_desc': bug.short_short_desc, 'bug_id': bug.bug_id}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
         super(BugList, self).__setitem__(index, bug)
 
     def append(self, bug):
+        '''Override the default append() to convert URLs and unicode.
+
+        Just like __setitem__(), we need to call our __convert() method when
+        adding a new bug via append().  This makes sure that we convert urls
+        to the public address and convert byte strings to unicode.
+        '''
         bug = self.__convert(bug)
         super(BugList, self).append(bug)
 
 class Bugs(controllers.Controller):
     '''Display information related to individual packages.
     '''
+    bzUrl = config.get('bugzilla.url',
+                'https://bugzilla.redhat.com/')
+    bzQueryUrl = config.get('bugzilla.queryurl', bzUrl)
+
+    # pylint: disable-msg=E1101
+    removedStatus = model.StatusTranslation.query.filter_by(
+            statusname='Removed', language='C').first().statuscodeid
+    # pylint: enable-msg=E1101
+
     def __init__(self, appTitle=None):
         '''Create a Packages Controller.
 
         :fas: Fedora Account System object.
         :appTitle: Title of the web app.
         '''
-        self.bzUrl = config.get('bugzilla.url',
-                'https://bugzilla.redhat.com/')
-        self.bzQueryUrl = config.get('bugzilla.queryurl', self.bzUrl)
-
         self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.appTitle = appTitle
-        self.removedStatus = model.StatusTranslation.query.filter_by(
-                statusname='Removed', language='C').first().statuscodeid
 
     @expose(template='pkgdb.templates.bugoverview')
     @paginate('packages', default_order='name', limit=100,
@@ -90,8 +114,10 @@ class Bugs(controllers.Controller):
     def index(self):
         '''Display a list of packages with a link to bug reports for each.'''
         # Retrieve the list of packages minus removed packages
+        # pylint: disable-msg=E1101
         packages = model.Package.query.filter(
                 model.Package.c.statuscode!=self.removedStatus)
+        # pylint: enable-msg=E1101
 
         return dict(title=self.appTitle + ' -- Package Bug Pages',
                 bzurl=self.bzUrl, packages=packages)
@@ -122,6 +148,18 @@ class Bugs(controllers.Controller):
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
         for bug in rawBugs:
             bugs.append(bug)
+
+        if not bugs:
+            # Check that the package exists
+            try:
+                package = model.Package.query.filter_by(name=packageName).one()
+            except InvalidRequestError:
+                error = dict(status = False,
+                        title = self.appTitle + ' -- Not a Valid Package Name',
+                        message='No such package %s' % packageName)
+                if request.params.get('tg_format', 'html') != 'json':
+                    error['tg_template'] = 'pkgdb.templates.errors'
+                return error
 
         return dict(title='%s -- Open Bugs for %s' %
                 (self.appTitle, packageName), package=packageName,

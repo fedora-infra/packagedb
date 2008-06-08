@@ -4,8 +4,8 @@ Fedora PackageDB
 
 :Author: Toshio Kuratomi
 :Contact: toshio@fedoraproject.org
-:Date: Friday, 21 September, 2007
-:Version: 0.3.1
+:Date: Friday, 27 April, 2008
+:Version: 0.3.3
 
 The `PackageDB` keeps track of package ownership within Fedora.
 
@@ -50,11 +50,54 @@ Although it's not working yet, the goal is to be able to run::
 
 and have a working installation.
 
---------
-Starting
---------
+Running from a Checkout
+=======================
 
-This is a TurboGears (http://www.turbogears.org) project. It can be
-started by running the start-pkgdb.py script.  By default it uses the values
-in pkgdb/config/app.cfg and dev.cfg to configure itself.  You can specify a
-config file instead of dev.cfg on the command line.
+If you want to run from a checkout, you can perform the following commands::
+
+Install Prerequisites
+~~~~~~~~~~~~~~~~~~~~~
+::
+  yum -y install python-genshi TurboGears python-turbojson postgresql-server \
+    python-TurboMail python-bugzilla python-fedora python-psycopg2 \
+    python-sqlalchemy python-feedparser
+
+Get and Build the Source
+~~~~~~~~~~~~~~~~~~~~~~~~
+::
+  bzr branch bzr://bzr.fedorahosted.org/bzr/packagedb/fedora-packagedb-devel
+  cd fedora-packagedb-devel
+  python setup.py egg_info
+  python setup.py build --install-conf=`pwd` --install-data=`pwd`
+
+Setup the Database
+~~~~~~~~~~~~~~~~~~
+Make sure there's a line in your /var/lib/pgsql/data/pg_hba.conf that says::
+
+  host	all	all	127.0.0.1/32	md5
+
+It might look like this now::
+
+  host	all 	all	127.0.0.1/32	ident sameuser
+
+Create the postgres user that you'll set in the config file::
+
+  sudo /etc/init.d/postgresql start
+  sudo -u postgres createuser -P -E pkgdbadmin
+
+Get some tet data and import it into the database::
+  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20080422.dump.bz2
+  bzcat pkgdb-20080422.dump.bz2 | sudo -u postgres psql
+
+Start the Server
+~~~~~~~~~~~~~~~~
+First you need to configure the server to see your database.  You'll need to
+set fas.username to a username (your Fedora Account System username will work),
+fas.password (if you use your username, your password will work), and
+sqlalchemy.dburi.  The dburi line will be something like this::
+
+  sqlalchemy.dburi="postgres://pkgdbadmin:testpassword@localhost/pkgdb"
+
+Then start the server::
+
+  python start-pkgdb

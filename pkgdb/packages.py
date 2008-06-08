@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -52,6 +52,8 @@ class Packages(controllers.Controller):
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
     def index(self):
+        '''Return a list of all packages in the database.
+        '''
         # Retrieve the list of packages minus removed packages
         packages = model.Package.query.filter(
                 model.Package.c.statuscode!=self.removedStatus)
@@ -61,6 +63,20 @@ class Packages(controllers.Controller):
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
+        '''Retrieve Packages by their name.
+
+        This method returns ownership and acl information about a package.
+        When given optional arguments the information can be limited by what
+        collections they are present in.
+
+        Arguments:
+        :packageName: Name of the package to lookup
+        :collectionName: If given, limit information to branches for this
+            distribution.
+        :collectionVersion: If given, limit information to this particular
+            version of a distribution.  Has no effect if collectionName is not
+            also specified.
+        '''
         # Return the information about a package.
         package = model.Package.query.filter(
                 model.Package.c.statuscode!=self.removedStatus).filter_by(
@@ -73,8 +89,7 @@ class Packages(controllers.Controller):
                         ' If you received this error from a link on the' \
                         ' fedoraproject.org website, please report it.' %
                         packageName)
-            if not ('tg_format' in request.params and
-                    request.params['tg_format'] == 'json'):
+            if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
 
@@ -88,8 +103,7 @@ class Packages(controllers.Controller):
                         title=self.appTitle + ' -- Not a Collection',
                         message='%s %s is not a Collection.' %
                         (collectionName, collectionVersion or ''))
-                if not ('tg_format' in request.params and
-                        request.params['tg_format'] == 'json'):
+                if request.params.get('tg_format', 'html') != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
@@ -97,7 +111,7 @@ class Packages(controllers.Controller):
         aclNames = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # Possible statuses for acls:
         aclStatus = model.PackageAclStatus.query.all()
-        aclStatusTranslations=['']
+        aclStatusTranslations = ['']
         for status in aclStatus:
             ### FIXME: At some point, we have to pull other translations out,
             # not just C
@@ -118,8 +132,7 @@ class Packages(controllers.Controller):
                         message='The package %s is not in Collection %s %s.' %
                         (packageName, collectionName, collectionVersion or '')
                         )
-                if not ('tg_format' in request.params and
-                        request.params['tg_format'] == 'json'):
+                if request.params.get('tg_format', 'html') != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
@@ -199,7 +212,12 @@ class Packages(controllers.Controller):
                 aclNames=aclNames, aclStatus=aclStatusTranslations)
 
     @expose(template='pkgdb.templates.pkgpage')
-    def id(self, packageId):
+    def id(self, packageId): # pylint: disable-msg=C0103
+        '''Return the package with the given id
+
+        Arguments:
+        :packageId: The numeric id for the package to return information for
+        '''
         try:
             packageId = int(packageId)
         except ValueError:

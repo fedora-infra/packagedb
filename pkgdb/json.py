@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -31,10 +31,19 @@ implemented via the __json__() methods in model.py
 # lists, dicts, numbers and strings
 
 import sqlalchemy
-from sqlalchemy import orm
 from turbojson.jsonify import jsonify
 
 class SABase(object):
+    '''Base class for SQLAlchemy mapped objects.
+
+    This base class makes sure we have a __json__() method on each SQLAlchemy
+    mapped object that knows how to::
+
+    1) return json for the object.
+    2) Can selectively add tables pulled in from the table to the data we're
+       returning.
+    '''
+    # pylint: disable-msg=R0903
     def __json__(self):
         '''Transform any SA mapped class into json.
 
@@ -58,28 +67,33 @@ class SABase(object):
             john.jsonProps = {'Person': ['addresses'], 'Address': ['people']}
         '''
         props = {}
-        if 'jsonProps' in self.__dict__ and self.jsonProps.has_key(
-            self.__class__.__name__):
+        # pylint: disable-msg=E1101
+        if 'jsonProps' in self.__dict__ \
+                and self.jsonProps.has_key(self.__class__.__name__):
             propList = self.jsonProps[self.__class__.__name__]
         else:
             propList = {}
+        # pylint: enable-msg=E1101
        
         # Load all the columns from the table
-        for key in self.mapper.props.keys():
-            if isinstance(self.mapper.props[key], orm.properties.ColumnProperty):
+        for key in self.mapper.props.keys(): # pylint: disable-msg=E1101
+            if isinstance(self.mapper.props[key], # pylint: disable-msg=E1101
+                    sqlalchemy.orm.properties.ColumnProperty):
                 props[key] = getattr(self, key)
         # Load things that are explicitly listed
         for field in propList:
             props[field] = getattr(self, field)
             try:
+                # pylint: disable-msg=E1101
                 props[field].jsonProps = self.jsonProps
-            except AttributeError:
+            except AttributeError: # pylint: disable-msg=W0704
                 # Certain types of objects are terminal and won't allow setting
                 # jsonProps
                 pass
         return props
 
-@jsonify.when("isinstance(obj,sqlalchemy.orm.query.Query) or isinstance(obj, sqlalchemy.ext.selectresults.SelectResults)")
+@jsonify.when("isinstance(obj, sqlalchemy.orm.query.Query)" \
+        " or isinstance(obj, sqlalchemy.ext.selectresults.SelectResults)")
 def jsonify_sa_select_results(obj):
     '''Transform selectresults into lists.
     
@@ -102,5 +116,5 @@ def jsonify_salist(obj):
     '''
     if 'jsonProps' in obj.__dict__:
         for element in obj:
-           element.jsonProps = obj.jsonProps
-    return map(jsonify, obj)
+            element.jsonProps = obj.jsonProps
+    return [jsonify(element) for element in  obj]

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -22,21 +22,19 @@ Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
 
-import sqlalchemy
-import sqlalchemy.mods.selectresults
-from turbogears import controllers, expose, paginate, config
+from turbogears import controllers, expose, config
+from turbogears.i18n.tg_gettext import gettext as _
 from turbogears import identity, redirect
-from turbogears.database import session
 from cherrypy import request, response
 import logging
 
-from pkgdb import model
 from pkgdb import release
 
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
 from pkgdb.packages import Packages
 from pkgdb.users import Users
+from pkgdb.stats import Stats
 
 log = logging.getLogger("pkgdb.controllers")
 
@@ -69,12 +67,15 @@ class UserCache(dict):
 
         If the user does not exist then, KeyError will be raised.
         '''
-        log.debug('UserCache: read from cache')
         if user_id not in self:
             self.force_refresh()
         return super(UserCache, self).__getitem__(user_id)
 
 class Root(controllers.RootController):
+    '''Toplevel controller for the PackageDB
+
+    All URLs to be served must be mounted somewhere under this controller.
+    '''
     appTitle = 'Fedora Package Database'
 
     baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
@@ -88,46 +89,67 @@ class Root(controllers.RootController):
     collections = Collections(fas, appTitle)
     packages = Packages(fas, appTitle)
     users = Users(fas, appTitle)
+    stats = Stats(fas, appTitle)
 
     @expose(template='pkgdb.templates.overview')
     def index(self):
-        return dict(title=self.appTitle, version=release.version)
+        '''Overview of the PackageDB.
+
+        This page serves as an overview of the entire PackageDB.  It needs to
+        tell developers where to get more information on their packages.
+        '''
+        return dict(title=self.appTitle, version=release.VERSION)
 
     @expose(template="pkgdb.templates.login", allow_json=True)
-    def login(self, forward_url=None, previous_url=None, *args, **kw):
-        if not identity.current.anonymous \
-            and identity.was_login_attempted() \
-            and not identity.get_identity_errors():
-                # User is logged in
-                if 'tg_format' in request.params and request.params['tg_format'] == 'json':
-                    # When called as a json method, doesn't make any sense to
-                    # redirect to a page.  Returning the logged in identity
-                    # is better.
-                    return dict(user = identity.current.user)
-                if not forward_url:
-                    forward_url=config.get('base_url_filter.base_url') + '/'
-                raise redirect(forward_url)
+    def login(self, forward_url=None, previous_url=None, *args, **kwargs):
+        '''Page to become authenticated to the PackageDB.
+
+        This shows a small login box to type in your username and password
+        from the Fedora Account System.
         
-        forward_url=None
-        previous_url=request.path
+        Arguments:
+        :forward_url: The url to send to once authentication succeeds
+        :previous_url: The url that sent us to the login page
+        '''
+        # pylint: disable-msg=R0201
+        if not identity.current.anonymous \
+                and identity.was_login_attempted() \
+                and not identity.get_identity_errors():
+            # User is logged in
+            if 'tg_format' in request.params \
+                    and request.params['tg_format'] == 'json':
+                # When called as a json method, doesn't make any sense to
+                # redirect to a page.  Returning the logged in identity
+                # is better.
+                return dict(user = identity.current.user)
+            if not forward_url:
+                forward_url = config.get('base_url_filter.base_url') + '/'
+            raise redirect(forward_url)
+        
+        forward_url = None
+        previous_url = request.path
 
         if identity.was_login_attempted():
-            msg=_("The credentials you supplied were not correct or "
+            msg = _("The credentials you supplied were not correct or "
                    "did not grant access to this resource.")
         elif identity.get_identity_errors():
-            msg=_("You must provide your credentials before accessing "
+            msg = _("You must provide your credentials before accessing "
                    "this resource.")
         else:
-            msg=_("Please log in.")
-            forward_url= request.headers.get("Referer", "/")
+            msg = _("Please log in.")
+            forward_url = request.headers.get("Referer", "/")
 
         response.status=403
         return dict(message=msg, previous_url=previous_url, logging_in=True,
                     original_parameters=request.params,
-                    forward_url=forward_url, title='Fedora Account System Login')
+                    forward_url=forward_url,
+                    title='Fedora Account System Login')
 
     @expose()
     def logout(self):
+        '''Logout from the database.
+        '''
+        # pylint: disable-msg=R0201
         identity.current.logout()
         raise redirect(request.headers.get("Referer","/"))
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -45,8 +45,19 @@ class StatusTranslation(SABase):
     
     Table -- StatusCodeTranslation
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, statuscodeid, statusname, language=None,
             description=None):
+        '''
+        :statuscodeid: id of the status this translation applies to
+        :statusname: translated string
+        :language: Languages code that this string is for.  if not given.
+            defaults to 'C'
+        :description: a description of what this status means.  May be used in
+            online help.  
+        '''
+        # pylint: disable-msg=R0913
+        super(StatusTranslation, self).__init__()
         self.statuscodeid = statuscodeid
         self.statusname = statusname
         self.language = language or None
@@ -58,7 +69,11 @@ class StatusTranslation(SABase):
                         self.description)
 
 class BaseStatus(SABase):
+    '''Fields common to all Statuses.'''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, statuscodeid):
+        # pylint: disable-msg=R0913
+        super(BaseStatus, self).__init__()
         self.statuscodeid = statuscodeid
 
 class CollectionStatus(BaseStatus):
@@ -66,6 +81,7 @@ class CollectionStatus(BaseStatus):
 
     Table -- CollectionStatusCode
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'CollectionStatus(%s)' % self.statuscodeid
 
@@ -74,6 +90,7 @@ class PackageStatus(BaseStatus):
 
     Table -- PackageStatusCode
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'PackageStatus(%s)' % self.statuscodeid
 
@@ -82,6 +99,7 @@ class PackageListingStatus(BaseStatus):
 
     Table -- PackageListingStatusCode
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'PackageListingStatus(%s)' % self.statuscodeid
 
@@ -90,6 +108,7 @@ class PackageAclStatus(BaseStatus):
 
     Table -- PackageAclStatusCode
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'PackageAclStatus(%s)' % self.statuscodeid
 
@@ -102,9 +121,12 @@ class Collection(SABase):
 
     Table -- Collection
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, name, version, statuscode, owner,
             publishurltemplate=None, pendingurltemplate=None, summary=None,
             description=None):
+        # pylint: disable-msg=R0913
+        super(Collection, self).__init__()
         self.name = name
         self.version = version
         self.statuscode = statuscode
@@ -130,12 +152,14 @@ class Branch(Collection):
 
     Table -- Branch
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, collectionid, branchname, disttag, parentid, *args):
+        # pylint: disable-msg=R0913
+        super(Branch, self).__init__(args)
         self.collectionid = collectionid
         self.branchname = branchname
         self.disttag = disttag
         self.parentid = parentid
-        Collection.__init__(self, args)
     
     def __repr__(self):
         return 'Branch(%s, "%s", "%s", %s, "%s", "%s", "%s", "%s",' \
@@ -151,7 +175,9 @@ class CollectionPackage(SABase):
 
     View -- CollectionPackage
     '''
+    # pylint: disable-msg=R0902, R0903
     def __repr__(self):
+        # pylint: disable-msg=E1101
         return 'CollectionPackage(id="%s", name="%s", version="%s",' \
                 ' statuscode="%s", numpkgs="%s",' % (
                 self.id, self.name, self.version, self.statuscode,
@@ -169,26 +195,34 @@ class Package(SABase):
 
     Table -- Package
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, name, summary, statuscode, description=None,
             reviewurl=None):
+        # pylint: disable-msg=R0913
+        super(Package, self).__init__()
         self.name = name
         self.summary = summary
         self.statuscode = statuscode
         self.description = description
         self.reviewurl = reviewurl
-
+        self.shouldopen = shouldopen
+    
     def __repr__(self):
-        return 'Package("%s", "%s", %s, description="%s", reviewurl="%s")' % (
+        return 'Package("%s", "%s", %s, description="%s", reviewurl="%s", ' \
+               'shouldopen="%s")' % (
                 self.name, self.summary, self.statuscode, self.description,
-                self.reviewurl)
-
+                self.reviewurl, self.shouldopen)
+ 
 class PackageListing(SABase):
     '''This associates a package with a particular collection.
 
     Table -- PackageListing
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, owner, statuscode, packageid=None, collectionid=None,
             qacontact=None):
+        # pylint: disable-msg=R0913
+        super(PackageListing, self).__init__()
         self.packageid = packageid
         self.collectionid = collectionid
         self.owner = owner
@@ -211,7 +245,10 @@ class PersonPackageListing(SABase):
 
     Table -- PersonPackageListing
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, packagelistingid=None):
+        # pylint: disable-msg=R0913
+        super(PersonPackageListing, self).__init__()
         self.userid = userid
         self.packagelistingid = packagelistingid
 
@@ -224,7 +261,10 @@ class GroupPackageListing(SABase):
 
     Table -- GroupPackageListing
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, groupid, packagelistingid=None):
+        # pylint: disable-msg=R0913
+        super(GroupPackageListing, self).__init__()
         self.groupid = groupid
         self.packagelistingid = packagelistingid
 
@@ -237,7 +277,10 @@ class PersonPackageListingAcl(SABase):
 
     Table -- PersonPackageListingAcl
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, acl, statuscode=None, personpackagelistingid=None):
+        # pylint: disable-msg=R0913
+        super(PersonPackageListingAcl, self).__init__()
         self.personpackagelistingid = personpackagelistingid
         self.acl = acl
         self.statuscode = statuscode
@@ -251,7 +294,10 @@ class GroupPackageListingAcl(SABase):
 
     Table -- GroupPackageListingAcl
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, acl, statuscode=None, grouppackagelistingid=None):
+        # pylint: disable-msg=R0913
+        super(GroupPackageListingAcl, self).__init__()
         self.grouppackagelistingid = grouppackagelistingid
         self.acl = acl
         self.statuscode = statuscode
@@ -271,7 +317,10 @@ class Log(SABase):
 
     Table -- Log
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, description=None, changetime=None):
+        # pylint: disable-msg=R0913
+        super(Log, self).__init__()
         self.userid = userid
         self.description = description
         self.changetime = changetime
@@ -285,9 +334,11 @@ class PackageLog(Log):
 
     Table -- PackageLog
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, action, description=None, changetime=None,
             packageid=None):
-        Log.__init__(self, userid, description, changetime)
+        # pylint: disable-msg=R0913
+        super(PackageLog, self).__init__(userid, description, changetime)
         self.action = action
         self.packageid = packageid
     
@@ -301,9 +352,11 @@ class PackageListingLog(Log):
 
     Table -- PackageListingLog
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, action, description=None, changetime=None,
             packagelistingid=None):
-        Log.__init__(self, userid, description, changetime)
+        # pylint: disable-msg=R0913
+        super(PackageListingLog, self).__init__(userid, description, changetime)
         self.action = action
         self.packagelistingid = packagelistingid
 
@@ -318,9 +371,12 @@ class PersonPackageListingAclLog(Log):
 
     Table -- PersonPackageListingAcl
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, action, description=None, changetime=None,
             personpackagelistingaclid=None):
-        Log.__init__(self, userid, description, changetime)
+        # pylint: disable-msg=R0913
+        super(PersonPackageListingAclLog, self).__init__(userid, description,
+                changetime)
         self.action = action
         self.personpackagelistingaclid = personpackagelistingaclid
 
@@ -335,9 +391,12 @@ class GroupPackageListingAclLog(Log):
 
     Table -- GroupPackageListingAclLog
     '''
+    # pylint: disable-msg=R0902, R0903
     def __init__(self, userid, action, description=None, changetime=None,
             grouppackagelistingaclid=None):
-        Log.__init__(self, userid, description, changetime)
+        # pylint: disable-msg=R0913
+        super(GroupPackageListingAclLog, self).__init__(userid, description,
+                changetime)
         self.action = action
         self.grouppackagelistingaclid = grouppackagelistingaclid
 
@@ -357,6 +416,11 @@ class GroupPackageListingAclLog(Log):
 
 # These are a bit convoluted as we have a 1:1:N relation between
 # SpecificStatusTable:StatusCodeTable:StatusTranslationTable
+
+# I'd like to merely override the pylint regex for this particular section of
+# code as # these variables are special.  They chould be treated more like
+# class definitions than constants.  Oh well.
+# pylint: disable-msg=C0103
 StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
 
 CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
@@ -384,7 +448,8 @@ collectionJoin = polymorphic_union (
 #
 CollectionPackageTable = Table('collectionpackage', metadata,
         Column('id', Integer, primary_key=True),
-        Column('statuscode', Integer, ForeignKey('collectionstatuscode.statuscodeid')),
+        Column('statuscode', Integer,
+            ForeignKey('collectionstatuscode.statuscodeid')),
         autoload=True)
 
 # Package and PackageListing are straightforward translations.  Look at these
@@ -396,7 +461,8 @@ PackageListingTable = Table('packagelisting', metadata, autoload=True)
 # connect translations to the statuses particular to the PackageListing.  This
 # make it somewhat more convoluted but all the status tables follow the same
 # pattern.
-PackageListingStatusTable = Table('packagelistingstatuscode', metadata, autoload=True)
+PackageListingStatusTable = Table('packagelistingstatuscode', metadata,
+        autoload=True)
 
 # Package Status Table.
 PackageStatusTable = Table('packagestatuscode', metadata, autoload=True)
@@ -514,7 +580,8 @@ logMapper = mapper(Log, LogTable, select_table=logJoin,
         polymorphic_on=logJoin.c.kind, polymorphic_identity='log')
 mapper(PersonPackageListingAclLog, PersonPackageListingAclLogTable,
         inherits=logMapper,
-        inherit_condition=LogTable.c.id==PersonPackageListingAclLogTable.c.logid,
+        inherit_condition = LogTable.c.id == \
+                PersonPackageListingAclLogTable.c.logid,
         polymorphic_identity='personpkglistacllog',
         properties={'acl': relation(PersonPackageListingAcl, backref='logs')})
 mapper(GroupPackageListingAclLog, GroupPackageListingAclLogTable,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -21,14 +21,20 @@
 Send acl information to third party tools.
 '''
 
-import sqlalchemy
+from sqlalchemy import select, and_
 from turbogears import controllers, expose
-from pkgdb import model
+from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
+        StatusTranslation, GroupPackageListingAcl, PackageListing,
+        PersonPackageListing, PersonPackageListingAcl,)
 
-CVSEXTRAS_ID=100300
-ORPHAN_ID=9900
+ORPHAN_ID = 9900
 
 class AclList(object):
+    '''List of people and groups who hold this acl.
+    '''
+    ### FIXME: Reevaluate whether we need this data structure at all.  Once
+    # jsonified, it is transformed into a dict of lists so it might not be
+    # good to do it this way.
     def __init__(self, people=None, groups=None):
         self.people = people or []
         self.groups = groups or []
@@ -39,6 +45,8 @@ class AclList(object):
                 }
 
 class BugzillaInfo(object):
+    '''Information necessary to construct a bugzilla record for a package.
+    '''
     def __init__(self, owner=None, summary=None, cclist=None, qacontact=None):
         self.owner = owner
         self.summary = summary
@@ -53,21 +61,39 @@ class BugzillaInfo(object):
                 }
 
 class Acls(controllers.Controller):
-    approvedStatus = model.StatusTranslation.query.filter_by(
+    '''Controller for lists of acl/owner information needed by external tools.
+
+    Although these methods can return web pages, the main feature is the json
+    and plain text that they return as the main usage of this is for external
+    tools to take data for their use.
+    '''
+    # pylint: disable-msg=E1101
+    approvedStatus = StatusTranslation.query.filter_by(
             statusname='Approved', language='C').one().statuscodeid
-    removedStatus = model.StatusTranslation.query.filter_by(
+    removedStatus = StatusTranslation.query.filter_by(
             statusname='Removed', language='C').one().statuscodeid
-    activeStatus = model.StatusTranslation.query.filter_by(
+    activeStatus = StatusTranslation.query.filter_by(
             statusname='Active', language='C').one().statuscodeid
-    develStatus = model.StatusTranslation.query.filter_by(
+    develStatus = StatusTranslation.query.filter_by(
             statusname='Under Development', language='C').one().statuscodeid
+    # pylint: enable-msg=E1101
 
     def __init__(self, fas=None, appTitle=None):
         self.fas = fas
         self.appTitle = appTitle
 
-    def _add_to_bugzilla_acl_list(self, packageAcls, acl, pkgName,
+    def _add_to_bugzilla_acl_list(self, packageAcls, pkgName,
             collectionName, identity, group=None):
+        '''Add the given acl to the list of acls for bugzilla.
+
+        Arguments:
+        :packageAcls: The data structure to fill
+        :pkgName: Name of the package we're setting the acl on
+        :collectionName: Name of the bugzilla collection on which we're
+            setting the acl.
+        :identity: The id of the user or group for whom the acl is being set.
+        :group: If set, we're dealing with a group instead of a person.
+        '''
         # Lookup the collection
         try:
             collection = packageAcls[collectionName]
@@ -84,16 +110,26 @@ class Acls(controllers.Controller):
         if group:
             try:
                 package.cclist.groups.append(identity)
-            except KeyError, e:
+            except KeyError:
                 package.cclist = AclList(groups=[identity])
         else:
             try:
                 package.cclist.people.append(identity)
-            except KeyError, e:
+            except KeyError:
                 package.cclist = AclList(people=[identity])
 
     def _add_to_vcs_acl_list(self, packageAcls, acl, pkgName, branchName,
             identity, group=None):
+        '''Add the given acl to the list of acls for the vcs.
+
+        Arguments:
+        :packageAcls: The data structure to fill
+        :acl: The acl to create
+        :pkgName: Name of the package we're setting the acl on
+        :branchName: Name of the branch for which hte acl is being set
+        :identity: The id of the user or group for whom the acl is being set.
+        :group: If set, we're dealing with a group instead of a person.
+        '''
         # Key by package name
         try:
             pkg = packageAcls[pkgName]
@@ -112,12 +148,12 @@ class Acls(controllers.Controller):
         if group:
             try:
                 branch[acl].groups.append(identity)
-            except KeyError, e:
+            except KeyError:
                 branch[acl] = AclList(groups=[identity])
         else:
             try:
                 branch[acl].people.append(identity)
-            except KeyError, e:
+            except KeyError:
                 branch[acl] = AclList(people=[identity])
 
     @expose(template="genshi-text:pkgdb.templates.plain.vcsacls",
@@ -142,44 +178,55 @@ class Acls(controllers.Controller):
         '''
         # Store our acls in a dict
         packageAcls = {}
-        # Cache the last userId
-        userId = None
 
         # Get the vcs group acls from the db
-        groupAcls = sqlalchemy.select((model.Package.c.name,
-            model.Branch.c.branchname), sqlalchemy.and_(
-                model.GroupPackageListing.c.groupid == CVSEXTRAS_ID,
-                model.GroupPackageListingAcl.c.acl=='commit',
-                model.GroupPackageListingAcl.c.statuscode == self.approvedStatus,
-                model.GroupPackageListingAcl.c.grouppackagelistingid == model.GroupPackageListing.c.id,
-                model.GroupPackageListing.c.packagelistingid == model.PackageListing.c.id,
-                model.PackageListing.c.packageid == model.Package.c.id,
-                model.PackageListing.c.collectionid == model.Collection.c.id,
-                model.Branch.c.collectionid == model.Collection.c.id,
-                model.PackageListing.c.statuscode != self.removedStatus,
-                model.Package.c.statuscode != self.removedStatus
+
+        groupAcls = select((
+            # pylint: disable-msg=E1101
+            Package.name,
+            Branch.branchname,
+            GroupPackageListing.groupid), and_(
+                GroupPackageListingAcl.acl == 'commit',
+                GroupPackageListingAcl.statuscode \
+                        == self.approvedStatus,
+                GroupPackageListingAcl.grouppackagelistingid \
+                        == GroupPackageListing.id,
+                GroupPackageListing.packagelistingid \
+                        == PackageListing.id,
+                PackageListing.packageid == Package.id,
+                PackageListing.collectionid == Collection.id,
+                Branch.collectionid == Collection.id,
+                PackageListing.statuscode != self.removedStatus,
+                Package.statuscode != self.removedStatus
                 )
             )
+
+        groups = {}
+
         # Save them into a python data structure
         for record in groupAcls.execute():
+            if not record[2] in groups:
+                groups[record[2]] = self.fas.group_by_id(record[2])['name']
             self._add_to_vcs_acl_list(packageAcls, 'commit',
                     record[0], record[1],
-                    'cvsextras', group=True)
+                    groups[record[2]], group=True)
         del groupAcls
 
         # Get the package owners from the db
         # Exclude the orphan user from that.
-        ownerAcls = sqlalchemy.select((model.Package.c.name,
-            model.Branch.c.branchname, model.PackageListing.c.owner),
-            sqlalchemy.and_(
-                model.PackageListing.c.packageid==model.Package.c.id,
-                model.PackageListing.c.collectionid==model.Collection.c.id,
-                model.PackageListing.c.owner!=ORPHAN_ID,
-                model.Collection.c.id==model.Branch.c.collectionid,
-                model.PackageListing.c.statuscode != self.removedStatus,
-                model.Package.c.statuscode != self.removedStatus
+        ownerAcls = select((
+            # pylint: disable-msg=E1101
+            Package.name,
+            Branch.branchname, PackageListing.owner),
+            and_(
+                PackageListing.packageid==Package.id,
+                PackageListing.collectionid==Collection.id,
+                PackageListing.owner!=ORPHAN_ID,
+                Collection.id==Branch.collectionid,
+                PackageListing.statuscode != self.removedStatus,
+                Package.statuscode != self.removedStatus
                 ),
-            order_by=(model.PackageListing.c.owner,)
+            order_by=(PackageListing.owner,)
             )
 
         # Cache the userId/username pairs so we don't have to call the fas for
@@ -195,21 +242,25 @@ class Acls(controllers.Controller):
         del ownerAcls
 
         # Get the vcs user acls from the db
-        personAcls = sqlalchemy.select((model.Package.c.name,
-            model.Branch.c.branchname, model.PersonPackageListing.c.userid),
-            sqlalchemy.and_(
-                model.PersonPackageListingAcl.c.acl=='commit',
-                model.PersonPackageListingAcl.c.statuscode == model.StatusTranslation.c.statuscodeid,
-                model.StatusTranslation.c.statusname=='Approved',
-                model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id,
-                model.PersonPackageListing.c.packagelistingid == model.PackageListing.c.id,
-                model.PackageListing.c.packageid == model.Package.c.id,
-                model.PackageListing.c.collectionid == model.Collection.c.id,
-                model.Branch.c.collectionid == model.Collection.c.id,
-                model.PackageListing.c.statuscode != self.removedStatus,
-                model.Package.c.statuscode != self.removedStatus
+        personAcls = select((
+            # pylint: disable-msg=E1101
+            Package.name,
+            Branch.branchname, PersonPackageListing.userid),
+            and_(
+                PersonPackageListingAcl.acl=='commit',
+                PersonPackageListingAcl.statuscode \
+                        == self.approvedStatus,
+                PersonPackageListingAcl.personpackagelistingid \
+                        == PersonPackageListing.id,
+                PersonPackageListing.packagelistingid \
+                        == PackageListing.id,
+                PackageListing.packageid == Package.id,
+                PackageListing.collectionid == Collection.id,
+                Branch.collectionid == Collection.id,
+                PackageListing.statuscode != self.removedStatus,
+                Package.statuscode != self.removedStatus
                 ),
-            order_by=(model.PersonPackageListing.c.userid,)
+            order_by=(PersonPackageListing.userid,)
             )
         # Save them into a python data structure
         for record in personAcls.execute():
@@ -218,7 +269,8 @@ class Acls(controllers.Controller):
                     record[0], record[1],
                     username, group=False)
 
-        return dict(title=self.appTitle + ' -- VCS ACLs', packageAcls=packageAcls)
+        return dict(title=self.appTitle + ' -- VCS ACLs',
+                packageAcls=packageAcls)
 
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
             as_format="plain", accept_format="text/plain",
@@ -244,21 +296,22 @@ class Acls(controllers.Controller):
         '''
         bugzillaAcls = {}
         username = None
-        userId = None
 
         # select all packages that are active in an active release
-        packageInfo = sqlalchemy.select((model.Collection.c.name,
-            model.Package.c.name, model.PackageListing.c.owner,
-            model.PackageListing.c.qacontact, model.Package.c.summary),
-            sqlalchemy.and_(
-                model.Collection.c.id==model.PackageListing.c.collectionid,
-                model.Package.c.id==model.PackageListing.c.packageid,
-                model.Package.c.statuscode==self.approvedStatus,
-                model.PackageListing.c.statuscode==self.approvedStatus,
-                model.Collection.c.statuscode.in_((self.activeStatus,
+        packageInfo = select((
+            # pylint: disable-msg=E1101
+            Collection.name, Package.name,
+            PackageListing.owner, PackageListing.qacontact,
+            Package.summary),
+            and_(
+                Collection.id==PackageListing.collectionid,
+                Package.id==PackageListing.packageid,
+                Package.statuscode==self.approvedStatus,
+                PackageListing.statuscode==self.approvedStatus,
+                Collection.statuscode.in_((self.activeStatus,
                     self.develStatus)),
                 ),
-            order_by=(model.Collection.c.name,), distinct=True)
+            order_by=(Collection.name,), distinct=True)
 
         # Cache the userId/username pairs so we don't have to call the
         # fas for every package.
@@ -298,19 +351,19 @@ class Acls(controllers.Controller):
             # These are packages that have different owners in different
             # branches.  Need to find one to be the owner of the bugzilla
             # component
-            packageInfo = sqlalchemy.select((model.Collection.c.name,
-                model.Collection.c.version,
-                model.Package.c.name, model.PackageListing.c.owner),
-                sqlalchemy.and_(
-                    model.Collection.c.id==model.PackageListing.c.collectionid,
-                    model.Package.c.id==model.PackageListing.c.packageid,
-                    model.Package.c.statuscode==self.approvedStatus,
-                    model.PackageListing.c.statuscode==self.approvedStatus,
-                    model.Collection.c.statuscode.in_((self.activeStatus,
+            packageInfo = select((Collection.name,
+                Collection.version,
+                Package.name, PackageListing.owner),
+                and_(
+                    Collection.id==PackageListing.collectionid,
+                    Package.id==PackageListing.packageid,
+                    Package.statuscode==self.approvedStatus,
+                    PackageListing.statuscode==self.approvedStatus,
+                    Collection.statuscode.in_((self.activeStatus,
                         self.develStatus)),
-                    model.Package.c.name.in_(undupeOwners),
+                    Package.name.in_(undupeOwners),
                     ),
-                order_by=(model.Collection.c.name, model.Collection.c.version),
+                order_by=(Collection.name, Collection.version),
                 distinct=True)
 
             # Organize the results so that we have:
@@ -360,8 +413,8 @@ class Acls(controllers.Controller):
                             if byPkg[pkg][collection][r] != ORPHAN_ID]
                     if not releases:
                         # Every release was an orphan
-                         bugzillaAcls[collection][pkg].owner = \
-                                 userList[ORPHAN_ID]
+                        bugzillaAcls[collection][pkg].owner = \
+                                userList[ORPHAN_ID]
                     else:
                         releases.sort()
                         bugzillaAcls[collection][pkg].owner = \
@@ -369,31 +422,36 @@ class Acls(controllers.Controller):
                                     unicode(releases[-1])]]
 
         # Retrieve the user acls
-        personAcls = sqlalchemy.select((model.Package.c.name,
-            model.Collection.c.name, model.PersonPackageListing.c.userid),
-            sqlalchemy.and_(
-                model.PersonPackageListingAcl.c.acl == 'watchbugzilla',
-                model.PersonPackageListingAcl.c.statuscode == \
+
+        personAcls = select((
+            # pylint: disable-msg=E1101
+            Package.name,
+            Collection.name, PersonPackageListing.userid),
+            and_(
+                PersonPackageListingAcl.acl == 'watchbugzilla',
+                PersonPackageListingAcl.statuscode == \
                         self.approvedStatus,
-                model.PersonPackageListingAcl.c.personpackagelistingid == \
-                        model.PersonPackageListing.c.id,
-                model.PersonPackageListing.c.packagelistingid == \
-                        model.PackageListing.c.id,
-                model.PackageListing.c.packageid == model.Package.c.id,
-                model.PackageListing.c.collectionid == model.Collection.c.id,
-                model.Package.c.statuscode==self.approvedStatus,
-                model.PackageListing.c.statuscode==self.approvedStatus,
-                model.Collection.c.statuscode.in_((self.activeStatus,
+                PersonPackageListingAcl.personpackagelistingid == \
+                        PersonPackageListing.id,
+                PersonPackageListing.packagelistingid == \
+                        PackageListing.id,
+                PackageListing.packageid == Package.id,
+                PackageListing.collectionid == Collection.id,
+                Package.statuscode==self.approvedStatus,
+                PackageListing.statuscode==self.approvedStatus,
+                Collection.statuscode.in_((self.activeStatus,
                     self.develStatus)),
                 ),
-            order_by=(model.PersonPackageListing.c.userid,), distinct=True
+            order_by=(PersonPackageListing.userid,), distinct=True
             )
+        
         # Save them into a python data structure
         for record in personAcls.execute():
             username = userList[record[2]]
-            self._add_to_bugzilla_acl_list(bugzillaAcls, 'watchbugzilla',
-                    record[0], record[1], username, group=False)
+            self._add_to_bugzilla_acl_list(bugzillaAcls, record[1],
+                    username, group=False)
 
         ### TODO: No group acls at the moment
         # There are no group acls to take advantage of this.
-        return dict(title=self.appTitle + ' -- Bugzilla ACLs', bugzillaAcls=bugzillaAcls)
+        return dict(title=self.appTitle + ' -- Bugzilla ACLs',
+                bugzillaAcls=bugzillaAcls)

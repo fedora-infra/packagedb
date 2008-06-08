@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -29,12 +29,14 @@ from turbogears import config
 log = logging.getLogger('pkgdb.controllers')
 
 class Event(object):
+    '''Data structure to constrain an event record to just a few fields.
+    '''
     __attributes__ = ['author', 'change', 'subject', 'description']
-    pass
 
 class EventLogger(object):
     '''Notify others of events.'''
-    MAILFROM = config.get('email.sender', ('PackageDB', 'pkgdb@fedoraproject.org'))
+    MAILFROM = config.get('email.sender',
+            ('PackageDB', 'pkgdb@fedoraproject.org'))
 
     def __init__(self):
         # Eventually this could contact a notification server and use that to

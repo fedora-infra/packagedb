@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -23,12 +23,18 @@ Controller for showing Package Collections.
 
 import sqlalchemy
 
-from turbogears import controllers, expose, paginate, config, redirect
+from turbogears import controllers, expose, paginate
 from turbogears.database import session
 
 from pkgdb import model
+from cherrypy import request
 
 class Collections(controllers.Controller):
+    '''Controller that deals with Collections.
+
+    These are methods that expose Collections to the users.  Collections are
+    usually a specific release of a distribution.  For instance, Fedora 8.
+    '''
     def __init__(self, fas, appTitle):
         '''Create a Packages Controller.
 
@@ -42,9 +48,11 @@ class Collections(controllers.Controller):
     def index(self):
         '''List the Collections we know about.
         '''
+        # pylint: disable-msg=E1101
         collections = model.CollectionPackage.query.order_by(
                 (model.CollectionPackage.c.name,
                     model.CollectionPackage.c.version))
+        # pylint: enable-msg=E1101
 
         return dict(title=self.appTitle + ' -- Collection Overview',
                 collections=collections)
@@ -52,7 +60,7 @@ class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def id(self, collectionId):
+    def id(self, collectionId): # pylint: disable-msg=C0103
         '''Return a page with information on a particular Collection
         '''
         try:
@@ -64,15 +72,15 @@ class Collections(controllers.Controller):
                             ' valid id.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
                             ' report it.')
-            if not ('tg_format' in request.params and
-                    request.params['tg_format'] == 'json'):
+            if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
-                return error
+            return error
 
         ### FIXME: Want to return additional info:
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
         try:
+            # pylint: disable-msg=E1101
             collectionEntry = model.Collection.query.filter_by(id=collectionId).one()
         except sqlalchemy.exceptions.InvalidRequestError, e:
             # Either the id doesn't exist or somehow it references more than
@@ -83,10 +91,9 @@ class Collections(controllers.Controller):
                             ' not exist.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
                             ' report it.' % collectionId)
-            if not ('tg_format' in request.params and
-                    request.params['tg_format'] == 'json'):
+            if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
-                return error
+            return error
 
         # Get ownership information from the fas
         try:

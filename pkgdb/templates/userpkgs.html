@@ -5,20 +5,42 @@
   <xi:include href="layout.html" />
   <xi:include href="paginator.html" />
   <xi:include href="pkglist.html" />
+
+  <form py:def="acl_filter()" method="GET" class="filter"
+    action="${tg.url('/users/packages/' + fasname)}">
+    Only packages with these acls:
+
+    <ul py:for="acl in acls">
+      <li>
+      <label>
+        <input type="checkbox" name="acls" value="${acl[0]}"
+        py:attrs="{'checked': tg.checker(acl[1])}"/>
+        ${acl[2]}
+      </label>
+      </li>
+    </ul>
+    <button type="submit">Filter</button>
+  </form>
+
   <head />
   <body>
 
-    <p py:choose="fasname">
-      <span py:when="'orphan'" py:strip="">
-      View users: Info |
-      <a href="${tg.url('/users/packages/' + fasname)}">Packages</a> 
-      </span>
-      <span py:otherwise="" py:strip="">
-      View users: <a href="${tg.url('/users/info/' + fasname)}">Info</a> |
-      <a href="${tg.url('/users/packages/' + fasname)}">Packages</a>
-      </span>
+    <p py:choose="fasname" py:strip="">
+      <div py:when="tg.identity.user_name">
+        View: <a href="${tg.url('/users/info/' + fasname)}">My Info</a> |
+        My Packages (${pkgCount})
+        ${acl_filter()}
+      </div>
+      <div py:when="'orphan'">
+        View: Orphaned Packages (${pkgCount})
+      </div>
+      <div py:otherwise="">
+        View: <a href="${tg.url('/users/info/' + fasname)}">${fasname}'s
+          Info</a> | ${fasname}'s Packages (${pkgCount})
+        ${acl_filter()}
+      </div>
     </p>
-    
+
     ${paginate_nav()}
     ${pkglist(pkgs)}
     ${paginate_nav()}
