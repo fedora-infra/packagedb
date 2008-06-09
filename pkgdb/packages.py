@@ -21,7 +21,7 @@
 Controller for displaying Package Information.
 '''
 
-from turbogears import controllers, expose, paginate, config, redirect
+from turbogears import controllers, expose, paginate, config, redirect, identity
 from turbogears.database import session
 
 from pkgdb import model
