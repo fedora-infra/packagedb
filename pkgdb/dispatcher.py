@@ -55,7 +55,7 @@ class PackageDispatcher(controllers.Controller):
     # Create a list of groups that can possibly commit to packages
     groups = {100300: 'cvsextras',
             101197: 'cvsadmin',
-            107427: 'uberpackager'
+            107427: 'uberpackager',
             'cvsextras': 100300,
             'cvsadmin': 101197,
             'uberpackager': 107427}
