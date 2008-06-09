@@ -140,6 +140,20 @@ class Packages(controllers.Controller):
         statusMap = {}
 
         pkgListings = pkgListings.all()
+
+        # Check for shouldopen perms
+        can_set_shouldopen = identity.in_any_group('cvsadmin') or \
+                identity.current.user.id in [x.owner for x in pkgListings]
+        for people in [x.people for x in pkgListings]:
+            if can_set_shouldopen: break
+            for person in people:
+                if person.userid == identity.current.user.id:
+                    for acl in person.acls:
+                        if acl.acl == 'approveacls' and acl.status == self.approvedStatus.statuscodeid:
+                            can_set_shouldopen = True
+                            break
+                    if can_set_shouldopen: break
+
         for pkg in pkgListings:
             pkg.jsonProps = {'PackageListing': ('package', 'collection',
                     'people', 'groups', 'qacontactname', 'owneruser', 'ownerid'),
@@ -209,7 +223,8 @@ class Packages(controllers.Controller):
 
         return dict(title='%s -- %s' % (self.appTitle, package.name),
                 packageListings=pkgListings, statusMap = statusMap,
-                aclNames=aclNames, aclStatus=aclStatusTranslations)
+                aclNames=aclNames, aclStatus=aclStatusTranslations,
+                can_set_shouldopen=can_set_shouldopen)
 
     @expose(template='pkgdb.templates.pkgpage')
     def id(self, packageId): # pylint: disable-msg=C0103
