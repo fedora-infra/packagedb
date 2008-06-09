@@ -142,17 +142,20 @@ class Packages(controllers.Controller):
         pkgListings = pkgListings.all()
 
         # Check for shouldopen perms
-        can_set_shouldopen = identity.in_any_group('cvsadmin') or \
-                identity.current.user.id in [x.owner for x in pkgListings]
-        for people in [x.people for x in pkgListings]:
-            if can_set_shouldopen: break
-            for person in people:
-                if person.userid == identity.current.user.id:
-                    for acl in person.acls:
-                        if acl.acl == 'approveacls' and acl.status == self.approvedStatus.statuscodeid:
-                            can_set_shouldopen = True
-                            break
-                    if can_set_shouldopen: break
+	if identity.current.user == None:
+		can_set_shouldopen = False
+	else:
+		can_set_shouldopen = identity.in_any_group('cvsadmin') or \
+			identity.current.user.id in [x.owner for x in pkgListings]
+		for people in [x.people for x in pkgListings]:
+		    if can_set_shouldopen: break
+		    for person in people:
+			if person.userid == identity.current.user.id:
+			    for acl in person.acls:
+				if acl.acl == 'approveacls' and acl.status == self.approvedStatus.statuscodeid:
+				    can_set_shouldopen = True
+				    break
+			    if can_set_shouldopen: break
 
         for pkg in pkgListings:
             pkg.jsonProps = {'PackageListing': ('package', 'collection',
