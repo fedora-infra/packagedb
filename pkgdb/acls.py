@@ -448,7 +448,7 @@ class Acls(controllers.Controller):
         # Save them into a python data structure
         for record in personAcls.execute():
             username = userList[record[2]]
-            self._add_to_bugzilla_acl_list(bugzillaAcls, record[1],
+            self._add_to_bugzilla_acl_list(bugzillaAcls, record[0], record[1],
                     username, group=False)
 
         ### TODO: No group acls at the moment
