@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.4
+Version:        0.3.4.1
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -60,6 +60,9 @@ rm -rf %{buildroot}
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
 %changelog
+* Tue Jun 10 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.4.1-1
+- Upstream bugfix to acl code.
+
 * Thu Jun 5 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.4-1
 - New upstream release.
 
