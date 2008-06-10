@@ -1,5 +1,15 @@
 === packagedb-0.3.4 ===
 
+2008-06-09  Toshio Kuratomi <badger@Clingman> - r327
+* Merge should_open fixes from Casey.
+
+2008-06-09  Toshio Kuratomi <badger@Clingman> - r326
+* start-pkgdb.in: Fix problem that prevents start-pkgdbfrom working when
+  installed from rpm.  Needed to assign the path before calling pkg_resources.
+
+2008-06-08  Toshio Kuratomi <badger@Clingman> - r325
+* ChangeLog: Update for new release.
+
 2008-06-06  Toshio Kuratomi <badger@Clingman> - r324
 * Import fixes from publictest10.
 
