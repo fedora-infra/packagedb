@@ -30,7 +30,7 @@ TODO='Not yet implemented'
       - A package owner on any of the branches or has approveacls (or possibly
       - commit) on any of the branches and replace True with that check.
       - -->
-      <tr py:if="not tg.identity.anonymous and ('cvsadmin' in tg.identity.groups or True)"><th>
+      <tr py:if="not tg.identity.anonymous and ('cvsadmin' in tg.identity.groups or can_set_shouldopen)"><th>
 		    Open package during mass ACL open?
       </th><td>
         <form action="${tg.url('/packages/dispatcher/')}" method="POST">
