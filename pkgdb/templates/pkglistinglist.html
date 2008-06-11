@@ -3,16 +3,27 @@
   xmlns:py="http://genshi.edgewall.org/"
   xmlns:xi="http://www.w3.org/2001/XInclude"
   py:strip="">
-        <div py:def="pkglist(matches, mode='name')" class="PackageList">
-            <dl py:for="pkg in matches">
-                <dt><a href="${tg.url('/packages/%s/%s' % 
-            (mode, pkg.package.name))}" py:content="pkg.package.name"></a></dt>
-                <dd><span py:replace="pkg.package.description">Package Summary
+        <div py:def="pkglist(packages, mode='name')" class="PackageList">
+            <dl py:for="pkg in packages">
+                <dt>
+                    <a href="${tg.url('/packages/%s/%s' % 
+                        (mode, pkg[0].package.name))}" 
+                            py:content="pkg[0].package.name">
+                    </a>
+                </dt>
+                <dd>
+                    <span py:replace="pkg[0].package.description">PackageSummary
                     </span>
-                -- collection: <a href="${tg.url('/packages/name/' + 
-                pkg.package.name + '#' + pkg.collection.name + 
-                pkg.collection.version)}"><span py:replace="pkg.collection.name +' '+ pkg.collection.version">
-                    Collection</span></a><br /><br /></dd>
+                -- available with: 
+                    <a py:for="pkgl in pkg" href="${tg.url('/packages/name/' + 
+                            pkgl.package.name + '#' + pkgl.collection.name + 
+                            pkgl.collection.version)}">
+                        <span py:replace="pkgl.collection.name +' '+ 
+                                pkgl.collection.version">Collection
+                        </span> 
+                    </a>
+                    <br /><br />
+                </dd>
             </dl>
         </div>
 </html>
