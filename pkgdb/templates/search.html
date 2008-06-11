@@ -7,14 +7,16 @@
   <xi:include href="pkglistinglist.html" />
   <head />
   <body>
-    <div py:if='packages.all()!=[]'>
-    <p>$count matches found in <strong>$release</strong> for package <strong>$query:</strong></p>
+    <div py:if='packages!=[]'>
+    <p>$count matches found in <strong>$release</strong> for package 
+      <strong>$query:</strong></p>
     ${paginate_nav()}
     ${pkglist(packages)}
     ${paginate_nav()}
     </div>
-    <p py:if='packages.all()==[]'>
-        We are sorry, but there were no matches to display for: <strong>$query</strong> in collection: <strong>$release</strong>.
+    <p py:if='packages==[]'>
+        We are sorry, but there were no matches to display for: 
+	<strong>$query</strong> in collection: <strong>$release</strong>.
     </p>
   </body>
 </html>
