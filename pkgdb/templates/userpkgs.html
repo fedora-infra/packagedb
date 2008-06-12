@@ -18,15 +18,15 @@
       View: <a href="${tg.url('/users/info/' + fasname)}">My Info</a> |
       </span>
       <span>
-      <input type="checkbox" name="acls" value="owner" checked="checked"> own <!-- checked="checked" should only be there if it is submitted -->
-      <input type="checkbox" name="acls" value="commit"> can commit to <!-- else it should be blank as such -->
-      <input type="checkbox" name="acls" value="approveacls" checked="checked"> can approve ACLs
-      <input type="checkbox" name="acls" value="watchcommits" checked="checked"> watch commits
-      <input type="checkbox" name="acls" value="watchbugzilla" checked="checked"> watch bugzilla
+      <input type="checkbox" name="acls" value="owner" checked="checked" /> own <!-- checked="checked" should only be there if it is submitted -->
+      <input type="checkbox" name="acls" value="commit" /> can commit to <!-- else it should be blank as such -->
+      <input type="checkbox" name="acls" value="approveacls" checked="checked" /> can approve ACLs
+      <input type="checkbox" name="acls" value="watchcommits" checked="checked" /> watch commits
+      <input type="checkbox" name="acls" value="watchbugzilla" checked="checked" /> watch bugzilla
       <button type="submit">Go</button>
       </span>
       </form>
-    </p>
+    </p><br />
     
     ${paginate_nav()}
     ${pkglist(pkgs)}
