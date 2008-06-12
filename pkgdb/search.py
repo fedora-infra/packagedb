@@ -66,11 +66,10 @@ class Search(controllers.Controller):
            This method returns a list of packages (PackageListing objects)
            matching the given search words. Other information useful in the
            view is also returned: 
-           :query: words that were used for the search
+           :query: words that were used for the search, unchanged
            :count: number of packages
            :release: long name of the release
            :searchon: same as the argument, unchanged
-           :names: list of all the different package names that were found
            :packages: a nested list of pkglistings grouped by package name
  
            Arguments:
@@ -82,6 +81,7 @@ class Search(controllers.Controller):
            the search will return packages from all releases.
            :searchon: area of the search, should be one of: description, name, 
            both
+           :operator: can be either 'AND' or 'OR'
         '''
         
         # get an array of different words to search (case insensitive)
@@ -162,5 +162,4 @@ class Search(controllers.Controller):
                    packages=packages,
                    count=count,
                    release=release,
-                   searchon=searchon,
-                   names=names)
+                   searchon=searchon)
