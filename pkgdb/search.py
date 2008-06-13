@@ -71,6 +71,9 @@ class Search(controllers.Controller):
            :release: long name of the release
            :searchon: same as the argument, unchanged
            :packages: a nested list of pkglistings grouped by package name
+           :collections: a dict of all the available collection branchnames as 
+           keys and their corresponding ids 
+           :operator: 'AND'/'OR' unchanged
  
            Arguments:
            :searchwords: this can be one or more words which will be used to
@@ -132,12 +135,15 @@ class Search(controllers.Controller):
         num_of_colls = sqlalchemy.select([model.PackageListing.collectionid], 
                                     distinct=True).execute().rowcount
         if release in range(1,num_of_colls):
-           matches = matches.filter(model.PackageListing.collectionid==release)
-           # this is a way to get the name and version of the release 
-           # even when the search has no matches:
-           collection_helper = model.PackageListing.query.filter(
-               model.PackageListing.collectionid==release).first().collection
-           release = collection_helper.name + ' ' + collection_helper.version
+           if matches.__class__ == [].__class__:
+           # get the name and version of the release 
+           # when the search has no matches:
+               collection_helper = model.PackageListing.query.filter(
+                 model.PackageListing.collectionid==release).first().collection
+               release = collection_helper.name +' '+ collection_helper.version
+           else:
+               matches = matches.filter(
+                             model.PackageListing.collectionid==release)
         else:
            release = 'all'
         # return a list of all the package names
@@ -146,14 +152,19 @@ class Search(controllers.Controller):
             names.append(i.package.name)
         names = set(names)
         
-        packages = []         
+        packages = []  # get a nested list grouped by packages 
         def f(x): return x.package.name == pkg_name
         for pkg_name in names:
             arr = []
             for pkgl in filter(f, matches):
                 arr.append(pkgl)
             packages.append(arr)
-         
+        
+        collections = {} # build a dict of all the available releases'  
+                         # branchnames as keys and string ids as values
+        for coll in model.Collection.query.all():
+            collections[coll.branchname] = str(coll.id)
+        collections["ALL"] = '0' 
         count = len(packages)
         
         return dict(title=self.appTitle + ' -- Search packages for: ' 
@@ -162,4 +173,6 @@ class Search(controllers.Controller):
                    packages=packages,
                    count=count,
                    release=release,
-                   searchon=searchon)
+                   collections=collections,
+                   searchon=searchon,
+                   operator=operator)
