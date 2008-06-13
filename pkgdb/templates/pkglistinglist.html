@@ -14,14 +14,14 @@
                 <dd>
                     <span py:replace="pkg[0].package.description">PackageSummary
                     </span>
-                -- available with: 
-                    <a py:for="pkgl in pkg" href="${tg.url('/packages/name/' + 
-                            pkgl.package.name + '#' + pkgl.collection.name + 
-                            pkgl.collection.version)}">
-                        <span py:replace="pkgl.collection.name +' '+ 
-                                pkgl.collection.version">Collection
-                        </span> 
-                    </a>
+                <p>-- available for: 
+                    <span py:for="pkgl in pkg">
+                    <a py:content="pkgl.collection.branchname"
+                        href="${tg.url('/packages/name/' + 
+                        pkgl.package.name + '#' + 
+                        pkgl.collection.name + pkgl.collection.version)}">
+                        Collection shortname
+                    </a></span></p>
                     <br /><br />
                 </dd>
             </dl>
