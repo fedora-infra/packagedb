@@ -7,6 +7,12 @@
   <xi:include href="pkglistinglist.html" />
   <head />
   <body>
+    <div id="smalltext"><p>Search in a specific collection: </p>
+    <p><span py:for="coll in sorted(collections.keys())">
+            [<a py:content="coll" href="${tg.url('/search/package/' +
+                searchon + '/' + collections[coll] + '/' + operator + '/' + query)}" >Collection</a>]
+    </span></p></div> 
+    <br />
     <div py:if='packages!=[]'>
     <p>$count matches found in <strong>$release</strong> for package 
       <strong>$query:</strong></p>
