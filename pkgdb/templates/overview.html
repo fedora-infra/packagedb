@@ -28,18 +28,20 @@
                      if (document.forms[0].operator[0].checked) {
                         operator = "AND"
                      } else { operator = "OR" }
-                         window.location='/search/package/' + searchon + '/' + document.forms[0].release.value + '/' + document.forms[0].searchwords.value;
-                     }
+                         window.location='/search/package/' + searchon + '/' + 
+                            document.forms[0].release.value + '/' + operator + 
+                                '/' + document.forms[0].searchwords.value;
                      return false
+                     }
                      //-->
     </script> 
     <form action="${tg.url('/search/package/')}" method="get" onsubmit="return jump()">
     <p>Keyword: <input id="package" name="searchwords" size="20" type="text" />
-    <input type="submit" value="Search" /> Operator: 
         <input type="radio" id="AND" name="operator" value="AND" checked="checked" />
             <label for="AND">AND</label>
         <input type="radio" id="OR" name="operator" value="OR" />
-            <label for="OR">OR</label>
+            <label for="OR">OR</label> 
+    <input type="submit" value="Search" /> 
     </p>
     <p>Release: <select id="release" name="release">
             <option value="0">any</option>
