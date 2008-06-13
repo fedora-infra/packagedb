@@ -16,12 +16,12 @@
                     </span>
                 <p>-- available for: 
                     <span py:for="pkgl in pkg">
-                    <a py:content="pkgl.collection.branchname"
-                        href="${tg.url('/packages/name/' + 
-                        pkgl.package.name + '#' + 
-                        pkgl.collection.name + pkgl.collection.version)}">
+                    [<a py:content="pkgl.collection.branchname" href="
+                        ${tg.url('/packages/name/%s#%s%s' % 
+                        (pkgl.package.name, pkgl.collection.name, 
+                            pkgl.collection.version))}">
                         Collection shortname
-                    </a></span></p>
+                    </a>]</span></p>
                     <br /><br />
                 </dd>
             </dl>
