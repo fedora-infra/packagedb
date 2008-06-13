@@ -112,6 +112,13 @@ a.cvs
   display: none;
 }
 
+#smalltext
+{
+    line-height: 80%;
+    font-size: 80%;
+    background-color: #efefef;
+    padding: .3em;
+}
 /*
  * Package DB Specific styles
  */
