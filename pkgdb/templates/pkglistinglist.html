@@ -4,6 +4,7 @@
   xmlns:xi="http://www.w3.org/2001/XInclude"
   py:strip="">
         <div py:def="pkglist(packages, mode='name')" class="PackageList">
+        <br />
             <dl py:for="pkg in packages">
                 <dt>
                     <a href="${tg.url('/packages/%s/%s' % 
@@ -22,7 +23,7 @@
                             pkgl.collection.version))}">
                         Collection shortname
                     </a>]</span></p>
-                    <br /><br />
+                    <br />
                 </dd>
             </dl>
         </div>
