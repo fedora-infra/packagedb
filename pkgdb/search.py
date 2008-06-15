@@ -116,6 +116,12 @@ class Search(controllers.Controller):
                             model.PackageListing.packageid==model.Package.id,
                                 func.lower(model.Package.name).like(
                                     '%'+searchword+'%')))
+                    elif searchon == 'both':
+                        descriptions += model.PackageListing.query.filter(and_(
+                            model.PackageListing.packageid==model.Package.id,
+                                func.lower(model.Package.description).like(
+                                    '%'+searchword+'%')))
+                    
         else:      # AND operator
            descriptions, names, exact = [], [], [] 
            if searchon == 'description': 
@@ -132,6 +138,12 @@ class Search(controllers.Controller):
                        model.PackageListing.packageid==model.Package.id,
                            func.lower(model.Package.name).like(
                                '%'+query+'%'))).all()
+               elif searchon == 'both':
+                   descriptions = model.PackageListing.query.filter(and_(
+                       model.PackageListing.packageid==model.Package.id,
+                           func.lower(model.Package.description).like(
+                               '%'+query+'%'))).all()
+                   
         s = set()   # order and remove duplicates
         matches = []
         for pkgl in exact + names + descriptions:
