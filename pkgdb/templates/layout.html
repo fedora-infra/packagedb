@@ -27,6 +27,15 @@
       tgUserUserName = "${tg.identity.user.username}";
       tgUserUserId = "${tg.identity.user.id}";
     </script>
+    <script type="text/javascript">
+         <!--
+         function jump(){
+         window.location='/search/package/both/0/AND/' + 
+            document.forms[0].searchwords.value;
+         return false
+         }
+         //-->
+    </script> 
   </head>
   <body py:match="body" py:attrs="select('@*')">
     <div py:for="js in tg_js_bodytop" py:replace="XML(js.display())" />
@@ -57,7 +66,16 @@
             <li><a href="https://fedorahosted.org/packagedb">Project Page</a></li>
             <li><a href="https://fedorahosted.org/packagedb/newticket">Report Bugs</a></li>
           </ul>
+          <h2>Search</h2>
+            <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump()">
+            <p>
+                <input id="package" name="searchwords" size="9" type="text" />
+                <input id="search" type="submit" value="Go" />
+            </p>
+    </form>
+  
         </div>
+        
       </div>
       <div id="content">
         <div py:replace="select('*|text()')" />
