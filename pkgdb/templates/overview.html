@@ -17,7 +17,16 @@
     </p>
 
     <h3>Search Packages</h3>
-    <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump()">
+    <script type="text/javascript">
+         <!--
+         function jump1(){
+         window.location='/search/package/both/0/AND/' + 
+            document.forms[1].searchwords.value;
+         return false
+         }
+         //-->
+    </script> 
+    <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump1()">
         <p>Keywords: <input id="package" name="searchwords" size="20" type="text" />
         <input type="submit" value="Search" /> 
         </p>
