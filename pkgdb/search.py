@@ -48,16 +48,23 @@ class Search(controllers.Controller):
         self.fas = fas
         self.appTitle = appTitle
 
-    @expose(template='pkgdb.templates.overview', allow_json=True)
+    @expose(template='pkgdb.templates.advancedsearch', allow_json=True)
     def index(self):
-        '''Redirects to a page that displays all packages.
+        '''Advanced package search.
+
+           Provides a form with multiple fields for a comprehensive package
+           search.
         '''  
-        redirect("/search/package/0/")
+        # a little helper so we don't have to write/update form selects manually
+        releases = sqlalchemy.select([model.Collection.id,
+                    model.Collection.name, model.Collection.version]).execute()
+        return dict(title=self.appTitle + ' -- Advanced Search',
+                    releases=releases)
 
     @expose(template='pkgdb.templates.search', allow_json=True)
     @validate(validators={'release':Int()})
     @paginate('packages', default_order=['package.name','collectionid'], 
-            limit=50, max_pages=13)
+            limit=20, max_pages=13)
     def package(self, searchon='both', release=0, operator='AND', 
                         searchwords=''):
         
@@ -87,50 +94,50 @@ class Search(controllers.Controller):
            :operator: can be either 'AND' or 'OR'
         '''
         
-        # get an array of different words to search (case insensitive)
-        query = searchwords.lower().split() 
+        # case insensitive
+        query = searchwords.lower() # .split() 
        
         if operator == 'OR':
-            # make the string array SQL-ready 
-            # we only get exact matches without this - which could be useful?
-            for i in range(0,len(query)):
-                query[i] ='%' + query[i] + '%'
-            matches = []
-            if searchon == 'description':
-                for i in query:
-                    matches +=model.PackageListing.query.filter(and_(
-                               model.PackageListing.packageid==model.Package.id,
-                                func.lower(model.Package.description).like(i)))
-            elif searchon == 'name':
-                for i in query:
-                    matches +=model.PackageListing.query.filter(and_(
-                               model.PackageListing.packageid==model.Package.id,
-                                func.lower(model.Package.name).like(i)))
-            else:
-                for i in query:
-                    matches +=model.PackageListing.query.filter(and_(
-                               model.PackageListing.packageid==model.Package.id,
-                                or_(func.lower(model.Package.name).like(i),
-                                func.lower(model.Package.description).like(i))))
-                
+            query = query.split()  # -> list
+            descriptions, names, exact = [], [], []
+            for searchword in query:
+                if searchon == 'description':
+                    descriptions += model.PackageListing.query.filter(and_(
+                        model.PackageListing.packageid==model.Package.id,
+                            func.lower(model.Package.description).like(
+                                '%'+searchword+'%')))
+                elif searchon in ['name', 'both']:
+                    exact += model.PackageListing.query.filter(and_(
+                            model.PackageListing.packageid==model.Package.id,
+                                func.lower(model.Package.name).like(
+                                    searchword)))
+                    if searchon == 'name':
+                        names += model.PackageListing.query.filter(and_(
+                            model.PackageListing.packageid==model.Package.id,
+                                func.lower(model.Package.name).like(
+                                    '%'+searchword+'%')))
         else:      # AND operator
-            # create the SQL-ready query as a string
-            query = '%' + string.join(query, '%') + '%'
-        
-            if searchon == 'description':
-                matches = model.PackageListing.query.filter(and_(
+           descriptions, names, exact = [], [], [] 
+           if searchon == 'description': 
+                descriptions = model.PackageListing.query.filter(and_(
                     model.PackageListing.packageid==model.Package.id,
-                        func.lower(model.Package.description).like(query)))
-            elif searchon == 'name':
-                matches=model.PackageListing.query.filter(and_(
-                    model.PackageListing.packageid==model.Package.id,
-                        func.lower(model.Package.name).like(query)))
-            else:
-                matches=model.PackageListing.query.filter(and_(
-                    model.PackageListing.packageid==model.Package.id,or_(
-                        func.lower(model.Package.name).like(query),
-                            func.lower(model.Package.description).like(query))))
-        
+                        func.lower(model.Package.description).like(
+                            '%'+query+'%'))).all()
+           elif searchon in ['name', 'both']: 
+               exact = model.PackageListing.query.filter(and_(
+                   model.PackageListing.packageid==model.Package.id,
+                       func.lower(model.Package.name).like(query))).all()
+               if searchon == 'name':
+                   names = model.PackageListing.query.filter(and_(
+                       model.PackageListing.packageid==model.Package.id,
+                           func.lower(model.Package.name).like(
+                               '%'+query+'%'))).all()
+        s = set()   # order and remove duplicates
+        matches = []
+        for pkgl in exact + names + descriptions:
+            if pkgl not in s:
+                s.add(pkgl)
+                matches.append(pkgl)
         # return only the packages in known collections or all of them
         num_of_colls = sqlalchemy.select([model.PackageListing.collectionid], 
                                     distinct=True).execute().rowcount
@@ -146,13 +153,15 @@ class Search(controllers.Controller):
                              model.PackageListing.collectionid==release)
         else:
            release = 'all'
-        # return a list of all the package names
+        # return a list of all the unique package names, but keeping the order
         names = []
-        for i in matches:
-            names.append(i.package.name)
-        names = set(names)
+        s = set()
+        for pkgl in matches:
+            if pkgl.package.name not in s:
+                s.add(pkgl.package.name)
+                names.append(pkgl.package.name)
         
-        packages = []  # get a nested list grouped by packages 
+        packages = []  # get a nested list grouped by packages
         def f(x): return x.package.name == pkg_name
         for pkg_name in names:
             arr = []
@@ -165,6 +174,7 @@ class Search(controllers.Controller):
         for coll in model.Collection.query.all():
             collections[coll.branchname] = str(coll.id)
         collections["ALL"] = '0' 
+        
         count = len(packages)
         
         return dict(title=self.appTitle + ' -- Search packages for: ' 
