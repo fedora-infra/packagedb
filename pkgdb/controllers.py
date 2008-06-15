@@ -102,11 +102,7 @@ class Root(controllers.RootController):
         This page serves as an overview of the entire PackageDB.  It needs to
         tell developers where to get more information on their packages.
         '''
-        # a little helper so we don't have to write/update form selects manually
-        releases = sqlalchemy.select([model.Collection.id,
-                    model.Collection.name, model.Collection.version]).execute()
-        return dict(title=self.appTitle, version=release.VERSION,
-                    releases=releases)
+        return dict(title=self.appTitle, version=release.VERSION)
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, previous_url=None, *args, **kwargs):
