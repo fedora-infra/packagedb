@@ -11,7 +11,10 @@
     <p><span py:for="coll in sorted(collections.keys())">
             [<a py:content="coll" href="${tg.url('/search/package/' +
                 searchon + '/' + collections[coll] + '/' + operator + '/' + query)}" >Collection</a>]
-    </span></p></div> 
+    </span></p>
+    <br />
+    <p><a href="${tg.url('/search/')}">Advanced search</a></p>
+    </div> 
     <br />
     <div py:if='packages!=[]'>
     <p>$count matches found in <strong>$release</strong> for package 
