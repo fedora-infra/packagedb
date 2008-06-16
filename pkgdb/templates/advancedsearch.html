@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xml:lang="en" lang="en">
+  <xi:include href="layout.html" />
+  <head />
+  <body>
+    <h3>Search Packages</h3>
+         <script type="text/javascript">
+                      <!--
+                      function jump1(){
+                      for (i=0;i<document.forms[1].searchon.length;i++) {
+                          if (document.forms[1].searchon[i].checked) {
+                              searchon = document.forms[1].searchon[i].value;
+                          }
+                      }
+                      if (document.forms[1].operator[0].checked) {
+                         operator = "AND"
+                      } else { operator = "OR" }
+                          window.location='/search/package/' + searchon + '/' + 
+                             document.forms[1].release.value + '/' + operator + 
+                                 '/' + document.forms[1].searchwords.value;
+                      return false
+                      }
+                      //-->
+     </script> 
+<p>This is the advanced package search page.</p>
+    <form action="${tg.url('/search/package/')}" method="get" onsubmit="return jump1()">
+    <p>Keywords: <input id="package" name="searchwords" size="20" type="text" />
+        <input type="radio" id="AND" name="operator" value="AND" checked="checked" />
+            <label for="AND">AND</label>
+        <input type="radio" id="OR" name="operator" value="OR" />
+            <label for="OR">OR</label> 
+    <input type="submit" value="Search" /> 
+    </p>
+    <p>Release: <select id="release" name="release">
+            <option value="0">any</option>
+            <option py:for="release in releases" value="$release.id">$release.name $release.version</option>
+        </select></p>
+    <p>Search on:
+    <input type="radio" id="both" name="searchon" value="both" checked="checked" />
+        <label for="both">name and description</label>
+    <input type="radio" id="name" name="searchon" value="name" />
+        <label for="name">name</label>
+    <input type="radio" id="description" name="searchon" value="description" />
+        <label for="description">description</label>
+    </p>
+   
+    </form>
+    <br />
+    <p>You can build your query above, but you can also play around with the URL:</p>
+    <p><em>/search/package/name/8/OR/vim emacs</em> - searches for all packages containing the words vim or emacs in their name in the Fedora devel collections</p>
+    </body>
+</html>
+

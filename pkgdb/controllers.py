@@ -21,6 +21,7 @@
 Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
+import sqlalchemy
 
 from turbogears import controllers, expose, config
 from turbogears.i18n.tg_gettext import gettext as _
@@ -28,13 +29,14 @@ from turbogears import identity, redirect
 from cherrypy import request, response
 import logging
 
-from pkgdb import release
+from pkgdb import release, model
 
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
 from pkgdb.packages import Packages
 from pkgdb.users import Users
 from pkgdb.stats import Stats
+from pkgdb.search import Search
 
 log = logging.getLogger("pkgdb.controllers")
 
@@ -90,6 +92,7 @@ class Root(controllers.RootController):
     packages = Packages(fas, appTitle)
     users = Users(fas, appTitle)
     stats = Stats(fas, appTitle)
+    search = Search(fas, appTitle)
 
     @expose(template='pkgdb.templates.overview')
     def index(self):
