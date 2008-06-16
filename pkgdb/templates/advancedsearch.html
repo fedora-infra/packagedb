@@ -26,7 +26,6 @@
                       //-->
      </script> 
 <p>This is the advanced package search page.</p>
-    <br />
     <form action="${tg.url('/search/package/')}" method="get" onsubmit="return jump1()">
     <p>Keywords: <input id="package" name="searchwords" size="20" type="text" />
         <input type="radio" id="AND" name="operator" value="AND" checked="checked" />
@@ -49,6 +48,9 @@
     </p>
    
     </form>
+    <br />
+    <p>You can build your query above, but you can also play around with the URL:</p>
+    <p><em>/search/package/name/8/OR/vim emacs</em> - searches for all packages containing the words vim or emacs in their name in the Fedora devel collections</p>
     </body>
 </html>
 
