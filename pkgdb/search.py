@@ -95,7 +95,7 @@ class Search(controllers.Controller):
         '''
         
         # case insensitive
-        query = searchwords.lower() # .split() 
+        query = searchwords.lower() 
        
         if operator == 'OR':
             query = query.split()  # -> list
@@ -148,7 +148,7 @@ class Search(controllers.Controller):
             if pkgl not in s:
                 s.add(pkgl)
                 matches.append(pkgl)
-       # return a list of all the unique package names, but keeping the order
+        # return a list of all the unique package names, but keeping the order
         names = []
         s = set()
         for pkgl in matches:
@@ -168,7 +168,7 @@ class Search(controllers.Controller):
                                     distinct=True).execute().rowcount
         # remove the packages that don't correspond to the desired release
         del_list = []
-        if release in range(1,num_of_colls):
+        if release in range(1,num_of_colls+1):
             for i in range(0,len(packages)):
                 present = 0
                 for j in range(0,len(packages[i])):
@@ -181,23 +181,19 @@ class Search(controllers.Controller):
             del packages[i]
         count = len(packages) 
             
-                    #count = count - 1
         # get the name of the collection 
-        if release in range(1,num_of_colls):
+        if release in range(1,num_of_colls+1):
            collection_helper = model.PackageListing.query.filter(
                  model.PackageListing.collectionid==release).first().collection
            release = collection_helper.name +' '+ collection_helper.version
         else:
            release = 'all'
 
-               # unless all are in a release deleete the sublist !if packages[i][j].collectionid != release:
-                
         collections = {} # build a dict of all the available releases'  
                          # branchnames as keys and string ids as values
         for coll in model.Collection.query.all():
             collections[coll.branchname] = str(coll.id)
         collections["ALL"] = '0' 
-        
         
         return dict(title=self.appTitle + ' -- Search packages for: ' 
                                                         + searchwords,
