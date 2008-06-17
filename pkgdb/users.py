@@ -133,7 +133,7 @@ class Users(controllers.Controller):
                         ' a link on the fedoraproject.org website, please' \
                         ' report it.' % fasname
                     )
-                if request_format != 'json':
+                if request_format() != 'json':
                         error['tg_template'] = 'pkgdb.templates.errors'
                 return error
             fasid = user['id']
@@ -213,7 +213,7 @@ class Users(controllers.Controller):
                                 ' received this error from a link on the' \
                                 ' fedoraproject.org website, please report' \
                                 ' it.' % {'username': fasname})
-                if request_format != 'json':
+                if request_format() != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
