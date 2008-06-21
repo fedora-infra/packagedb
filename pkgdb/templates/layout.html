@@ -34,13 +34,11 @@
       tgUserUserId = "${tg.identity.user.id}";
     </script>
     <script type="text/javascript">
-         <!--
          function jump(){
-         window.location='/search/package/both/0/AND/' + 
+           window.location="${tg.url('/search/package/both/0/AND/')}" + 
             document.forms[0].searchwords.value;
          return false
          }
-         //-->
     </script> 
   </head>
   <body py:match="body" py:attrs="select('@*')">
