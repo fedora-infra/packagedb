@@ -84,7 +84,7 @@ class Root(controllers.RootController):
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
 
-    fas = AccountSystem(baseURL, username, password)
+    fas = AccountSystem(baseURL, username=username, password=password)
     fas.cache = UserCache(fas)
 
     acls = Acls(fas, appTitle)
