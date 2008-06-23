@@ -112,23 +112,13 @@ a.cvs
   display: none;
 }
 
-.filter
+#smalltext
 {
-  background: #ddd;
-  float: right;
-  border-width: 1px;
-  border-color: #000;
-  border-style: solid;
-  padding: .4em;
-  margin: .1em;
+    line-height: 80%;
+    font-size: 80%;
+    background-color: #efefef;
+    padding: .3em;
 }
-
-.filter li
-{
-  list-style-type: none;
-  line-height:0;
-}
-
 /*
  * Package DB Specific styles
  */
