@@ -18,7 +18,7 @@
                       if (document.forms[1].operator[0].checked) {
                          operator = "AND"
                       } else { operator = "OR" }
-                          window.location='/pkgdb/search/package/' + searchon + '/' + 
+                          window.location=${tg.url('/search/package/')} + searchon + '/' + 
                              document.forms[1].release.value + '/' + operator + 
                                  '/' + document.forms[1].searchwords.value;
                       return false
