@@ -1,4 +1,26 @@
+=== packagedb-0.3.5 ===
+2008-06-21  Toshio Kuratomi <badger@Clingman> - r334
+* pkgdb/templates/layout.html: Fix search URL.
+
+2008-06-21  Toshio Kuratomi <badger@Clingman> - r333
+* Turn username password params to BaseClient into keywordargs.  This makes the
+  call compatible with BaseClient 0.3.
+
+2008-06-16  Toshio Kuratomi <badger@Clingman> - r332
+* Fix request_format to be a function call.
+
+2008-06-16  Toshio Kuratomi <badger@Clingman> - r331
+* Add Casey.
+
+2008-06-16  Ionuț Arțăriși <mapleoin@lavabit.com> - r330
+* merged with mapleoin-devel for package search functionality
+
 === packagedb-0.3.4 ===
+2008-06-10  Toshio Kuratomi <badger@Clingman> - r329
+* pkgdb/acls.py: Fix problem introduced by pylint refactoring.
+
+2008-06-09  Toshio Kuratomi <badger@Clingman> - r328
+* ChangeLog: Update for new release.
 
 2008-06-09  Toshio Kuratomi <badger@Clingman> - r327
 * Merge should_open fixes from Casey.
