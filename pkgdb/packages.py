@@ -145,7 +145,7 @@ class Packages(controllers.Controller):
 	if identity.current.user == None:
 		can_set_shouldopen = False
 	else:
-		can_set_shouldopen = identity.in_any_group('cvsadmin') or \
+		can_set_shouldopen = 'cvsadmin' in identity.current.groups or \
 			identity.current.user.id in [x.owner for x in pkgListings]
 		for people in [x.people for x in pkgListings]:
 		    if can_set_shouldopen: break
