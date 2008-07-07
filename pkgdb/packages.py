@@ -46,7 +46,10 @@ class Packages(controllers.Controller):
         self.bugs = Bugs(appTitle)
         self.dispatcher = PackageDispatcher(fas)
         self.removedStatus = model.StatusTranslation.query.filter_by(
-                statusname='Removed', language='C').first().statuscodeid
+            statusname='Removed', language='C').first().statuscodeid
+    	self.approvedStatus = model.StatusTranslation.query.filter_by(
+            statusname='Approved', language='C').one().statuscodeid
+
 
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
@@ -155,7 +158,7 @@ class Packages(controllers.Controller):
                     if person.userid == identity.current.user.id:
                         for acl in person.acls:
                             if acl.acl == 'approveacls' and acl.status \
-                                    == self.approvedStatus.statuscodeid:
+                                    == self.approvedStatus:
                                 can_set_shouldopen = True
                                 break
                         if can_set_shouldopen:
