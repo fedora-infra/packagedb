@@ -470,9 +470,13 @@ jQuery(document).ready(function() {
         connect(statusBoxes[statusNum], 'onfocus', save_status);
     }
 
-    var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldOpenBox')[0];
-    connect(shouldOpenBox, 'onchange', partial(make_request, '/toggle_shouldopen',
-			    toggle_shouldopen, toggle_shouldopen_failure));
+    var shouldOpenBox = getElementsByTagAndClassName('input',
+            'shouldOpenBox')[0];
+    if (shouldOpenBox) {
+        connect(shouldOpenBox, 'onchange', partial(make_request,
+                    '/toggle_shouldopen', toggle_shouldopen,
+                    toggle_shouldopen_failure));
+    }
 
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
     for (var aclReqNum in aclReqBoxes) {
