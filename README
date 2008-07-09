@@ -72,22 +72,29 @@ Get and Build the Source
 
 Setup the Database
 ~~~~~~~~~~~~~~~~~~
-Make sure there's a line in your /var/lib/pgsql/data/pg_hba.conf that says::
-
-  host	all	all	127.0.0.1/32	md5
-
-It might look like this now::
+Make sure postgres is set to allow connections over tcp/ip using password
+authentication.  edit /var/lib/pgsql/data/pg_hba.conf.  You might find a line
+like this::
 
   host	all 	all	127.0.0.1/32	ident sameuser
 
-Create the postgres user that you'll set in the config file::
+Instead of that line, you need one that looks like this::
+
+  host	all	all	127.0.0.1/32	md5
+
+Create the postgres users that can access the database.  Note that the pkgdb
+web interface will use the pkgdbadmin user.  Other scripts which only read from
+the database can use the pkgdbreadonly user to read information only::
 
   sudo /etc/init.d/postgresql start
   sudo -u postgres createuser -P -E pkgdbadmin
+  sudo -u postgres createuser -P -E pkgdbreadonly
 
 Get some tet data and import it into the database::
   wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20080422.dump.bz2
   bzcat pkgdb-20080422.dump.bz2 | sudo -u postgres psql
+
+Your postgres server is now all set.
 
 Start the Server
 ~~~~~~~~~~~~~~~~
