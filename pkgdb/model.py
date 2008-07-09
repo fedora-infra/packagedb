@@ -197,7 +197,7 @@ class Package(SABase):
     '''
     # pylint: disable-msg=R0902, R0903
     def __init__(self, name, summary, statuscode, description=None,
-            reviewurl=None):
+            reviewurl=None, shouldopen=None):
         # pylint: disable-msg=R0913
         super(Package, self).__init__()
         self.name = name

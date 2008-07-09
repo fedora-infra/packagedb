@@ -70,7 +70,7 @@ rm -rf %{buildroot}
 - New upstream release.
 
 * Fri Apr 11 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.3.1-1
-- Minor enhancements to mypackages, fixes to acls.
+- Minor fixes.
 
 * Fri Apr 11 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.3-1
 - SQLAlchemy-0.4 release.

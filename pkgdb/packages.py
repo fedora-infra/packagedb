@@ -46,9 +46,9 @@ class Packages(controllers.Controller):
         self.bugs = Bugs(appTitle)
         self.dispatcher = PackageDispatcher(fas)
         self.removedStatus = model.StatusTranslation.query.filter_by(
-            statusname='Removed', language='C').first().statuscodeid
-       self.approvedStatus = model.StatusTranslation.query.filter_by(
-            statusname='Approved', language='C').one().statuscodeid
+                statusname='Removed', language='C').one().statuscodeid
+        self.approvedStatus = model.StatusTranslation.query.filter_by(
+                statusname='Approved', language='C').one().statuscodeid
 
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
