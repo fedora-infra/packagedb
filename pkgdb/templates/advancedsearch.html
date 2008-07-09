@@ -16,11 +16,15 @@
                           }
                       }
                       if (document.forms[1].operator[0].checked) {
-                         operator = "AND"
-                      } else { operator = "OR" }
-                          window.location='/search/package/' + searchon + '/' + 
-                             document.forms[1].release.value + '/' + operator + 
-                                 '/' + document.forms[1].searchwords.value;
+                          operator = "AND"
+                      } else {
+                          operator = "OR"
+                      }
+                      window.location = "${tg.url('/pkgdb/search/package/')}" +
+                              searchon + '/' +
+                              document.forms[1].release.value + '/' +
+                              operator + '/' +
+                              document.forms[1].searchwords.value;
                       return false
                       }
                       //-->
