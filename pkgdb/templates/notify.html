@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <head />
+  <body>
+    <form py:def="collection_filter(collections, name, version, eol)"
+      method="GET" class="filter" action="${tg.url('/acls/notify')}">
+      Limit results to these collections
+      <ul>
+        <li><label>
+          <input type="checkbox" name="eol" value="eol"
+          py:attrs="{'checked': tg.checker(eol)}"/>
+          Include EOL Releases
+        </label></li>
+        <li><label>
+          <select id="name" name="name">
+            <option value="">any</option>
+            <option py:for="collection in collections.keys()"
+              py:attrs="{'value': collection}">${collection}
+            </option>
+          </select>
+        </label></li>
+        <li><label>
+          <select id="version" name="version">
+            <option value="">any</option>
+            <option py:for="version in set(collections.items())"
+            py:attrs="{'value': version}">${version}
+            </option>
+          </select>
+        </label></li>
+      </ul>
+      <button type="submit">Filter</button>
+    </form>
+    ${collection_filter(collections, name, version, eol)}
+
+    <table>
+      <tr py:for="pkg in sorted(packages.keys())">
+        <td>${pkg}</td>
+        <td>${', '.join(packages[pkg])}</td>
+      </tr>
+    </table>
+  </body>
+</html>
