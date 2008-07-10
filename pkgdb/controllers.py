@@ -21,7 +21,6 @@
 Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
-import sqlalchemy
 
 from turbogears import controllers, expose, config
 from turbogears.i18n.tg_gettext import gettext as _
@@ -29,7 +28,7 @@ from turbogears import identity, redirect
 from cherrypy import request, response
 import logging
 
-from pkgdb import release, model
+from pkgdb import release
 
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
@@ -69,7 +68,17 @@ class UserCache(dict):
 
         If the user does not exist then, KeyError will be raised.
         '''
+        try:
+            user_id = user_id.strip()
+        except AttributeError:
+            # If this is a string, strip leading and trailing whitespace.
+            # If it's a number there's no difficulty.
+            pass
         if user_id not in self:
+            if not user_id:
+                # If the key is just whitespace, raise KeyError immediately,
+                # don't try to refresh the cache
+                raise KeyError(user_id)
             self.force_refresh()
         return super(UserCache, self).__getitem__(user_id)
 
@@ -109,7 +118,7 @@ class Root(controllers.RootController):
 
         This shows a small login box to type in your username and password
         from the Fedora Account System.
-        
+
         Arguments:
         :forward_url: The url to send to once authentication succeeds
         :previous_url: The url that sent us to the login page
@@ -128,7 +137,7 @@ class Root(controllers.RootController):
             if not forward_url:
                 forward_url = config.get('base_url_filter.base_url') + '/'
             raise redirect(forward_url)
-        
+
         forward_url = None
         previous_url = request.path
 
@@ -142,17 +151,16 @@ class Root(controllers.RootController):
             msg = _("Please log in.")
             forward_url = request.headers.get("Referer", "/")
 
-        response.status=403
+        response.status = 403
         return dict(message=msg, previous_url=previous_url, logging_in=True,
                     original_parameters=request.params,
                     forward_url=forward_url,
                     title='Fedora Account System Login')
 
-    @expose()
+    @expose(allow_json=True)
     def logout(self):
         '''Logout from the database.
         '''
         # pylint: disable-msg=R0201
         identity.current.logout()
         raise redirect(request.headers.get("Referer","/"))
-
