@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:xi="http://www.w3.org/2001/XInclude"
   xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
   py:strip="">
   <?python
     import socket
@@ -9,6 +9,7 @@
     _hostname = socket.gethostname()
     _version = pkgdb.release.VERSION
   ?>
+
   <head py:match="head" py:attrs="select('@*')">
     <meta content="text/html; charset=UTF-8" http-equiv="content-type"
       py:replace="''" />
@@ -77,11 +78,12 @@
                 <input id="search" type="submit" value="Go" />
             </p>
     </form>
-  
+
         </div>
-        
+
       </div>
       <div id="content">
+        <div id="status_block" py:if="tg_flash" class="flash" py:content="tg_flash"></div>
         <div py:replace="select('*|text()')" />
       </div>
     </div>

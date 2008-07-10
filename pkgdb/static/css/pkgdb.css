@@ -119,6 +119,15 @@ a.cvs
     background-color: #efefef;
     padding: .3em;
 }
+
+.flash
+{
+    background: #DEE681 url(../images/success.png) 10px 50% no-repeat;
+    border: 1px solid #CCBBAA;
+    padding: 1.5ex 15px 1.5ex 43px;
+    margin: 1ex 0;
+}
+
 /*
  * Package DB Specific styles
  */
