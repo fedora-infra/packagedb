@@ -738,6 +738,17 @@ class PackageDispatcher(controllers.Controller):
         cvsextrasCheckoutAcl = model.GroupPackageListingAcl('checkout',
                 self.approvedStatus.statuscodeid)
         cvsextrasCheckoutAcl.grouppackagelisting = cvsextrasListing
+        uberpackagerListing = model.GroupPackageListing(self.groups['uberpackager'])
+        uberpackagerListing.packagelisting = pkgListing
+        uberpackagerCommitAcl = model.GroupPackageListingAcl('commit',
+                self.approvedStatus.statuscodeid)
+        uberpackagerCommitAcl.grouppackagelisting = uberpackagerListing
+        uberpackagerBuildAcl = model.GroupPackageListingAcl('build',
+                self.approvedStatus.statuscodeid)
+        uberpackagerBuildAcl.grouppackagelisting = uberpackagerListing
+        uberpackagerCheckoutAcl = model.GroupPackageListingAcl('checkout',
+                self.approvedStatus.statuscodeid)
+        uberpackagerCheckoutAcl.grouppackagelisting = uberpackagerListing
         # pylint: enable-msg=W0201
 
         # Create a log of changes
@@ -802,6 +813,25 @@ class PackageDispatcher(controllers.Controller):
 
         for changedAcl in (cvsextrasCommitAcl, cvsextrasBuildAcl,
                 cvsextrasCheckoutAcl):
+            pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
+                    identity.current.display_name,
+                    identity.current.user_name,
+                    changedAcl.acl,
+                    model.StatusTranslation.query.filter_by(
+                        statuscodeid=changedAcl.statuscode).one().statusname,
+
+                    self.groups[changedAcl.grouppackagelisting.groupid],
+                    pkgListing.package.name,
+                    pkgListing.collection.name,
+                    pkgListing.collection.version)
+            pkgLog = model.GroupPackageListingAclLog(
+                    identity.current.user.id,
+                    changedAcl.statuscode, pkgLogMessage)
+            pkgLog.acl = changedAcl
+            logs.append(pkgLogMessage)
+
+        for changedAcl in (uberpackagerCommitAcl, uberpackagerBuildAcl,
+                uberpackagerCheckoutAcl):
             pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
                     identity.current.display_name,
                     identity.current.user_name,
