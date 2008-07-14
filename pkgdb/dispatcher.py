@@ -727,28 +727,22 @@ class PackageDispatcher(controllers.Controller):
                 self.approvedStatus.statuscodeid)
         pkgListing.collection = develCollection
         pkgListing.package = pkg
-        cvsextrasListing = model.GroupPackageListing(self.groups['cvsextras'])
-        cvsextrasListing.packagelisting = pkgListing
-        cvsextrasCommitAcl = model.GroupPackageListingAcl('commit',
-                self.approvedStatus.statuscodeid)
-        cvsextrasCommitAcl.grouppackagelisting = cvsextrasListing
-        cvsextrasBuildAcl = model.GroupPackageListingAcl('build',
-                self.approvedStatus.statuscodeid)
-        cvsextrasBuildAcl.grouppackagelisting = cvsextrasListing
-        cvsextrasCheckoutAcl = model.GroupPackageListingAcl('checkout',
-                self.approvedStatus.statuscodeid)
-        cvsextrasCheckoutAcl.grouppackagelisting = cvsextrasListing
-        uberpackagerListing = model.GroupPackageListing(self.groups['uberpackager'])
-        uberpackagerListing.packagelisting = pkgListing
-        uberpackagerCommitAcl = model.GroupPackageListingAcl('commit',
-                self.approvedStatus.statuscodeid)
-        uberpackagerCommitAcl.grouppackagelisting = uberpackagerListing
-        uberpackagerBuildAcl = model.GroupPackageListingAcl('build',
-                self.approvedStatus.statuscodeid)
-        uberpackagerBuildAcl.grouppackagelisting = uberpackagerListing
-        uberpackagerCheckoutAcl = model.GroupPackageListingAcl('checkout',
-                self.approvedStatus.statuscodeid)
-        uberpackagerCheckoutAcl.grouppackagelisting = uberpackagerListing
+        
+        changedAcls = ()
+
+        for group in ('cvsextras', 'uberpackager'):
+            groupListing = model.GroupPackageListing(self.groups[group])
+            groupListing.packagelisting = pkgListing
+            groupCommitAcl = model.GroupPackageListingAcl('commit',
+                    self.approvedStatus.statuscodeid)
+            groupCommitAcl.grouppackagelisting = groupListing
+            groupBuildAcl = model.GroupPackageListingAcl('build',
+                    self.approvedStatus.statuscodeid)
+            groupBuildAcl.grouppackagelisting = groupListing
+            groupCheckoutAcl = model.GroupPackageListingAcl('checkout',
+                    self.approvedStatus.statuscodeid)
+            groupCheckoutAcl.grouppackagelisting = groupListing
+            changedAcls += (groupCommitAcl, groupBuildAcl, groupCheckoutAcl)
         # pylint: enable-msg=W0201
 
         # Create a log of changes
@@ -811,27 +805,7 @@ class PackageDispatcher(controllers.Controller):
                 pkgLogMessage)
         pkgLog.package = pkg
 
-        for changedAcl in (cvsextrasCommitAcl, cvsextrasBuildAcl,
-                cvsextrasCheckoutAcl):
-            pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
-                    identity.current.display_name,
-                    identity.current.user_name,
-                    changedAcl.acl,
-                    model.StatusTranslation.query.filter_by(
-                        statuscodeid=changedAcl.statuscode).one().statusname,
-
-                    self.groups[changedAcl.grouppackagelisting.groupid],
-                    pkgListing.package.name,
-                    pkgListing.collection.name,
-                    pkgListing.collection.version)
-            pkgLog = model.GroupPackageListingAclLog(
-                    identity.current.user.id,
-                    changedAcl.statuscode, pkgLogMessage)
-            pkgLog.acl = changedAcl
-            logs.append(pkgLogMessage)
-
-        for changedAcl in (uberpackagerCommitAcl, uberpackagerBuildAcl,
-                uberpackagerCheckoutAcl):
+        for changedAcl in changedAcls:
             pkgLogMessage = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
                     identity.current.display_name,
                     identity.current.user_name,
