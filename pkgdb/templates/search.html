@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <xi:include href="paginator.html" />
+  <xi:include href="pkglistinglist.html" />
+  <head />
+  <body>
+    <div id="smalltext"><p>Search in a specific collection: </p>
+    <p><span py:for="coll in sorted(collections.keys())">
+            [<a py:content="coll" href="${tg.url('/search/package/' +
+                searchon + '/' + collections[coll] + '/' + operator + '/' + query)}" >Collection</a>]
+    </span></p>
+    <br />
+    <p><a href="${tg.url('/search/')}">Advanced search</a></p>
+    </div> 
+    <br />
+    <div py:if='packages!=[]'>
+    <p>$count matches found in <strong>$release</strong> for package 
+      <strong>$query:</strong></p>
+    ${paginate_nav()}
+    ${pkglist(packages)}
+    ${paginate_nav()}
+    </div>
+    <p py:if='packages==[]'>
+        We are sorry, but there were no matches to display for: 
+	<strong>$query</strong> in collection: <strong>$release</strong>.
+    </p>
+  </body>
+</html>

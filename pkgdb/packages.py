@@ -46,7 +46,9 @@ class Packages(controllers.Controller):
         self.bugs = Bugs(appTitle)
         self.dispatcher = PackageDispatcher(fas)
         self.removedStatus = model.StatusTranslation.query.filter_by(
-                statusname='Removed', language='C').first().statuscodeid
+                statusname='Removed', language='C').one().statuscodeid
+        self.approvedStatus = model.StatusTranslation.query.filter_by(
+                statusname='Approved', language='C').one().statuscodeid
 
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
@@ -143,19 +145,41 @@ class Packages(controllers.Controller):
 
         # Check for shouldopen perms
         if identity.current.user == None:
+            # Anonymous users cannot set shouldopen
             can_set_shouldopen = False
         else:
-            can_set_shouldopen = bool(identity.in_any_group('cvsadmin') or \
-                identity.current.user.id in [x.owner for x in pkgListings])
-            for people in [x.people for x in pkgListings]:
-                if can_set_shouldopen: break
-                for person in people:
-                    if person.userid == identity.current.user.id:
-                        for acl in person.acls:
-                            if acl.acl == 'approveacls' and acl.status == self.approvedStatus.statuscodeid:
-                                can_set_shouldopen = True
-                                break
-                        if can_set_shouldopen: break
+            # admins and owners of any branch can set shouldopen
+            can_set_shouldopen = 'cvsadmin' in identity.current.groups or \
+                    identity.current.user.id in [x.owner for x in pkgListings]
+            if not can_set_shouldopen:
+                # Set up a bunch of generators to iterate through the acls
+                # on this package
+
+                # Each iteration, retrieve a list of people with acls on this
+                # package.
+                peopleLists = (listing.people for listing in pkgListings)
+                while True:
+                    try:
+                        # Each iteration, retrieve a set of people from the
+                        # list
+                        people = peopleLists.next()
+                        # Retrieve all the lists of acls for the current user
+                        # for each PackageListing
+                        aclLists = (p.acls for p in people \
+                                    if p.userid == identity.current.user.id)
+                        # For each list of acls...
+                        for acls in aclLists:
+                            # ...check each acl
+                            for acl in acls:
+                                if acl.acl == 'approveacls' and acl.status \
+                                        == self.approvedStatus:
+                                    # If the user has approveacls we're done
+                                    can_set_shouldopen = True
+                                    raise StopIteration
+                    except StopIteration:
+                        # When we get StopIteration because the peopleList is
+                        # exhausted or we've found a match, exit the loop
+                        break
 
         for pkg in pkgListings:
             pkg.jsonProps = {'PackageListing': ('package', 'collection',

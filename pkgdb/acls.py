@@ -21,13 +21,63 @@
 Send acl information to third party tools.
 '''
 
-from sqlalchemy import select, and_
-from turbogears import controllers, expose
+from sqlalchemy import select, and_, or_
+from turbogears import expose, validate, error_handler
+from turbogears import controllers, validators
+
 from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
         StatusTranslation, GroupPackageListingAcl, PackageListing,
         PersonPackageListing, PersonPackageListingAcl,)
+from pkgdb.model import PackageTable, CollectionTable
 
 ORPHAN_ID = 9900
+
+from pkgdb.validators import BooleanValue, CollectionNameVersion
+
+try:
+    from fedora.tg.util import jsonify_validation_errors
+except ImportError:
+    from fedora.tg.util import request_format
+    import cherrypy
+    def jsonify_validation_errors():
+        # Check for validation errors
+        errors = getattr(cherrypy.request, 'validation_errors', None)
+        if not errors:
+            return None
+
+        # Set the message for both html and json output
+        format = request_format()
+        if format == 'html':
+            separator = u'<br />'
+        else:
+            separator = u'\n'
+        message = separator.join([u'%s: %s' % (param, msg) for param, msg in
+            errors.items()])
+        flash(message)
+
+        # If json, return additional information to make this an exception
+        if format == 'json':
+            # Note: explicit setting of tg_template is needed in TG < 1.0.4.4
+            # A fix has been applied for TG-1.0.4.5
+            return dict(exc='Invalid', tg_template='json')
+        return None
+
+#
+# Validators
+#
+
+class NotifyList(validators.Schema):
+    # We don't use a more specific validator for collection or version because
+    # the chained validator does it for us and we don't want to hit the
+    # database multiple times
+    name = validators.UnicodeString(not_empty=False, strip=True)
+    version = validators.UnicodeString(not_empty=False, strip=True)
+    eol = BooleanValue
+    chained_validators = (CollectionNameVersion(),)
+
+#
+# Supporting Objects
+#
 
 class AclList(object):
     '''List of people and groups who hold this acl.
@@ -59,6 +109,10 @@ class BugzillaInfo(object):
                 'cclist' : self.cclist,
                 'qacontact' : self.qacontact
                 }
+
+#
+# Controllers
+#
 
 class Acls(controllers.Controller):
     '''Controller for lists of acl/owner information needed by external tools.
@@ -444,7 +498,7 @@ class Acls(controllers.Controller):
                 ),
             order_by=(PersonPackageListing.userid,), distinct=True
             )
-        
+
         # Save them into a python data structure
         for record in personAcls.execute():
             username = userList[record[2]]
@@ -455,3 +509,82 @@ class Acls(controllers.Controller):
         # There are no group acls to take advantage of this.
         return dict(title=self.appTitle + ' -- Bugzilla ACLs',
                 bugzillaAcls=bugzillaAcls)
+
+    @validate(validators=NotifyList())
+    @error_handler()
+    @expose(template='genshi-text:pkgdb.templates.plain.notify',
+            as_format='plain', accept_format='text/plain',
+            content_type='text/plain; charset=utf-8', format='text')
+    @expose(template='pkgdb.templates.notify', allow_json=True)
+    def notify(self, name=None, version=None, eol=False):
+        '''List of usernames that should be notified of changes to a package.
+
+        For the collections specified we want to retrieve all of the owners,
+        watchbugzilla, and watchcommits accounts.
+
+        Keyword Arguments:
+        :name: Set to a collection name to filter the results for that
+        :version: Set to a collection version to further filter results for a
+            single version
+        :eol: Set to True if you want to include end of life distributions
+        :email: If set to True, this will return email addresses from FAS
+            instead of Fedora Project usernames
+        '''
+        # Check for validation errors requesting this form
+        errors = jsonify_validation_errors()
+        if errors:
+            return errors
+
+        # Retrieve Packages, owners, and people on watch* acls
+        query = select((Package.name, PackageListing.owner,
+            PersonPackageListing.userid),
+            from_obj=(PackageTable.join(PackageListing).outerjoin(
+                PersonPackageListing).outerjoin(PersonPackageListingAcl),
+                CollectionTable)
+            ).where(or_(PersonPackageListingAcl.acl.in_(
+                ('watchbugzilla', 'watchcommits')),
+                PersonPackageListingAcl.acl==None)
+                ).where(Collection.id==PackageListing.collectionid
+                        ).distinct().order_by('name')
+        if not eol:
+            # Filter out eol distributions
+            query = query.where(Collection.statuscode.in_(
+                (self.activeStatus, self.develStatus)))
+
+        # Only grab from certain collections
+        if name:
+            query = query.where(Collection.name==name)
+            if version:
+                # Limit the versions of those collections
+                query = query.where(Collection.version==version)
+
+        pkgs = {}
+        # turn the query into a python object
+        for pkg in query.execute():
+            additions = []
+            for userid in (pkg[1], pkg[2]):
+                try:
+                    additions.append(self.fas.cache[userid]['username'])
+                except KeyError:
+                    # We get here when we have a Null in the data (perhaps
+                    # there was no one on the CC list.)
+                    pass
+            try:
+                pkgs[pkg[0]].update(additions)
+            except KeyError:
+                pkgs[pkg[0]] = set(additions)
+
+        # Retrieve list of collection information for generating the
+        # collection form
+        collectionList = Collection.query.order_by('name').order_by('version')
+        collections = {}
+        for collection in collections:
+            try:
+                collections[collection.name].append(collection.version)
+            except KeyError:
+                collections[collection.name] = [collection.version]
+
+        # Return the data
+        return dict(title='%s -- Notification List' % self.appTitle,
+                packages=pkgs, collections=collections, name=name,
+                version=version, eol=eol)

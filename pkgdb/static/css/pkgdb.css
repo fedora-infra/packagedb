@@ -112,21 +112,20 @@ a.cvs
   display: none;
 }
 
-.filter
+#smalltext
 {
-  background: #ddd;
-  float: right;
-  border-width: 1px;
-  border-color: #000;
-  border-style: solid;
-  padding: .4em;
-  margin: .1em;
+    line-height: 80%;
+    font-size: 80%;
+    background-color: #efefef;
+    padding: .3em;
 }
 
-.filter li
+.flash
 {
-  list-style-type: none;
-  line-height:0;
+    background: #DEE681 url(../images/success.png) 10px 50% no-repeat;
+    border: 1px solid #CCBBAA;
+    padding: 1.5ex 15px 1.5ex 43px;
+    margin: 1ex 0;
 }
 
 /*
