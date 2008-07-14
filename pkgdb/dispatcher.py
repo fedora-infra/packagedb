@@ -727,7 +727,7 @@ class PackageDispatcher(controllers.Controller):
                 self.approvedStatus.statuscodeid)
         pkgListing.collection = develCollection
         pkgListing.package = pkg
-        
+
         changedAcls = ()
 
         for group in ('cvsextras', 'uberpackager'):
