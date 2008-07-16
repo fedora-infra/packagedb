@@ -37,7 +37,10 @@ from pkgdb.validators import BooleanValue, CollectionNameVersion
 try:
     from fedora.tg.util import jsonify_validation_errors
 except ImportError:
+    # Not a recent enough version of python-fedora.  This is only a
+    # temporary workaround
     from fedora.tg.util import request_format
+    from turbogears import flash
     import cherrypy
     def jsonify_validation_errors():
         # Check for validation errors
@@ -46,13 +49,10 @@ except ImportError:
             return None
 
         # Set the message for both html and json output
-        format = request_format()
-        if format == 'html':
-            separator = u'<br />'
-        else:
-            separator = u'\n'
-        message = separator.join([u'%s: %s' % (param, msg) for param, msg in
+        message = u'\n'.join([u'%s: %s' % (param, msg) for param, msg in
             errors.items()])
+        if request_format == 'html':
+            message.translate({ord('\n'): u'<br />\n'})
         flash(message)
 
         # If json, return additional information to make this an exception
@@ -578,7 +578,7 @@ class Acls(controllers.Controller):
         # collection form
         collectionList = Collection.query.order_by('name').order_by('version')
         collections = {}
-        for collection in collections:
+        for collection in collectionList:
             try:
                 collections[collection.name].append(collection.version)
             except KeyError:
