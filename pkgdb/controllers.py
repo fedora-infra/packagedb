@@ -30,7 +30,7 @@ import logging
 
 from pkgdb import release
 
-from pkgdb.acls import Acls
+from pkgdb.lists import ListQueries
 from pkgdb.collections import Collections
 from pkgdb.packages import Packages
 from pkgdb.users import Users
@@ -96,12 +96,14 @@ class Root(controllers.RootController):
     fas = AccountSystem(baseURL, username=username, password=password)
     fas.cache = UserCache(fas)
 
-    acls = Acls(fas, appTitle)
     collections = Collections(fas, appTitle)
     packages = Packages(fas, appTitle)
     users = Users(fas, appTitle)
     stats = Stats(fas, appTitle)
     search = Search(fas, appTitle)
+    lists = ListQueries(fas, appTitle)
+    # For backwards compatibility:
+    acls = lists
 
     @expose(template='pkgdb.templates.overview')
     def index(self):

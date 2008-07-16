@@ -114,7 +114,7 @@ class BugzillaInfo(object):
 # Controllers
 #
 
-class Acls(controllers.Controller):
+class ListQueries(controllers.Controller):
     '''Controller for lists of acl/owner information needed by external tools.
 
     Although these methods can return web pages, the main feature is the json
