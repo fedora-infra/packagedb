@@ -74,30 +74,47 @@ class CollectionName(validators.FancyValidator):
 # Chained Validators
 #
 
-# Note: Chaned validators receive a dict in the value parameter so they are
-# not interchangable with validators for a single value.
+# Note: Chained validators take different params so they are not interchangable
+# with normal validators:
+# validate_python: field_dict instead of value.  This is a dictionary of the
+# fields passed into the schema.
+#
+# raising Invalid: error_dict.  In addition to the other values to Invalid()
+# we send an error_dict that maps the field to display an error with to the
+# message.
 
 class CollectionNameVersion(validators.FancyValidator):
     '''Test the combination of a Collection and Version for validity.'''
-    messages = {'nameless_version': _('Version specified without a collection'),
+    messages = {'nameless_version': _('Version specified without a collection'
+                    ' name'),
             'no_version': _('There is no collection for %(name)s-%(version)s'),
             'no_collection': _('Collection named %(name)s does not exist')}
 
-    def validate_python(self, value, state):
-        name = value.get('name')
-        version = value.get('version')
+    def validate_python(self, field_dict, state):
+        if not field_dict:
+            # It's okay for both to be none
+            return
+
+        errors = {}
+        name = field_dict.get('name')
+        version = field_dict.get('version')
         if (not name) and version:
-            raise validators.Invalid(self.message('nameless_version'),
-                    value, state)
-        if name and version:
+            errors['name'] = self.message('nameless_version', state)
+        elif name and version:
             try:
                 Collection.query.filter_by(name=name, version=version).one()
             except InvalidRequestError:
-                raise validators.Invalid(self.message('no_version', name=name,
-                    version=version), value, state)
-        if name and not version:
+                errors['version'] = self.message('no_version', state,
+                        name=name, version=version)
+        elif name and not version:
             try:
                 Collection.query.filter_by(name=name).first()
             except InvalidRequestError:
-                raise validators.Invalid(self.message('no_collection',
-                    name=name), value, state)
+                errors['name'] = self.message('no_collection', state, name=name)
+
+        if errors:
+            error_list = sorted(errors.iteritems())
+            error_message = '\n'.join([u'%s: %s' % (error, msg)
+                    for error, msg in error_list])
+            raise validators.Invalid(error_message, field_dict, state,
+                    error_dict=errors)
