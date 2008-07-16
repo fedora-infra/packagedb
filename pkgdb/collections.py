@@ -26,8 +26,9 @@ import sqlalchemy
 from turbogears import controllers, expose, paginate
 from turbogears.database import session
 
-from pkgdb import model
 from cherrypy import request
+
+from pkgdb.model import CollectionPackage, Collection, Package, PackageListing
 
 class Collections(controllers.Controller):
     '''Controller that deals with Collections.
@@ -49,9 +50,9 @@ class Collections(controllers.Controller):
         '''List the Collections we know about.
         '''
         # pylint: disable-msg=E1101
-        collections = model.CollectionPackage.query.order_by(
-                (model.CollectionPackage.c.name,
-                    model.CollectionPackage.c.version))
+        collections = CollectionPackage.query.order_by(
+                (CollectionPackage.c.name,
+                    CollectionPackage.c.version))
         # pylint: enable-msg=E1101
 
         return dict(title=self.appTitle + ' -- Collection Overview',
@@ -81,7 +82,7 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             # pylint: disable-msg=E1101
-            collectionEntry = model.Collection.query.filter_by(id=collectionId).one()
+            collectionEntry = Collection.query.filter_by(id=collectionId).one()
         except sqlalchemy.exceptions.InvalidRequestError, e:
             # Either the id doesn't exist or somehow it references more than
             # one value
@@ -118,10 +119,13 @@ class Collections(controllers.Controller):
                 'statusname': collectionEntry.status.translations[0].statusname
                 }
 
+        # SQLAlchemy mapped classes are monkey patched.
+        # pylint:disable-msg=E1101
         # Retrieve the packagelist for this collection
-        packages = model.Package.query.filter(
-                sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
-                    model.PackageListing.c.packageid==model.Package.c.id)
+        packages = Package.query.filter(
+                sqlalchemy.and_(PackageListing.c.collectionid==collectionId,
+                    PackageListing.c.packageid==Package.c.id)
                 )
+        # pylint:enable-msg=E1101
         return dict(title='%s -- %s %s' % (self.appTitle, collection['name'],
             collection['version']), collection=collection, packages=packages)

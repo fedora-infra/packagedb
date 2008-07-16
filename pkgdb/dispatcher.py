@@ -864,8 +864,7 @@ class PackageDispatcher(controllers.Controller):
         except sqlalchemy.exceptions.SQLError, e:
             # An error was generated
             return dict(status=False,
-                    message='Unable to modify PackageListing %s in %s' \
-                            % (pkgList.id, pkgList.collection.id))
+                    message='Unable to set shouldopen on Package %s' % pkgName)
         return dict(status=True, shouldopen=pkg.shouldopen)
 
     def _user_in_approveacls(self, pkg):

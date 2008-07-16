@@ -54,13 +54,15 @@ class Stats(controllers.Controller):
     @expose(template='pkgdb.templates.stats')
     def index(self):
         if identity.current.anonymous:
-           own = 'need to be logged in'
+            own = 'need to be logged in'
         else:
-           own = model.PackageListing.query.filter(sqlalchemy.and_(
-               model.PackageListing.owner==identity.current.user.id,
-               model.PackageListing.statuscode==3,
-               model.PackageListing.collectionid==DEVEL)).count()
-        
+            # SQLAlchemy mapped classes are monkey patched
+            # pylint: disable-msg=E1101
+            own = model.PackageListing.query.filter(sqlalchemy.and_(
+                model.PackageListing.owner==identity.current.user.id,
+                model.PackageListing.statuscode==3,
+                model.PackageListing.collectionid==DEVEL)).count()
+
         # most packages owned in DEVEL collection
         top_owners_select = sqlalchemy.select(
                 [func.count(model.PackageListing.owner).label('numpkgs'),

@@ -30,7 +30,7 @@ import logging
 
 from pkgdb import release
 
-from pkgdb.lists import ListQueries
+from pkgdb.listqueries import ListQueries
 from pkgdb.collections import Collections
 from pkgdb.packages import Packages
 from pkgdb.users import Users
@@ -52,6 +52,8 @@ class UserCache(dict):
         self.fas = fas
 
     def force_refresh(self):
+        '''Refetch the userid mapping from fas.
+        '''
         log.debug('UserCache refresh forced')
         people = self.fas.people_by_id()
         self.clear()
@@ -70,7 +72,7 @@ class UserCache(dict):
         '''
         try:
             user_id = user_id.strip()
-        except AttributeError:
+        except AttributeError: # pylint: disable-msg=W0704
             # If this is a string, strip leading and trailing whitespace.
             # If it's a number there's no difficulty.
             pass
@@ -87,6 +89,8 @@ class Root(controllers.RootController):
 
     All URLs to be served must be mounted somewhere under this controller.
     '''
+    # Controller methods don't need an __init__()
+    # pylint: disable-msg=W0232
     appTitle = 'Fedora Package Database'
 
     baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
