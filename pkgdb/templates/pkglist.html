@@ -4,10 +4,12 @@
   xmlns:xi="http://www.w3.org/2001/XInclude"
   py:strip="">
   <div py:def="pkglist(packages, mode='name')" class="PackageList">
-    <ul py:for="pkg in packages">
-      <li><a href="${tg.url('/packages/%s/%s' % (mode, pkg.name))}"
-        py:content="pkg.name"></a> --
-      <span py:replace="pkg.summary">Package Summary</span></li>
+    <ul>
+      <li py:for="pkg in packages">
+        <a href="${tg.url('/packages/%s/%s' % (mode, pkg.name))}"
+          py:content="pkg.name"></a> --
+        <span py:replace="pkg.summary">Package Summary</span>
+      </li>
     </ul>
   </div>
 </html>
