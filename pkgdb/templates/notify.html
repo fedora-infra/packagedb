@@ -6,7 +6,8 @@
   <head />
   <body>
     <form py:def="collection_filter(collections, name, version, eol)"
-      method="GET" class="filter" action="${tg.url('/acls/notify')}">
+      method="POST" class="filter" action="${tg.url('/acls/notify')}">
+      <?python import itertools ?>
       Limit results to these collections
       <ul>
         <li><label>
@@ -15,18 +16,21 @@
           Include EOL Releases
         </label></li>
         <li><label>
+          Collection Name:
           <select id="name" name="name">
             <option value="">any</option>
-            <option py:for="collection in collections.keys()"
-              py:attrs="{'value': collection}">${collection}
+            <option py:for="collection in sorted(collections.keys())"
+              py:attrs="{'value': collection, 'selected': (collection==name and 'True' or None)}">
+            ${collection}
             </option>
           </select>
         </label></li>
         <li><label>
+          Collection Version:
           <select id="version" name="version">
             <option value="">any</option>
-            <option py:for="version in set(collections.items())"
-            py:attrs="{'value': version}">${version}
+            <option py:for="ver in sorted(set([v for v in itertools.chain(*collections.values())]))"
+            py:attrs="{'value': ver, 'selected': (ver==version and 'True' or None)}">${ver}
             </option>
           </select>
         </label></li>
