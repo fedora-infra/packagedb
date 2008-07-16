@@ -120,6 +120,28 @@ a.cvs
     padding: .3em;
 }
 
+.filter
+{
+    background: #ddd;
+    float: right;
+    border-width: 1px;
+    border-color: #000;
+    border-style: solid;
+    padding: .4em;
+    margin: .1em;
+}
+
+.filter li
+{
+    list-style-type: none;
+    line-height:0;
+}
+
+.filter li select
+{
+    margin: .1em;
+}
+
 .flash
 {
     background: #DEE681 url(../images/success.png) 10px 50% no-repeat;
