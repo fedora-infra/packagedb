@@ -80,7 +80,7 @@ class Packages(SABase):
 
 class RepoUpdater(yum.YumBase):
     '''Update yum repository information on the local system.
-    
+
     This class allows one to update the yum metadata on the local system
     from a set of repo definitions. By splitting this into its own class we
     are able to run it from a separate application, useful because it can

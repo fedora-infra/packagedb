@@ -1,3 +1,75 @@
+== packagedb-0.3.6 ==
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r347
+Make sure watchcommit and watchbugzilla acls are approved if we use them.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r346
+Make error message for nitfylist better.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r345
+Correct use of action_url variable.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r344
+* Optimize and simplify search code.
+* Make search return a list of packages instead of a list of lists of
+  packagelistings.
+* Style for PackageList.
+* Display releases that the package is orphaned in.
+* Make pkglist handle descriptions and releases.
+* Update for new pkglist func.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r343
+Move collection filter into its own file and five it an action param so it
+can be used generically.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r342
+More pylint fixes:
+  - Remove unused imports
+  - Split long lines
+  - Remove excess whitespace
+  - Import only what's needed from sqlalchemy.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r341
+* Fix to pkglist so it doesn't spit out a <ul> for each entry.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r340
+* Pylint cleanups including four errors in the code.
+  - listqueries.py, controllers.py, and validators.py have been cleaned of all
+    things that can be fixed without API changes now.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r339
+Rename acls to listqueries as it's growing beyond acl lists.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r338
+* Sync new version of jsonify_validation_errors from python-fedora
+* Fix iteration of the collectionList.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r337
+Fix the CollectionNameVersion validator.  chained validators use different
+parameters and different parameters to the Invalid exception.
+
+2008-07-15  Toshio Kuratomi <badger@Clingman> - r336
+* Update the notify html template to submit via POST.
+  - Have labels for the filter boxes.
+  - Fix versions to show all the possible versions.  Next step is some
+    javascript to update the display to only have versions for the selected
+    collection.
+
+2008-07-15  Toshio Kuratomi <badger@Clingman> - r335
+Re-add css for the filter box that was mistakenly removed when we merged
+search functionality.
+
+2008-07-14  Toshio Kuratomi <badger@Clingman> - r334
+Merge with -devel branch.
+
+2008-07-14  Toshio Kuratomi <badger@Clingman> - r333
+Whitespace
+
+2008-07-14  Casey Dahlin <cdahlin@redhat.com> - r332
+More generic adding of acls to new packages
+
+2008-07-14  Casey Dahlin <cdahlin@redhat.com> - r331
+Add uberpackager to new packages
+
 === packagedb-0.3.5 ===
 2008-06-21  Toshio Kuratomi <badger@Clingman> - r334
 * pkgdb/templates/layout.html: Fix search URL.

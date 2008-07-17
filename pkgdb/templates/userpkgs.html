@@ -42,7 +42,14 @@
     </p>
 
     ${paginate_nav()}
-    ${pkglist(pkgs)}
+    <p py:choose="fasname" py:strip="">
+      <div py:when="'orphan'" py:strip="">
+        ${pkglist(pkgs, release=True, releasewhere='orphaned')}
+      </div>
+      <div py:otherwise="" py:strip="">
+        ${pkglist(pkgs)}
+      </div>
+    </p>
     ${paginate_nav()}
   </body>
 </html>

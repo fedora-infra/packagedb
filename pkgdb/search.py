@@ -22,19 +22,14 @@
 '''
 Controller to search for packages and eventually users.
 '''
-import string
 
 import sqlalchemy
-from sqlalchemy.sql import func, and_, or_
+from sqlalchemy.sql import func, and_
 
-from turbogears import controllers, expose, validate, paginate, config, \
-        redirect
+from turbogears import controllers, expose, validate, paginate
 from turbogears.validators import Int
-from turbogears.database import session
-from cherrypy import request
 
 from pkgdb import model
-from fedora.tg.util import request_format
 
 class Search(controllers.Controller):
     '''Controller for searching the pkgdb.
@@ -67,7 +62,6 @@ class Search(controllers.Controller):
             limit=20, max_pages=13)
     def package(self, searchon='both', release=0, operator='AND', 
                         searchwords=''):
-        
         '''Searches for packages
 
            This method returns a list of packages (PackageListing objects)
@@ -93,10 +87,9 @@ class Search(controllers.Controller):
            both
            :operator: can be either 'AND' or 'OR'
         '''
-        
         # case insensitive
         query = searchwords.lower() 
-       
+
         if operator == 'OR':
             query = query.split()  # -> list
             descriptions, names, exact = [], [], []
@@ -120,7 +113,7 @@ class Search(controllers.Controller):
                             model.PackageListing.packageid==model.Package.id,
                                 func.lower(model.Package.description).like(
                                     '%'+searchword+'%')))
-                    
+
         else:      # AND operator
             descriptions, names, exact = [], [], [] 
             if searchon in ['name', 'both']: 
@@ -140,15 +133,15 @@ class Search(controllers.Controller):
                 names = names.all()
  
                 if searchon == 'both':
-                   descriptions = model.PackageListing.query.filter(and_(
+                    descriptions = model.PackageListing.query.filter(and_(
                         model.PackageListing.packageid==model.Package.id,
-                             func.lower(model.Package.description).like(
-                                '%' + query[0] + '%')))
-                   for searchword in query:
-                       descriptions = descriptions.filter(
-                               func.lower(model.Package.description).like(
-                                   '%' + searchword + '%'))
-                   descriptions = descriptions.all()
+                        func.lower(model.Package.description).like(
+                            '%' + query[0] + '%')))
+                    for searchword in query:
+                        descriptions = descriptions.filter(
+                                func.lower(model.Package.description).like(
+                                    '%' + searchword + '%'))
+                    descriptions = descriptions.all()
             elif searchon == 'description':
                 query = query.split()
                 descriptions = model.PackageListing.query.filter(and_(
@@ -160,63 +153,30 @@ class Search(controllers.Controller):
                             func.lower(model.Package.description).like(
                                 '%' + searchword + '%'))
                 descriptions = descriptions.all()
-                       
-                   
-        s = set()   # order and remove duplicates
-        matches = []
-        for pkgl in exact + names + descriptions:
-            if pkgl not in s:
-                s.add(pkgl)
-                matches.append(pkgl)
-        # return a list of all the unique package names, but keeping the order
-        names = []
-        s = set()
-        for pkgl in matches:
-            if pkgl.package.name not in s:
-                s.add(pkgl.package.name)
-                names.append(pkgl.package.name)
-        
-        packages = []  # get a nested list grouped by packages
-        def f(x): return x.package.name == pkg_name #and x.collectionid==release
-        for pkg_name in names:
-            list = []
-            for pkgl in filter(f, matches):
-                list.append(pkgl)
-            packages.append(list)
-        # the number of known collections: 
-        num_of_colls = sqlalchemy.select([model.PackageListing.collectionid], 
-                                    distinct=True).execute().rowcount
-        # remove the packages that don't correspond to the desired release
-        del_list = []
-        if release in range(1,num_of_colls+1):
-            for i in range(0,len(packages)):
-                present = 0
-                for j in range(0,len(packages[i])):
-                    if packages[i][j].collectionid == release:
-                        present = 1
-                if present == 0: # make a list to be used outside the loop:
-                    del_list.append(i) 
-        del_list.reverse()     
-        for i in del_list:  
-            del packages[i]
-        count = len(packages) 
-            
-        # get the name of the collection 
-        if release in range(1,num_of_colls+1):
-           collection_helper = model.PackageListing.query.filter(
-                 model.PackageListing.collectionid==release).first().collection
-           release = collection_helper.name +' '+ collection_helper.version
-        else:
-           release = 'all'
 
-        collections = {} # build a dict of all the available releases'  
+        # Return a list of all packages but keeping the order
+        s = set()   # order and remove duplicates
+        packages = []
+        for pkgl in exact + names + descriptions:
+            if pkgl.package not in s:
+                if (not release) or (pkgl.collectionid == release):
+                    s.add(pkgl.package)
+                    packages.append(pkgl.package)
+        count = len(packages)
+
+        collections = {} # build a dict of all the available releases
                          # branchnames as keys and string ids as values
         for coll in model.Collection.query.all():
             collections[coll.branchname] = str(coll.id)
-        collections["ALL"] = '0' 
-        
-        return dict(title=self.appTitle + ' -- Search packages for: ' 
-                                                        + searchwords,
+            if coll.id == release:
+                release = '%s %s' % (coll.name, coll.version)
+
+        collections["ALL"] = '0'
+        if not release:
+            release = 'all'
+
+        return dict(title='%s -- Search packages for: %s' %
+                (self.appTitle, searchwords),
                    query=searchwords,
                    packages=packages,
                    count=count,

@@ -27,8 +27,6 @@ import sqlalchemy
 
 from turbogears import controllers, expose, paginate, config, \
         redirect, identity
-from turbogears.database import session
-from cherrypy import request
 
 from pkgdb import model
 from fedora.tg.util import request_format
@@ -37,7 +35,7 @@ ORPHAN_ID = 9900
 
 class Users(controllers.Controller):
     '''Controller for all things user related.
-    
+
     Status Ids to use with queries.
     '''
     # pylint: disable-msg=E1101
@@ -73,14 +71,12 @@ class Users(controllers.Controller):
         '''
         raise redirect(config.get('base_url_filter.base_url') + '/users/info/')
 
-        return dict(title=self.appTitle + ' -- User Overview')
-
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=100, default_order='name',
             allow_limit_override=True, max_pages=13)
     def packages(self, fasname=None, acls=None, eol=None):
         '''List packages that the user is interested in.
-           
+
         This method returns a list of packages owned by the user in current,
         non-EOL distributions.  The user has the ability to filter this to
         provide more or less information by adding query params for acls and
@@ -124,7 +120,7 @@ class Users(controllers.Controller):
                 fasname = identity.current.user_name
         else:
             try:
-                user = self.fas.cache[fasname]
+                fasid = self.fas.cache[fasname]['id']
             except KeyError:
                 error = dict(title=self.appTitle + ' -- Invalid Username',
                         status = False, pkgs = [],
@@ -136,7 +132,7 @@ class Users(controllers.Controller):
                 if request_format() != 'json':
                         error['tg_template'] = 'pkgdb.templates.errors'
                 return error
-            fasid = user['id']
+
         pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
 
         query = model.Package.query.join('listings').distinct()

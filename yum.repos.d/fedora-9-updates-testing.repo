@@ -1,0 +1,31 @@
+[updates9-testing-i386]
+name=Fedora 9 - i386 - Test Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/testing/9/i386/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f9&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates9-testing-x86_64]
+name=Fedora 9 - x86_64 - Test Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/testing/9/x86_64/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f9&arch=x86_64
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates9-testing-ppc]
+name=Fedora 9 - ppc - Test Updates
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/testing/9/ppc/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f9&arch=ppc
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates9-testing-source]
+name=Fedora 9 - Test Updates Source
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/updates/testing/9/SRPMS/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-source-f9&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test

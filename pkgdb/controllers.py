@@ -21,7 +21,6 @@
 Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
-import sqlalchemy
 
 from turbogears import controllers, expose, config
 from turbogears.i18n.tg_gettext import gettext as _
@@ -29,9 +28,9 @@ from turbogears import identity, redirect
 from cherrypy import request, response
 import logging
 
-from pkgdb import release, model
+from pkgdb import release
 
-from pkgdb.acls import Acls
+from pkgdb.listqueries import ListQueries
 from pkgdb.collections import Collections
 from pkgdb.packages import Packages
 from pkgdb.users import Users
@@ -53,6 +52,8 @@ class UserCache(dict):
         self.fas = fas
 
     def force_refresh(self):
+        '''Refetch the userid mapping from fas.
+        '''
         log.debug('UserCache refresh forced')
         people = self.fas.people_by_id()
         self.clear()
@@ -69,7 +70,17 @@ class UserCache(dict):
 
         If the user does not exist then, KeyError will be raised.
         '''
+        try:
+            user_id = user_id.strip()
+        except AttributeError: # pylint: disable-msg=W0704
+            # If this is a string, strip leading and trailing whitespace.
+            # If it's a number there's no difficulty.
+            pass
         if user_id not in self:
+            if not user_id:
+                # If the key is just whitespace, raise KeyError immediately,
+                # don't try to refresh the cache
+                raise KeyError(user_id)
             self.force_refresh()
         return super(UserCache, self).__getitem__(user_id)
 
@@ -78,6 +89,8 @@ class Root(controllers.RootController):
 
     All URLs to be served must be mounted somewhere under this controller.
     '''
+    # Controller methods don't need an __init__()
+    # pylint: disable-msg=W0232
     appTitle = 'Fedora Package Database'
 
     baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
@@ -87,12 +100,14 @@ class Root(controllers.RootController):
     fas = AccountSystem(baseURL, username=username, password=password)
     fas.cache = UserCache(fas)
 
-    acls = Acls(fas, appTitle)
     collections = Collections(fas, appTitle)
     packages = Packages(fas, appTitle)
     users = Users(fas, appTitle)
     stats = Stats(fas, appTitle)
     search = Search(fas, appTitle)
+    lists = ListQueries(fas, appTitle)
+    # For backwards compatibility:
+    acls = lists
 
     @expose(template='pkgdb.templates.overview')
     def index(self):
@@ -109,7 +124,7 @@ class Root(controllers.RootController):
 
         This shows a small login box to type in your username and password
         from the Fedora Account System.
-        
+
         Arguments:
         :forward_url: The url to send to once authentication succeeds
         :previous_url: The url that sent us to the login page
@@ -128,7 +143,7 @@ class Root(controllers.RootController):
             if not forward_url:
                 forward_url = config.get('base_url_filter.base_url') + '/'
             raise redirect(forward_url)
-        
+
         forward_url = None
         previous_url = request.path
 
@@ -142,17 +157,16 @@ class Root(controllers.RootController):
             msg = _("Please log in.")
             forward_url = request.headers.get("Referer", "/")
 
-        response.status=403
+        response.status = 403
         return dict(message=msg, previous_url=previous_url, logging_in=True,
                     original_parameters=request.params,
                     forward_url=forward_url,
                     title='Fedora Account System Login')
 
-    @expose()
+    @expose(allow_json=True)
     def logout(self):
         '''Logout from the database.
         '''
         # pylint: disable-msg=R0201
         identity.current.logout()
         raise redirect(request.headers.get("Referer","/"))
-

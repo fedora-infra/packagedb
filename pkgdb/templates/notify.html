@@ -3,13 +3,16 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
-  <xi:include href="paginator.html" />
-  <xi:include href="pkglist.html" />
+  <xi:include href="filters.html" />
   <head />
   <body>
-    ${paginate_nav()}
-    <!-- Show releases once we can filter by collection -->
-    ${pkglist(packages, release=False)}
-    ${paginate_nav()}
+    ${collection_filter('/acls/notify', collections, name, version, eol)}
+
+    <table>
+      <tr py:for="pkg in sorted(packages.keys())">
+        <td>${pkg}</td>
+        <td>${', '.join(packages[pkg])}</td>
+      </tr>
+    </table>
   </body>
 </html>

@@ -2,7 +2,7 @@
 Information about this pkgdb release
 '''
 
-VERSION = '0.3.5'
+VERSION = '0.3.6'
 NAME = 'fedora-packagedb'
 DESCRIPTION = 'The Fedora Package Database'
 LONG_DESCRIPTION = '''

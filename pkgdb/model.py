@@ -527,11 +527,13 @@ mapper(CollectionStatus, CollectionStatusTable, properties = {
     'collectionPackages': relation(CollectionPackage, backref='status'),
     'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
+                == CollectionStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         backref=backref('cstatuscode',
             foreign_keys=[CollectionStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid),
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
+                    == CollectionStatusTable.c.statuscodeid),
         )})
 collectionMapper = mapper(Collection, CollectionTable,
         select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
@@ -551,11 +553,13 @@ mapper(PackageListingStatus, PackageListingStatusTable, properties = {
     'listings' : relation(PackageListing, backref='status'),
     'translations' : relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
+                == PackageListingStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         backref=backref('plstatuscode',
             foreign_keys=[PackageListingStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid)
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
+                    == PackageListingStatusTable.c.statuscodeid)
         )})
 mapper(PersonPackageListing, PersonPackageListingTable, properties = {
     'acls':relation(PersonPackageListingAcl,
@@ -569,11 +573,13 @@ mapper(PackageStatus, PackageStatusTable, properties = {
     'packages' : relation(Package, backref='status'),
     'translations' : relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
+                == PackageStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         backref=backref('pstatuscode',
             foreign_keys=[PackageStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid)
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
+                    == PackageStatusTable.c.statuscodeid)
         )})
 
 logMapper = mapper(Log, LogTable, select_table=logJoin,
@@ -606,11 +612,13 @@ mapper(PackageAclStatus, PackageAclStatusTable,
             'gacls' : relation(GroupPackageListingAcl, backref='status'),
             'translations' : relation(StatusTranslation,
                 order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid,
+                primaryjoin=StatusTranslationTable.c.statuscodeid \
+                        == PackageAclStatusTable.c.statuscodeid,
                 foreign_keys=[StatusTranslationTable.c.statuscodeid],
                 backref=backref('pastatuscode',
                     foreign_keys=[PackageAclStatusTable.c.statuscodeid],
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid)
+                    primaryjoin=StatusTranslationTable.c.statuscodeid \
+                            == PackageAclStatusTable.c.statuscodeid)
                 )})
 
 

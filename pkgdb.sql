@@ -825,6 +825,21 @@ grant select
     PackageACLLogStatusCode, CollectionPackage
   to pkgdbadmin;
 
+-- Grant the unprivileged, readonly user access to select from everything
+-- (May want to limit this in the future)
+grant select on
+    Branch, Collection, CollectionLog, CollectionLogStatusCode,
+    CollectionSet, CollectionStatusCode, GroupPackageListing,
+    GroupPackageListingAcl, GroupPackageListingAclLog, Log, Package,
+    PackageAclLogStatusCode, PackageaclStatusCode, PackageBuild,
+    PackageBuildListing, PackageBuildLog, PackageBuildLogStatusCode,
+    PackageStatusCode, PackageListing, PackageListingLog,
+    PackageListingLogStatusCode, PackageListingStatusCode, PackageLog,
+    PackageLogStatusCode, PackageStatusCode, PersonPackageListing,
+    PersonPackageListingAcl, PersonPackageListingAclLog, StatusCode,
+    StatusCodeTranslation
+   to pkgdbreadonly;
+
 -- FIXME: Implement groups/categories/comps
 -- Need to implement subpackages.
 --

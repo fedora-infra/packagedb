@@ -26,19 +26,15 @@ Controller to show general stats about packages.
 import sqlalchemy
 from sqlalchemy.sql import func, desc, and_, or_, not_
 
-from turbogears import controllers, expose, paginate, config, \
-        redirect, identity
-from turbogears.database import session
-from cherrypy import request
+from turbogears import controllers, expose, identity
 
 from pkgdb import model
-from fedora.tg.util import request_format
 
 ORPHAN_ID = 9900
 DEVEL = 8 # collection id
 class Stats(controllers.Controller):
     '''Controller which calculates general stats about packages
-   
+
     Things like: total packages, total orphaned packages, most packages owned 
     '''
 
@@ -54,13 +50,15 @@ class Stats(controllers.Controller):
     @expose(template='pkgdb.templates.stats')
     def index(self):
         if identity.current.anonymous:
-           own = 'need to be logged in'
+            own = 'need to be logged in'
         else:
-           own = model.PackageListing.query.filter(sqlalchemy.and_(
-               model.PackageListing.owner==identity.current.user.id,
-               model.PackageListing.statuscode==3,
-               model.PackageListing.collectionid==DEVEL)).count()
-        
+            # SQLAlchemy mapped classes are monkey patched
+            # pylint: disable-msg=E1101
+            own = model.PackageListing.query.filter(sqlalchemy.and_(
+                model.PackageListing.owner==identity.current.user.id,
+                model.PackageListing.statuscode==3,
+                model.PackageListing.collectionid==DEVEL)).count()
+
         # most packages owned in DEVEL collection
         top_owners_select = sqlalchemy.select(
                 [func.count(model.PackageListing.owner).label('numpkgs'),
@@ -84,11 +82,11 @@ class Stats(controllers.Controller):
                 model.PersonPackageListing.userid,
             model.PackageListing.collectionid).order_by(
             desc('numpkgs')).limit(20)
-        maintain_names =[]
+        maintain_names = []
         for listing in maintain_select.execute():
             maintain_names.append(self.fas.cache[
                 int(listing.userid)]['username'])
-        
+
         # total number of packages in pkgdb
         total = model.PackageListing.query.count()
         # number of packages with no comaintainers
