@@ -112,14 +112,6 @@ a.cvs
   display: none;
 }
 
-#smalltext
-{
-    line-height: 80%;
-    font-size: 80%;
-    background-color: #efefef;
-    padding: .3em;
-}
-
 .filter
 {
     background: #ddd;
@@ -150,6 +142,14 @@ a.cvs
     margin: 1ex 0;
 }
 
+#smalltext
+{
+    line-height: 80%;
+    font-size: 80%;
+    background-color: #efefef;
+    padding: .3em;
+}
+
 /*
  * Package DB Specific styles
  */
@@ -168,4 +168,13 @@ a.cvs
 .acls .acluser, .groupacls .aclgroup, .buglist .bug
 {
   text-align: left;
+}
+
+.PackageList .PackageName
+{
+  font-weight: bold;
+}
+
+.PackageList dd {
+  margin-left: 2em;
 }

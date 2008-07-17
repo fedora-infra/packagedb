@@ -8,7 +8,8 @@
   <head />
   <body>
     ${paginate_nav()}
-    ${pkglist(packages)}
+    <!-- Show releases once we can filter by collection -->
+    ${pkglist(packages, release=False)}
     ${paginate_nav()}
   </body>
 </html>

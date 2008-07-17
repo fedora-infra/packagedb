@@ -154,63 +154,29 @@ class Search(controllers.Controller):
                                 '%' + searchword + '%'))
                 descriptions = descriptions.all()
 
+        # Return a list of all packages but keeping the order
         s = set()   # order and remove duplicates
-        matches = []
+        packages = []
         for pkgl in exact + names + descriptions:
-            if pkgl not in s:
-                s.add(pkgl)
-                matches.append(pkgl)
-        # return a list of all the unique package names, but keeping the order
-        names = []
-        s = set()
-        for pkgl in matches:
-            if pkgl.package.name not in s:
-                s.add(pkgl.package.name)
-                names.append(pkgl.package.name)
-
-        packages = []  # get a nested list grouped by packages
-        def f(x):
-            return x.package.name == pkg_name #and x.collectionid==release
-        for pkg_name in names:
-            tmplist = []
-            for pkgl in filter(f, matches):
-                tmplist.append(pkgl)
-            packages.append(tmplist)
-        # the number of known collections: 
-        num_of_colls = sqlalchemy.select([model.PackageListing.collectionid], 
-                                    distinct=True).execute().rowcount
-        # remove the packages that don't correspond to the desired release
-        del_list = []
-        if release in range(1, num_of_colls + 1):
-            for i in range(0, len(packages)):
-                present = 0
-                for j in range(0,len(packages[i])):
-                    if packages[i][j].collectionid == release:
-                        present = 1
-                if present == 0: # make a list to be used outside the loop:
-                    del_list.append(i)
-        del_list.reverse()
-        for i in del_list:
-            del packages[i]
+            if pkgl.package not in s:
+                if (not release) or (pkgl.collectionid == release):
+                    s.add(pkgl.package)
+                    packages.append(pkgl.package)
         count = len(packages)
-
-        # get the name of the collection 
-        if release in range(1,num_of_colls+1):
-            collection_helper = model.PackageListing.query.filter(
-                    model.PackageListing.collectionid==release).first(
-                            ).collection
-            release = collection_helper.name +' '+ collection_helper.version
-        else:
-            release = 'all'
 
         collections = {} # build a dict of all the available releases
                          # branchnames as keys and string ids as values
         for coll in model.Collection.query.all():
             collections[coll.branchname] = str(coll.id)
-        collections["ALL"] = '0'
+            if coll.id == release:
+                release = '%s %s' % (coll.name, coll.version)
 
-        return dict(title=self.appTitle + ' -- Search packages for: '
-                                                        + searchwords,
+        collections["ALL"] = '0'
+        if not release:
+            release = 'all'
+
+        return dict(title='%s -- Search packages for: %s' %
+                (self.appTitle, searchwords),
                    query=searchwords,
                    packages=packages,
                    count=count,
