@@ -21,8 +21,8 @@
 Controller to process requests to change package information.
 '''
 
-import sqlalchemy
-from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy import and_
+from sqlalchemy.exceptions import InvalidRequestError, SQLError
 
 from turbogears import controllers, expose, identity, config
 from turbogears.database import session
@@ -146,13 +146,13 @@ class PackageDispatcher(controllers.Controller):
 
             # Get the co-maintainers
             aclUsers = model.PersonPackageListingAcl.query.filter(
-                sqlalchemy.and_(
+                and_(
                     model.PersonPackageListingAcl.c.personpackagelistingid == model.PersonPackageListing.c.id,
                 model.PersonPackageListing.c.packagelistingid==pkgListing.id,
                 model.PersonPackageListingAcl.c.acl.in_(*acls)))
 
             for acl in aclUsers:
-                if acl.status.translations[0].statusname=='Approved':
+                if acl.status.translations[0].statusname == 'Approved':
                     try:
                         person = self.fas.cache[acl.personpackagelisting.userid]
                     except KeyError:
@@ -403,7 +403,7 @@ class PackageDispatcher(controllers.Controller):
 
         try:
             session.flush()
-        except sqlalchemy.exceptions.SQLError, e:
+        except SQLError, e:
             # An error was generated
             return dict(status=False,
                     message='Not able to change owner information for %s' \
@@ -499,7 +499,7 @@ class PackageDispatcher(controllers.Controller):
 
         try:
             session.flush()
-        except sqlalchemy.exceptions.SQLError, e:
+        except SQLError, e:
             # An error was generated
             return dict(status=False,
                     message='Not able to create acl %s on %s with status %s' \
@@ -559,7 +559,7 @@ class PackageDispatcher(controllers.Controller):
         aclStatus = 'Approved'
         # Determine if the group already has an acl
         try:
-            acl = model.GroupPackageListingAcl.query.filter(sqlalchemy.and_(
+            acl = model.GroupPackageListingAcl.query.filter(and_(
                     model.GroupPackageListingAcl.c.grouppackagelistingid==model.GroupPackageListing.c.id,
                     model.GroupPackageListing.c.groupid==groupId,
                     model.GroupPackageListingAcl.c.acl==aclName,
@@ -592,7 +592,7 @@ class PackageDispatcher(controllers.Controller):
 
         try:
             session.flush()
-        except sqlalchemy.exceptions.SQLError:
+        except SQLError:
             # An error was generated
             return dict(status=False, message='Not able to create acl %s on' \
                     ' %s(%s %s) with status %s' % (aclName,
@@ -626,7 +626,7 @@ class PackageDispatcher(controllers.Controller):
         aclStatus = 'Awaiting Review'
         # Determine if the user already has an acl
         try:
-            acl = model.PersonPackageListingAcl.query.filter(sqlalchemy.and_(
+            acl = model.PersonPackageListingAcl.query.filter(and_(
                     model.PersonPackageListingAcl.c.personpackagelistingid == \
                             model.PersonPackageListing.c.id,
                     model.PersonPackageListing.c.userid == \
@@ -669,7 +669,7 @@ class PackageDispatcher(controllers.Controller):
 
         try:
             session.flush()
-        except sqlalchemy.exceptions.SQLError, e:
+        except SQLError, e:
             # Probably the acl is mispelled
             return dict(status=False,
                     message='Not able to create acl %s for %s on %s' %
@@ -825,7 +825,7 @@ class PackageDispatcher(controllers.Controller):
 
         try:
             session.flush()
-        except sqlalchemy.exceptions.SQLError, e:
+        except SQLError, e:
             return dict(status=False,
                     message='Unable to create PackageListing(%s, %s, %s, %s)' %
                         (pkg.id, develCollection.id, person['id'],
@@ -861,7 +861,7 @@ class PackageDispatcher(controllers.Controller):
         pkg.shouldopen = not pkg.shouldopen
         try:
             session.flush()
-        except sqlalchemy.exceptions.SQLError, e:
+        except SQLError, e:
             # An error was generated
             return dict(status=False,
                     message='Unable to set shouldopen on Package %s' % pkgName)
@@ -1170,7 +1170,7 @@ class PackageDispatcher(controllers.Controller):
 
         try:
             session.flush()
-        except sqlalchemy.exceptions.SQLError, e:
+        except SQLError, e:
             # An error was generated
             return dict(status=False,
                     message='Unable to modify PackageListing %s in %s' \

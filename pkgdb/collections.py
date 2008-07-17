@@ -24,7 +24,6 @@ Controller for showing Package Collections.
 import sqlalchemy
 
 from turbogears import controllers, expose, paginate
-from turbogears.database import session
 
 from cherrypy import request
 

@@ -25,7 +25,6 @@ Controller for displaying Package Bug Information.
 from urllib import quote
 
 from turbogears import controllers, expose, paginate, config, redirect
-from turbogears.database import session
 
 from sqlalchemy.exceptions import InvalidRequestError
 import bugzilla

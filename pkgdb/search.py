@@ -22,19 +22,14 @@
 '''
 Controller to search for packages and eventually users.
 '''
-import string
 
 import sqlalchemy
-from sqlalchemy.sql import func, and_, or_
+from sqlalchemy.sql import func, and_
 
-from turbogears import controllers, expose, validate, paginate, config, \
-        redirect
+from turbogears import controllers, expose, validate, paginate
 from turbogears.validators import Int
-from turbogears.database import session
-from cherrypy import request
 
 from pkgdb import model
-from fedora.tg.util import request_format
 
 class Search(controllers.Controller):
     '''Controller for searching the pkgdb.
@@ -118,7 +113,7 @@ class Search(controllers.Controller):
                             model.PackageListing.packageid==model.Package.id,
                                 func.lower(model.Package.description).like(
                                     '%'+searchword+'%')))
-                    
+
         else:      # AND operator
             descriptions, names, exact = [], [], [] 
             if searchon in ['name', 'both']: 

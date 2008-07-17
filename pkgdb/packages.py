@@ -22,12 +22,10 @@ Controller for displaying Package Information.
 '''
 
 from turbogears import controllers, expose, paginate, config, redirect, identity
-from turbogears.database import session
 
 from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
-from pkgdb.users import ORPHAN_ID
 
 from cherrypy import request
 
