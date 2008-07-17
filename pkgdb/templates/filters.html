@@ -6,7 +6,7 @@
 
   <div py:def="collection_filter(action_url, collections, name, version, eol)"
     class="filter">
-    <form method="POST" action="${tg.url('action_url')}">
+    <form method="POST" action="${tg.url(action_url)}">
       <?python import itertools ?>
       Limit results to these collections
       <ul>
