@@ -99,7 +99,7 @@ class CollectionNameVersion(validators.FancyValidator):
         name = field_dict.get('name')
         version = field_dict.get('version')
         if (not name) and version:
-            errors['name'] = self.message('nameless_version', state)
+            errors['version'] = self.message('nameless_version', state)
         elif name and version:
             try:
                 Collection.query.filter_by(name=name, version=version).one()
