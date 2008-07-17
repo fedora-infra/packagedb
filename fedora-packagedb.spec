@@ -60,7 +60,7 @@ rm -rf %{buildroot}
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
 %changelog
-* Wed Jul 16 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.6-1
+* Wed Jul 16 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.6-1
 - New upstream release. notify list, some search optimization, improved
   filter box and pkglist look and feel.
 
