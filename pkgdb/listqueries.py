@@ -563,8 +563,9 @@ class ListQueries(controllers.Controller):
             from_obj=(PackageTable.join(PackageListing).outerjoin(
                 PersonPackageListing).outerjoin(PersonPackageListingAcl),
                 CollectionTable)
-            ).where(or_(PersonPackageListingAcl.acl.in_(
+            ).where(or_(and_(PersonPackageListingAcl.acl.in_(
                 ('watchbugzilla', 'watchcommits')),
+                PersonPackageListingAcl.statuscode==self.approvedStatus),
                 PersonPackageListingAcl.acl==None)
                 ).where(Collection.id==PackageListing.collectionid
                         ).distinct().order_by('name')
