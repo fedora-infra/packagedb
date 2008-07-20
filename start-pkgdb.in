@@ -1,17 +1,19 @@
 #!/usr/bin/python
 __requires__ = 'fedora_packagedb'
-import pkg_resources
 
-from turbogears import config, update_config, start_server
-import cherrypy
-cherrypy.lowercase_api = True
 import os.path
 import sys
 
 CONFDIR='@CONFDIR@'
 PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
-
 sys.path.append(PKGDBDIR)
+
+import pkg_resources
+
+from turbogears import config, update_config, start_server
+import cherrypy
+
+cherrypy.lowercase_api = True
 config.update({'pkgdb.basedir': PKGDBDIR})
 
 # first look on the command line for a desired config file,

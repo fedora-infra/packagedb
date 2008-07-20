@@ -69,7 +69,6 @@ class UserCache(dict):
 
         If the user does not exist then, KeyError will be raised.
         '''
-        log.debug('UserCache: read from cache')
         if user_id not in self:
             self.force_refresh()
         return super(UserCache, self).__getitem__(user_id)

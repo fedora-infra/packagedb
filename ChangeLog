@@ -1,3 +1,203 @@
+=== packagedb-0.3.4 ===
+
+2008-06-09  Toshio Kuratomi <badger@Clingman> - r327
+* Merge should_open fixes from Casey.
+
+2008-06-09  Toshio Kuratomi <badger@Clingman> - r326
+* start-pkgdb.in: Fix problem that prevents start-pkgdbfrom working when
+  installed from rpm.  Needed to assign the path before calling pkg_resources.
+
+2008-06-08  Toshio Kuratomi <badger@Clingman> - r325
+* ChangeLog: Update for new release.
+
+2008-06-06  Toshio Kuratomi <badger@Clingman> - r324
+* Import fixes from publictest10.
+
+2008-06-05  Toshio Kuratomi <badger@Clingman> - r323
+* pkgdb/templates/pkgpage.html: Not quite fixed.  Leave a note for Casey.
+
+2008-06-05  Toshio Kuratomi <badger@Clingman> - r322
+* pkgdb/dispatcher.py: Fix the arguments to the method.  Due to the way our
+  javascript submission works, it has to use containerId.
+* pkgdb/static/javascript/pkgpage.js: Fix an array dereference and the name of
+  the toggle method on the server.
+* pkgdb/templates/pkgpage.html: Set the class on this checkbox so our
+  javascript code can find it.
+
+2008-06-05  Toshio Kuratomi <badger@Clingman> - r321
+* pkgdb/controllers.py: Remove debug statement when we read from the UserCache.
+  We've established that that works now.
+
+2008-06-05  Toshio Kuratomi <badger@Clingman> - r320
+* pkgdb/templates/pkgpage.html: One more fix -- Have to index into the array.
+
+2008-06-05  Toshio Kuratomi <badger@Clingman> - r319
+* pkgdb/templates/pkgpage.html: Fix the should open toggle.  It's set on the
+  package, not on the packagelisting.
+
+2008-06-05  Toshio Kuratomi <badger@Clingman> - r318
+* pkgdb/dispatcher.py: Fix correct return status from the new toggle method.
+
+2008-06-05  Toshio Kuratomi <badger@Clingman> - r317
+Merge release changes from -stable.
+
+2008-06-05  Casey Dahlin <cdahlin@redhat.com> - r316
+Merged Toshio's requestContainer addition
+
+2008-06-05  Casey Dahlin <cdahlin@redhat.com> - r315
+Made acls.py group-ambiguous
+
+2008-06-03  Casey Dahlin <cdahlin@redhat.com> - r314
+Alert about errors when shouldopen cannot be set
+
+2008-06-03  Casey Dahlin <cdahlin@redhat.com> - r313
+Add error handling to shouldopen action
+
+2008-06-03  Casey Dahlin <cdahlin@redhat.com> - r312
+Added callback to set shouldopen when clicked
+
+2008-06-03  Casey Dahlin <cdahlin@redhat.com> - r311
+Changed shouldopen handler to a toggle
+
+2008-06-03  Toshio Kuratomi <badger@Clingman> - r310
+* pkgdb/dispatcher.py: set_shouldopen(): Fix the method prototype.
+  - Small optimization.
+  - Return a value on success otherwise we'll get a traceback.
+
+2008-06-03  Casey Dahlin <cdahlin@redhat.com> - r309
+Added dispatcher api to set shouldopen on Package
+
+2008-06-03  Casey Dahlin <cdahlin@redhat.com> - r308
+Add checkbox to pkgpage.html to set shouldopen
+
+2008-06-03  Casey Dahlin <cdahlin@redhat.com> - r307
+Make model expose the shouldopen field of the Package table
+
+2008-06-03  Casey Dahlin <cdahlin@redhat.com> - r306
+Add shouldopen field to Package table
+
+2008-05-20  Toshio Kuratomi <badger@Clingman> - r305
+* pkgdb/templates/layout.html: version changed case in the -devel branch.
+
+2008-05-20  Toshio Kuratomi <badger@Clingman> - r304
+Footer info from -stable.
+
+2008-05-10  Toshio Kuratomi <badger@Clingman> - r303
+* pkgdb/acls.py: Cleanup SA-0.4 usage:
+  - Import specific classes from model.py instead of importing the whole model
+    namespace.
+  - No longer need to use the .c for attributes of SA classes.  Change from:
+    Package.c.name to Package.name.
+
+2008-05-10  Toshio Kuratomi <badger@Clingman> - r302
+* pkgdb/acls.py: Only import what we need from sqlalchemy.
+
+2008-05-10  Toshio Kuratomi <badger@Clingman> - r301
+* server-scripts/pkgdb-sync-bugzilla.in: Add owner to the initial cclist so
+  that comaintainers who take over a bug do not have to do this manually.
+  packagedb ticket #112.
+
+2008-05-10  Toshio Kuratomi <badger@Clingman> - r300
+* pkgdb/acls.py: merge from -stable a fix for owners being assigned from
+  random branches to own a package.
+
+2008-05-08  Toshio Kuratomi <badger@Clingman> - r299
+* pkgdb/templates/paginator.html: Add a link to show all the data being
+  paginated on a single page.
+
+2008-05-07  Toshio Kuratomi <badger@Clingman> - r298
+* pkgdb/bugs.py: Move some things that are the same throughout the life of the
+  program from __init__ to the class level.
+  - Fix bugs to return an error if there package name specified does not
+    exist.
+
+2008-05-07  Toshio Kuratomi <badger@Clingman> - r297
+Merge to -devel on server.
+
+2008-05-07  Toshio Kuratomi <badger@Clingman> - r296
+* pkgdb/static/css/pkgdb.css: Stylesheet for the filter box.
+* pkgdb/templates/userpkgs.html: Add a filter box to specify which acls to
+  filter the results on.
+  - Add a count of packages in the result set.
+* pkgdb/users.py: Take acls as a list value since that's how checkboxes come
+  to TG methods.
+  - No longer take acl "any".
+  - Return acls as a list of three-tuples for the acl, an acl name, and
+    whether the acl was set on the previous page.
+  - Return a count of packages
+
+2008-05-01  Toshio Kuratomi <badger@Clingman> - r295
+* pkgdb/users.py: Fix change of variable name EOL => eol.
+
+2008-05-01  Toshio Kuratomi <badger@Clingman> - r294
+* pkgdb/templates/collectionoverview.html: Whitespace.
+
+2008-05-01  Toshio Kuratomi <badger@Clingman> - r293
+* pkgdb/config/app.cfg: Reorganize the authentication provider.
+
+2008-05-01  Toshio Kuratomi <badger@Clingman> - r292
+* pkgdb.cfg: Revert sqlalchemy.dburi to a good generic upstream string.
+
+2008-05-01  Toshio Kuratomi <badger@Clingman> - r291
+* AUTHORS: Add mapleoin as an AUTHOR.
+
+2008-04-30  Toshio Kuratomi <badger@Clingman> - r290
+Merge pkgdb-sync-bugzilla script from -stable.
+
+2008-04-30  Toshio Kuratomi <badger@Clingman> - r289
+* README: Merge changes for install from checkout instructions.
+
+2008-04-30  Ionuț Arțăriși <mapleoin@lavabit.com> - r288
+merged with mapleoin-devel for Stats
+2008-04-12  Toshio Kuratomi <badger@Clingman> - r287
+* Merge a revert from the -stable branch to develCollections to fix a bug.
+
+2008-04-12  Toshio Kuratomi <badger@Clingman> - r286
+* Merge the stable branch which includes SQLAlchemy-0.4 porting.
+
+2008-03-11  Toshio Kuratomi <badger@Clingman> - r285
+* pkgdb/config/app.cfg: Add some genshi options for utf-8 and xhtml.
+
+2008-03-11  Toshio Kuratomi <badger@Clingman> - r284
+* pkgdb/releases.py: Update for the new fedorahosted locations.
+
+2008-03-11  Toshio Kuratomi <badger@Clingman> - r283
+* setup.py: Require a certain version of python-fedora so we can get the
+  jsonfasprovider.
+
+2008-02-17  Toshio Kuratomi <badger@Clingman> - r282
+* pkgdb/__init__.py: Fix typo in docstring.
+
+2008-02-12  Toshio Kuratomi <badger@Clingman> - r281
+* Update files which have changed since Jan 1 with a 2008 Copyright.
+
+2008-02-09  Toshio Kuratomi <badger@Clingman> - r280
+* pkgdb/json.py: Fix import of sqlalchemy.
+* start-pkgdb.in: Instead of requiring TurboGears directly, require
+  fedora_packagedb.  That way we can specify which version of SQLAlchemy is
+  necessary to work.
+
+2008-02-09  Toshio Kuratomi <badger@Clingman> - r279
+* Pull in changes from the pylint branch to clean up most pylint warnings.
+
+2008-02-09  Toshio Kuratomi <badger@Clingman> - r278
+* pkgdb.cfg: Fix the logging setup for TG-1.0.4
+
+2008-02-09  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r277
+* pkgdb/collections.py, pkgdb/packages.py: Simplify the code that detects
+  whether we need to return a json error code or use an html template.
+  - Fix a bug where errors were only being returned for html.
+
+2008-02-02  Toshio くらとみ <toshio@publictest1.fedora.phx.redhat.com> - r276
+* pkgdb/json.py: revert previous change.  This is being fixed in turbojson
+  instead.
+
+2008-02-02  Toshio Kuratomi <badger@Clingman> - r275
+* pkgdb/json.py: Fix to work around a bug in newer TurboJSON when used with
+  SQLAlchemy.
+
+=== packagedb-0.3.3 ===
+
 2008-04-11  Toshio Kuratomi <badger@Clingman> - r131
 * fedora-packagedb.spec: Update the spec.
 
@@ -70,12 +270,15 @@ Add configs for FAS2 auth.
 
 === packagedb-0.3.2.3 ===
 
-2008-01-23  Toshio Kuratomi <badger@Clingman> - r111
-* Merge fix for running setup needing a specific CherryPy version.
+2008-01-23  Toshio Kuratomi <badger@Clingman> - r274
+* fedora-packagedb.spec: Add buildrequires for python-genshi.
 
-2008-01-23  Toshio Kuratomi <badger@Clingman> - r110
-* Merge bugfixes from -devel branch
-* Merge change to allow json on the collections/ and collections/id/X pages.
+2008-01-23  Toshio Kuratomi <badger@Clingman> - r273
+* setup.py: Set __requires__ TurboGears so we pull in the proper version of
+  CherryPy.
+
+2008-01-23  Toshio Kuratomi <badger@Clingman> - r272
+* Update ChangeLog for new release.
 
 2008-01-23  Toshio Kuratomi <badger@Clingman> - r271
 * fedora-packagedb.spec, pkgdb/release.py: Bump release for new version.

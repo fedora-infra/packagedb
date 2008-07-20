@@ -27,9 +27,11 @@ from urllib import quote
 from turbogears import controllers, expose, paginate, config, redirect
 from turbogears.database import session
 
+from sqlalchemy.exceptions import InvalidRequestError
 import bugzilla
 
 from pkgdb import model
+from cherrypy import request
 
 import logging
 log = logging.getLogger('pkgdb.controllers')
@@ -88,22 +90,23 @@ class BugList(list):
 class Bugs(controllers.Controller):
     '''Display information related to individual packages.
     '''
+    bzUrl = config.get('bugzilla.url',
+                'https://bugzilla.redhat.com/')
+    bzQueryUrl = config.get('bugzilla.queryurl', bzUrl)
+
+    # pylint: disable-msg=E1101
+    removedStatus = model.StatusTranslation.query.filter_by(
+            statusname='Removed', language='C').first().statuscodeid
+    # pylint: enable-msg=E1101
+
     def __init__(self, appTitle=None):
         '''Create a Packages Controller.
 
         :fas: Fedora Account System object.
         :appTitle: Title of the web app.
         '''
-        self.bzUrl = config.get('bugzilla.url',
-                'https://bugzilla.redhat.com/')
-        self.bzQueryUrl = config.get('bugzilla.queryurl', self.bzUrl)
-
         self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.appTitle = appTitle
-        # pylint: disable-msg=E1101
-        self.removedStatus = model.StatusTranslation.query.filter_by(
-                statusname='Removed', language='C').first().statuscodeid
-        # pylint: enable-msg=E1101
 
     @expose(template='pkgdb.templates.bugoverview')
     @paginate('packages', default_order='name', limit=100,
@@ -145,6 +148,18 @@ class Bugs(controllers.Controller):
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
         for bug in rawBugs:
             bugs.append(bug)
+
+        if not bugs:
+            # Check that the package exists
+            try:
+                package = model.Package.query.filter_by(name=packageName).one()
+            except InvalidRequestError:
+                error = dict(status = False,
+                        title = self.appTitle + ' -- Not a Valid Package Name',
+                        message='No such package %s' % packageName)
+                if request.params.get('tg_format', 'html') != 'json':
+                    error['tg_template'] = 'pkgdb.templates.errors'
+                return error
 
         return dict(title='%s -- Open Bugs for %s' %
                 (self.appTitle, packageName), package=packageName,

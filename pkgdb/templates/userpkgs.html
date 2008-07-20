@@ -5,29 +5,42 @@
   <xi:include href="layout.html" />
   <xi:include href="paginator.html" />
   <xi:include href="pkglist.html" />
+
+  <form py:def="acl_filter()" method="GET" class="filter"
+    action="${tg.url('/users/packages/' + fasname)}">
+    Only packages with these acls:
+
+    <ul py:for="acl in acls">
+      <li>
+      <label>
+        <input type="checkbox" name="acls" value="${acl[0]}"
+        py:attrs="{'checked': tg.checker(acl[1])}"/>
+        ${acl[2]}
+      </label>
+      </li>
+    </ul>
+    <button type="submit">Filter</button>
+  </form>
+
   <head />
   <body>
 
-    <p py:choose="fasname">
-      <form method="GET" action="${tg.url('/users/packages/' + fasname)}">
-      <span py:when="'orphan'" py:strip="">
-      View: Info |
-      <a href="${tg.url('/users/packages/' + fasname)}">Packages</a> that ${fasname}: 
-      </span>
-      <span py:otherwise="" py:strip="">
-      View: <a href="${tg.url('/users/info/' + fasname)}">My Info</a> |
-      </span>
-      <span>
-      <input type="checkbox" name="acls" value="owner" checked="checked" /> own <!-- checked="checked" should only be there if it is submitted -->
-      <input type="checkbox" name="acls" value="commit" /> can commit to <!-- else it should be blank as such -->
-      <input type="checkbox" name="acls" value="approveacls" checked="checked" /> can approve ACLs
-      <input type="checkbox" name="acls" value="watchcommits" checked="checked" /> watch commits
-      <input type="checkbox" name="acls" value="watchbugzilla" checked="checked" /> watch bugzilla
-      <button type="submit">Go</button>
-      </span>
-      </form>
-    </p><br />
-    
+    <p py:choose="fasname" py:strip="">
+      <div py:when="tg.identity.user_name">
+        View: <a href="${tg.url('/users/info/' + fasname)}">My Info</a> |
+        My Packages (${pkgCount})
+        ${acl_filter()}
+      </div>
+      <div py:when="'orphan'">
+        View: Orphaned Packages (${pkgCount})
+      </div>
+      <div py:otherwise="">
+        View: <a href="${tg.url('/users/info/' + fasname)}">${fasname}'s
+          Info</a> | ${fasname}'s Packages (${pkgCount})
+        ${acl_filter()}
+      </div>
+    </p>
+
     ${paginate_nav()}
     ${pkglist(pkgs)}
     ${paginate_nav()}
