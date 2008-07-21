@@ -180,7 +180,7 @@ class Packages(controllers.Controller):
                         break
 
         for pkg in pkgListings:
-            pkg.jsonProps = {'PackageListing': ('package', 'collection',
+            pkg.json_props = {'PackageListing': ('package', 'collection',
                     'people', 'groups', 'qacontactname', 'owneruser', 'ownerid'),
                 'PersonPackageListing': ('aclOrder', 'name', 'user'),
                 'GroupPackageListing': ('aclOrder', 'name'),
