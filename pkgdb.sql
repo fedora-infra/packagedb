@@ -159,6 +159,11 @@ begin;
   insert into StatusCodeTranslation (statusCodeId, statusName)
     values (lastval(), 'Under Review');
 commit;
+begin;
+  insert into StatusCode default values;
+  insert into StatusCodeTranslation (statusCodeId, statusName)
+    values (lastval(), 'Deprecated');
+commit;
 
 -- Create a trigger to update the available log actions depending on the
 -- available status codes for that table.
@@ -258,7 +263,8 @@ create trigger add_status_to_action after insert or delete or update
 begin;
   create table PackageListingStatusCode as select StatusCodeId 
     from StatusCodeTranslation where statusName in ('Awaiting Review',
-      'Awaiting Branch', 'Approved', 'Denied', 'Obsolete');
+      'Awaiting Branch', 'Approved', 'Denied', 'Obsolete', 'Orphaned',
+      'Deprecated');
   alter table PackageListingStatusCode add primary key (statusCodeId);
   alter table PackageListingStatusCode add foreign key (statusCodeId)
     references StatusCode(id) on delete cascade on update cascade;
@@ -267,7 +273,7 @@ begin;
   create table PackageListingLogStatusCode as
     select StatusCodeId from PackageListingStatusCode
     union select StatusCodeId from StatusCodeTranslation
-    where statusName in ('Added', 'Removed', 'Orphaned', 'Owned');
+    where statusName in ('Added', 'Removed', 'Owned');
   alter table PackageListingLogStatusCode add primary key (statusCodeId);
 commit;
 create trigger add_status_to_action after insert or delete or update
@@ -451,6 +457,7 @@ create table PackageListing (
   owner integer not null,
   qacontact integer,
   statuscode integer not null,
+  statuschange timestamp with time zone NOT NULL DEFAULT now(),
   unique(packageId, collectionId),
   foreign key (packageId) references Package(id)
     on delete cascade on update cascade,
