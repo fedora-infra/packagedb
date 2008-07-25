@@ -16,7 +16,7 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Author(s): Ionuț Arțăriși <mapleoin@lavabit.com>
+# Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #            Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
@@ -87,6 +87,10 @@ class Search(controllers.Controller):
            both
            :operator: can be either 'AND' or 'OR'
         '''
+
+        if searchword == '' or searchword.isspace():
+            raise redirect(config.get('base_url_filter.base_url') + '/search')
+
         # case insensitive
         query = searchwords.lower() 
 
