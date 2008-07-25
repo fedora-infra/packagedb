@@ -67,7 +67,7 @@ class CollectionName(validators.FancyValidator):
         try:
             Collection.query.filter_by(name=value).first()
         except InvalidRequestError:
-            raise validators.Invalid(self.message('no_collection',
+            raise validators.Invalid(self.message('no_collection', state,
                 collection=value), value, state)
 
 #
