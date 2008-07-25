@@ -185,8 +185,13 @@ class Users(controllers.Controller):
         else:
             myPackages = queries[0]
 
-        return dict(title=pageTitle, pkgCount=myPackages.count(),
-                pkgs=myPackages, acls=aclList, fasname=fasname)
+        pkgList = []
+        for pkg in myPackages:
+            pkg.json_props = {'Package': ('listings',)}
+            pkgList.append(pkg)
+
+        return dict(title=pageTitle, pkgCount=len(pkgList),
+                pkgs=pkgList, acls=aclList, fasname=fasname)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):
