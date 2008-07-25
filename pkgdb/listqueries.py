@@ -567,8 +567,10 @@ class ListQueries(controllers.Controller):
                 ('watchbugzilla', 'watchcommits')),
                 PersonPackageListingAcl.statuscode==self.approvedStatus),
                 PersonPackageListingAcl.acl==None)
-                ).where(Collection.id==PackageListing.collectionid
-                        ).distinct().order_by('name')
+                ).where(and_(Collection.id==PackageListing.collectionid,
+                        Package.statuscode==self.approvedStatus,
+                        PackageListing.statuscode==self.approvedStatus,
+                        )).distinct().order_by('name')
         # pylint: enable-msg=E1101
 
         if not eol:
