@@ -40,7 +40,10 @@ from pkgdb.search import Search
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-from fedora.accounts.fas2 import AccountSystem
+try:
+    from fedora.client.fas2 import AccountSystem
+except ImportError:
+    from fedora.accounts.fas2 import AccountSystem
 
 class UserCache(dict):
     '''Naive cache for user information.
