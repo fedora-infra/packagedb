@@ -52,10 +52,16 @@ TODO='Not yet implemented'
       </a></li>
     </ul>
     </p>
-
     <form action="${tg.url('/packages/dispatcher/')}" method="POST">
-      <table class="pkglist" py:for="pkg in packageListings"
-        py:attrs="{'name': str(pkg.id)}">
+        <div py:for="pkg in packageListings"> 
+            <?python
+            # is the package orphaned?
+            if pkg.ownerid == 9900:
+                cls = 'pkglist-orphan'
+            else:
+                cls = 'pkglist-owned' 
+            ?>
+        <table py:attrs="{'name': str(pkg.id), 'class': cls}">
         <?python
         # Determine whether the present user is already involved with this
         # packagelisting and if they are allowed to change acls
@@ -227,6 +233,7 @@ TODO='Not yet implemented'
           </td>
         </tr>
       </table>
+    </div>
     </form>
   </body>
 </html>
