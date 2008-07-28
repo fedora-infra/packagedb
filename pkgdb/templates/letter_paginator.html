@@ -1,0 +1,14 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  py:strip="">
+
+  <div py:def="letter_paginate_nav" class="LetPaginateNav">|
+    <py:for each="let in 'abcdefghijklmnopqrstuvwxyz'" py:choose="letter">
+    <b py:when="let">${let} |</b>
+    <a py:otherwise="" href="${tg.url('/packages/index/%s') % let}">${let}</a> |
+    </py:for>
+        <a href="${tg.url('/packages/')}">[show all]</a>
+  </div>
+</html>
