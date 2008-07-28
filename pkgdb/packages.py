@@ -51,14 +51,23 @@ class Packages(controllers.Controller):
     @expose(template='pkgdb.templates.pkgoverview')
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def index(self):
+    def index(self, letter=''):
         '''Return a list of all packages in the database.
-        '''
-        # Retrieve the list of packages minus removed packages
-        packages = model.Package.query.filter(
-                model.Package.c.statuscode!=self.removedStatus)
 
-        return dict(title=self.appTitle + ' -- Package Overview',
+           Or return packages beginning with >letter< 
+        '''
+        # Retrieve only packages starting with the specified letter
+        if letter != '':
+            packages = model.Package.query.filter(model.Package.name.like(
+                            letter + '%')).order_by(model.Package.name.asc())
+        else:
+            packages = model.Package.query
+        # minus removed packages
+        packages = packages.filter(
+                        model.Package.c.statuscode!=self.removedStatus)
+
+        return dict(title=self.appTitle + ' -- Packages Overview',
+                letter=letter,
                 packages=packages)
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
