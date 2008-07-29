@@ -53,13 +53,13 @@ class PackageDispatcher(controllers.Controller):
     # Waiting for the cvsextras=>packager rename will make this easier though.
 
     # Create a list of groups that can possibly commit to packages
-    groups = {100300: 'cvsextras',
+    groups = {100300: 'packager',
             101197: 'cvsadmin',
             107427: 'uberpackager',
-            'cvsextras': 100300,
+            'packager': 100300,
             'cvsadmin': 101197,
             'uberpackager': 107427}
-    groupnames = ('cvsextras', 'packager', 'cvsadmin', 'uberpackager')
+    groupnames = ('packager', 'cvsadmin', 'uberpackager')
 
     # Status codes
     addedStatus = model.StatusTranslation.query.filter_by(
@@ -221,12 +221,12 @@ class PackageDispatcher(controllers.Controller):
                     return True
                 elif [group for group in user['approved_memberships'] if group['name'] in
                         self.groupnames]:
-                    # If the user is in cvsextras or cvsadmin they are allowed
+                    # If the user is in a knwon group they are allowed
                     return True
                 raise AclNotAllowedError('%s must be in one of these groups:' \
                         ' %s to own a package' %
                         (user['username'], self.groupnames))
-            # Anyone in cvsextras or cvsadmin can potentially own the package
+            # Anyone in a known group can potentially own the package
             elif identity.in_any_group(*self.groupnames):
                 return True
             raise AclNotAllowedError(
@@ -235,7 +235,7 @@ class PackageDispatcher(controllers.Controller):
 
         # For any other acl, check whether the person is in an allowed group
         if user:
-            # If the person isn't in cvsextras or cvsadmin raise an error
+            # If the person isn't in a known group raise an error
             if [group for group in user['approved_memberships'] if group['name'] in
                     self.groupnames]:
                 return True
@@ -730,7 +730,7 @@ class PackageDispatcher(controllers.Controller):
 
         changedAcls = ()
 
-        for group in ('cvsextras', 'uberpackager'):
+        for group in ('packager', 'uberpackager'):
             groupListing = model.GroupPackageListing(self.groups[group])
             groupListing.packagelisting = pkgListing
             groupCommitAcl = model.GroupPackageListingAcl('commit',
@@ -969,7 +969,7 @@ class PackageDispatcher(controllers.Controller):
                         pkgListing.package = pkg
                         pkgListing.collection = collection
                         cvsextrasListing = model.GroupPackageListing(
-                                self.groups['cvsextras'])
+                                self.groups['packager'])
                         cvsextrasListing.packagelisting = pkgListing
                         cvsextrasCommitAcl = model.GroupPackageListingAcl(
                                 'commit', self.approvedStatus.statuscodeid)
