@@ -187,6 +187,7 @@ class Users(controllers.Controller):
         else:
             myPackages = queries[0]
 
+        myPackages = myPackages.order_by(Package.name)
         pkgList = []
         for pkg in myPackages:
             pkg.json_props = {'Package': ('listings',)}
