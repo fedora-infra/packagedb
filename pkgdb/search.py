@@ -96,10 +96,11 @@ class Search(controllers.Controller):
         
         # case insensitive
         query = searchwords.lower() 
-       
+        descriptions, names, exact = [], [], []
+        if query.split() == []:   # look for '' or just spaces
+            raise redirect('/search/')            
         if operator == 'OR':
             query = query.split()  # -> list
-            descriptions, names, exact = [], [], []
             for searchword in query:
                 if searchon == 'description':
                     descriptions += model.PackageListing.query.filter(and_(
@@ -122,45 +123,45 @@ class Search(controllers.Controller):
                                     '%'+searchword+'%')))
                     
         else:      # AND operator
-            descriptions, names, exact = [], [], [] 
             if searchon in ['name', 'both']: 
                 exact = model.PackageListing.query.filter(and_(
-                    model.PackageListing.packageid==model.Package.id,
-                             func.lower(model.Package.name).like(query))).all()
+                     model.PackageListing.packageid==model.Package.id,
+                         func.lower(model.Package.name).like(query))).all()
                 # query the DB for every searchword and build a Query object
                 # to filter succesively
                 query = query.split()
                 names = model.PackageListing.query.filter(and_(
-                            model.PackageListing.packageid==model.Package.id,
+                           model.PackageListing.packageid==model.Package.id,
                                 func.lower(model.Package.name).like(
                                     '%' + query[0] + '%')))
                 for searchword in query:
-                    names = names.filter(func.lower(model.Package.name).like(
+                    names = names.filter(
+                                func.lower(model.Package.name).like(
                                             '%' + searchword + '%'))
                 names = names.all()
- 
-                if searchon == 'both':
-                   descriptions = model.PackageListing.query.filter(and_(
-                        model.PackageListing.packageid==model.Package.id,
+
+            if searchon == 'both':
+                descriptions = model.PackageListing.query.filter(and_(
+                         model.PackageListing.packageid==model.Package.id,
                              func.lower(model.Package.description).like(
                                 '%' + query[0] + '%')))
-                   for searchword in query:
-                       descriptions = descriptions.filter(
-                               func.lower(model.Package.description).like(
-                                   '%' + searchword + '%'))
-                   descriptions = descriptions.all()
+                for searchword in query:
+                    descriptions = descriptions.filter(
+                         func.lower(model.Package.description).like(
+                            '%' + searchword + '%'))
+           
+                descriptions = descriptions.all()
             elif searchon == 'description':
                 query = query.split()
                 descriptions = model.PackageListing.query.filter(and_(
                     model.PackageListing.packageid==model.Package.id,
-                        func.lower(model.Package.description).like(
-                           '%' + query[0] + '%')))
+                         func.lower(model.Package.description).like(
+                            '%' + query[0] + '%')))
                 for searchword in query:
                     descriptions = descriptions.filter(
-                            func.lower(model.Package.description).like(
-                                '%' + searchword + '%'))
+                        func.lower(model.Package.description).like(
+                            '%' + searchword + '%'))
                 descriptions = descriptions.all()
-                       
                    
         s = set()   # order and remove duplicates
         matches = []
