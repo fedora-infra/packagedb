@@ -35,10 +35,9 @@
     </script>
     <script type="text/javascript">
          <!--
-         function jump(){
-         window.location='/search/package/both/0/AND/' + 
-            document.forms[0].searchwords.value;
-         return false
+         function jump(page, form_no){
+             window.location= page + document.forms[form_no].searchwords.value;
+             return false
          }
          //-->
     </script> 
@@ -64,8 +63,8 @@
           <ul>
             <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
             <li><a href="${tg.url('/collections/')}">View Collections</a></li>
-            <li><a href="${tg.url('/packages/')}">View Packages</a></li>
-            <li><a href="${tg.url('/packages/bugs/')}">View Bugs</a></li>
+            <li><a href="${tg.url('/packages/index/a*')}">View Packages</a></li>
+            <li><a href="${tg.url('/packages/bugs/index/a*')}">View Bugs</a></li>
             <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
             <li><a href="${tg.url('/users/packages/orphan')}">Orphan Packages</a></li>
             <li><a href="${tg.url('/stats/')}">Package Stats</a></li>
@@ -73,10 +72,10 @@
             <li><a href="https://fedorahosted.org/packagedb/newticket">Report Bugs</a></li>
           </ul>
           <h2>Search</h2>
-            <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump()">
+            <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('/search/package/both/0/AND/', 0)">
             <p>
                 <input id="package" name="searchwords" size="9" type="text" />
-                <input id="search" type="submit" value="Go" />
+                <input id="go" type="submit" value="Go" />
             </p>
     </form>
   

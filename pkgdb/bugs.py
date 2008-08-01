@@ -15,8 +15,9 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
-#                    Seth Vidal <svidal@redhat.com>
+# Red Hat Author(s):        Toshio Kuratomi <tkuratom@redhat.com>
+#                           Seth Vidal <svidal@redhat.com>
+# Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
 Controller for displaying Package Bug Information.
@@ -108,19 +109,42 @@ class Bugs(controllers.Controller):
         self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.appTitle = appTitle
 
-    @expose(template='pkgdb.templates.bugoverview')
+    @expose(template='pkgdb.templates.pkgbugoverview')
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def index(self):
-        '''Display a list of packages with a link to bug reports for each.'''
-        # Retrieve the list of packages minus removed packages
+    def index(self, searchwords=''):
+        '''Display a list of packages with a link to bug reports for each.
+           
+           Arguments:
+            :searchwords: optional - string to restrict the list, can use % or
+            as wildcards
+           Returns:
+            :searchwords: string, see above, '&' and '_' are removed
+            :mode: string to use in the construction of the view urls, (maybe 
+            there's a better way?)
+        '''
+        if searchwords != '':
+            searchwords = searchwords.replace('*','%')
+            if searchwords.isdigit():
+                packages = model.Package.query.filter(or_(
+                               model.Package.name.between('0','9'),
+                                   model.Package.name.like('9%')))
+            else: 
+                # sanitize for ilike:
+                searchwords = searchwords.replace('&','').replace('_','') 
+                packages = model.Package.query.filter(model.Package.name.ilike(
+                          searchwords)).order_by(model.Package.name.asc())
+        else:
+            packages = model.Package.query 
+        searchwords = searchwords.replace('%','*')
+        # minus removed packages
         # pylint: disable-msg=E1101
-        packages = model.Package.query.filter(
+        packages = packages.filter(
                 model.Package.c.statuscode!=self.removedStatus)
         # pylint: enable-msg=E1101
 
-        return dict(title=self.appTitle + ' -- Package Bug Pages',
-                bzurl=self.bzUrl, packages=packages)
+        return dict(title=self.appTitle + ' -- Package Bug Pages', mode='bugs/',
+                bzurl=self.bzUrl, packages=packages, searchwords=searchwords)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
 

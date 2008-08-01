@@ -15,13 +15,17 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+# Red Hat Author(s):        Toshio Kuratomi <tkuratom@redhat.com>
+# Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
 Controller for displaying Package Information.
 '''
 
-from turbogears import controllers, expose, paginate, config, redirect, identity
+from sqlalchemy.sql import or_
+from turbogears import controllers, expose, paginate, config, redirect, \
+                        identity, validate
+from turbogears.validators import PlainText
 from turbogears.database import session
 
 from pkgdb import model
@@ -48,27 +52,36 @@ class Packages(controllers.Controller):
         self.removedStatus = model.StatusTranslation.query.filter_by(
                 statusname='Removed', language='C').first().statuscodeid
 
-    @expose(template='pkgdb.templates.pkgoverview')
+    @expose(template='pkgdb.templates.pkgbugoverview')
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def index(self, letter=''):
+    def index(self, searchwords=''):
         '''Return a list of all packages in the database.
 
-           Or return packages beginning with >letter< 
+           Arguments:
+           :searchwords: optional - string to restrict the list, can use % or * 
+           as wildcards
         '''
-        # Retrieve only packages starting with the specified letter
-        if letter != '':
-            packages = model.Package.query.filter(model.Package.name.like(
-                            letter + '%')).order_by(model.Package.name.asc())
+        if searchwords != '':
+            searchwords = searchwords.replace('*','%')
+            if searchwords.isdigit() and int(searchwords) < 10: # 0-9
+                packages = model.Package.query.filter(or_(
+                               model.Package.name.between('0','9'),
+                                   model.Package.name.like('9%')))
+            else: 
+                # sanitize for ilike:
+                searchwords = searchwords.replace('&','').replace('_','') 
+                packages = model.Package.query.filter(model.Package.name.ilike(
+                    searchwords)).order_by(model.Package.name.asc())
         else:
             packages = model.Package.query
+        searchwords = searchwords.replace('%','*')
         # minus removed packages
         packages = packages.filter(
                         model.Package.c.statuscode!=self.removedStatus)
 
         return dict(title=self.appTitle + ' -- Packages Overview',
-                letter=letter,
-                packages=packages)
+                searchwords=searchwords, packages=packages, mode='')
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):

@@ -1,0 +1,24 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <xi:include href="paginator.html" />
+  <xi:include href="letter_paginator.html" />
+  <xi:include href="pkglist.html" />
+  <head />
+  <body>
+    <p py:if="mode">Click on a package to view the bug reports opened against 
+    it. Or go to the <a href="$bzurl">bugzilla main page</a> to construct your 
+    own search.</p>
+    <form action="${tg.url('/packages/' + mode + 'index/')}" method="get" onsubmit="return jump('/packages/$mode'+'index/', 1)">
+        <input id="searchplist" name="searchwords" size="9" type="text" value='$searchwords' />
+        <input id="search" type="submit" value="Search" />
+    </form>
+    ${letter_paginate_nav(mode)}<br />
+    ${paginate_nav()}<br />
+    ${pkglist(packages,mode)}
+    ${paginate_nav()}<br />
+    ${letter_paginate_nav(mode)}
+  </body>
+</html>
