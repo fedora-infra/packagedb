@@ -1009,20 +1009,21 @@ class PackageDispatcher(controllers.Controller):
                                 self.approvedStatus.statuscodeid)
                         pkg_listing.package = pkg
                         pkg_listing.collection = collection
-                        cvsextrasListing = GroupPackageListing(
-                                self.groups['packager'])
-                        cvsextrasListing.packagelisting = pkg_listing
-                        cvsextrasCommitAcl = GroupPackageListingAcl(
-                                'commit', self.approvedStatus.statuscodeid)
-                        cvsextrasCommitAcl.grouppackagelisting = \
-                                cvsextrasListing
-                        cvsextrasBuildAcl = GroupPackageListingAcl(
-                                'build', self.approvedStatus.statuscodeid)
-                        cvsextrasBuildAcl.grouppackagelisting = cvsextrasListing
-                        cvsextrasCheckoutAcl = GroupPackageListingAcl(
-                                'checkout', self.approvedStatus.statuscodeid)
-                        cvsextrasCheckoutAcl.grouppackagelisting = \
-                                cvsextrasListing
+                        for group in ('packager', 'uberpackager'):
+                            group_pkg_listing = GroupPackageListing(
+                                    self.groups[group])
+                            group_pkg_listing.packagelisting = pkg_listing
+                            groupCommitAcl = GroupPackageListingAcl('commit',
+                                    self.approvedStatus.statuscodeid)
+                            groupCommitAcl.grouppackagelisting = \
+                                    group_pkg_listing
+                            groupBuildAcl = GroupPackageListingAcl('build',
+                                    self.approvedStatus.statuscodeid)
+                            groupBuildAcl.grouppackagelisting = group_pkg_listing
+                            groupCheckoutAcl = GroupPackageListingAcl(
+                                    'checkout', self.approvedStatus.statuscodeid)
+                            groupCheckoutAcl.grouppackagelisting = \
+                                    group_pkg_listing
 
                         log_msg = '%s (%s) added a %s %s branch for %s' % (
                                 identity.current.display_name,
