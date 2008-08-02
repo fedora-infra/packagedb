@@ -149,9 +149,9 @@ class ListQueries(controllers.Controller):
             statusname='Under Development', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
-    def __init__(self, fas=None, appTitle=None):
+    def __init__(self, fas=None, app_title=None):
         self.fas = fas
-        self.app_title = appTitle
+        self.app_title = app_title
 
     def _add_to_bugzilla_acl_list(self, package_acls, pkg_name,
             collection_name, identity, group=None):

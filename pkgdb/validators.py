@@ -21,11 +21,20 @@
 Collection of validators for parameters coming to pkgdb URLs.
 '''
 
-# Validators don't need an__init__method (W0232)
-# Validators are following an API specification so need certain methods that
-#   would otherwise be functions (R0201)
-# Validators will usually only have two methods (R0903)
-# Only a few validators use the state parameter (W0613)
+#
+# Pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+#   Validators also have a message() method which FormEncode adds in a way
+#   that pylint can't detect.
+# :W0232: Validators don't need an__init__method
+# :R0201: Validators are following an API specification so need certain
+#   methods that would otherwise be functions
+# :R0903: Validators will usually only have two methods
+# :W0613: Only a few validators use the state parameter
+
 # pylint: disable-msg=W0232,R0201,R0903,W0613
 
 from turbogears import validators
@@ -33,11 +42,13 @@ from sqlalchemy.exceptions import InvalidRequestError
 
 from pkgdb.model import Collection
 
-### HACK: TurboGears/FormEncode requires that we use a dummy _ function for
-# error messages.
-# http://docs.turbogears.org/1.0/Internationalization#id13
-def _(s):
-    return s
+def _(string):
+    ''' *HACK*:  TurboGears/FormEncode requires that we use a dummy _ function.
+
+    Internationalizing error messages won't work otherwise.
+    http://docs.turbogears.org/1.0/Internationalization#id13
+    '''
+    return string
 
 class BooleanValue(validators.FancyValidator):
     '''Convert a value into a boolean True or False.
@@ -64,11 +75,13 @@ class CollectionName(validators.FancyValidator):
 
     def validate_python(self, value, state):
         '''Make sure the collection is in the database.'''
+        # pylint: disable-msg=E1101
         try:
             Collection.query.filter_by(name=value).first()
         except InvalidRequestError:
             raise validators.Invalid(self.message('no_collection', state,
                 collection=value), value, state)
+        # pylint: enable-msg=E1101
 
 #
 # Chained Validators
@@ -91,6 +104,13 @@ class CollectionNameVersion(validators.FancyValidator):
             'no_collection': _('Collection named %(name)s does not exist')}
 
     def validate_python(self, field_dict, state):
+        '''Make sure the Collection with the given `name` and `version` exists.
+
+        We want to allow for:
+          1) Neither to be set
+          2) Name to exist in the db and version unset
+          3) Name and version to exist in the db
+        '''
         if not field_dict:
             # It's okay for both to be none
             return
@@ -99,6 +119,7 @@ class CollectionNameVersion(validators.FancyValidator):
         name = field_dict.get('name')
         version = field_dict.get('version')
         if (not name) and version:
+            # pylint: disable-msg=E1101
             errors['version'] = self.message('nameless_version', state)
         elif name and version:
             try:
@@ -107,6 +128,7 @@ class CollectionNameVersion(validators.FancyValidator):
                 errors['version'] = self.message('no_version', state,
                         name=name, version=version)
         elif name and not version:
+            # pylint: disable-msg=E1101
             try:
                 Collection.query.filter_by(name=name).first()
             except InvalidRequestError:

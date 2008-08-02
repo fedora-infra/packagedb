@@ -31,7 +31,7 @@ import sqlalchemy
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy import Table, Column, Integer, String
-from sqlalchemy.orm import Mapper
+from sqlalchemy.orm import Mapper, create_session
 
 from fedora.tg.json import SABase
 from pkgdb import model
@@ -130,7 +130,7 @@ class RepoInfo(object):
     # is changed or replaced.
     # Test what happens if we have a repo.sqlite file open and use RepoUpdater
     # to change it.
-    
+
     # pylint: disable-msg=E1101
     approvedStatus = model.StatusTranslation.filter_by(statusname='Approved',
             language='C').one().statuscodeid
@@ -191,7 +191,7 @@ class RepoInfo(object):
                 )
         Mapper(DB_Info, self.DB_InfoTable)
         Mapper(Packages, self.PackagesTable)
-        self.session = sqlalchemy.create_session()
+        self.session = create_session()
 
     def _bind_to_repo(self, repo, mdtype):
         '''Set our model to talk to the db in this particular repo.'''

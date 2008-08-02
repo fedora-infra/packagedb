@@ -45,14 +45,14 @@ class EventLogger(object):
         # Eventually this could handle logging of changes as well.
         pass
 
-    def _send_msg(self, msg, subject, recipients, fromAddr=None):
+    def _send_msg(self, msg, subject, recipients, from_addr=None):
         '''Send an email from the packagedb.'''
-        if not fromAddr:
-            fromAddr = self.MAILFROM
+        if not from_addr:
+            from_addr = self.MAILFROM
 
         if config.get('mail.on', False):
             for person in recipients:
-                email = turbomail.Message(fromAddr, person,
+                email = turbomail.Message(from_addr, person,
                         '[pkgdb] %s' % (subject,))
                 email.plain = msg
                 turbomail.enqueue(email)
@@ -61,8 +61,8 @@ class EventLogger(object):
                     subject.encode('ascii', 'replace'))
             log.debug('To: %s' % recipients)
             log.debug('From: %s %s' %
-                    (fromAddr[0].encode('ascii', 'replace'),
-                    fromAddr[1].encode('ascii', 'replace')))
+                    (from_addr[0].encode('ascii', 'replace'),
+                    from_addr[1].encode('ascii', 'replace')))
             log.debug('%s' % msg.encode('ascii', 'replace'))
 
     # The eventual plan is to abstract this one layer.  The application alerts

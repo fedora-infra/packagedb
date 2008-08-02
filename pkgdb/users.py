@@ -23,6 +23,13 @@
 Controller to show information about packages by user.
 '''
 
+#
+# PyLint Explanation
+#
+
+# :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
+#   have to disable this check wherever we use the mapper classes.
+
 import sqlalchemy
 
 from turbogears import controllers, expose, paginate, config, \
@@ -58,14 +65,14 @@ class Users(controllers.Controller):
             ('watchcommits', 'watchcommits'),
             ('watchbugzilla', 'watchbugzilla'))
 
-    def __init__(self, fas, appTitle):
+    def __init__(self, fas, app_title):
         '''Create a User Controller.
 
         :fas: Fedora Account System object.
-        :appTitle: Title of the web app.
+        :app_title: Title of the web app.
         '''
         self.fas = fas
-        self.appTitle = appTitle
+        self.app_title = app_title
 
     @expose(template='pkgdb.templates.useroverview')
     def index(self):
@@ -110,7 +117,7 @@ class Users(controllers.Controller):
 
         # Create a list where store acl name, whether the acl is currently
         # being filtered for, and the label to use to display the acl.
-        aclList = [(a[0], a[0] in acls, a[1]) for a in self.allAcls]
+        acl_list = [(a[0], a[0] in acls, a[1]) for a in self.allAcls]
 
         # Have to either get fasname from the URL or current user
         if fasname == None:
@@ -124,7 +131,7 @@ class Users(controllers.Controller):
             try:
                 fasid = self.fas.cache[fasname]['id']
             except KeyError:
-                error = dict(title=self.appTitle + ' -- Invalid Username',
+                error = dict(title=self.app_title + ' -- Invalid Username',
                         status = False, pkgs = [],
                         message='The username you were linked to (%s) cannot' \
                         ' be found.  If you received this error from' \
@@ -132,11 +139,12 @@ class Users(controllers.Controller):
                         ' report it.' % fasname
                     )
                 if request_format() != 'json':
-                        error['tg_template'] = 'pkgdb.templates.errors'
+                    error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
-        pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
+        page_title = self.app_title + ' -- ' + fasname + ' -- Packages'
 
+        # pylint: disable-msg=E1101
         query = Package.query.join('listings').distinct()
 
         if not eol:
@@ -179,25 +187,36 @@ class Users(controllers.Controller):
                     PersonPackageListingAcl.c.acl.in_(acls))
 
         if len(queries) == 2:
-            myPackages = Package.query.select_from(
+            my_pkgs = Package.query.select_from(
                             sqlalchemy.union(
                                     queries[0].statement,
                                     queries[1].statement
                                     ))
         else:
-            myPackages = queries[0]
+            my_pkgs = queries[0]
 
-        myPackages = myPackages.order_by(Package.name)
-        pkgList = []
-        for pkg in myPackages:
+        my_pkgs = my_pkgs.order_by(Package.name)
+        # pylint: enable-msg=E1101
+        pkg_list = []
+        for pkg in my_pkgs:
             pkg.json_props = {'Package': ('listings',)}
-            pkgList.append(pkg)
+            pkg_list.append(pkg)
 
-        return dict(title=pageTitle, pkgCount=len(pkgList),
-                pkgs=pkgList, acls=aclList, fasname=fasname)
+        return dict(title=page_title, pkgCount=len(pkg_list),
+                pkgs=pkg_list, acls=acl_list, fasname=fasname)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):
+        '''Return some info and links for the user.
+
+        Currently this page does nothing.  Eventually we want it to return an
+        overview of what the user can do.  A TODO queue of people/packages
+        they need to approve.  Links to FAS. Etc.
+
+        Keyword Arguments:
+        :fasname: If given, the name of hte user to display information for.
+            Defaults to the logged in user.
+        '''
         # If fasname is blank, ask for auth, we assume they want their own?
         if fasname == None:
             if identity.current.anonymous:
@@ -211,7 +230,7 @@ class Users(controllers.Controller):
                 user = self.fas.cache[fasname]
             except KeyError:
                 error = dict(status = False,
-                        title = self.appTitle + ' -- Invalid Username',
+                        title = self.app_title + ' -- Invalid Username',
                         message = 'The username you were linked to,' \
                                 ' (%username)s does not exist.  If you' \
                                 ' received this error from a link on the' \
@@ -223,6 +242,6 @@ class Users(controllers.Controller):
 
             fasid = user['id']
 
-        pageTitle = self.appTitle + ' -- ' + fasname + ' -- Info'
+        page_title = self.app_title + ' -- ' + fasname + ' -- Info'
 
-        return dict(title=pageTitle, fasid=fasid, fasname=fasname)
+        return dict(title=page_title, fasid=fasid, fasname=fasname)

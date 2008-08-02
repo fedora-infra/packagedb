@@ -94,7 +94,7 @@ class Root(controllers.RootController):
     '''
     # Controller methods don't need an __init__()
     # pylint: disable-msg=W0232
-    appTitle = 'Fedora Package Database'
+    app_title = 'Fedora Package Database'
 
     baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
     username = config.get('fas.username', 'admin')
@@ -103,12 +103,12 @@ class Root(controllers.RootController):
     fas = AccountSystem(baseURL, username=username, password=password)
     fas.cache = UserCache(fas)
 
-    collections = Collections(fas, appTitle)
-    packages = Packages(fas, appTitle)
-    users = Users(fas, appTitle)
-    stats = Stats(fas, appTitle)
-    search = Search(fas, appTitle)
-    lists = ListQueries(fas, appTitle)
+    collections = Collections(fas, app_title)
+    packages = Packages(fas, app_title)
+    users = Users(fas, app_title)
+    stats = Stats(fas, app_title)
+    search = Search(fas, app_title)
+    lists = ListQueries(fas, app_title)
     # For backwards compatibility:
     acls = lists
 
@@ -119,7 +119,7 @@ class Root(controllers.RootController):
         This page serves as an overview of the entire PackageDB.  It needs to
         tell developers where to get more information on their packages.
         '''
-        return dict(title=self.appTitle, version=release.VERSION)
+        return dict(title=self.app_title, version=release.VERSION)
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, previous_url=None, *args, **kwargs):

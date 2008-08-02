@@ -21,7 +21,8 @@
 Controller for showing Package Collections.
 '''
 
-import sqlalchemy
+from sqlalchemy import and_
+from sqlalchemy.exceptions import InvalidRequestError
 
 from turbogears import controllers, expose, paginate
 
@@ -35,14 +36,14 @@ class Collections(controllers.Controller):
     These are methods that expose Collections to the users.  Collections are
     usually a specific release of a distribution.  For instance, Fedora 8.
     '''
-    def __init__(self, fas, appTitle):
+    def __init__(self, fas, app_title):
         '''Create a Packages Controller.
 
         :fas: Fedora Account System object.
-        :appTitle: Title of the web app.
+        :app_title: Title of the web app.
         '''
         self.fas = fas
-        self.appTitle = appTitle
+        self.app_title = app_title
 
     @expose(template='pkgdb.templates.collectionoverview', allow_json=True)
     def index(self):
@@ -54,7 +55,7 @@ class Collections(controllers.Controller):
                     CollectionPackage.c.version))
         # pylint: enable-msg=E1101
 
-        return dict(title=self.appTitle + ' -- Collection Overview',
+        return dict(title=self.app_title + ' -- Collection Overview',
                 collections=collections)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
@@ -67,7 +68,7 @@ class Collections(controllers.Controller):
             collectionId = int(collectionId)
         except ValueError:
             error = dict(status = False,
-                    title = self.appTitle + ' -- Invalid Collection Id',
+                    title = self.app_title + ' -- Invalid Collection Id',
                     message = 'The collectionId you were linked to is not a' \
                             ' valid id.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
@@ -82,11 +83,11 @@ class Collections(controllers.Controller):
         try:
             # pylint: disable-msg=E1101
             collectionEntry = Collection.query.filter_by(id=collectionId).one()
-        except sqlalchemy.exceptions.InvalidRequestError, e:
+        except InvalidRequestError:
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
-                    title = self.appTitle + ' -- Invalid Collection Id',
+                    title = self.app_title + ' -- Invalid Collection Id',
                     message = 'The collectionId you were linked to, %s, does' \
                             ' not exist.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
@@ -122,9 +123,9 @@ class Collections(controllers.Controller):
         # pylint:disable-msg=E1101
         # Retrieve the packagelist for this collection
         packages = Package.query.filter(
-                sqlalchemy.and_(PackageListing.c.collectionid==collectionId,
+                and_(PackageListing.c.collectionid==collectionId,
                     PackageListing.c.packageid==Package.c.id)
                 )
         # pylint:enable-msg=E1101
-        return dict(title='%s -- %s %s' % (self.appTitle, collection['name'],
+        return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
             collection['version']), collection=collection, packages=packages)
