@@ -22,11 +22,13 @@ Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
 
-from turbogears import controllers, expose, config
+from turbogears import controllers, expose, config, flash
 from turbogears.i18n.tg_gettext import gettext as _
 from turbogears import identity, redirect
 from cherrypy import request, response
 import logging
+
+from fedora.tg.util import request_format
 
 from pkgdb import release
 
@@ -137,8 +139,7 @@ class Root(controllers.RootController):
                 and identity.was_login_attempted() \
                 and not identity.get_identity_errors():
             # User is logged in
-            if 'tg_format' in request.params \
-                    and request.params['tg_format'] == 'json':
+            if request_format() == 'json':
                 # When called as a json method, doesn't make any sense to
                 # redirect to a page.  Returning the logged in identity
                 # is better.
@@ -161,7 +162,8 @@ class Root(controllers.RootController):
             forward_url = request.headers.get("Referer", "/")
 
         response.status = 403
-        return dict(message=msg, previous_url=previous_url, logging_in=True,
+        flash(msg)
+        return dict(previous_url=previous_url, logging_in=True,
                     original_parameters=request.params,
                     forward_url=forward_url,
                     title='Fedora Account System Login')
@@ -172,4 +174,6 @@ class Root(controllers.RootController):
         '''
         # pylint: disable-msg=R0201
         identity.current.logout()
+        if request_format() == 'json':
+            return dict()
         raise redirect(request.headers.get("Referer","/"))
