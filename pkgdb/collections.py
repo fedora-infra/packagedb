@@ -101,10 +101,8 @@ class Collections(controllers.Controller):
             user = self.fas.cache[collectionEntry.owner]
         except KeyError:
             user = {}
-            user['human_name'] = 'Unknown'
             user['username'] = 'User ID %i' % collectionEntry.owner
             user['email'] = 'unknown@fedoraproject.org'
-        ownerName = '%(human_name)s (%(username)s)' % user
 
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
@@ -113,7 +111,7 @@ class Collections(controllers.Controller):
         collection = {'name': collectionEntry.name,
                 'version': collectionEntry.version,
                 'owner': collectionEntry.owner,
-                'ownername': ownerName,
+                'ownername': user['username'],
                 'summary': collectionEntry.summary,
                 'description': collectionEntry.description,
                 'statusname': collectionEntry.status.translations[0].statusname

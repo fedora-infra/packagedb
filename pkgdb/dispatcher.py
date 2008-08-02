@@ -404,8 +404,7 @@ class PackageDispatcher(controllers.Controller):
 
             # Take ownership
             pkg.owner = identity.current.user.id
-            owner_name = '%s (%s)' % (identity.current.display_name,
-                    identity.current.user_name)
+            owner_name = '%s' % identity.current.user_name
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, owner_name)
@@ -414,10 +413,9 @@ class PackageDispatcher(controllers.Controller):
             # Release ownership
             pkg.owner = ORPHAN_ID
             owner_name = 'Orphaned Package (orphan)'
-            log_msg = 'Package %s in %s %s was orphaned by %s (%s)' % (
+            log_msg = 'Package %s in %s %s was orphaned by %s' % (
                     pkg.package.name, pkg.collection.name,
-                    pkg.collection.version, identity.current.display_name,
-                    identity.current.user_name)
+                    pkg.collection.version, identity.current.user_name)
             status = self.orphanedStatus
         else:
             return dict(status=False, message=
@@ -500,7 +498,7 @@ class PackageDispatcher(controllers.Controller):
         if not approved:
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs' %
-                    identity.current.display_name)
+                    identity.current.user_name)
 
         #
         # Make sure the person is allowed on this acl
@@ -516,12 +514,10 @@ class PackageDispatcher(controllers.Controller):
         person_acl = self._create_or_modify_acl(pkg, personid, new_acl, status)
 
         # Make sure a log is created in the db as well.
-        log_msg = u'%s (%s) has set the %s acl on %s (%s %s) to %s for' \
-                ' %s (%s)' % (
-                    identity.current.display_name,
+        log_msg = u'%s has set the %s acl on %s (%s %s) to %s for %s' % (
                     identity.current.user_name, new_acl, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, statusname,
-                    user['human_name'], user['username'])
+                    user['username'])
         log = PersonPackageListingAclLog(identity.current.user.id,
                 status.statuscodeid, log_msg)
         log.acl = person_acl # pylint: disable-msg=W0201
@@ -578,7 +574,7 @@ class PackageDispatcher(controllers.Controller):
         if not approved:
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs for %s (%s %s)'
-                    % (identity.current.display_name, pkg.package.name,
+                    % (identity.current.user_name, pkg.package.name,
                         pkg.collection.name, pkg.collection.version))
 
         # Check that the group is one that we allow access to packages
@@ -617,8 +613,7 @@ class PackageDispatcher(controllers.Controller):
         # See the docstring for an explanation.
 
         # Make sure a log is created in the db as well.
-        log_msg = '%s (%s) has set the %s acl on %s (%s %s) to %s for %s' % (
-                    identity.current.display_name,
+        log_msg = '%s has set the %s acl on %s (%s %s) to %s for %s' % (
                     identity.current.user_name, acl_name, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, acl_status,
                     self.groups[group_id])
@@ -697,8 +692,7 @@ class PackageDispatcher(controllers.Controller):
             acl_action = 'requested'
         else:
             acl_action = 'given up'
-        log_msg = '%s (%s) has %s the %s acl on %s (%s %s)' % (
-                    identity.current.display_name,
+        log_msg = '%s has %s the %s acl on %s (%s %s)' % (
                     identity.current.user_name, acl_action, acl_name,
                     pkg_listing.package.name, pkg_listing.collection.name,
                     pkg_listing.collection.version)
@@ -792,8 +786,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Create a log of changes
         logs = []
-        pkg_log_msg = '%s (%s) has added Package %s with summary %s' % (
-                identity.current.display_name,
+        pkg_log_msg = '%s has added Package %s with summary %s' % (
                 identity.current.user_name,
                 pkg.name,
                 pkg.summary)
@@ -802,8 +795,7 @@ class PackageDispatcher(controllers.Controller):
                 identity.current.user.id, self.addedStatus.statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg # pylint: disable-msg=W0201
-        pkg_log_msg = '%s (%s) has approved Package %s' % (
-                identity.current.display_name,
+        pkg_log_msg = '%s has approved Package %s' % (
                 identity.current.user_name,
                 pkg.name)
         logs.append(pkg_log_msg)
@@ -812,9 +804,8 @@ class PackageDispatcher(controllers.Controller):
                 pkg_log_msg)
         pkg_log.package = pkg
 
-        pkg_log_msg = '%s (%s) has added a %s %s branch for %s with an' \
+        pkg_log_msg = '%s has added a %s %s branch for %s with an' \
                 ' owner of %s' % (
-                        identity.current.display_name,
                         identity.current.user_name,
                         pkg_listing.collection.name,
                         pkg_listing.collection.version,
@@ -827,8 +818,7 @@ class PackageDispatcher(controllers.Controller):
                 )
         pkg_listing_log.listing = pkg_listing # pylint: disable-msg=W0201
 
-        pkg_log_msg = '%s (%s) has approved %s in %s %s' % (
-                    identity.current.display_name,
+        pkg_log_msg = '%s has approved %s in %s %s' % (
                     identity.current.user_name,
                     pkg_listing.package.name,
                     pkg_listing.collection.name,
@@ -840,8 +830,7 @@ class PackageDispatcher(controllers.Controller):
                 )
         pkg_listing_log.listing = pkg_listing
 
-        pkg_log_msg = '%s (%s) has approved Package %s' % (
-                identity.current.display_name,
+        pkg_log_msg = '%s has approved Package %s' % (
                 identity.current.user_name,
                 pkg.name)
         logs.append(pkg_log_msg)
@@ -851,8 +840,7 @@ class PackageDispatcher(controllers.Controller):
         pkg_log.package = pkg
 
         for change_acl in changed_acls:
-            pkg_log_msg = '%s (%s) has set %s to %s for %s on %s (%s %s)' % (
-                    identity.current.display_name,
+            pkg_log_msg = '%s has set %s to %s for %s on %s (%s %s)' % (
                     identity.current.user_name,
                     change_acl.acl,
                     # pylint: disable-msg=E1101
@@ -968,8 +956,7 @@ class PackageDispatcher(controllers.Controller):
         # Change the summary
         if 'summary' in changes:
             pkg.summary = changes['summary']
-            log_msg = '%s (%s) set package %s summary to %s' % (
-                    identity.current.display_name,
+            log_msg = '%s set package %s summary to %s' % (
                     identity.current.user_name, package, changes['summary'])
             log = PackageLog(identity.current.user.id,
                     self.modifiedStatus.statuscodeid, log_msg)
@@ -1054,8 +1041,7 @@ class PackageDispatcher(controllers.Controller):
                             group_checkout_acl.grouppackagelisting = \
                                     group_pkg_listing
 
-                        log_msg = '%s (%s) added a %s %s branch for %s' % (
-                                identity.current.display_name,
+                        log_msg = '%s added a %s %s branch for %s' % (
                                 identity.current.user_name,
                                 pkg_listing.collection.name,
                                 pkg_listing.collection.version,
@@ -1069,9 +1055,8 @@ class PackageDispatcher(controllers.Controller):
                         pkg_list_log_msgs[pkg_listing] = [log_msg]
                         for change_acl in (group_commit_acl,
                                 group_build_acl, group_checkout_acl):
-                            pkg_listing_log_msg = '%s (%s) has set %s to %s' \
+                            pkg_listing_log_msg = '%s has set %s to %s' \
                                     ' for %s on %s (%s %s)' % (
-                                    identity.current.display_name,
                                     identity.current.user_name,
                                     change_acl.acl,
                                     # pylint: disable-msg=E1101
@@ -1099,8 +1084,7 @@ class PackageDispatcher(controllers.Controller):
             # Already retrieved owner into person
             for pkg_listing in listings:
                 pkg_listing.owner = person['id']
-                log_msg = '%s (%s) changed owner of %s in %s %s to %s' % (
-                        identity.current.display_name,
+                log_msg = '%s changed owner of %s in %s %s to %s' % (
                         identity.current.user_name,
                         pkg_listing.package.name,
                         pkg_listing.collection.name,
@@ -1134,9 +1118,8 @@ class PackageDispatcher(controllers.Controller):
                     for acl in ('watchbugzilla', 'watchcommits'):
                         person_acl = self._create_or_modify_acl(pkg_listing,
                                 person['id'], acl, self.approvedStatus)
-                        log_msg = '%s (%s) approved %s on %s (%s %s)' \
+                        log_msg = '%s approved %s on %s (%s %s)' \
                                 ' for %s' % (
-                                        identity.current.display_name,
                                         identity.current.user_name,
                                         acl, pkg_listing.package.name,
                                         pkg_listing.collection.name,
@@ -1182,9 +1165,8 @@ class PackageDispatcher(controllers.Controller):
                                 person['id'], acl, self.approvedStatus)
 
                         # Make sure a log is created in the db as well.
-                        log_msg = u'%s (%s) approved %s on %s (%s %s)' \
+                        log_msg = u'%s approved %s on %s (%s %s)' \
                                 ' for %s' % (
-                                        identity.current.display_name,
                                         identity.current.user_name, acl,
                                         pkg_listing.package.name,
                                         pkg_listing.collection.name,
@@ -1222,9 +1204,8 @@ class PackageDispatcher(controllers.Controller):
                             group_id, 'commit', status)
 
                     # Make sure a log is created in the db as well.
-                    log_msg = u'%s (%s) %s %s for commit access on %s' \
+                    log_msg = u'%s %s %s for commit access on %s' \
                             ' (%s %s)' % (
-                                    identity.current.display_name,
                                     identity.current.user_name,
                                     status.statusname,
                                     group,

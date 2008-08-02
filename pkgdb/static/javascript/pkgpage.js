@@ -362,7 +362,7 @@ function request_acl_gui(event) {
         // list instead of a span so they can approve acls for themselves.
         // Have to add the pkg owner information to the table somewhere.
         // Probaby <span class='ownerName'
-        //    name='pkgListId:ownerId'>display_name (username)</span>
+        //    name='pkgListId:ownerId'>username</span>
         // is the place to store that.
         var aclStatus = SPAN({'class': 'aclStatus',
             'name': pkgListTable.getAttribute('name') + ':' + acls[aclNum]});

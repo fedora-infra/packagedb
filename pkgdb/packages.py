@@ -215,10 +215,9 @@ class Packages(controllers.Controller):
             try:
                 user = self.fas.cache[pkg.owner]
             except KeyError:
-                user = {'human_name': 'Unknown',
-                        'username': 'UserID %i' % pkg.owner,
+                user = {'username': 'UserID %i' % pkg.owner,
                         'id': pkg.owner}
-            pkg.ownername = '%(human_name)s (%(username)s)' % user
+            pkg.ownername = '%(username)s' % user
             pkg.ownerid = user['id']
             pkg.owneruser = user['username']
 
@@ -226,9 +225,8 @@ class Packages(controllers.Controller):
                 try:
                     user = self.fas.cache[pkg.qacontact]
                 except KeyError:
-                    user = {'human_name': 'Unknown',
-                            'username': 'UserId %i' % pkg.qacontact}
-                pkg.qacontactname = '%(human_name)s (%(username)s)' % user
+                    user = {'username': 'UserId %i' % pkg.qacontact}
+                pkg.qacontactname = '%(username)s' % user
             else:
                 pkg.qacontactname = ''
 
@@ -237,9 +235,8 @@ class Packages(controllers.Controller):
                 try:
                     fas_person = self.fas.cache[person.userid]
                 except KeyError:
-                    fas_person = {'human_name': 'Unknown',
-                            'username': 'UserID %i' % person.userid}
-                person.name = '%(human_name)s (%(username)s)' % fas_person
+                    fas_person = {'username': 'UserID %i' % person.userid}
+                person.name = '%(username)s' % fas_person
                 person.user = fas_person['username']
                 # Setup acls to be accessible via aclName
                 person.aclOrder = {}
