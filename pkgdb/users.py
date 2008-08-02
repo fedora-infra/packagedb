@@ -35,8 +35,8 @@ import sqlalchemy
 from turbogears import controllers, expose, paginate, config, \
         redirect, identity
 
-from pkgdb.model import Collection, Package, PackageListing, StatusTranslation, \
-        PersonPackageListing, PersonPackageListingAcl
+from pkgdb.model import Collection, Package, PackageListing, \
+        StatusTranslation, PersonPackageListing, PersonPackageListingAcl
 
 from fedora.tg.util import request_format
 
