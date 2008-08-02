@@ -1038,8 +1038,8 @@ class PackageDispatcher(controllers.Controller):
                                 )
                         pkg_log.listing = pkg_listing
                         pkg_list_log_msgs[pkg_listing] = [log_msg]
-                        for changedAcl in (cvsextrasCommitAcl,
-                                cvsextrasBuildAcl, cvsextrasCheckoutAcl):
+                        for changedAcl in (groupCommitAcl,
+                                groupBuildAcl, groupCheckoutAcl):
                             pkg_log_msg = '%s (%s) has set %s to %s for' \
                                     ' %s on %s (%s %s)' % (
                                     identity.current.display_name,
