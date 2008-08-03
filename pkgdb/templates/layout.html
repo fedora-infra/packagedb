@@ -72,7 +72,7 @@
             <li><a href="https://fedorahosted.org/packagedb/newticket">Report Bugs</a></li>
           </ul>
           <h2>Search</h2>
-            <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('/search/package/both/0/AND/', 0)">
+          <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}', 0)">
             <p>
                 <input id="package" name="searchwords" size="9" type="text" />
                 <input id="go" type="submit" value="Go" />
