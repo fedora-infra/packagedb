@@ -112,6 +112,36 @@ a.cvs
   display: none;
 }
 
+.filter
+{
+    background: #ddd;
+    float: right;
+    border-width: 1px;
+    border-color: #000;
+    border-style: solid;
+    padding: .4em;
+    margin: .1em;
+}
+
+.filter li
+{
+    list-style-type: none;
+    line-height:0;
+}
+
+.filter li select
+{
+    margin: .1em;
+}
+
+.flash
+{
+    background: #DEE681 url(../images/success.png) 10px 50% no-repeat;
+    border: 1px solid #CCBBAA;
+    padding: 1.5ex 15px 1.5ex 43px;
+    margin: 1ex 0;
+}
+
 #smalltext
 {
     line-height: 80%;
@@ -119,6 +149,7 @@ a.cvs
     background-color: #efefef;
     padding: .3em;
 }
+
 /*
  * Package DB Specific styles
  */
@@ -137,4 +168,13 @@ a.cvs
 .acls .acluser, .groupacls .aclgroup, .buglist .bug
 {
   text-align: left;
+}
+
+.PackageList .PackageName
+{
+  font-weight: bold;
+}
+
+.PackageList dd {
+  margin-left: 2em;
 }

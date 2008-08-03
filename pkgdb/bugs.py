@@ -25,12 +25,11 @@ Controller for displaying Package Bug Information.
 from urllib import quote
 
 from turbogears import controllers, expose, paginate, config, redirect
-from turbogears.database import session
 
 from sqlalchemy.exceptions import InvalidRequestError
 import bugzilla
 
-from pkgdb import model
+from pkgdb.model import StatusTranslation, Package
 from cherrypy import request
 
 import logging
@@ -44,10 +43,10 @@ class BugList(list):
     list object will cause these values to be corrected.
     '''
 
-    def __init__(self, queryUrl, publicUrl):
+    def __init__(self, query_url, public_url):
         super(BugList, self).__init__()
-        self.queryUrl = queryUrl
-        self.publicUrl = publicUrl
+        self.query_url = query_url
+        self.public_url = public_url
 
     def __convert(self, bug):
         '''Convert bugs from the raw form retrieved from python-bugzilla to
@@ -63,8 +62,8 @@ class BugList(list):
         '''
         if not isinstance(bug, bugzilla.Bug):
             raise TypeError('Can only store bugzilla.Bug type')
-        if self.queryUrl != self.publicUrl:
-            bug.url = bug.url.replace(self.queryUrl, self.publicUrl)
+        if self.query_url != self.public_url:
+            bug.url = bug.url.replace(self.query_url, self.public_url)
         bug.bug_status = unicode(bug.bug_status, 'utf-8')
         try:
             bug.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
@@ -95,18 +94,18 @@ class Bugs(controllers.Controller):
     bzQueryUrl = config.get('bugzilla.queryurl', bzUrl)
 
     # pylint: disable-msg=E1101
-    removedStatus = model.StatusTranslation.query.filter_by(
+    removedStatus = StatusTranslation.query.filter_by(
             statusname='Removed', language='C').first().statuscodeid
     # pylint: enable-msg=E1101
 
-    def __init__(self, appTitle=None):
+    def __init__(self, app_title=None):
         '''Create a Packages Controller.
 
         :fas: Fedora Account System object.
-        :appTitle: Title of the web app.
+        :app_title: Title of the web app.
         '''
-        self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
-        self.appTitle = appTitle
+        self.bz_server = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
+        self.app_title = app_title
 
     @expose(template='pkgdb.templates.bugoverview')
     @paginate('packages', default_order='name', limit=100,
@@ -115,16 +114,16 @@ class Bugs(controllers.Controller):
         '''Display a list of packages with a link to bug reports for each.'''
         # Retrieve the list of packages minus removed packages
         # pylint: disable-msg=E1101
-        packages = model.Package.query.filter(
-                model.Package.c.statuscode!=self.removedStatus)
+        packages = Package.query.filter(
+                Package.c.statuscode!=self.removedStatus)
         # pylint: enable-msg=E1101
 
-        return dict(title=self.appTitle + ' -- Package Bug Pages',
+        return dict(title=self.app_title + ' -- Package Bug Pages',
                 bzurl=self.bzUrl, packages=packages)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
 
-    def default(self, packageName, *args, **kwargs):
+    def default(self, package_name, *args, **kwargs):
         '''Display a list of Fedora bugs against a given package.'''
         # Nasty, nasty hack.  The packagedb, via bugz.fp.o is getting sent
         # requests to download files.  These refused to go away even when
@@ -132,35 +131,37 @@ class Bugs(controllers.Controller):
         # manually.
         if args or kwargs:
             if args:
-                url = 'http://download.fedoraproject.org/' + quote(packageName)\
+                url = 'http://download.fedoraproject.org/' \
+                        + quote(package_name) \
                         + '/' + '/'.join([quote(a) for a in args])
             elif kwargs:
-                url = 'http://mirrors.fedoraproject.org/' + quote(packageName)\
+                url = 'http://mirrors.fedoraproject.org/' \
+                        + quote(package_name) \
                         + '?' + '&'.join([quote(q) + '=' + quote(v) for (q, v)
                             in kwargs.items()])
             log.warning('Invalid URL: redirecting: %s' % url)
             raise redirect(url)
 
         query = {'product': 'Fedora',
-                'component': packageName,
+                'component': package_name,
                 'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
-        rawBugs = self.bzServer.query(query)
+        raw_bugs = self.bz_server.query(query)
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
-        for bug in rawBugs:
+        for bug in raw_bugs:
             bugs.append(bug)
 
         if not bugs:
             # Check that the package exists
             try:
-                package = model.Package.query.filter_by(name=packageName).one()
+                Package.query.filter_by(name=package_name).one()
             except InvalidRequestError:
                 error = dict(status = False,
-                        title = self.appTitle + ' -- Not a Valid Package Name',
-                        message='No such package %s' % packageName)
+                        title = self.app_title + ' -- Not a Valid Package Name',
+                        message='No such package %s' % package_name)
                 if request.params.get('tg_format', 'html') != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
         return dict(title='%s -- Open Bugs for %s' %
-                (self.appTitle, packageName), package=packageName,
+                (self.app_title, package_name), package=package_name,
                 bugs=bugs)

@@ -1,0 +1,31 @@
+[fedora9-i386]
+name=Fedora 9 - i386
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/releases/9/Everything/i386/os/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-9&arch=$basearch
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+
+[fedora9-x86_64]
+name=Fedora 9 - x86_64
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/releases/9/Everything/x86_64/os/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-9&arch=$basearch
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+
+[fedora9-ppc]
+name=Fedora 9 - ppc
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/releases/9/Everything/ppc/os/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-9&arch=$basearch
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+
+[fedora9-source]
+name=Fedora 9 - Source
+baseurl=http://download.fedora.redhat.com/pub/fedora/linux/releases/9/Everything/source/SRPMS/
+#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-source-8&arch=$basearch
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora file:///etc/pki/rpm-gpg/RPM-GPG-KEY

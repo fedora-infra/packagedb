@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:xi="http://www.w3.org/2001/XInclude"
   xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
   py:strip="">
   <?python
     import socket
@@ -9,6 +9,7 @@
     _hostname = socket.gethostname()
     _version = pkgdb.release.VERSION
   ?>
+
   <head py:match="head" py:attrs="select('@*')">
     <meta content="text/html; charset=UTF-8" http-equiv="content-type"
       py:replace="''" />
@@ -34,13 +35,11 @@
       tgUserUserId = "${tg.identity.user.id}";
     </script>
     <script type="text/javascript">
-         <!--
          function jump(){
-         window.location='/search/package/both/0/AND/' + 
+           window.location="${tg.url('/search/package/both/0/AND/')}" + 
             document.forms[0].searchwords.value;
          return false
          }
-         //-->
     </script> 
   </head>
   <body py:match="body" py:attrs="select('@*')">
@@ -69,8 +68,7 @@
             <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
             <li><a href="${tg.url('/users/packages/orphan')}">Orphan Packages</a></li>
             <li><a href="${tg.url('/stats/')}">Package Stats</a></li>
-            <li><a href="https://fedorahosted.org/packagedb">Project Page</a></li>
-            <li><a href="https://fedorahosted.org/packagedb/newticket">Report Bugs</a></li>
+            <li><a href="https://fedorahosted.org/packagedb/report/3">PackageDB Bugs</a></li>
           </ul>
           <h2>Search</h2>
             <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump()">
@@ -79,11 +77,12 @@
                 <input id="search" type="submit" value="Go" />
             </p>
     </form>
-  
+
         </div>
-        
+
       </div>
       <div id="content">
+        <div id="status_block" py:if="tg_flash" class="flash" py:content="tg_flash"></div>
         <div py:replace="select('*|text()')" />
       </div>
     </div>

@@ -21,12 +21,10 @@
 Mapping of python classes to Database Tables.
 '''
 
-### FIXME: track down what methods and classes we need from sqlalchemy and
-# only import those instead of doing an import *
-from sqlalchemy import *
-from sqlalchemy.orm import *
+from sqlalchemy import Table, Column, ForeignKey, Integer
+from sqlalchemy import select, literal_column, not_
+from sqlalchemy.orm import polymorphic_union, relation, backref
 from turbogears.database import metadata, mapper, get_engine
-from turbogears import identity, config
 
 from fedora.tg.json import SABase
 
@@ -42,7 +40,7 @@ get_engine()
 
 class StatusTranslation(SABase):
     '''Map status codes to status names in various languages.
-    
+
     Table -- StatusCodeTranslation
     '''
     # pylint: disable-msg=R0902, R0903
@@ -54,7 +52,7 @@ class StatusTranslation(SABase):
         :language: Languages code that this string is for.  if not given.
             defaults to 'C'
         :description: a description of what this status means.  May be used in
-            online help.  
+            online help
         '''
         # pylint: disable-msg=R0913
         super(StatusTranslation, self).__init__()
@@ -160,7 +158,7 @@ class Branch(Collection):
         self.branchname = branchname
         self.disttag = disttag
         self.parentid = parentid
-    
+
     def __repr__(self):
         return 'Branch(%s, "%s", "%s", %s, "%s", "%s", "%s", "%s",' \
                 ' publishurltemplate="%s", pendingurltemplate="%s",' \
@@ -197,7 +195,7 @@ class Package(SABase):
     '''
     # pylint: disable-msg=R0902, R0903
     def __init__(self, name, summary, statuscode, description=None,
-            reviewurl=None):
+            reviewurl=None, shouldopen=None):
         # pylint: disable-msg=R0913
         super(Package, self).__init__()
         self.name = name
@@ -206,13 +204,13 @@ class Package(SABase):
         self.description = description
         self.reviewurl = reviewurl
         self.shouldopen = shouldopen
-    
+
     def __repr__(self):
         return 'Package("%s", "%s", %s, description="%s", reviewurl="%s", ' \
                'shouldopen="%s")' % (
                 self.name, self.summary, self.statuscode, self.description,
                 self.reviewurl, self.shouldopen)
- 
+
 class PackageListing(SABase):
     '''This associates a package with a particular collection.
 
@@ -341,12 +339,12 @@ class PackageLog(Log):
         super(PackageLog, self).__init__(userid, description, changetime)
         self.action = action
         self.packageid = packageid
-    
+
     def __repr__(self):
         return 'PackageLog(%s, %s, description="%s", changetime="%s",' \
                 ' packageid=%s)' % (self.userid, self.action,
                         self.description, self.changetime, self.packageid)
-    
+
 class PackageListingLog(Log):
     '''Log of changes to the PackageListings.
 
@@ -527,11 +525,13 @@ mapper(CollectionStatus, CollectionStatusTable, properties = {
     'collectionPackages': relation(CollectionPackage, backref='status'),
     'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
+                == CollectionStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         backref=backref('cstatuscode',
             foreign_keys=[CollectionStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid==CollectionStatusTable.c.statuscodeid),
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
+                    == CollectionStatusTable.c.statuscodeid),
         )})
 collectionMapper = mapper(Collection, CollectionTable,
         select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
@@ -551,11 +551,13 @@ mapper(PackageListingStatus, PackageListingStatusTable, properties = {
     'listings' : relation(PackageListing, backref='status'),
     'translations' : relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
+                == PackageListingStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         backref=backref('plstatuscode',
             foreign_keys=[PackageListingStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid==PackageListingStatusTable.c.statuscodeid)
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
+                    == PackageListingStatusTable.c.statuscodeid)
         )})
 mapper(PersonPackageListing, PersonPackageListingTable, properties = {
     'acls':relation(PersonPackageListingAcl,
@@ -569,11 +571,13 @@ mapper(PackageStatus, PackageStatusTable, properties = {
     'packages' : relation(Package, backref='status'),
     'translations' : relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
+                == PackageStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         backref=backref('pstatuscode',
             foreign_keys=[PackageStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid==PackageStatusTable.c.statuscodeid)
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
+                    == PackageStatusTable.c.statuscodeid)
         )})
 
 logMapper = mapper(Log, LogTable, select_table=logJoin,
@@ -606,11 +610,13 @@ mapper(PackageAclStatus, PackageAclStatusTable,
             'gacls' : relation(GroupPackageListingAcl, backref='status'),
             'translations' : relation(StatusTranslation,
                 order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid,
+                primaryjoin=StatusTranslationTable.c.statuscodeid \
+                        == PackageAclStatusTable.c.statuscodeid,
                 foreign_keys=[StatusTranslationTable.c.statuscodeid],
                 backref=backref('pastatuscode',
                     foreign_keys=[PackageAclStatusTable.c.statuscodeid],
-                    primaryjoin=StatusTranslationTable.c.statuscodeid==PackageAclStatusTable.c.statuscodeid)
+                    primaryjoin=StatusTranslationTable.c.statuscodeid \
+                            == PackageAclStatusTable.c.statuscodeid)
                 )})
 
 

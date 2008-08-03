@@ -8,22 +8,24 @@
   <body>
     <h3>Search Packages</h3>
          <script type="text/javascript">
-                      <!--
                       function jump1(){
-                      for (i=0;i<document.forms[1].searchon.length;i++) {
+                      for (i=0;i &lt; document.forms[1].searchon.length;i++) {
                           if (document.forms[1].searchon[i].checked) {
                               searchon = document.forms[1].searchon[i].value;
                           }
                       }
                       if (document.forms[1].operator[0].checked) {
-                         operator = "AND"
-                      } else { operator = "OR" }
-                          window.location='/search/package/' + searchon + '/' + 
-                             document.forms[1].release.value + '/' + operator + 
-                                 '/' + document.forms[1].searchwords.value;
+                          operator = "AND"
+                      } else {
+                          operator = "OR"
+                      }
+                      window.location = "${tg.url('/pkgdb/search/package/')}" +
+                              searchon + '/' +
+                              document.forms[1].release.value + '/' +
+                              operator + '/' +
+                              document.forms[1].searchwords.value;
                       return false
                       }
-                      //-->
      </script> 
 <p>This is the advanced package search page.</p>
     <form action="${tg.url('/search/package/')}" method="get" onsubmit="return jump1()">

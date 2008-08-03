@@ -362,7 +362,7 @@ function request_acl_gui(event) {
         // list instead of a span so they can approve acls for themselves.
         // Have to add the pkg owner information to the table somewhere.
         // Probaby <span class='ownerName'
-        //    name='pkgListId:ownerId'>display_name (username)</span>
+        //    name='pkgListId:ownerId'>username</span>
         // is the place to store that.
         var aclStatus = SPAN({'class': 'aclStatus',
             'name': pkgListTable.getAttribute('name') + ':' + acls[aclNum]});
@@ -470,9 +470,13 @@ jQuery(document).ready(function() {
         connect(statusBoxes[statusNum], 'onfocus', save_status);
     }
 
-    var shouldOpenBox = getElementsByTagAndClassName('input', 'shouldOpenBox')[0];
-    connect(shouldOpenBox, 'onchange', partial(make_request, '/toggle_shouldopen',
-			    toggle_shouldopen, toggle_shouldopen_failure));
+    var shouldOpenBox = getElementsByTagAndClassName('input',
+            'shouldOpenBox')[0];
+    if (shouldOpenBox) {
+        connect(shouldOpenBox, 'onchange', partial(make_request,
+                    '/toggle_shouldopen', toggle_shouldopen,
+                    toggle_shouldopen_failure));
+    }
 
     var aclReqBoxes = getElementsByTagAndClassName('input', 'aclPresentBox');
     for (var aclReqNum in aclReqBoxes) {

@@ -21,13 +21,14 @@
 Controller for showing Package Collections.
 '''
 
-import sqlalchemy
+from sqlalchemy import and_
+from sqlalchemy.exceptions import InvalidRequestError
 
 from turbogears import controllers, expose, paginate
-from turbogears.database import session
 
-from pkgdb import model
 from cherrypy import request
+
+from pkgdb.model import CollectionPackage, Collection, Package, PackageListing
 
 class Collections(controllers.Controller):
     '''Controller that deals with Collections.
@@ -35,26 +36,26 @@ class Collections(controllers.Controller):
     These are methods that expose Collections to the users.  Collections are
     usually a specific release of a distribution.  For instance, Fedora 8.
     '''
-    def __init__(self, fas, appTitle):
+    def __init__(self, fas, app_title):
         '''Create a Packages Controller.
 
         :fas: Fedora Account System object.
-        :appTitle: Title of the web app.
+        :app_title: Title of the web app.
         '''
         self.fas = fas
-        self.appTitle = appTitle
+        self.app_title = app_title
 
     @expose(template='pkgdb.templates.collectionoverview', allow_json=True)
     def index(self):
         '''List the Collections we know about.
         '''
         # pylint: disable-msg=E1101
-        collections = model.CollectionPackage.query.order_by(
-                (model.CollectionPackage.c.name,
-                    model.CollectionPackage.c.version))
+        collections = CollectionPackage.query.order_by(
+                (CollectionPackage.c.name,
+                    CollectionPackage.c.version))
         # pylint: enable-msg=E1101
 
-        return dict(title=self.appTitle + ' -- Collection Overview',
+        return dict(title=self.app_title + ' -- Collection Overview',
                 collections=collections)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
@@ -67,7 +68,7 @@ class Collections(controllers.Controller):
             collectionId = int(collectionId)
         except ValueError:
             error = dict(status = False,
-                    title = self.appTitle + ' -- Invalid Collection Id',
+                    title = self.app_title + ' -- Invalid Collection Id',
                     message = 'The collectionId you were linked to is not a' \
                             ' valid id.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
@@ -81,12 +82,12 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             # pylint: disable-msg=E1101
-            collectionEntry = model.Collection.query.filter_by(id=collectionId).one()
-        except sqlalchemy.exceptions.InvalidRequestError, e:
+            collectionEntry = Collection.query.filter_by(id=collectionId).one()
+        except InvalidRequestError:
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
-                    title = self.appTitle + ' -- Invalid Collection Id',
+                    title = self.app_title + ' -- Invalid Collection Id',
                     message = 'The collectionId you were linked to, %s, does' \
                             ' not exist.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
@@ -100,10 +101,8 @@ class Collections(controllers.Controller):
             user = self.fas.cache[collectionEntry.owner]
         except KeyError:
             user = {}
-            user['human_name'] = 'Unknown'
             user['username'] = 'User ID %i' % collectionEntry.owner
             user['email'] = 'unknown@fedoraproject.org'
-        ownerName = '%(human_name)s (%(username)s)' % user
 
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
@@ -112,16 +111,19 @@ class Collections(controllers.Controller):
         collection = {'name': collectionEntry.name,
                 'version': collectionEntry.version,
                 'owner': collectionEntry.owner,
-                'ownername': ownerName,
+                'ownername': user['username'],
                 'summary': collectionEntry.summary,
                 'description': collectionEntry.description,
                 'statusname': collectionEntry.status.translations[0].statusname
                 }
 
+        # SQLAlchemy mapped classes are monkey patched.
+        # pylint:disable-msg=E1101
         # Retrieve the packagelist for this collection
-        packages = model.Package.query.filter(
-                sqlalchemy.and_(model.PackageListing.c.collectionid==collectionId,
-                    model.PackageListing.c.packageid==model.Package.c.id)
+        packages = Package.query.filter(
+                and_(PackageListing.c.collectionid==collectionId,
+                    PackageListing.c.packageid==Package.c.id)
                 )
-        return dict(title='%s -- %s %s' % (self.appTitle, collection['name'],
+        # pylint:enable-msg=E1101
+        return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
             collection['version']), collection=collection, packages=packages)

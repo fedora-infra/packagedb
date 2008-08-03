@@ -1,0 +1,41 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  py:strip="">
+
+  <div py:def="collection_filter(action_url, collections, name, version, eol)"
+    class="filter">
+    <form method="POST" action="${tg.url(action_url)}">
+      <?python import itertools ?>
+      Limit results to these collections
+      <ul>
+        <li><label>
+          <input type="checkbox" name="eol" value="eol"
+          py:attrs="{'checked': tg.checker(eol)}"/>
+          Include EOL Releases
+        </label></li>
+        <li><label>
+          Collection Name:
+          <select id="name" name="name">
+            <option value="">any</option>
+            <option py:for="collection in sorted(collections.keys())"
+              py:attrs="{'value': collection, 'selected': (collection==name and 'True' or None)}">
+            ${collection}
+            </option>
+          </select>
+        </label></li>
+        <li><label>
+          Collection Version:
+          <select id="version" name="version">
+            <option value="">any</option>
+            <option py:for="ver in sorted(set([v for v in itertools.chain(*collections.values())]))"
+            py:attrs="{'value': ver, 'selected': (ver==version and 'True' or None)}">${ver}
+            </option>
+          </select>
+        </label></li>
+      </ul>
+      <button type="submit">Filter</button>
+    </form>
+  </div>
+</html>

@@ -23,33 +23,40 @@
 Controller to show information about packages by user.
 '''
 
+#
+# PyLint Explanation
+#
+
+# :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
+#   have to disable this check wherever we use the mapper classes.
+
 import sqlalchemy
 
 from turbogears import controllers, expose, paginate, config, \
         redirect, identity
-from turbogears.database import session
-from cherrypy import request
 
-from pkgdb import model
+from pkgdb.model import Collection, Package, PackageListing, \
+        StatusTranslation, PersonPackageListing, PersonPackageListingAcl
+
 from fedora.tg.util import request_format
 
 ORPHAN_ID = 9900
 
 class Users(controllers.Controller):
     '''Controller for all things user related.
-    
+
     Status Ids to use with queries.
     '''
     # pylint: disable-msg=E1101
-    approvedStatusId = model.StatusTranslation.query.filter_by(
+    approvedStatusId = StatusTranslation.query.filter_by(
             statusname='Approved', language='C').one().statuscodeid
-    awaitingBranchStatusId = model.StatusTranslation.query.filter_by(
+    awaitingBranchStatusId = StatusTranslation.query.filter_by(
             statusname='Awaiting Branch', language='C').one().statuscodeid
-    awaitingReviewStatusId = model.StatusTranslation.query.filter_by(
+    awaitingReviewStatusId = StatusTranslation.query.filter_by(
             statusname='Awaiting Review', language='C').one().statuscodeid
-    underReviewStatusId = model.StatusTranslation.query.filter_by(
+    underReviewStatusId = StatusTranslation.query.filter_by(
             statusname='Under Review', language='C').one().statuscodeid
-    EOLStatusId = model.StatusTranslation.query.filter_by(
+    EOLStatusId = StatusTranslation.query.filter_by(
             statusname='EOL', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
@@ -58,14 +65,14 @@ class Users(controllers.Controller):
             ('watchcommits', 'watchcommits'),
             ('watchbugzilla', 'watchbugzilla'))
 
-    def __init__(self, fas, appTitle):
+    def __init__(self, fas, app_title):
         '''Create a User Controller.
 
         :fas: Fedora Account System object.
-        :appTitle: Title of the web app.
+        :app_title: Title of the web app.
         '''
         self.fas = fas
-        self.appTitle = appTitle
+        self.app_title = app_title
 
     @expose(template='pkgdb.templates.useroverview')
     def index(self):
@@ -73,14 +80,12 @@ class Users(controllers.Controller):
         '''
         raise redirect(config.get('base_url_filter.base_url') + '/users/info/')
 
-        return dict(title=self.appTitle + ' -- User Overview')
-
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=100, default_order='name',
             allow_limit_override=True, max_pages=13)
     def packages(self, fasname=None, acls=None, eol=None):
         '''List packages that the user is interested in.
-           
+
         This method returns a list of packages owned by the user in current,
         non-EOL distributions.  The user has the ability to filter this to
         provide more or less information by adding query params for acls and
@@ -112,7 +117,7 @@ class Users(controllers.Controller):
 
         # Create a list where store acl name, whether the acl is currently
         # being filtered for, and the label to use to display the acl.
-        aclList = [(a[0], a[0] in acls, a[1]) for a in self.allAcls]
+        acl_list = [(a[0], a[0] in acls, a[1]) for a in self.allAcls]
 
         # Have to either get fasname from the URL or current user
         if fasname == None:
@@ -124,38 +129,39 @@ class Users(controllers.Controller):
                 fasname = identity.current.user_name
         else:
             try:
-                user = self.fas.cache[fasname]
+                fasid = self.fas.cache[fasname]['id']
             except KeyError:
-                error = dict(title=self.appTitle + ' -- Invalid Username',
+                error = dict(title=self.app_title + ' -- Invalid Username',
                         status = False, pkgs = [],
                         message='The username you were linked to (%s) cannot' \
                         ' be found.  If you received this error from' \
                         ' a link on the fedoraproject.org website, please' \
                         ' report it.' % fasname
                     )
-                if request_format != 'json':
-                        error['tg_template'] = 'pkgdb.templates.errors'
+                if request_format() != 'json':
+                    error['tg_template'] = 'pkgdb.templates.errors'
                 return error
-            fasid = user['id']
-        pageTitle = self.appTitle + ' -- ' + fasname + ' -- Packages'
 
-        query = model.Package.query.join('listings').distinct()
+        page_title = self.app_title + ' -- ' + fasname + ' -- Packages'
+
+        # pylint: disable-msg=E1101
+        query = Package.query.join('listings').distinct()
 
         if not eol:
             # We don't want EOL releases, filter those out of each clause
             query = query.join(['listings', 'collection']).filter(
-                        model.Collection.c.statuscode != self.EOLStatusId)
+                        Collection.c.statuscode != self.EOLStatusId)
 
         queries = []
         if 'owner' in acls:
             # Return any package for which the user is the owner
             queries.append(query.filter(sqlalchemy.and_(
-                        model.Package.c.statuscode.in_((
+                        Package.c.statuscode.in_((
                             self.approvedStatusId,
                             self.awaitingReviewStatusId,
                             self.underReviewStatusId)),
-                        model.PackageListing.c.owner==fasid,
-                        model.PackageListing.c.statuscode.in_((
+                        PackageListing.c.owner==fasid,
+                        PackageListing.c.statuscode.in_((
                             self.approvedStatusId,
                             self.awaitingBranchStatusId,
                             self.awaitingReviewStatusId))
@@ -166,34 +172,51 @@ class Users(controllers.Controller):
             # Return any package on which the user has an Approved acl.
             queries.append(query.join(['listings', 'people']).join(
                     ['listings', 'people', 'acls']).filter(sqlalchemy.and_(
-                    model.Package.c.statuscode.in_((self.approvedStatusId,
+                    Package.c.statuscode.in_((self.approvedStatusId,
                     self.awaitingReviewStatusId, self.underReviewStatusId)),
-                    model.PersonPackageListing.c.userid == fasid,
-                    model.PersonPackageListingAcl.c.statuscode == \
+                    PersonPackageListing.c.userid == fasid,
+                    PersonPackageListingAcl.c.statuscode == \
                             self.approvedStatusId,
-                    model.PackageListing.c.statuscode.in_(
+                    PackageListing.c.statuscode.in_(
                         (self.approvedStatusId,
                             self.awaitingBranchStatusId,
                             self.awaitingReviewStatusId))
                     )))
             # Return only those acls which the user wants listed
             queries[-1] = queries[-1].filter(
-                    model.PersonPackageListingAcl.c.acl.in_(acls))
+                    PersonPackageListingAcl.c.acl.in_(acls))
 
         if len(queries) == 2:
-            myPackages = model.Package.query.select_from(
+            my_pkgs = Package.query.select_from(
                             sqlalchemy.union(
                                     queries[0].statement,
                                     queries[1].statement
                                     ))
         else:
-            myPackages = queries[0]
+            my_pkgs = queries[0]
 
-        return dict(title=pageTitle, pkgCount=myPackages.count(),
-                pkgs=myPackages, acls=aclList, fasname=fasname)
+        my_pkgs = my_pkgs.order_by(Package.name)
+        # pylint: enable-msg=E1101
+        pkg_list = []
+        for pkg in my_pkgs:
+            pkg.json_props = {'Package': ('listings',)}
+            pkg_list.append(pkg)
+
+        return dict(title=page_title, pkgCount=len(pkg_list),
+                pkgs=pkg_list, acls=acl_list, fasname=fasname)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):
+        '''Return some info and links for the user.
+
+        Currently this page does nothing.  Eventually we want it to return an
+        overview of what the user can do.  A TODO queue of people/packages
+        they need to approve.  Links to FAS. Etc.
+
+        Keyword Arguments:
+        :fasname: If given, the name of hte user to display information for.
+            Defaults to the logged in user.
+        '''
         # If fasname is blank, ask for auth, we assume they want their own?
         if fasname == None:
             if identity.current.anonymous:
@@ -207,18 +230,18 @@ class Users(controllers.Controller):
                 user = self.fas.cache[fasname]
             except KeyError:
                 error = dict(status = False,
-                        title = self.appTitle + ' -- Invalid Username',
+                        title = self.app_title + ' -- Invalid Username',
                         message = 'The username you were linked to,' \
                                 ' (%username)s does not exist.  If you' \
                                 ' received this error from a link on the' \
                                 ' fedoraproject.org website, please report' \
                                 ' it.' % {'username': fasname})
-                if request_format != 'json':
+                if request_format() != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
             fasid = user['id']
 
-        pageTitle = self.appTitle + ' -- ' + fasname + ' -- Info'
+        page_title = self.app_title + ' -- ' + fasname + ' -- Info'
 
-        return dict(title=pageTitle, fasid=fasid, fasname=fasname)
+        return dict(title=page_title, fasid=fasid, fasname=fasname)

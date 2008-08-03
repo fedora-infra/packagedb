@@ -1,0 +1,10 @@
+grant select on branch, collection, collectionlog, collectionlogstatuscode,
+collectionset, collectionstatuscode, grouppackagelisting,
+grouppackagelistingacl, grouppackagelistingacllog, log, package,
+packageacllogstatuscode, packageaclstatuscode, packagebuild,
+packagebuildlisting, packagebuildlog, packagebuildlogstatuscode,
+packagestatuscode, packagelisting, packagelistinglog,
+packagelistinglogstatuscode, packagelistingstatuscode, packagelog,
+packagelogstatuscode, packagestatuscode, personpackagelisting,
+personpackagelistingacl, personpackagelistingacllog, statuscode,
+statuscodetranslation to pkgdbreadonly;

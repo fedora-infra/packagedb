@@ -1,4 +1,98 @@
+== packagedb-0.3.6 ==
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r347
+Make sure watchcommit and watchbugzilla acls are approved if we use them.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r346
+Make error message for nitfylist better.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r345
+Correct use of action_url variable.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r344
+* Optimize and simplify search code.
+* Make search return a list of packages instead of a list of lists of
+  packagelistings.
+* Style for PackageList.
+* Display releases that the package is orphaned in.
+* Make pkglist handle descriptions and releases.
+* Update for new pkglist func.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r343
+Move collection filter into its own file and five it an action param so it
+can be used generically.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r342
+More pylint fixes:
+  - Remove unused imports
+  - Split long lines
+  - Remove excess whitespace
+  - Import only what's needed from sqlalchemy.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r341
+* Fix to pkglist so it doesn't spit out a <ul> for each entry.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r340
+* Pylint cleanups including four errors in the code.
+  - listqueries.py, controllers.py, and validators.py have been cleaned of all
+    things that can be fixed without API changes now.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r339
+Rename acls to listqueries as it's growing beyond acl lists.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r338
+* Sync new version of jsonify_validation_errors from python-fedora
+* Fix iteration of the collectionList.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r337
+Fix the CollectionNameVersion validator.  chained validators use different
+parameters and different parameters to the Invalid exception.
+
+2008-07-15  Toshio Kuratomi <badger@Clingman> - r336
+* Update the notify html template to submit via POST.
+  - Have labels for the filter boxes.
+  - Fix versions to show all the possible versions.  Next step is some
+    javascript to update the display to only have versions for the selected
+    collection.
+
+2008-07-15  Toshio Kuratomi <badger@Clingman> - r335
+Re-add css for the filter box that was mistakenly removed when we merged
+search functionality.
+
+2008-07-14  Toshio Kuratomi <badger@Clingman> - r334
+Merge with -devel branch.
+
+2008-07-14  Toshio Kuratomi <badger@Clingman> - r333
+Whitespace
+
+2008-07-14  Casey Dahlin <cdahlin@redhat.com> - r332
+More generic adding of acls to new packages
+
+2008-07-14  Casey Dahlin <cdahlin@redhat.com> - r331
+Add uberpackager to new packages
+
+=== packagedb-0.3.5 ===
+2008-06-21  Toshio Kuratomi <badger@Clingman> - r334
+* pkgdb/templates/layout.html: Fix search URL.
+
+2008-06-21  Toshio Kuratomi <badger@Clingman> - r333
+* Turn username password params to BaseClient into keywordargs.  This makes the
+  call compatible with BaseClient 0.3.
+
+2008-06-16  Toshio Kuratomi <badger@Clingman> - r332
+* Fix request_format to be a function call.
+
+2008-06-16  Toshio Kuratomi <badger@Clingman> - r331
+* Add Casey.
+
+2008-06-16  Ionuț Arțăriși <mapleoin@lavabit.com> - r330
+* merged with mapleoin-devel for package search functionality
+
 === packagedb-0.3.4 ===
+2008-06-10  Toshio Kuratomi <badger@Clingman> - r329
+* pkgdb/acls.py: Fix problem introduced by pylint refactoring.
+
+2008-06-09  Toshio Kuratomi <badger@Clingman> - r328
+* ChangeLog: Update for new release.
 
 2008-06-09  Toshio Kuratomi <badger@Clingman> - r327
 * Merge should_open fixes from Casey.
@@ -196,7 +290,63 @@ merged with mapleoin-devel for Stats
 * pkgdb/json.py: Fix to work around a bug in newer TurboJSON when used with
   SQLAlchemy.
 
+=== packagedb-0.3.3.1 ===
+
+2008-05-20  Toshio Kuratomi <badger@Clingman> - r144
+* fedora-packagedb.spec, pkgdb/release.py: Bump release for new version.
+
+2008-05-20  Toshio Kuratomi <badger@Clingman> - r143
+* pkgdb/templates/layout.html: Add information about which app server and
+  pkgdb version sent this information.
+
+2008-05-10  Toshio Kuratomi <badger@Clingman> - r142
+* pkgdb/acls.py: bugzilla(): Only select from active/in development releases.
+  - Prioritise ownership when there are different owners for different
+    releases: The algorithm selects devel branch, then highest numbered
+    release.  Real people are alwayspreferred over orphan.
+
+=== packagedb-0.3.3.apr30 ===
+
+2008-04-25  Toshio Kuratomi <badger@Clingman> - r141
+* pkgdb/config/log.cfg: Add timestamp to access.log output.
+
+2008-04-23  Toshio Kuratomi <badger@Clingman> - r140
+* server-scripts/pkgdb-sync-bugzilla.in: Fix email sending.
+  - Speed up lookup of bugzill_email addresses by precaching all fas
+    information.
+
+2008-04-23  Toshio Kuratomi <badger@Clingman> - r139
+* server-scripts/pkgdb-sync-bugzilla.in: Remove dependence on website.py.
+
+2008-04-21  Toshio Kuratomi <badger@Clingman> - r138
+* pkgdb.cfg: Fix logger configuration.
+
+2008-04-21  Toshio Kuratomi <badger@Clingman> - r137
+* server-scripts/pkgdb-sync-bugzilla.in: Clean up imports and have this use
+  simplejson instead of python-json.
+
+2008-04-21  Toshio Kuratomi <badger@Clingman> - r136
+* server-scripts/pkgdb-sync-bugzilla.in: Add changes from ricky to make this
+  function with FAS2.
+
+2008-04-21  Toshio Kuratomi <badger@Clingman> - r135
+* setup.py: Add the bugzilla script to be built and installed.
+* server-scripts/bz-make-components-pkgdb.py:  Rename to pkgdb-sync-bugzilla.in.
+* server-scripts/pkgdb-sync-repo.in, server-scripts/pkgdb-sync-bugzilla.in:
+  Add GPL header.
+
+2008-04-21  Toshio Kuratomi <badger@Clingman> - r134
+* server-scripts/bz-make-components-pkgdb.py: Import script to make bugzilla
+  components for new packages.
+
+2008-04-12  Toshio Kuratomi <badger@Clingman> - r133
+* pkgdb/dispatcher.py: Revert the change that pulls the develCollection on
+  initialization as it causes SQLAlchemy errors.
+
 === packagedb-0.3.3 ===
+
+2008-04-11  Toshio Kuratomi <badger@Clingman> - r132
+* ChangeLog: Update the ChangeLog for new release.
 
 2008-04-11  Toshio Kuratomi <badger@Clingman> - r131
 * fedora-packagedb.spec: Update the spec.
