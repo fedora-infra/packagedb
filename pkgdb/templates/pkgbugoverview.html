@@ -11,7 +11,7 @@
     <p py:if="mode">Click on a package to view the bug reports opened against 
     it. Or go to the <a href="$bzurl">bugzilla main page</a> to construct your 
     own search.</p>
-    <form action="${tg.url('/packages/' + mode + 'index/')}" method="get" onsubmit="return jump('/packages/$mode'+'index/', 1)">
+    <form action="${tg.url('/packages/' + mode + 'index/')}" method="get" onsubmit="return jump('${tg.url('/packages/'+mode+'index/')}', 1)">
         <input id="searchplist" name="searchwords" size="9" type="text" value='$searchwords' />
         <input id="search" type="submit" value="Search" />
     </form>

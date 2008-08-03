@@ -32,6 +32,7 @@ from sqlalchemy.exceptions import InvalidRequestError
 import bugzilla
 
 from pkgdb import model
+from pkgdb.letter_paginator import Letters
 from cherrypy import request
 
 import logging
@@ -108,46 +109,9 @@ class Bugs(controllers.Controller):
         '''
         self.bzServer = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.appTitle = appTitle
-
-    @expose(template='pkgdb.templates.pkgbugoverview')
-    @paginate('packages', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
-    def index(self, searchwords=''):
-        '''Display a list of packages with a link to bug reports for each.
-           
-           Arguments:
-            :searchwords: optional - string to restrict the list, can use % or
-            as wildcards
-           Returns:
-            :searchwords: string, see above, '&' and '_' are removed
-            :mode: string to use in the construction of the view urls, (maybe 
-            there's a better way?)
-        '''
-        if searchwords != '':
-            searchwords = searchwords.replace('*','%')
-            if searchwords.isdigit():
-                packages = model.Package.query.filter(or_(
-                               model.Package.name.between('0','9'),
-                                   model.Package.name.like('9%')))
-            else: 
-                # sanitize for ilike:
-                searchwords = searchwords.replace('&','').replace('_','') 
-                packages = model.Package.query.filter(model.Package.name.ilike(
-                          searchwords)).order_by(model.Package.name.asc())
-        else:
-            packages = model.Package.query 
-        searchwords = searchwords.replace('%','*')
-        # minus removed packages
-        # pylint: disable-msg=E1101
-        packages = packages.filter(
-                model.Package.c.statuscode!=self.removedStatus)
-        # pylint: enable-msg=E1101
-
-        return dict(title=self.appTitle + ' -- Package Bug Pages', mode='bugs/',
-                bzurl=self.bzUrl, packages=packages, searchwords=searchwords)
+        self.index = Letters(appTitle)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
-
     def default(self, packageName, *args, **kwargs):
         '''Display a list of Fedora bugs against a given package.'''
         # Nasty, nasty hack.  The packagedb, via bugz.fp.o is getting sent

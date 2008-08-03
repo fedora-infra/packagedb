@@ -5,7 +5,7 @@
   py:strip="">
   <div py:def="pkglist(packages, mode='name')" class="PackageList">
     <ul py:for="pkg in packages">
-      <li><a href="${tg.url('/packages/%s%s' % (mode, pkg.name))}"
+      <li><a href="${tg.url('/packages/%s%s' % (mode or 'name/', pkg.name))}"
         py:content="pkg.name"></a> --
       <span py:replace="pkg.summary">Package Summary</span></li>
     </ul>
