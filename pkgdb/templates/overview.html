@@ -10,21 +10,14 @@
 
     <h3>Overview</h3>
     <p>The Package Database is a central repository of package information in
-    Fedora.  You will eventually be able to find and change all the metainformation
-    about a package by searching the database.  The current implementation is
-    focused on the data that package developers and release engineers need to
-    create packages and spin them into a distribution.
+    Fedora.  You will eventually be able to find and change all the 
+    metainformation about a package by searching the database.  The current 
+    implementation is focused on the data that package developers and release 
+    engineers need to create packages and spin them into a distribution.
     </p>
 
     <h3>Search Packages</h3>
-    <script type="text/javascript">
-         function jump1(){
-         window.location="${tg.url('/search/package/both/0/AND/')}" + 
-            document.forms[1].searchwords.value;
-         return false
-         }
-    </script> 
-    <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump1()">
+    <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump()">
         <p>Keywords: <input id="package" name="searchwords" size="20" type="text" />
         <input type="submit" value="Search" /> 
         </p>

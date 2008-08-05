@@ -153,14 +153,21 @@ a.cvs
 /*
  * Package DB Specific styles
  */
-.pkglist, .buglist
+.pkglist-owned, .buglist
 {
   border: 1px solid #CCCCCC;
   width: 100%;
-  text-align:center;
+  text-align: center;
 }
 
-.pkglist th, .pkglist td, .buglist th, .buglist td
+.pkglist-orphan 
+{
+    width: 100%;
+    border: 1px solid #CCCCCC;
+    text-align: center;
+    background-color: #EFEFEF;
+}
+.pkglist-owned th, .pkglist-owned td, .pkglist-orphan th, .pkglist-orphan td, .buglist th, .buglist td
 {
   border: none!important;
 }

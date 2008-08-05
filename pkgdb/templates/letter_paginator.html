@@ -1,0 +1,18 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  py:strip="">
+  <div py:def="letter_paginate_nav(mode='')" class="LetPaginateNav">|
+    <div py:choose="" py:strip="">
+        <b py:when="searchwords in '0123456789' and searchwords != ''">0-9</b>
+        <a py:otherwise="" href="${tg.url('0')}">0-9</a> |
+    </div>
+    <py:for each="letr in 'abcdefghijklmnopqrstuvwxyz'" py:choose="">
+    <b py:when="searchwords == letr+'*' or searchwords == letr.upper()+'*'">${letr}</b>
+    <a py:otherwise="" href="${tg.url('/packages/' + mode + 'index/' + letr + '*')}">
+        ${letr}</a> |
+    </py:for>
+        <a href="${tg.url('/packages/' + mode + 'index/'  )}">[show all]</a>
+  </div>
+</html>

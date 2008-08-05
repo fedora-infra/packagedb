@@ -108,6 +108,8 @@ class Search(controllers.Controller):
         query = searchwords.lower() 
 
         descriptions, names, exact = [], [], []
+        if query.split() == []:   # look for '' or just spaces
+            raise redirect('/search/')            
         if operator == 'OR':
             query = query.split()  # -> list
             for searchword in query:
@@ -142,13 +144,13 @@ class Search(controllers.Controller):
                 names = PackageListing.query.filter(and_(
                             PackageListing.packageid==Package.id,
                                 func.lower(Package.name).like(
+
                                     '%' + query[0] + '%')))
                 for searchword in query:
                     # pylint: disable-msg=E1103
                     names = names.filter(func.lower(Package.name).like(
                                             '%' + searchword + '%'))
                 names = names.all()
- 
                 if searchon == 'both':
                     descriptions = PackageListing.query.filter(and_(
                         PackageListing.packageid==Package.id,
@@ -160,6 +162,7 @@ class Search(controllers.Controller):
                                 func.lower(Package.description).like(
                                     '%' + searchword + '%'))
                     descriptions = descriptions.all()
+
             elif searchon == 'description':
                 query = query.split()
                 descriptions = PackageListing.query.filter(and_(
@@ -176,6 +179,7 @@ class Search(controllers.Controller):
         # Return a list of all packages but keeping the order
         unique_pkgs = set()   # order and remove duplicates
         packages = []
+
         for pkgl in exact + names + descriptions:
             if pkgl.package not in unique_pkgs:
                 if (not release) or (pkgl.collectionid == release):

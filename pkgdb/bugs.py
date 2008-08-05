@@ -15,8 +15,9 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
-#                    Seth Vidal <svidal@redhat.com>
+# Red Hat Author(s):        Toshio Kuratomi <tkuratom@redhat.com>
+#                           Seth Vidal <svidal@redhat.com>
+# Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
 Controller for displaying Package Bug Information.
@@ -29,7 +30,12 @@ from turbogears import controllers, expose, paginate, config, redirect
 from sqlalchemy.exceptions import InvalidRequestError
 import bugzilla
 
+<<<<<<< TREE
 from pkgdb.model import StatusTranslation, Package
+=======
+from pkgdb import model
+from pkgdb.letter_paginator import Letters
+>>>>>>> MERGE-SOURCE
 from cherrypy import request
 
 import logging
@@ -104,25 +110,12 @@ class Bugs(controllers.Controller):
         :fas: Fedora Account System object.
         :app_title: Title of the web app.
         '''
+
         self.bz_server = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.app_title = app_title
-
-    @expose(template='pkgdb.templates.bugoverview')
-    @paginate('packages', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
-    def index(self):
-        '''Display a list of packages with a link to bug reports for each.'''
-        # Retrieve the list of packages minus removed packages
-        # pylint: disable-msg=E1101
-        packages = Package.query.filter(
-                Package.c.statuscode!=self.removedStatus)
-        # pylint: enable-msg=E1101
-
-        return dict(title=self.app_title + ' -- Package Bug Pages',
-                bzurl=self.bzUrl, packages=packages)
+        self.index = Letters(appTitle)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
-
     def default(self, package_name, *args, **kwargs):
         '''Display a list of Fedora bugs against a given package.'''
         # Nasty, nasty hack.  The packagedb, via bugz.fp.o is getting sent
