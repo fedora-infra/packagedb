@@ -30,12 +30,8 @@ from turbogears import controllers, expose, paginate, config, redirect
 from sqlalchemy.exceptions import InvalidRequestError
 import bugzilla
 
-<<<<<<< TREE
 from pkgdb.model import StatusTranslation, Package
-=======
-from pkgdb import model
 from pkgdb.letter_paginator import Letters
->>>>>>> MERGE-SOURCE
 from cherrypy import request
 
 import logging
@@ -113,7 +109,7 @@ class Bugs(controllers.Controller):
 
         self.bz_server = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.app_title = app_title
-        self.index = Letters(appTitle)
+        self.index = Letters(app_title)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
     def default(self, package_name, *args, **kwargs):

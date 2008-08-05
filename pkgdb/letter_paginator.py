@@ -31,8 +31,8 @@ class Letters(controllers.Controller):
     '''Display package lists with letter pagination, search and links
     '''
     
-    def __init__(self, appTitle=None):
-        self.appTitle = appTitle
+    def __init__(self, app_title=None):
+        self.app_title = app_title
         self.removedStatus = model.StatusTranslation.query.filter_by(
                     statusname='Removed', language='C').first().statuscodeid
         
@@ -70,8 +70,6 @@ class Letters(controllers.Controller):
         else:
             mode = 'bugs/'
             bzUrl = config.get('bugzilla.url', 'https://bugzilla.redhat.com/')
-        return dict(title=self.appTitle + ' -- Packages Overview'+mode,
+        return dict(title=self.app_title + ' -- Packages Overview'+mode,
                        searchwords=searchwords, packages=packages, mode=mode,
                        bzurl=bzUrl)
-
-
