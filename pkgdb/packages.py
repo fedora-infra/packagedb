@@ -53,7 +53,7 @@ class Packages(controllers.Controller):
         self.fas = fas
         self.app_title = app_title
         self.bugs = Bugs(app_title)
-        self.index = Letters(appTitle)
+        self.index = Letters(app_title)
         self.dispatcher = PackageDispatcher(fas)
         # pylint: disable-msg=E1101
         self.removed_status = model.StatusTranslation.query.filter_by(

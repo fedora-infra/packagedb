@@ -8,7 +8,7 @@
     class="PackageList">
     <dl py:for="pkg in packages">
       <dt>
-        <a href="${tg.url('/packages/%s/%s' % (mode, pkg.name))}"
+        <a href="${tg.url('/packages/%s/%s' % (mode.strip('/') or 'name', pkg.name))}"
           py:content="pkg.name" class="PackageName">Package Name</a>
         -- ${pkg.summary}
       </dt>
