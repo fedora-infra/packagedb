@@ -7,16 +7,14 @@
   <head />
   <body>
     <h3>Search Packages</h3>
-         <script type="text/javascript">
-
-                      <!--
+    <script type="text/javascript">
+      /* <![CDATA[ */
                       function jump_search(){
                       for (i=0;i<document.forms[1].searchon.length;i++) {
                           if (document.forms[1].searchon[i].checked) {
                               searchon = document.forms[1].searchon[i].value;
                           }
                       }
-                      //-->
                       if (document.forms[1].operator[0].checked) {
                           operator = "AND"
                       } else {
@@ -29,7 +27,8 @@
                               document.forms[1].searchwords.value;
                       return false
                       }
-     </script> 
+      /* ]]> */
+     </script>
 <p>This is the advanced package search page.</p>
     <form action="${tg.url('/search/package/')}" method="get" onsubmit="return jump_search()">
     <p>Keywords: <input id="package" name="searchwords" size="20" type="text" />
