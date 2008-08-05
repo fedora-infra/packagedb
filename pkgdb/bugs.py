@@ -68,11 +68,11 @@ class BugList(list):
             bug.url = bug.url.replace(self.query_url, self.public_url)
         bug.bug_status = unicode(bug.bug_status, 'utf-8')
         try:
-            bug.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
+            bug.short_desc = unicode(bug.short_desc, 'utf-8')
         except TypeError:
-            bug.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
+            bug.short_desc = unicode(bug.short_desc.data, 'utf-8')
         return {'url': bug.url, 'bug_status': bug.bug_status,
-                'short_short_desc': bug.short_short_desc, 'bug_id': bug.bug_id}
+                'short_desc': bug.short_desc, 'bug_id': bug.bug_id}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
