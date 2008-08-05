@@ -15,7 +15,8 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+# Red Hat Author(s):        Toshio Kuratomi <tkuratom@redhat.com>
+# Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
 Controller for displaying Package Information.
@@ -29,11 +30,13 @@ Controller for displaying Package Information.
 #   classes so we have to disable these checks.
 
 
-from turbogears import controllers, expose, paginate, config, redirect, identity
+from turbogears import controllers, expose, config, redirect, identity 
+from turbogears.validators import PlainText
 
 from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
+from pkgdb.letter_paginator import Letters
 
 from cherrypy import request
 
@@ -50,6 +53,7 @@ class Packages(controllers.Controller):
         self.fas = fas
         self.app_title = app_title
         self.bugs = Bugs(app_title)
+        self.index = Letters(app_title)
         self.dispatcher = PackageDispatcher(fas)
         # pylint: disable-msg=E1101
         self.removed_status = model.StatusTranslation.query.filter_by(
@@ -57,21 +61,6 @@ class Packages(controllers.Controller):
         self.approved_status = model.StatusTranslation.query.filter_by(
                 statusname='Approved', language='C').one().statuscodeid
         # pylint: enable-msg=E1101
-
-    @expose(template='pkgdb.templates.pkgoverview')
-    @paginate('packages', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
-    def index(self):
-        '''Return a list of all packages in the database.
-        '''
-        # pylint: disable-msg=E1101
-        # Retrieve the list of packages minus removed packages
-        packages = model.Package.query.filter(
-                model.Package.c.statuscode!=self.removed_status)
-        # pylint: enable-msg=E1101
-
-        return dict(title=self.app_title + ' -- Package Overview',
-                packages=packages)
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):

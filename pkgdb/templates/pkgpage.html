@@ -52,10 +52,11 @@ TODO='Not yet implemented'
       </a></li>
     </ul>
     </p>
-
     <form action="${tg.url('/packages/dispatcher/')}" method="POST">
-      <table class="pkglist" py:for="pkg in packageListings"
-        py:attrs="{'name': str(pkg.id)}">
+        <div py:def="pkgl">
+            
+            <!--! here beggins the py:def pkgl declaration -->    
+
         <?python
         # Determine whether the present user is already involved with this
         # packagelisting and if they are allowed to change acls
@@ -225,8 +226,12 @@ TODO='Not yet implemented'
             class="addMyselfButton"
             value="Add myself to package"/>
           </td>
-        </tr>
-      </table>
+          </tr>
+      </div> <!--! here ends the pkgl def declaration -->
+        <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
+            <table py:when="pkg.ownerid==9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist-orphan'}">${pkgl()}</table>
+            <table py:when="pkg.ownerid!=9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist-owned'}">${pkgl()}</table>
+        </div>
     </form>
   </body>
 </html>

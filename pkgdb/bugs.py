@@ -15,8 +15,9 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
-#                    Seth Vidal <svidal@redhat.com>
+# Red Hat Author(s):        Toshio Kuratomi <tkuratom@redhat.com>
+#                           Seth Vidal <svidal@redhat.com>
+# Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
 Controller for displaying Package Bug Information.
@@ -30,6 +31,7 @@ from sqlalchemy.exceptions import InvalidRequestError
 import bugzilla
 
 from pkgdb.model import StatusTranslation, Package
+from pkgdb.letter_paginator import Letters
 from cherrypy import request
 
 import logging
@@ -66,11 +68,11 @@ class BugList(list):
             bug.url = bug.url.replace(self.query_url, self.public_url)
         bug.bug_status = unicode(bug.bug_status, 'utf-8')
         try:
-            bug.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
+            bug.short_desc = unicode(bug.short_desc, 'utf-8')
         except TypeError:
-            bug.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
+            bug.short_desc = unicode(bug.short_desc.data, 'utf-8')
         return {'url': bug.url, 'bug_status': bug.bug_status,
-                'short_short_desc': bug.short_short_desc, 'bug_id': bug.bug_id}
+                'short_desc': bug.short_desc, 'bug_id': bug.bug_id}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
@@ -104,25 +106,12 @@ class Bugs(controllers.Controller):
         :fas: Fedora Account System object.
         :app_title: Title of the web app.
         '''
+
         self.bz_server = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.app_title = app_title
-
-    @expose(template='pkgdb.templates.bugoverview')
-    @paginate('packages', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
-    def index(self):
-        '''Display a list of packages with a link to bug reports for each.'''
-        # Retrieve the list of packages minus removed packages
-        # pylint: disable-msg=E1101
-        packages = Package.query.filter(
-                Package.c.statuscode!=self.removedStatus)
-        # pylint: enable-msg=E1101
-
-        return dict(title=self.app_title + ' -- Package Bug Pages',
-                bzurl=self.bzUrl, packages=packages)
+        self.index = Letters(app_title)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
-
     def default(self, package_name, *args, **kwargs):
         '''Display a list of Fedora bugs against a given package.'''
         # Nasty, nasty hack.  The packagedb, via bugz.fp.o is getting sent
