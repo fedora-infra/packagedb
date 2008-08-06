@@ -113,7 +113,7 @@ TODO='Not yet implemented'
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner orphaned">
                 <span class="ownerName">${pkg.ownername}</span>
-                <span py:if="'cvsextras' in tg.identity.groups and pkg.collection.status.translations[0].statusname!='EOL'">
+                <span py:if="'packager' in tg.identity.groups and pkg.collection.status.translations[0].statusname!='EOL'">
                   <input type="button" name="unorphan"
                     class="ownerButton unorphanButton"
                     value="Take Ownership"/>
