@@ -174,7 +174,7 @@ setup(
         "SQLAlchemy >= 0.4alpha",
     ],
     scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo",
-        "server-scripts/pkgdb-sync-bugzilla"],
+        "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status"],
     zip_safe=False,
     packages=find_packages(),
     package_data = find_package_data(where='pkgdb',
