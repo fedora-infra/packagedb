@@ -28,6 +28,8 @@ Controller to process requests to change package information.
 # :E1101: SQLAlchemy monkey patches the ORM Mappers so we have to disable this
 #   check whenever we use a db mapped class.
 
+from datetime import datetime
+
 from sqlalchemy import and_
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
 
@@ -412,6 +414,8 @@ class PackageDispatcher(controllers.Controller):
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = ORPHAN_ID
+            pkg.statuscode = self.orphanedStatus
+            pkg.statuschange = datetime.now(pkg.statuschange.tzinfo)
             owner_name = 'Orphaned Package (orphan)'
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
                     pkg.package.name, pkg.collection.name,
