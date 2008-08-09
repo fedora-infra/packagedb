@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.6
+Version:        0.3.7
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -52,7 +52,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc README COPYING AUTHORS ChangeLog
+%doc README COPYING AUTHORS NEWS ChangeLog
 %{_datadir}/fedora-packagedb/
 %{_sbindir}/start-pkgdb
 %{_bindir}/*
@@ -60,6 +60,9 @@ rm -rf %{buildroot}
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
 %changelog
+* Sat Aug 9  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.7-1
+- New upstream release. Many UI improvements and bugfixes.
+
 * Wed Jul 16 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.6-1
 - New upstream release. notify list, some search optimization, improved
   filter box and pkglist look and feel.
