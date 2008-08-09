@@ -8,17 +8,17 @@
     class="PackageList">
     <dl py:for="pkg in packages">
       <dt>
-        <a href="${tg.url('/packages/%s/%s' % (mode, pkg.name))}"
+        <a href="${tg.url('/packages/%s/%s' % (mode.strip('/') or 'name', pkg.name))}"
           py:content="pkg.name" class="PackageName">Package Name</a>
         -- ${pkg.summary}
       </dt>
       <dd py:if="full_desc" py:content="pkg.description" />
       <dd py:if="release" py:choose="releasewhere">
         <div py:when="'orphaned'" py:strip="True">
-          <span py:for="collection in (plist.collection for plist in pkg.listings if plist.owner==9900)" py:strip="True">
-          [<a py:content="collection.branchname"
+          <span py:for="collection in sorted((plist.collection.name, plist.collection.version, plist.collection.branchname) for plist in pkg.listings if plist.owner==9900)" py:strip="True">
+          [<a py:content="collection[2]"
             href="${tg.url('/packages/%s/%s#%s%s' %
-            (mode, pkg.name, collection.name, collection.version))}">
+            (mode, pkg.name, collection[0], collection[1]))}">
             Collection shortname</a>]
           </span>
         </div>

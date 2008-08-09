@@ -149,9 +149,9 @@ class ListQueries(controllers.Controller):
             statusname='Under Development', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
-    def __init__(self, fas=None, appTitle=None):
+    def __init__(self, fas=None, app_title=None):
         self.fas = fas
-        self.app_title = appTitle
+        self.app_title = app_title
 
     def _add_to_bugzilla_acl_list(self, package_acls, pkg_name,
             collection_name, identity, group=None):
@@ -559,16 +559,17 @@ class ListQueries(controllers.Controller):
         # pylint: disable-msg=E1101
         # Retrieve Packages, owners, and people on watch* acls
         query = select((Package.name, PackageListing.owner,
-            PersonPackageListing.userid),
+            PersonPackageListing.userid, PersonPackageListingAcl.statuscode),
             from_obj=(PackageTable.join(PackageListing).outerjoin(
                 PersonPackageListing).outerjoin(PersonPackageListingAcl),
                 CollectionTable)
-            ).where(or_(and_(PersonPackageListingAcl.acl.in_(
+            ).where(or_(PersonPackageListingAcl.acl.in_(
                 ('watchbugzilla', 'watchcommits')),
-                PersonPackageListingAcl.statuscode==self.approvedStatus),
                 PersonPackageListingAcl.acl==None)
-                ).where(Collection.id==PackageListing.collectionid
-                        ).distinct().order_by('name')
+                ).where(and_(Collection.id==PackageListing.collectionid,
+                        Package.statuscode==self.approvedStatus,
+                        PackageListing.statuscode==self.approvedStatus,
+                        )).distinct().order_by('name')
         # pylint: enable-msg=E1101
 
         if not eol:
@@ -591,13 +592,29 @@ class ListQueries(controllers.Controller):
         # turn the query into a python object
         for pkg in query.execute():
             additions = []
-            for userid in (pkg[1], pkg[2]):
+            '''
+            try:
+                # Save the owner
+                additions.append(self.fas.cache[pkg[1]]['username'])
+            except KeyError: # pylint: disable-msg=W0704
+                # We get here when we have a Null in the data (perhaps
+                # there was no one on the CC list.)  This is not an error.
+                pass
+
+            if pkg[2] and pkg[3] == self.approvedStatus:
+                # Save approved watchers
                 try:
-                    additions.append(self.fas.cache[userid]['username'])
+                    additions.append(self.fas.cache[pkg[2]]['username'])
                 except KeyError: # pylint: disable-msg=W0704
                     # We get here when we have a Null in the data (perhaps
                     # there was no one on the CC list.)  This is not an error.
                     pass
+            '''
+            additions.append(self.fas.cache[pkg[1]]['username'])
+            if pkg[2] and pkg[3] == self.approvedStatus:
+                # Save approved watchers
+                additions.append(self.fas.cache[pkg[2]]['username'])
+
             try:
                 pkgs[pkg[0]].update(additions)
             except KeyError:

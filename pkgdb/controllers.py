@@ -22,11 +22,13 @@ Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
 
-from turbogears import controllers, expose, config
+from turbogears import controllers, expose, config, flash
 from turbogears.i18n.tg_gettext import gettext as _
 from turbogears import identity, redirect
 from cherrypy import request, response
 import logging
+
+from fedora.tg.util import request_format
 
 from pkgdb import release
 
@@ -40,7 +42,10 @@ from pkgdb.search import Search
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-from fedora.accounts.fas2 import AccountSystem
+try:
+    from fedora.client.fas2 import AccountSystem
+except ImportError:
+    from fedora.accounts.fas2 import AccountSystem
 
 class UserCache(dict):
     '''Naive cache for user information.
@@ -91,7 +96,7 @@ class Root(controllers.RootController):
     '''
     # Controller methods don't need an __init__()
     # pylint: disable-msg=W0232
-    appTitle = 'Fedora Package Database'
+    app_title = 'Fedora Package Database'
 
     baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
     username = config.get('fas.username', 'admin')
@@ -100,12 +105,12 @@ class Root(controllers.RootController):
     fas = AccountSystem(baseURL, username=username, password=password)
     fas.cache = UserCache(fas)
 
-    collections = Collections(fas, appTitle)
-    packages = Packages(fas, appTitle)
-    users = Users(fas, appTitle)
-    stats = Stats(fas, appTitle)
-    search = Search(fas, appTitle)
-    lists = ListQueries(fas, appTitle)
+    collections = Collections(fas, app_title)
+    packages = Packages(fas, app_title)
+    users = Users(fas, app_title)
+    stats = Stats(fas, app_title)
+    search = Search(fas, app_title)
+    lists = ListQueries(fas, app_title)
     # For backwards compatibility:
     acls = lists
 
@@ -116,7 +121,7 @@ class Root(controllers.RootController):
         This page serves as an overview of the entire PackageDB.  It needs to
         tell developers where to get more information on their packages.
         '''
-        return dict(title=self.appTitle, version=release.VERSION)
+        return dict(title=self.app_title, version=release.VERSION)
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, previous_url=None, *args, **kwargs):
@@ -134,8 +139,7 @@ class Root(controllers.RootController):
                 and identity.was_login_attempted() \
                 and not identity.get_identity_errors():
             # User is logged in
-            if 'tg_format' in request.params \
-                    and request.params['tg_format'] == 'json':
+            if request_format() == 'json':
                 # When called as a json method, doesn't make any sense to
                 # redirect to a page.  Returning the logged in identity
                 # is better.
@@ -158,7 +162,8 @@ class Root(controllers.RootController):
             forward_url = request.headers.get("Referer", "/")
 
         response.status = 403
-        return dict(message=msg, previous_url=previous_url, logging_in=True,
+        flash(msg)
+        return dict(previous_url=previous_url, logging_in=True,
                     original_parameters=request.params,
                     forward_url=forward_url,
                     title='Fedora Account System Login')
@@ -169,4 +174,6 @@ class Root(controllers.RootController):
         '''
         # pylint: disable-msg=R0201
         identity.current.logout()
+        if request_format() == 'json':
+            return dict()
         raise redirect(request.headers.get("Referer","/"))

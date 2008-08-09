@@ -1,3 +1,122 @@
+== packagedb-0.3.7 ==
+2008-08-09  Toshio Kuratomi <badger@Clingman> - r384
+Merge from -stable in preparation for the release.
+
+2008-08-09  Toshio Kuratomi <badger@Clingman> - r383
+Merge tags from stable.
+
+2008-08-09  Toshio Kuratomi <badger@Clingman> - r382
+* Update AUTHORS since maploinhas done significantly more than stats at
+  this point.
+* Add NEWS file.
+* Update for new release.
+
+2008-08-08  Toshio Kuratomi <badger@Clingman> - r381
+Merge orphan statuschange from maploin.
+
+2008-08-08  Toshio Kuratomi <badger@Clingman> - r380
+* Look for pkgdb.cfg in the same directory as setup.py.
+
+2008-08-08  Toshio Kuratomi <badger@Clingman> - r379
+Fix up calls for SA-0.4.
+
+2008-08-08  Toshio Kuratomi <badger@Clingman> - r378
+Fix output of notify(0 to list packages that have an owner but noone on the
+watch* acls.
+
+2008-08-08  Ionuț Arțăriși <mapleoin@fp.o> - r377
+* server-scripts/pkgdb-status.in: new script to automatically change packagelisting statuses to orphaned/deprecated from mapleoin-devel
+2008-08-06  Toshio Kuratomi <badger@Clingman> - r376
+Fix statement for SA-0.4.
+
+2008-08-06  Toshio Kuratomi <badger@Clingman> - r375
+'cvsextras' => 'packager' which was breaking unorphaning of packages.
+
+2008-08-05  Toshio Kuratomi <badger@Clingman> - r374
+Fix javascript search via CDATA.
+
+2008-08-05  Ionuț Arțăriși <mapleoin@fp.o> - r373
+new letter pagination, search fixes and new bugzilla fixes
+2008-08-05  Ionuț Arțăriși <mapleoin@fp.o> - r372
+* pkgdb/cfg: replaced user/passwd with dummies
+2008-08-02  Toshio Kuratomi <badger@Clingman> - r371
+Update python-fedora requirement.
+
+2008-08-02  Toshio Kuratomi <badger@Clingman> - r370
+* Switch to using fedora.tg.utils.request_format to determine whether to use
+  a json or html response.
+* Switch to showing login errors via tg.flash.
+
+2008-08-02  Toshio Kuratomi <badger@Clingman> - r369
+Remove use of display name and human name for privacy concerns.
+
+2008-08-02  Toshio Kuratomi <badger@Clingman> - r368
+Finish major pylint refactoring with changes to worst offender: dispatcher.py.
+
+2008-08-02  Toshio Kuratomi <badger@Clingman> - r367
+Fix another place where "cvsextras" had to be made into generic 'group".
+
+2008-08-02  Toshio Kuratomi <badger@Clingman> - r366
+Fix edit_package() to create group listing for both packager and uberpackager,
+not just packager (matches add_package).
+
+2008-08-02  Toshio Kuratomi <badger@Clingman> - r365
+pylint cleanup including some errors in the yum repo sync.
+
+2008-08-01  Toshio Kuratomi <badger@Clingman> - r364
+If we don't use comments, we also have to change "<" to &lt;... yes, even in
+javscript.
+
+2008-08-01  Toshio Kuratomi <badger@Clingman> - r363
+Remove comment marker from script tag so tg.url gets expanded.
+
+2008-07-31  Toshio Kuratomi <badger@Clingman> - r362
+Restore ordering to user pakcage list and the collecitons listed there.
+
+2008-07-31  Toshio Kuratomi <badger@Clingman> - r361
+Move from importing model to importing specific classes in model.
+
+2008-07-28  Toshio Kuratomi <badger@Clingman> - r360
+* Add packager as a legal group; remove cvsextras.
+
+2008-07-27  Toshio Kuratomi <badger@Clingman> - r359
+Make AccountSystem import use python-fedora 0.3 location.
+
+2008-07-27  Toshio Kuratomi <badger@Clingman> - r358
+Disambiguate the "report Bugs" link on the sidebar.
+
+2008-07-25  Toshio Kuratomi <badger@Clingman> - r357
+* Add json_props for package list to return which collections a package is in.
+
+2008-07-24  Toshio Kuratomi <badger@Clingman> - r356
+Merge maploin's fixes to search and new bug reports.
+
+2008-07-24  Toshio Kuratomi <badger@Clingman> - r355
+Fix notification list to not include packages and packagelistings which are
+no longer in the repository (ie: not approved status).
+
+2008-07-24  Toshio Kuratomi <badger@Clingman> - r354
+Add state argument to message() in CollectionName validator.
+
+2008-07-22  Toshio Kuratomi <badger@Clingman> - r353
+Add a statuschange column to packagelisting and orphan and deprecated statuses
+to packagelistingstatuscode.
+
+2008-07-21  Toshio Kuratomi <badger@Clingman> - r352
+* Rename jsonProps => json_props for the new python-fedora.
+
+2008-07-21  Toshio Kuratomi <badger@Clingman> - r351
+* pkgdb/json.py: No longer needed as we've moved this to python-fedora.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r350
+Fix search box javascript.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r349
+Fix changelog.
+
+2008-07-16  Toshio Kuratomi <badger@Clingman> - r348
+Update for 0.3.6 release.
+
 == packagedb-0.3.6 ==
 2008-07-16  Toshio Kuratomi <badger@Clingman> - r347
 Make sure watchcommit and watchbugzilla acls are approved if we use them.

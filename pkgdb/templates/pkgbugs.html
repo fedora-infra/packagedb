@@ -12,6 +12,7 @@
     ${pkgheader(package, 'bugz')}
 
     <h4>${len(bugs)} bugs found</h4>
+    <h4><a href="${'https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora&amp;version=rawhide&amp;component=%s' % package}">Report</a> a new bug against this package</h4>
     <table class="buglist">
       <tr>
         <th>Number</th>
@@ -21,7 +22,7 @@
       <tr py:for="bug in bugs">
         <td class="bug"><a href="$bug.url">$bug.bug_id</a></td>
         <td class="bug">${bug.bug_status.lower()}</td>
-        <td class="bug"><a href="$bug.url">$bug.short_short_desc</a></td>
+        <td class="bug"><a href="$bug.url">$bug.short_desc</a></td>
       </tr>
     </table>
   </body>

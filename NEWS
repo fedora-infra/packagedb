@@ -1,0 +1,38 @@
+====
+NEWS
+====
+
+:Authors: Toshio Kuratomi
+:Date: 8 Aug 2008
+:Version: 0.3.7
+
+-----
+0.3.7
+-----
+
+This update sees lots of UI improvements from Ionuț and bugfixes from Toshio.
+Some of these changes have already been deployed to the Fedora instance as
+hotfixes.
+
+Enhancements
+============
+
+* Orphan status is now recorded via the packagelisting's status field
+* Rename from "cvsextras" to "packager"
+* Letter pagination of the package pages
+* Switch to showing login errors via tg.flash
+* Remove the use of human_name for privacy concerns
+* pylint cleanup
+* Disambiguate the report bugs link
+* Modify json return for user package list to return which collections a
+  package is in
+* Now link to bugzilla from the bugs pages
+
+Bug fixes
+=========
+
+* yumrepo sync fixes for SA-0.4
+* bugfix to notify code when no one is on the watch* acls
+* Bugfix for javascript that drives the search boxes
+* uberpackager fix when creating a new branch for a preexisting component
+* Fix ordering of user package list

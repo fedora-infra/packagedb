@@ -2,7 +2,7 @@
 Information about this pkgdb release
 '''
 
-VERSION = '0.3.6'
+VERSION = '0.3.7'
 NAME = 'fedora-packagedb'
 DESCRIPTION = 'The Fedora Package Database'
 LONG_DESCRIPTION = '''
@@ -12,10 +12,8 @@ for important package information nad allows querying of the package
 information from other tools.
 '''
 AUTHOR = 'Toshio Kuratomi'
-EMAIL = 'tkuratom@redhat.com'
+EMAIL = 'toshio@fedoraproject.org'
 COPYRIGHT = '2007-2008 Red Hat, Inc.'
-
-# if it's open source, you might want to specify these
 URL = 'https://fedorahosted.org/packagedb'
 DOWNLOAD_URL = 'https://fedorahosted.org/releases/p/a/packagedb/'
 LICENSE = 'GPLv2'

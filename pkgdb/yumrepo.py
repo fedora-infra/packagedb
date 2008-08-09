@@ -27,11 +27,10 @@ import logging
 from turbogears import config
 from turbogears.database import session
 
-import sqlalchemy
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy import Table, Column, Integer, String
-from sqlalchemy.orm import Mapper
+from sqlalchemy.orm import Mapper, create_session
 
 from fedora.tg.json import SABase
 from pkgdb import model
@@ -130,9 +129,9 @@ class RepoInfo(object):
     # is changed or replaced.
     # Test what happens if we have a repo.sqlite file open and use RepoUpdater
     # to change it.
-    
+
     # pylint: disable-msg=E1101
-    approvedStatus = model.StatusTranslation.filter_by(statusname='Approved',
+    approvedStatus = model.StatusTranslation.query.filter_by(statusname='Approved',
             language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
@@ -141,19 +140,19 @@ class RepoInfo(object):
         '''
         # Find all the repos we know about
         self.repodir = yum.misc.getCacheDir()
-        dbFiles = yum.misc.getFileList(self.repodir, '.sqlite', [])
+        db_files = yum.misc.getFileList(self.repodir, '.sqlite', [])
 
         # Add paths to repoDB files
-        self.repoFiles = {}
-        for dbFile in dbFiles:
-            repoDir, dbFileName = os.path.split(dbFile)
-            repoName = os.path.basename(repoDir)
-            mdtype = dbFileName[:dbFileName.index('.')]
-            engine = create_engine('sqlite:///' + dbFile)
+        self.repo_files = {}
+        for db_file in db_files:
+            repo_dir, db_filename = os.path.split(db_file)
+            repo_name = os.path.basename(repo_dir)
+            mdtype = db_filename[:db_filename.index('.')]
+            engine = create_engine('sqlite:///' + db_file)
             try:
-                self.repoFiles[repoName][mdtype] = engine
+                self.repo_files[repo_name][mdtype] = engine
             except KeyError:
-                self.repoFiles[repoName] = {mdtype: engine}
+                self.repo_files[repo_name] = {mdtype: engine}
 
         # Set up sqlalchemy mappers for the packageDB tables
         self.metadata = MetaData()
@@ -191,11 +190,11 @@ class RepoInfo(object):
                 )
         Mapper(DB_Info, self.DB_InfoTable)
         Mapper(Packages, self.PackagesTable)
-        self.session = sqlalchemy.create_session()
+        self.session = create_session()
 
     def _bind_to_repo(self, repo, mdtype):
         '''Set our model to talk to the db in this particular repo.'''
-        self.metadata.bind = self.repoFiles[repo][mdtype]
+        self.metadata.bind = self.repo_files[repo][mdtype]
         info = self.session.query(DB_Info).one()
         if info.dbversion not in (9, 10):
             raise UnknownRepoMDFormat, 'Expected Repo format 9 or 10, got %s' \
@@ -204,10 +203,10 @@ class RepoInfo(object):
     def sync_package_descriptions(self):
         '''Add a new package to the database.
         '''
+        # pylint: disable-msg=E1101
         # Retrieve all the packages which are active
-        pkgs = model.Package.filter_by( # pylint: disable-msg=E1101
-                # pylint: disable-msg=E1101
-                model.Package.c.statuscode==self.approvedStatus)
+        pkgs = model.Package.query.filter_by(statuscode=self.approvedStatus)
+        # pylint: enable-msg=E1101
 
         # Since we update the information, we need to be sure we search from
         # most current information to least current information
@@ -219,71 +218,75 @@ class RepoInfo(object):
         # everything else
 
         # Separate the repos
-        develRepos = []
-        updateRepos = []
-        fedoraRepos = []
-        olpcRepos = []
-        epelRepos = []
-        otherRepos = []
-        for repo in self.repoFiles.keys():
+        devel_repos = []
+        update_repos = []
+        fedora_repos = []
+        olpc_repos = []
+        epel_repos = []
+        other_repos = []
+        for repo in self.repo_files.keys():
             if repo.startswith('updates'):
-                updateRepos.append(repo)
+                update_repos.append(repo)
             elif repo.startswith('fedora'):
-                fedoraRepos.append(repo)
+                fedora_repos.append(repo)
             elif repo.startswith('development'):
-                develRepos.append(repo)
+                devel_repos.append(repo)
             elif repo.startswith('epel'):
-                epelRepos.append(repo)
+                epel_repos.append(repo)
             elif repo.startswith('olpc'):
-                olpcRepos.append(repo)
+                olpc_repos.append(repo)
             else:
-                otherRepos.append(repo)
-        develRepos.sort(reverse=True)
-        updateRepos.sort(reverse=True)
-        fedoraRepos.sort(reverse=True)
-        epelRepos.sort(reverse=True)
-        olpcRepos.sort(reverse=True)
-        otherRepos.sort(reverse=True)
+                other_repos.append(repo)
+        devel_repos.sort(reverse=True)
+        update_repos.sort(reverse=True)
+        fedora_repos.sort(reverse=True)
+        epel_repos.sort(reverse=True)
+        olpc_repos.sort(reverse=True)
+        other_repos.sort(reverse=True)
 
         # All development repos first
-        repoList = develRepos
+        repo_list = devel_repos
 
+        # :W0162: We don't need to use num_releases, we just want to get two
+        #   releases.
         # Pull off the update and fedora repos for the latest two releases
-        for numReleases in range(0, 2): # pylint: disable-msg=W0612
-            release = updateRepos[0][len('updates'):updateRepos[0].index('-')]
-            updateStr = 'updates%s-' % release
-            while updateRepos and updateRepos[0].startswith(updateStr):
-                repoList.append(updateRepos[0])
-                del updateRepos[0]
-            fedoraStr = 'fedora%s-' % release
-            while fedoraRepos and fedoraRepos[0].startswith(fedoraStr):
-                repoList.append(fedoraRepos[0])
-                del fedoraRepos[0]
+        for num_releases in xrange(0, 2): # pylint: disable-msg=W0612
+            release = update_repos[0][len('updates'):update_repos[0].index('-')]
+            update_str = 'updates%s-' % release
+            while update_repos and update_repos[0].startswith(update_str):
+                repo_list.append(update_repos[0])
+                del update_repos[0]
+            fedora_str = 'fedora%s-' % release
+            while fedora_repos and fedora_repos[0].startswith(fedora_str):
+                repo_list.append(fedora_repos[0])
+                del fedora_repos[0]
 
         # One release for olpc
-        olpcStr = olpcRepos[0][0:olpcRepos[0].index('-')+1]
-        while olpcRepos and olpcRepos[0].startswith(olpcStr):
-            repoList.append(olpcRepos[0])
-            del olpcRepos[0]
+        olpc_str = olpc_repos[0][0:olpc_repos[0].index('-')+1]
+        while olpc_repos and olpc_repos[0].startswith(olpc_str):
+            repo_list.append(olpc_repos[0])
+            del olpc_repos[0]
 
+        # :W0612: We just want to retrieve the first two releases, so we don't
+        #   need to use num_releases.
         # Two for epel
-        for numRelease in range(0, 2): # pylint: disable-msg=W0612
-            epelStr = epelRepos[0][0:epelRepos[0].index('-')+1]
-            while epelRepos and epelRepos[0].startswith(epelStr):
-                repoList.append(epelRepos[0])
-                del epelRepos[0]
+        for num_release in xrange(0, 2): # pylint: disable-msg=W0612
+            epel_str = epel_repos[0][0:epel_repos[0].index('-')+1]
+            while epel_repos and epel_repos[0].startswith(epel_str):
+                repo_list.append(epel_repos[0])
+                del epel_repos[0]
 
-        # Now add all the remainders to repoList
-        repoList.extend(updateRepos)
-        repoList.extend(fedoraRepos)
-        repoList.extend(olpcRepos)
-        repoList.extend(epelRepos)
-        repoList.extend(otherRepos)
+        # Now add all the remainders to repo_list
+        repo_list.extend(update_repos)
+        repo_list.extend(fedora_repos)
+        repo_list.extend(olpc_repos)
+        repo_list.extend(epel_repos)
+        repo_list.extend(other_repos)
 
         # For each repo check the packages for an updated description
-        for repoName in repoList:
-            self._bind_to_repo(repoName, 'primary')
-            newPkgList = []
+        for repo_name in repo_list:
+            self._bind_to_repo(repo_name, 'primary')
+            new_pkg_list = []
             for pkg in pkgs:
                 try:
                     packages = self.session.query(Packages
@@ -298,21 +301,21 @@ class RepoInfo(object):
                     if pkg.summary != packages.summary:
                         pkg.summary = packages.summary
                     continue
-                newPkgList.append(pkg)
+                new_pkg_list.append(pkg)
                 self.session.close()
 
             # Only continue looking for packages we haven't found
-            pkgs = newPkgList
+            pkgs = new_pkg_list
 
         # Flush the new descriptions to the TG context session
         session.flush()
         session.close()
 
         # List packages which haven't changed
-        noDesc = [pkg.name for pkg in pkgs if not pkg.description]
-        noDesc.sort()
-        log.warning('Packages without descriptions: %s' % len(noDesc))
-        log.warning('\t'.join(noDesc))
+        no_desc_pkgs = [pkg.name for pkg in pkgs if not pkg.description]
+        no_desc_pkgs.sort()
+        log.warning('Packages without descriptions: %s' % len(no_desc_pkgs))
+        log.warning('\t'.join(no_desc_pkgs))
 
 ### FIXME: DB Tables not yet listed here:
 # CREATE TABLE provides (  name TEXT,  flags TEXT,  epoch TEXT,  version TEXT,

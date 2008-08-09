@@ -20,7 +20,6 @@
   <body>
     <div id="loginBox">
       <h2>Login</h2>
-      <p>${message}</p>
       <form action="${previous_url}" method="POST">
         <table>
           <tr>
@@ -45,6 +44,8 @@
             </td>
           </tr>
         </table>
+
+        <p>You'll need a <a href="https://admin.fedoraproject.org/accounts/">Fedora Account</a> in order to login.</p>
 
         <input py:if="forward_url" type="hidden" name="forward_url"
         value="${forward_url}"/>

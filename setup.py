@@ -32,7 +32,7 @@ class BuildScripts(_build_scripts, object):
         self.install_conf = None
         self.install_data = None
         super(BuildScripts, self).initialize_options()
-   
+
     def finalize_options(self):
         self.set_undefined_options('build',
                 ('install_conf', 'install_conf'),
@@ -45,7 +45,7 @@ class BuildScripts(_build_scripts, object):
 
     def run(self):
         '''Substitute special variables with our install lcoations.
-        
+
         '''
         for script in self.scripts:
             # If there's a script name with .in attached, make substitutions
@@ -86,7 +86,7 @@ class Build(_build, object):
         self.install_conf = None
         self.install_data = None
         super(Build, self).initialize_options()
-   
+
     def finalize_options(self):
         self.install_conf = self.install_conf or '/usr/local/etc'
         self.install_data = self.install_data or '/usr/local/share'
@@ -111,7 +111,7 @@ class Install(_install, object):
         self.install_data = None
         self.root = None
         super(Install, self).initialize_options()
-   
+
     def finalize_options(self):
         self.install_conf = self.install_conf or '/usr/local/etc'
         self.install_data = self.install_data or '/usr/local/share'
@@ -131,7 +131,7 @@ class InstallApp(_install_lib, object):
         self.install_data = None
         self.root = None
         super(InstallApp, self).initialize_options()
-   
+
     def finalize_options(self):
         self.set_undefined_options('install',
                 ('root', 'root'),
@@ -143,7 +143,7 @@ class InstallApp(_install_lib, object):
 
     def run(self):
         super(InstallApp, self).run()
-        
+
         ### FIXME: Couldn't think of a better way to do this in limited time
 
         # Install the configuration file to the confdir
@@ -151,18 +151,18 @@ class InstallApp(_install_lib, object):
         confdir.replace('//','/')
         self.mkpath(confdir)
         self.copy_file('pkgdb.cfg', confdir)
-   
+
 setup(
     name=NAME,
     version=VERSION,
-    
+
     description=DESCRIPTION,
     author=AUTHOR,
     author_email=EMAIL,
     url=URL,
     download_url=DOWNLOAD_URL,
     license=LICENSE,
-    
+
     cmdclass={'build_scripts': BuildScripts,
               'build': Build,
               'install': Install,
@@ -170,11 +170,11 @@ setup(
     install_requires = [
         "TurboGears[future] >= 1.0",
         "TurboMail",
-        "python_fedora >= 0.2.99.7",
+        "python_fedora >= 0.3",
         "SQLAlchemy >= 0.4alpha",
     ],
     scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo",
-        "server-scripts/pkgdb-sync-bugzilla"],
+        "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status"],
     zip_safe=False,
     packages=find_packages(),
     package_data = find_package_data(where='pkgdb',

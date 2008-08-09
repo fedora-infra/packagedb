@@ -16,32 +16,42 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Author(s): Ionuț Arțăriși <mapleoin@lavabit.com>
+# Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #            Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
 Controller to search for packages and eventually users.
 '''
 
-import sqlalchemy
-from sqlalchemy.sql import func, and_
+#
+# Pylint Explanations
+#
 
-from turbogears import controllers, expose, validate, paginate
+# :E1101: SQLAlchemy monkey patches the mapper classes with the database fields
+#   so we have to diable this all over.
+# :E1103: Since pylint doesn't know about the query method of the mapped
+#   classes, it doesn't know what type is returned.  Because of that it doesn't
+#   know that we have a filter() method on the returned type.
+
+from sqlalchemy.sql import func, and_, select
+
+from turbogears import controllers, expose, validate, paginate, redirect, \
+        config
 from turbogears.validators import Int
 
-from pkgdb import model
+from pkgdb.model import Collection, PackageListing, Package
 
 class Search(controllers.Controller):
     '''Controller for searching the pkgdb.
     '''
-    def __init__(self, fas, appTitle):
+    def __init__(self, fas, app_title):
         '''Create a Search Controller.
 
         :fas: Fedora Account System object.
-        :appTitle: Title of the web app.
+        :app_title: Title of the web app.
         '''
         self.fas = fas
-        self.appTitle = appTitle
+        self.app_title = app_title
 
     @expose(template='pkgdb.templates.advancedsearch', allow_json=True)
     def index(self):
@@ -49,11 +59,13 @@ class Search(controllers.Controller):
 
            Provides a form with multiple fields for a comprehensive package
            search.
-        '''  
+        '''
+        # pylint: disable-msg=E1101
         # a little helper so we don't have to write/update form selects manually
-        releases = sqlalchemy.select([model.Collection.id,
-                    model.Collection.name, model.Collection.version]).execute()
-        return dict(title=self.appTitle + ' -- Advanced Search',
+        releases = select([Collection.id,
+                    Collection.name, Collection.version]).execute()
+        # pylint: enable-msg=E1101
+        return dict(title=self.app_title + ' -- Advanced Search',
                     releases=releases)
 
     @expose(template='pkgdb.templates.search', allow_json=True)
@@ -87,86 +99,95 @@ class Search(controllers.Controller):
            both
            :operator: can be either 'AND' or 'OR'
         '''
+        # pylint: disable-msg=E1101
+
+        if searchwords == '' or searchwords.isspace():
+            raise redirect(config.get('base_url_filter.base_url') + '/search/')
+
         # case insensitive
         query = searchwords.lower() 
 
+        descriptions, names, exact = [], [], []
         if operator == 'OR':
             query = query.split()  # -> list
-            descriptions, names, exact = [], [], []
             for searchword in query:
                 if searchon == 'description':
-                    descriptions += model.PackageListing.query.filter(and_(
-                        model.PackageListing.packageid==model.Package.id,
-                            func.lower(model.Package.description).like(
+                    descriptions += PackageListing.query.filter(and_(
+                        PackageListing.packageid==Package.id,
+                            func.lower(Package.description).like(
                                 '%'+searchword+'%')))
                 elif searchon in ['name', 'both']:
-                    exact += model.PackageListing.query.filter(and_(
-                            model.PackageListing.packageid==model.Package.id,
-                                func.lower(model.Package.name).like(
+                    exact += PackageListing.query.filter(and_(
+                            PackageListing.packageid==Package.id,
+                                func.lower(Package.name).like(
                                     searchword)))
-                    names += model.PackageListing.query.filter(and_(
-                        model.PackageListing.packageid==model.Package.id,
-                            func.lower(model.Package.name).like(
+                    names += PackageListing.query.filter(and_(
+                        PackageListing.packageid==Package.id,
+                            func.lower(Package.name).like(
                                 '%'+searchword+'%')))
                     if searchon == 'both':
-                        descriptions += model.PackageListing.query.filter(and_(
-                            model.PackageListing.packageid==model.Package.id,
-                                func.lower(model.Package.description).like(
+                        descriptions += PackageListing.query.filter(and_(
+                            PackageListing.packageid==Package.id,
+                                func.lower(Package.description).like(
                                     '%'+searchword+'%')))
 
         else:      # AND operator
-            descriptions, names, exact = [], [], [] 
             if searchon in ['name', 'both']: 
-                exact = model.PackageListing.query.filter(and_(
-                    model.PackageListing.packageid==model.Package.id,
-                             func.lower(model.Package.name).like(query))).all()
+                exact = PackageListing.query.filter(and_(
+                    PackageListing.packageid==Package.id,
+                             func.lower(Package.name).like(query))).all()
                 # query the DB for every searchword and build a Query object
                 # to filter succesively
                 query = query.split()
-                names = model.PackageListing.query.filter(and_(
-                            model.PackageListing.packageid==model.Package.id,
-                                func.lower(model.Package.name).like(
+                names = PackageListing.query.filter(and_(
+                            PackageListing.packageid==Package.id,
+                                func.lower(Package.name).like(
+
                                     '%' + query[0] + '%')))
                 for searchword in query:
-                    names = names.filter(func.lower(model.Package.name).like(
+                    # pylint: disable-msg=E1103
+                    names = names.filter(func.lower(Package.name).like(
                                             '%' + searchword + '%'))
                 names = names.all()
- 
                 if searchon == 'both':
-                    descriptions = model.PackageListing.query.filter(and_(
-                        model.PackageListing.packageid==model.Package.id,
-                        func.lower(model.Package.description).like(
+                    descriptions = PackageListing.query.filter(and_(
+                        PackageListing.packageid==Package.id,
+                        func.lower(Package.description).like(
                             '%' + query[0] + '%')))
                     for searchword in query:
+                        # pylint: disable-msg=E1103
                         descriptions = descriptions.filter(
-                                func.lower(model.Package.description).like(
+                                func.lower(Package.description).like(
                                     '%' + searchword + '%'))
                     descriptions = descriptions.all()
+
             elif searchon == 'description':
                 query = query.split()
-                descriptions = model.PackageListing.query.filter(and_(
-                    model.PackageListing.packageid==model.Package.id,
-                        func.lower(model.Package.description).like(
+                descriptions = PackageListing.query.filter(and_(
+                    PackageListing.packageid==Package.id,
+                        func.lower(Package.description).like(
                            '%' + query[0] + '%')))
                 for searchword in query:
+                    # pylint: disable-msg=E1103
                     descriptions = descriptions.filter(
-                            func.lower(model.Package.description).like(
+                            func.lower(Package.description).like(
                                 '%' + searchword + '%'))
                 descriptions = descriptions.all()
 
         # Return a list of all packages but keeping the order
-        s = set()   # order and remove duplicates
+        unique_pkgs = set()   # order and remove duplicates
         packages = []
+
         for pkgl in exact + names + descriptions:
-            if pkgl.package not in s:
+            if pkgl.package not in unique_pkgs:
                 if (not release) or (pkgl.collectionid == release):
-                    s.add(pkgl.package)
+                    unique_pkgs.add(pkgl.package)
                     packages.append(pkgl.package)
         count = len(packages)
 
         collections = {} # build a dict of all the available releases
                          # branchnames as keys and string ids as values
-        for coll in model.Collection.query.all():
+        for coll in Collection.query.all(): # pylint: disable-msg=E1101
             collections[coll.branchname] = str(coll.id)
             if coll.id == release:
                 release = '%s %s' % (coll.name, coll.version)
@@ -176,7 +197,7 @@ class Search(controllers.Controller):
             release = 'all'
 
         return dict(title='%s -- Search packages for: %s' %
-                (self.appTitle, searchwords),
+                (self.app_title, searchwords),
                    query=searchwords,
                    packages=packages,
                    count=count,
