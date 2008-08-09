@@ -3,7 +3,7 @@ include start-pkgdb.in
 exclude start-pkgdb
 include server-scripts/*.in
 exclude server-scripts/pkgdb-sync-repo
-include AUTHORS README COPYING ChangeLog
+include AUTHORS README COPYING ChangeLog NEWS
 include *.cfg
 include pkgdb/templates/*.html
 include pkgdb/templates/plain/*.txt
