@@ -229,8 +229,8 @@ TODO='Not yet implemented'
           </tr>
       </div> <!--! here ends the pkgl def declaration -->
         <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
-            <table py:when="pkg.ownerid==9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist-orphan'}">${pkgl()}</table>
-            <table py:when="pkg.ownerid!=9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist-owned'}">${pkgl()}</table>
+            <table py:when="pkg.ownerid==9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
+            <table py:when="pkg.ownerid!=9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
         </div>
     </form>
   </body>
