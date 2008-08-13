@@ -155,8 +155,17 @@ function make_request(action, callback, errback, event) {
         var url = form.action + action;
     }
 
-    var req = loadJSONDoc(url,
-            {'containerId': requestContainer.getAttribute('name')});
+    if (url[url.length -1] == '/' && 
+            requestContainer.getAttribute('name')[0] == '/') {
+        url = url + requestContainer.getAttribute('name').slice(1);
+    } else if (url[url.length -1] != '/' &&
+            requestContainer.getAttribute('name')[0] != '/') {
+        url = url + '/' + requestContainer.getAttribute('name').slice(1);
+    } else {
+        url = url + requestContainer.getAttribute('name');
+    }
+
+    var req = loadJSONDoc(url);
     if (callback !== null) {
         req.addCallback(partial(callback, requestContainer));
     }
@@ -165,7 +174,7 @@ function make_request(action, callback, errback, event) {
     }
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-    logDebug(url+'?'+queryString({'containerId': requestContainer.getAttribute('name')}));
+    logDebug(url);
 }
 
 /* Initialize the spinner */
