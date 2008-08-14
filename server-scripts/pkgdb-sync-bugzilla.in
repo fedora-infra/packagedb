@@ -35,7 +35,7 @@ import codecs
 from email.Message import Message
 import smtplib
 
-from fedora.accounts.fas2 import AccountSystem
+from fedora.client.fas2 import AccountSystem
 
 # Set this to the production bugzilla account when we're ready to go live
 BZSERVER = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi'
@@ -48,7 +48,7 @@ BZPASS='<%= bzAdminPassword %>'
 FASURL='https://admin.fedoraproject.org/accounts/'
 FASUSER='systems'
 FASPASS='<%= systemsUserPassword %>'
-
+NOTIFYEMAIL='<%= notifyEmail %>'
 PKGDBSERVER = 'https://admin.fedoraproject.org/pkgdb/acls/bugzilla/?tg_format=json'
 
 # Set this to False when we're ready to run it against the bz database
@@ -72,7 +72,8 @@ class Bugzilla(object):
         self.server = xmlrpclib.Server(bzServer)
 
         # Connect to the fedora account system
-        self.fas = AccountSystem(FASURL, FASUSER, FASPASS)
+        self.fas = AccountSystem(base_url=FASURL, username=FASUSER,
+                password=FASPASS)
 
     def _get_bugzilla_email(self, username):
         '''Return the bugzilla email address for a user.
@@ -202,6 +203,7 @@ class Bugzilla(object):
                         raise
         else:
             # Add component
+            owner = self._get_bugzilla_email(owner).lower()
             if qacontact:
                 qacontact = self._get_bugzilla_email(qacontact)
             else:
@@ -296,7 +298,7 @@ Sync package information from the package database to bugzilla.
     if errors:
         #print '[DEBUG]', '\n'.join(errors)
         send_email('accounts@fedoraproject.org',
-                'a.badger@gmail.com',
+                NOTIFYEMAIL,
                 'Errors while syncing bugzilla with the PackageDB',
 '''
 The following errors were encountered while updating bugzilla with information
