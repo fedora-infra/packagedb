@@ -160,7 +160,7 @@ function make_request(action, callback, errback, event) {
         url = url + requestContainer.getAttribute('name').slice(1);
     } else if (url[url.length -1] != '/' &&
             requestContainer.getAttribute('name')[0] != '/') {
-        url = url + '/' + requestContainer.getAttribute('name').slice(1);
+        url = url + '/' + requestContainer.getAttribute('name');
     } else {
         url = url + requestContainer.getAttribute('name');
     }
