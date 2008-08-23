@@ -3,8 +3,20 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 8 Aug 2008
-:Version: 0.3.7
+:Date: 22 Aug 2008
+:Version: 0.3.8
+
+-----
+0.3.8
+-----
+
+Bug Fixes
+=========
+
+* Checkbox to open acls to uberpackager group was checked anytime the page
+  was reloaded.
+* Error when orphaning or taking ownership of a package.
+* Unable to approve acls on a package.
 
 -----
 0.3.7
