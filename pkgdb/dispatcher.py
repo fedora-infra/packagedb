@@ -414,7 +414,7 @@ class PackageDispatcher(controllers.Controller):
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = ORPHAN_ID
-            pkg.statuscode = self.orphanedStatus
+            pkg.statuscode = self.orphanedStatus.statuscodeid
             pkg.statuschange = datetime.now(pkg.statuschange.tzinfo)
             owner_name = 'Orphaned Package (orphan)'
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
@@ -911,6 +911,7 @@ class PackageDispatcher(controllers.Controller):
             # An error was generated
             return dict(status=False,
                     message='Unable to set shouldopen on Package %s' % pkg_name)
+
         return dict(status=True, shouldopen=pkg.shouldopen)
 
     def _user_in_approveacls(self, pkg):

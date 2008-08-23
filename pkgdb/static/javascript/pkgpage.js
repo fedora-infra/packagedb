@@ -430,13 +430,13 @@ function request_status_change(event) {
     var idParts = requestContainer.getAttribute('name').split(':');
 
     var req = loadJSONDoc(base + '/set_acl_status', {'pkgid': idParts[0],
-            'personid': personid, 'newAcl': idParts[1],
+            'personid': personid, 'new_acl': idParts[1],
             'statusname': aclStatus});
     req.addCallback(partial(check_acl_status, requestContainer));
     req.addErrback(partial(revert_acl_status, requestContainer));
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'newAcl':idParts[1],'statusname':aclStatus}));
+    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'new_acl':idParts[1],'statusname':aclStatus}));
 }
 
 /*
