@@ -16,7 +16,7 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+# Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
 sync information from the packagedb into bugzilla
@@ -46,36 +46,16 @@ from turbogears import config
 turbogears.update_config(configfile = "/etc/pkgdb-sync-bugzilla.cfg")
 from turbogears.database import session
 
-BZSERVER = config.get('bugzilla.url', 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi')
+BZSERVER = config.get('bugzilla.url',
+        'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi')
 BZUSER = config.get('bugzilla.username')
 BZPASS = config.get('bugzilla.password')
 FASURL = config.get('fas.url')
 FASUSER = config.get('fas.username')
 FASPASS = config.get('fas.passsword')
 NOTIFYEMAIL = config.get('notify.email')
-PKGDBSERVER = config.get('dbserver.url')
-DRY_RUN = config.get('set.debug', 'False')
-
-# Start of changes for move to config file
-
-# Set this to the production bugzilla account when we're ready to go live
-#BZSERVER = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi'
-#BZSERVER = 'https://bugzilla.redhat.com/xmlrpc.cgi'
-#BZSERVER = 'https://bzprx.vip.phx.redhat.com/xmlrpc.cgi'
-#BZUSER='<%= bzAdminUser %>'
-#BZPASS='<%= bzAdminPassword %>'
-
-# Set this to the production fas account when we're ready to go live
-#FASURL='https://admin.fedoraproject.org/accounts/'
-#FASUSER='systems'
-#FASPASS='<%= systemsUserPassword %>'
-#NOTIFYEMAIL='<%= notifyEmail %>'
-#PKGDBSERVER = 'https://admin.fedoraproject.org/pkgdb/acls/bugzilla/?tg_format=json'
-
-# Set this to False when we're ready to run it against the bz database
-#DRY_RUN = True
-
-# End of changes for move to config file
+PKGDBSERVER = config.get('pkgdbserver.url')
+DRY_RUN = config.get('debug', 'False')
 
 class DataChangedError(Exception):
     '''Raised when data we are manipulating changes while we're modifying it.'''
