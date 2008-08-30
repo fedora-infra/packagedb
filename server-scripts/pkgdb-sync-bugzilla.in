@@ -17,6 +17,7 @@
 # permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+#         Author(s): Mike Watters <valholla75@gmail.com>
 #
 '''
 sync information from the packagedb into bugzilla
