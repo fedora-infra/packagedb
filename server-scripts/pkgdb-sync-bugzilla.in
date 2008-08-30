@@ -52,7 +52,7 @@ BZUSER = config.get('bugzilla.username')
 BZPASS = config.get('bugzilla.password')
 FASURL = config.get('fas.url')
 FASUSER = config.get('fas.username')
-FASPASS = config.get('fas.passsword')
+FASPASS = config.get('fas.password')
 NOTIFYEMAIL = config.get('notify.email')
 PKGDBSERVER = config.get('pkgdbserver.url')
 DRY_RUN = config.get('debug', 'False')
@@ -104,7 +104,7 @@ class Bugzilla(object):
                     cclist['people']]
         # Add owner to the cclist so comaintainers taking over a bug don't
         # have to do this manually
-        owner = self._get_bugzilla_email(owner).lower()
+        owner = self._get_bugzilla_email(owner)
         if owner not in initialCCList:
             initialCCList.append(owner)
 
@@ -177,7 +177,7 @@ class Bugzilla(object):
                     if ccMember not in initialCCList:
                         data['initialcclist'] = initialCCList
                         break
-                    
+
             if data:
                 ### FIXME: initialowner has been made mandatory for some
                 # reason.  Asking dkl why.
@@ -206,7 +206,7 @@ class Bugzilla(object):
                         raise
         else:
             # Add component
-            owner = self._get_bugzilla_email(owner).lower()
+            owner = self._get_bugzilla_email(owner)
             if qacontact:
                 qacontact = self._get_bugzilla_email(qacontact)
             else:
