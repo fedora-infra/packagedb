@@ -8,5 +8,6 @@
   Infrastructure Group.
 * Ricky Zhou <ricky@fedoraproject.org> made the whole thing fit in with the
   rest of the Fedora websites.
+* Mike Watters <valholla75@gmail.com> converted scripts to use config files
 * Fedora Infrastructure Group <fedora-infrastructure-list@redhat.com>
   #fedora-admin on irc.freenode.net
