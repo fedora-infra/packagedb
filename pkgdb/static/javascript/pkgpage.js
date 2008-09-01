@@ -181,12 +181,14 @@ function toggle_owner(ownerDiv, data) {
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
         ownerButton.setAttribute('value', 'Take Ownership');
         set_acl_approval_box(aclTable, false);
+        /** FIXME: Need to find the Status box and update it as well */
     } else {
         /* Show the new owner information */
         swapElementClass(ownerDiv, 'orphaned', 'owned');
         swapElementClass(ownerButton, 'unorphanButton', 'orphanButton');
         ownerButton.setAttribute('value', 'Release Ownership');
         set_acl_approval_box(aclTable, true, data['aclStatusFields']);
+        /** FIXME: Need to find the Status box and update it as well */
     }
     var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
     var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
