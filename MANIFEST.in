@@ -4,7 +4,7 @@ exclude start-pkgdb
 include server-scripts/*.in
 exclude server-scripts/pkgdb-sync-repo
 include AUTHORS README COPYING ChangeLog NEWS
-include *.cfg
+include *.cfg.sample
 include pkgdb/templates/*.html
 include pkgdb/templates/plain/*.txt
 include pkgdb/config/*.cfg
