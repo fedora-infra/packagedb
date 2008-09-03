@@ -32,7 +32,7 @@ import os
 import optparse
 import getpass
 
-from fedora.client import BaseClient, AuthError, PackageDBClient
+from fedora.client import BaseClient, AuthError, PackageDB
 
 import turbogears
 from turbogears import config
