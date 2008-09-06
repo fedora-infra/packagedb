@@ -39,12 +39,18 @@ configspec = '''
     pkgdb.retries = integer(default = 5)
     pkgdb.knowngroups = list(default = list())
 '''.splitlines()
-turbogears.update_config(configfile = "/etc/pkgdb-client.cfg")
-from turbogears.database import session
 
-PACKAGEDBURL = config.get('pkgdb.url', 'https://admin.fedoraproject.org/pkgdb')
-RETRIES = config.get('pkgdb.retries')
-KNOWNGROUPS = config.get('pkgdb.knowngroups')
+cfg = ConfigObj('/etc/pkgdb-client.cfg', configspec = configspec)
+res = cfg.validate(vldtr, preserve_errors=True)
+
+for entry in flatten_errors(cfg, res):
+    section_list, key, error = entry
+    if error == False:
+        restore_default(key)
+
+PACKAGEDBURL = cfg['global']['pkgdb.url']
+RETRIES = cfg['global']['pkgdb.retries']
+KNOWNGROUPS = cfg['global']['pkgdb.knowngroups']
 
 class ArgumentsError(Exception):
     pass
