@@ -25,9 +25,6 @@ sync information from the packagedb into bugzilla
 This short script takes information about package onwership and imports it
 into bugzilla.
 '''
-__requires__ = 'TurboGears'
-import pkg_resources
-pkg_resources.require('CherryPy >= 2.0, < 3.0alpha')
 
 import sys
 import os
@@ -36,27 +33,42 @@ import xmlrpclib
 import simplejson
 import urllib2
 import codecs
-from email.Message import Message
-
 import smtplib
+from configobj import ConfigObj, flatten_errors
+from email.Message import Message
 from fedora.client.fas2 import AccountSystem
+from validate import Validator
 
-import turbogears
-from turbogears import config
+vldtr = Validator()
+# configspec to set default values and validate types
+configspec = '''
+[global]
+    bugzilla.url = string(default = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi')
+    bugzilla.username = string(default = '')
+    bugzilla.password = string(default = '')
+    fas.url = string(default = '')
+    fas.username = string(default = '')
+    fas.password = string(default = '')
+    notify.email = string(default = '')
+    debug = boolean(default = 'False')
+'''
+cfg = ConfigObj('/etc/pkgdb-sync-bugzilla.cfg', configspec = configspec)
+res = cfg.validate(vldtr, preserve_errors=True)
 
-turbogears.update_config(configfile = "/etc/pkgdb-sync-bugzilla.cfg")
-from turbogears.database import session
+for entry in flatten_errors(cfg, res):
+    section_list, key, error = entry
+    if error == False:
+        restore_default(key)
 
-BZSERVER = config.get('bugzilla.url',
-        'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi')
-BZUSER = config.get('bugzilla.username')
-BZPASS = config.get('bugzilla.password')
-FASURL = config.get('fas.url')
-FASUSER = config.get('fas.username')
-FASPASS = config.get('fas.password')
-NOTIFYEMAIL = config.get('notify.email')
-PKGDBSERVER = config.get('pkgdbserver.url')
-DRY_RUN = config.get('debug', 'False')
+BZSERVER = cfg['global']['bugzilla.url']
+BZUSER = cfg['global']['bugzilla.username']
+BZPASS = cfg['global']['bugzilla.password']
+FASURL = cfg['global']['fas.url']
+FASUSER = cfg['global']['fas.username']
+FASPASS = cfg['global']['fas.password']
+NOTIFYEMAIL = cfg['global']['notify.email']
+PKGDBSERVER = cfg['global']['pkgdbserver.url']
+DRY_RUN = cfg['global']['debug']
 
 class DataChangedError(Exception):
     '''Raised when data we are manipulating changes while we're modifying it.'''
