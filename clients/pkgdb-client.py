@@ -22,10 +22,6 @@
 
 __version__ = '0.3'
 
-__requires__ = 'TurboGears'
-
-import pkg_resources
-pkg_resources.require('CherryPy >= 2.0, < 3.0alpha')
 
 import sys
 import os
@@ -33,10 +29,16 @@ import optparse
 import getpass
 
 from fedora.client import BaseClient, AuthError, PackageDB
-
-import turbogears
-from turbogears import config
-
+from configobj import ConfigObj, flatten_errors
+from validate import Validator
+vldtr = Validator()
+# configspec to validate types and set defaults
+configspec = '''
+[global]
+    pkgdb.url = string(default = 'https://admin.fedoraproject.org/pkgdb')
+    pkgdb.retries = integer(default = 5)
+    pkgdb.knowngroups = list(default = list())
+'''.splitlines()
 turbogears.update_config(configfile = "/etc/pkgdb-client.cfg")
 from turbogears.database import session
 

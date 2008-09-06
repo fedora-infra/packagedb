@@ -51,7 +51,7 @@ configspec = '''
     fas.password = string(default = '')
     notify.email = string(default = '')
     debug = boolean(default = 'False')
-'''
+'''.splitlines()
 cfg = ConfigObj('/etc/pkgdb-sync-bugzilla.cfg', configspec = configspec)
 res = cfg.validate(vldtr, preserve_errors=True)
 
