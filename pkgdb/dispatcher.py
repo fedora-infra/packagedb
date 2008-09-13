@@ -773,17 +773,25 @@ class PackageDispatcher(controllers.Controller):
         changed_acls = ()
 
         for group in ('packager', 'uberpackager'):
+            # Create the group => packagelisting association
             group_pkg_listing = GroupPackageListing(self.groups[group])
             group_pkg_listing.packagelisting = pkg_listing
-            group_commit_acl = GroupPackageListingAcl('commit',
-                    self.approvedStatus.statuscodeid)
-            group_commit_acl.grouppackagelisting = group_pkg_listing
-            group_build_acl = GroupPackageListingAcl('build',
-                    self.approvedStatus.statuscodeid)
-            group_build_acl.grouppackagelisting = group_pkg_listing
+
+            # Everyone has checkout
             group_checkout_acl = GroupPackageListingAcl('checkout',
                     self.approvedStatus.statuscodeid)
+            # Not everyone has commit and build by default
+            if group == 'uberpackager':
+                statuscode = self.approvedStatus.statuscodeid
+            else:
+                statuscode = self.obsoleteStatus.statuscodeid
+            group_commit_acl = GroupPackageListingAcl('commit', statuscode)
+            group_build_acl = GroupPackageListingAcl('build', statuscode)
+
             group_checkout_acl.grouppackagelisting = group_pkg_listing
+            group_commit_acl.grouppackagelisting = group_pkg_listing
+            group_build_acl.grouppackagelisting = group_pkg_listing
+
             changed_acls += (group_commit_acl, group_build_acl,
                     group_checkout_acl)
         # pylint: enable-msg=W0201
@@ -1028,22 +1036,31 @@ class PackageDispatcher(controllers.Controller):
                         pkg_listing.package = pkg
                         pkg_listing.collection = collection
                         for group in ('packager', 'uberpackager'):
+                            # Create the group => packagelisting association
                             group_pkg_listing = GroupPackageListing(
                                     self.groups[group])
                             group_pkg_listing.packagelisting = pkg_listing
-                            group_commit_acl = GroupPackageListingAcl('commit',
-                                    self.approvedStatus.statuscodeid)
-                            group_commit_acl.grouppackagelisting \
-                                    = group_pkg_listing
-                            group_build_acl = GroupPackageListingAcl('build',
-                                    self.approvedStatus.statuscodeid)
-                            group_build_acl.grouppackagelisting \
-                                    = group_pkg_listing
+
+                            # Everyone has checkout
                             group_checkout_acl = GroupPackageListingAcl(
                                     'checkout',
                                     self.approvedStatus.statuscodeid)
+                            # Not everyone has commit and build by default
+                            if group == 'uberpackager':
+                                statuscode = self.approvedStatus.statuscodeid
+                            else:
+                                statuscode = self.obsoleteStatus.statuscodeid
+                            group_commit_acl = GroupPackageListingAcl('commit',
+                                    statuscode)
+                            group_build_acl = GroupPackageListingAcl('build',
+                                    statuscode)
+
                             group_checkout_acl.grouppackagelisting = \
                                     group_pkg_listing
+                            group_commit_acl.grouppackagelisting \
+                                    = group_pkg_listing
+                            group_build_acl.grouppackagelisting \
+                                    = group_pkg_listing
 
                         log_msg = '%s added a %s %s branch for %s' % (
                                 identity.current.user_name,
