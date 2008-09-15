@@ -157,9 +157,12 @@ if __name__ == '__main__':
                             comaintainers=options.comaintList,
                             groups=options.groups)
                 else:
-                    pkgdb.add_edit_package(package, options.owner,
-                            options.description, options.branchList,
-                            options.ccList, options.comaintList, options.groups)
+                    pkgdb.add_edit_package(package, owner=options.owner,
+                            description=options.description,
+                            branches=options.branchList,
+                            cc_list=options.ccList,
+                            comaintainers=options.comaintList,
+                            groups=options.groups)
             except AuthError, e:
                 if sys.stdin.isatty():
                     if retry >= RETRIES:
