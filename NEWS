@@ -17,6 +17,8 @@ Bug Fixes
   was reloaded.
 * Error when orphaning or taking ownership of a package.
 * Unable to approve acls on a package.
+* Bugzilla sync script porting by Mike Watters
+* pkgdb-client administrative script added
 
 -----
 0.3.7
