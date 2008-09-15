@@ -3,17 +3,14 @@ fas.url = 'https://admin.fedoraproject.org/accounts/'
 fas.username = 'user'
 fas.password = 'password'
 
-# The directory in which the pkgdb module is installed
-pkgdb.basedir='/usr/share/fedora-packagedb'
-
 # Public URL for bugzilla.  It's the base of all our bugzilla addresses
 bugzilla.url='https://bugzilla.redhat.com/'
 # If our internal queries have to go to a different bugzilla address, set this.
 # Data returned with this URL will be rewritten to the public URL before
 # display.
-#bugzilla.queryurl='https://bugzilla.redhat.com/'
+#bugzilla.queryurl='https://bzprx.vip.phx.redhat.com'
 
-email.recipients=('packager-list@localhost')
+email.recipients=('packager-list@localhost',)
 email.sender=('PackageDB', 'pkgdb@localhost')
 
 # TurboMail settings
@@ -29,17 +26,18 @@ sqlalchemy.dburi="postgres://pkgdbadmin:bunbunbun@localhost/pkgdb"
 # set to 1 to make SQLAlchemy echo SQL commands on the console
 sqlalchemy.echo = 0
 
-server.thread_pool=50
-server.socket_queue_size=30
 sqlalchemy.pool_size=5
 sqlalchemy.max_overflow=21
 
 # SERVER
 
 # Some server parameters that you may want to tweak
-server.socket_port=8080
+server.socket_port=8086
 server.socket_host="localhost"
 server.webpath="/pkgdb"
+
+server.thread_pool=50
+server.socket_queue_size=30
 
 base_url_filter.on = True
 base_url_filter.use_x_forwarded_host = True
@@ -75,21 +73,21 @@ format='*(asctime)s *(name)s *(levelname)s *(message)s'
 
 [[handlers]]
 [[[cron_out]]]
-args="('/var/log/pkgdb/cron.log', 'D', 7)"
+args="('/var/log/pkgdb/cron.log', 'D', 2)"
 class='TimedRotatingFileHandler'
 level='DEBUG'
 formatter='full_content'
 
 [[[debug_out]]]
 class='TimedRotatingFileHandler'
-args="('/var/log/pkgdb/server.log', 'D', 7)"
+args="('/var/log/pkgdb/server.log', 'D', 2)"
 level='DEBUG'
 formatter='full_content'
 
 [[[access_out]]]
 class='TimedRotatingFileHandler'
 level='INFO'
-args="('/var/log/pkgdb/access.log', 'D', 7)"
+args="('/var/log/pkgdb/access.log', 'D', 2)"
 formatter='message_only'
 
 [[[error_out]]]
