@@ -87,22 +87,31 @@ web interface will use the pkgdbadmin user.  Other scripts which only read from
 the database can use the pkgdbreadonly user to read information only::
 
   sudo /etc/init.d/postgresql start
-  sudo -u postgres createuser -P -E pkgdbadmin
-  sudo -u postgres createuser -P -E pkgdbreadonly
+  sudo -u postgres createuser -SDRPE pkgdbadmin
+  sudo -u postgres createuser -SDRPE pkgdbreadonly
+
+Note:: If you don't have sudo, you can use su - instead::
+
+  su -
+  /etc/init.d/postgresql start
+  su - postgres
+  createuser -SDRPE pkgdbadmin
+  createuser -SDRPE pkgdbreadonly
 
 Get some test data and import it into the database.  You want to grab the most
 recent dump from http://fedorahosted.org/releases/p/a/packagedb like this::
   wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20080808.dump.bz2
-  bzcat pkgdb-20080422.dump.bz2 | sudo -u postgres psql
+  bzcat pkgdb-20080808.dump.bz2 | sudo -u postgres psql
 
 Your postgres server is now all set.
 
 Start the Server
 ~~~~~~~~~~~~~~~~
-First you need to configure the server to see your database.  You'll need to
-set fas.username to a username (your Fedora Account System username will work),
-fas.password (if you use your username, your password will work), and
-sqlalchemy.dburi.  The dburi line will be something like this::
+First copy the fas.cfg.sample file to fas.cfg.  Next, edit fas.cfg to configure
+the server to see your database.  You'll need to set fas.username to a
+username (your Fedora Account System username will work), fas.password (if you
+use your username, your password will work), and sqlalchemy.dburi.  The dburi
+line will be something like this::
 
   sqlalchemy.dburi="postgres://pkgdbadmin:testpassword@localhost/pkgdb"
 
