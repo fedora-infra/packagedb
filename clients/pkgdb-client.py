@@ -151,9 +151,11 @@ if __name__ == '__main__':
             try:
                 if options.masterBranch:
                     pkgdb.clone_branch(package, options.masterBranch,
-                            options.owner, options.description,
-                            options.branchList, options.ccList,
-                            options.comaintList, options.groups)
+                            options.branchList, owner=options.owner,
+                            description=options.description,
+                            cc_list=options.ccList,
+                            comaintainers=options.comaintList,
+                            groups=options.groups)
                 else:
                     pkgdb.add_edit_package(package, options.owner,
                             options.description, options.branchList,
