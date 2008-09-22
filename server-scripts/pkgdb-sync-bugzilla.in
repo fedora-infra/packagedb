@@ -219,7 +219,6 @@ class Bugzilla(object):
                         raise
         else:
             # Add component
-            owner = self._get_bugzilla_email(owner)
             if qacontact:
                 qacontact = self._get_bugzilla_email(qacontact)
             else:
