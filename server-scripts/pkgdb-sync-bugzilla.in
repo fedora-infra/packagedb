@@ -150,7 +150,8 @@ class Bugzilla(object):
             # This allows us to check in a case insensitive manner for the
             # package.
             for record in components:
-                record['component'] = unicode(record['component'], 'utf-8')
+                if not isinstance(record['component'], unicode):
+                    record['component'] = unicode(record['component'], 'utf-8')
                 try:
                     record['description'] = unicode(record['description'], 'utf-8')
                 except TypeError:
@@ -202,10 +203,11 @@ class Bugzilla(object):
                 if DRY_RUN:
                     print '[EDITCOMP] Changing via editComponent(%s, %s, "xxxxx")' % (
                             data, self.username)
-                    print '[EDITCOMP] Former values: %s|%s|%s' % (
+                    print '[EDITCOMP] Former values: %s|%s|%s|%s' % (
                             product[pkgKey]['initialowner'],
                             product[pkgKey]['description'],
-                            product[pkgKey]['initialqacontact'])
+                            product[pkgKey]['initialqacontact'],
+                            product[pkgKey]['initialcclist'])
                 else:
                     try:
                         self.server.bugzilla.editComponent(data, self.username,
