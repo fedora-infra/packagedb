@@ -14,3 +14,4 @@ include pkgdb/static/images/*
 include pkgdb/static/images/spinner/*
 include fedora-packagedb.spec
 include yum.repos.d/*
+include clients/*

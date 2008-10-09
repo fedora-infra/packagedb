@@ -10,6 +10,11 @@ NEWS
 0.3.8
 -----
 
+Enhancements
+============
+
+* Transition from packager to uberpackager group for access.
+
 Bug Fixes
 =========
 
