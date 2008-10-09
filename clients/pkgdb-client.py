@@ -144,9 +144,14 @@ if __name__ == '__main__':
     # line option
     password = getpass.getpass('PackageDB Password:')
     pkgdb = PackageDB(PACKAGEDBURL, username=options.username,
-            password=password)
+            password=password, debug=True)
     failedPackages = {}
     for package in options.packages:
+        # Reformat groups to be added
+        group_dict = {}
+        if options.groups:
+            for group in options.groups:
+                group_dict[group] = True
         for retry in range(0, RETRIES+1):
             try:
                 if options.masterBranch:
@@ -155,20 +160,20 @@ if __name__ == '__main__':
                             description=options.description,
                             cc_list=options.ccList,
                             comaintainers=options.comaintList,
-                            groups=options.groups)
+                            groups=group_dict)
                 else:
                     pkgdb.add_edit_package(package, owner=options.owner,
                             description=options.description,
                             branches=options.branchList,
                             cc_list=options.ccList,
                             comaintainers=options.comaintList,
-                            groups=options.groups)
+                            groups=group_dict)
             except AuthError, e:
                 if sys.stdin.isatty():
                     if retry >= RETRIES:
                         failedPackages[package] = e
                         break
-                    pkgdb.password = getpass.getpass('Password: ')
+                    pkgdb.password = getpass.getpass('PackageDB Password: ')
                 else:
                     if retry > 0:
                         failedPackages[package] = e
