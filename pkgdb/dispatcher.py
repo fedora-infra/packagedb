@@ -67,13 +67,11 @@ class PackageDispatcher(controllers.Controller):
     # Waiting for the cvsextras=>packager rename will make this easier though.
 
     # Create a list of groups that can possibly commit to packages
-    groups = {100300: 'packager',
-            101197: 'cvsadmin',
+    groups = {101197: 'cvsadmin',
             107427: 'uberpackager',
-            'packager': 100300,
             'cvsadmin': 101197,
             'uberpackager': 107427}
-    groupnames = ('packager', 'cvsadmin', 'uberpackager')
+    groupnames = ('cvsadmin', 'uberpackager')
 
     # pylint: disable-msg=E1101
     # Status codes
@@ -406,6 +404,7 @@ class PackageDispatcher(controllers.Controller):
 
             # Take ownership
             pkg.owner = identity.current.user.id
+            pkg.statuscode = self.approvedStatus.statuscodeid
             owner_name = '%s' % identity.current.user_name
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
@@ -414,7 +413,7 @@ class PackageDispatcher(controllers.Controller):
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = ORPHAN_ID
-            pkg.statuscode = self.orphanedStatus
+            pkg.statuscode = self.orphanedStatus.statuscodeid
             pkg.statuschange = datetime.now(pkg.statuschange.tzinfo)
             owner_name = 'Orphaned Package (orphan)'
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
@@ -460,7 +459,7 @@ class PackageDispatcher(controllers.Controller):
         ### FIXME: Changing Obsolete into "" sounds like it should be
         # Pushed out to the view (template) instead of being handled in the
         # controller.
-        
+
         # We are making Obsolete into "" for our interface.  Need to reverse
         # that here.
         if not statusname or not statusname.strip():
@@ -772,7 +771,7 @@ class PackageDispatcher(controllers.Controller):
 
         changed_acls = ()
 
-        for group in ('packager', 'uberpackager'):
+        for group in ('uberpackager',):
             # Create the group => packagelisting association
             group_pkg_listing = GroupPackageListing(self.groups[group])
             group_pkg_listing.packagelisting = pkg_listing
@@ -784,7 +783,7 @@ class PackageDispatcher(controllers.Controller):
             if group == 'uberpackager':
                 statuscode = self.approvedStatus.statuscodeid
             else:
-                statuscode = self.obsoleteStatus.statuscodeid
+                statuscode = self.deniedStatus.statuscodeid
             group_commit_acl = GroupPackageListingAcl('commit', statuscode)
             group_build_acl = GroupPackageListingAcl('build', statuscode)
 
@@ -919,6 +918,7 @@ class PackageDispatcher(controllers.Controller):
             # An error was generated
             return dict(status=False,
                     message='Unable to set shouldopen on Package %s' % pkg_name)
+
         return dict(status=True, shouldopen=pkg.shouldopen)
 
     def _user_in_approveacls(self, pkg):
@@ -1035,7 +1035,7 @@ class PackageDispatcher(controllers.Controller):
                                 self.approvedStatus.statuscodeid)
                         pkg_listing.package = pkg
                         pkg_listing.collection = collection
-                        for group in ('packager', 'uberpackager'):
+                        for group in ('uberpackager',):
                             # Create the group => packagelisting association
                             group_pkg_listing = GroupPackageListing(
                                     self.groups[group])
@@ -1049,7 +1049,7 @@ class PackageDispatcher(controllers.Controller):
                             if group == 'uberpackager':
                                 statuscode = self.approvedStatus.statuscodeid
                             else:
-                                statuscode = self.obsoleteStatus.statuscodeid
+                                statuscode = self.deniedStatus.statuscodeid
                             group_commit_acl = GroupPackageListingAcl('commit',
                                     statuscode)
                             group_build_acl = GroupPackageListingAcl('build',
@@ -1208,19 +1208,23 @@ class PackageDispatcher(controllers.Controller):
             # Change whether the group can commit to cvs.
             group_list = simplejson.loads(changes['groups'])
             for group in group_list:
+                # True means approve commit, False means deny
+                if group_list[group] == True:
+                    status = self.approvedStatus
+                else:
+                    status = self.deniedStatus
+
                 # We don't let every group commit
                 try:
                     group_id = self.groups[group]
                 except KeyError:
+                    if status == self.deniedStatus:
+                        # If we're turning it off we don't have to worry
+                        continue
                     return dict(status=False,
                             message='Group %s is not allowed to commit' % group)
 
                 for pkg_listing in listings:
-                    if group_list[group] == True:
-                        status = self.approvedStatus
-                    else:
-                        status = self.deniedStatus
-
                     group_acl = self._create_or_modify_group_acl(pkg_listing,
                             group_id, 'commit', status)
 

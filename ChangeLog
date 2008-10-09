@@ -1,3 +1,93 @@
+== packagedb 0.3.8 ==
+
+2008-10-09  Toshio Kuratomi <toshio@fedoraproject.org> - r413
+The config file moved.
+
+2008-10-09  Toshio Kuratomi <toshio@fedoraproject.org> - r412
+Updates for the 0.3.8 release.
+
+2008-10-09  Toshio Kuratomi <toshio@fedoraproject.org> - r411
+Changes to hide the packager group.
+
+2008-09-23  Toshio Kuratomi <badger@Clingman> - r410
+Fix a unicode issue.
+
+2008-09-22  Toshio Kuratomi <badger@Clingman> - r409
+Fix for changing usernames to bz email addresses twice.
+
+2008-09-15  Toshio Kuratomi <badger@Clingman> - r408
+Change add_edit_package() call to use kw args.
+
+2008-09-15  Toshio Kuratomi <badger@Clingman> - r407
+Changes so packager is excluded by default but uberpackager is allowed.
+
+2008-09-15  Toshio Kuratomi <badger@Clingman> - r406
+Update for new clone_branch() in python-fedora.
+
+2008-09-15  Toshio Kuratomi <badger@Clingman> - r405
+Some clarifications and update for pkgdb.cfg => pkgdb.cfg.sample rename.
+
+2008-09-15  Toshio Kuratomi <badger@Clingman> - r404
+Add Valholla's work on bz-sync and pkgdb-client.
+
+2008-09-15  Toshio Kuratomi <badger@Clingman> - r403
+Organize a bit better and remove one obsolete option.  This merges everything
+we have in the fedora deployment that is generic.
+
+2008-09-06  Mike Watters <valholla@fedoraproject.org> - r402
+converted pkgdb-client from TurboGears to ConfigObj
+2008-09-06  Mike Watters <valholla@fedoraproject.org> - r401
+forgot to splitline the configspec
+2008-09-06  Mike Watters <valholla@fedoraproject.org> - r400
+Converted from TurboGears to ConfigObj
+2008-09-03  Mike Watters <valholla@fedoraproject.org> - r399
+merge
+2008-09-01  Toshio Kuratomi <badger@Clingman> - r398
+Add the script changes from Mike Watters.
+
+2008-09-01  Toshio Kuratomi <badger@Clingman> - r397
+Distribute the .cfg.sample file instead of pkgdb.cfg.
+
+2008-09-01  Toshio Kuratomi <badger@Clingman> - r396
+* Rename pkgdb.cfg to pkgdb.cfg.sample so people don't commit their fas
+  username nad password by mistake.
+
+2008-09-01  Toshio Kuratomi <badger@Clingman> - r395
+Add a note about a problem in the update.
+
+2008-08-25  Toshio Kuratomi <badger@Clingman> - r394
+* Set package status to Approved when a package is unorphaned.
+
+2008-08-22  Toshio Kuratomi <badger@Clingman> - r393
+Add bugfixes to NEWS.
+
+2008-08-22  Toshio Kuratomi <badger@Clingman> - r392
+* Fix (un)orphaning of packages
+* Fix shouldopen checkbox showing wrong information
+
+2008-08-22  Toshio Kuratomi <badger@Clingman> - r391
+Fix sending the pkg id.
+
+2008-08-13  Toshio Kuratomi <badger@Clingman> - r390
+* Port to python-fedora-0.3.x
+* Sync with some changes in puppet on Fedora Infrastructure.  Need to move
+config values to a config file and then we can run this from the package.
+
+2008-08-13  Toshio Kuratomi <badger@Clingman> - r389
+Fix a bug with the new code being more strict about non-keyword arguments.
+
+2008-08-11  Toshio Kuratomi <badger@Clingman> - r388
+Fix class on the pkglists so the javascript will continue to work.
+
+2008-08-11  Toshio Kuratomi <badger@Clingman> - r387
+Set user/pass to something generic again.
+
+2008-08-09  Toshio Kuratomi <badger@Clingman> - r386
+Update spec file for new release.
+
+2008-08-09  Toshio Kuratomi <badger@Clingman> - r385
+Update for new release.
+
 == packagedb-0.3.7 ==
 2008-08-09  Toshio Kuratomi <badger@Clingman> - r384
 Merge from -stable in preparation for the release.

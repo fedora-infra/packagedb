@@ -37,7 +37,7 @@ TODO='Not yet implemented'
           <div py:attrs="{'name': str(packageListings[0].package.name)}"
             class="requestContainer shouldopen">
             <input type="checkbox" name="shouldopen" class="shouldOpenBox"
-              py:attrs="{'checked': packageListings[0].package.shouldopen}" />
+              py:attrs="{'checked': tg.checker(packageListings[0].package.shouldopen)}" />
           </div>
         </form>
       </td></tr>
@@ -189,7 +189,8 @@ TODO='Not yet implemented'
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.groups" colspan="4"><td colspan="4">
           <table class="groupacls" width="100%">
-            <tr py:for="group in pkg.groups" class="aclgrouprow">
+            <tr py:for="group in pkg.groups" class="aclgrouprow"
+              py:if="group.aclOrder['commit'].status.translations[0].statusname in ('Approved', 'Denied')">
               <td py:content="group.name" class="aclgroup"
                 py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
                 Name
@@ -229,8 +230,8 @@ TODO='Not yet implemented'
           </tr>
       </div> <!--! here ends the pkgl def declaration -->
         <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
-            <table py:when="pkg.ownerid==9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist-orphan'}">${pkgl()}</table>
-            <table py:when="pkg.ownerid!=9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist-owned'}">${pkgl()}</table>
+            <table py:when="pkg.ownerid==9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
+            <table py:when="pkg.ownerid!=9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
         </div>
     </form>
   </body>
