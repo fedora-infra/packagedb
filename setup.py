@@ -150,7 +150,10 @@ class InstallApp(_install_lib, object):
         confdir = self.root + os.path.sep + self.install_conf
         confdir.replace('//','/')
         self.mkpath(confdir)
-        self.copy_file('pkgdb.cfg', confdir)
+        if not os.path.exists('pkgdb.cfg') \
+                and os.path.exists('pkgdb.cfg.sample'):
+            conf_src = 'pkgdb.cfg.sample'
+        self.copy_file(conf_src, os.path.join(confdir, 'pkgdb.cfg'))
 
 setup(
     name=NAME,
