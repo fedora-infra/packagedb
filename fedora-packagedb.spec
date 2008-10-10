@@ -3,7 +3,7 @@
 
 Name:           fedora-packagedb
 Version:        0.3.8
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
 Group:          Development/Languages
@@ -17,7 +17,7 @@ Requires: python-TurboMail
 Requires: python-sqlalchemy >= 0.4
 Requires: python-psycopg2
 Requires: python-genshi
-Requires: python-fedora >= 0.2.99.7
+Requires: python-fedora >= 0.3.7
 Requires: python-bugzilla
 
 BuildRequires: python-devel
@@ -27,6 +27,16 @@ BuildRequires:  python-setuptools-devel
 
 %description
 The Fedora Packagedb tracks who owns a package in the Fedora Collection.
+
+%package clients
+Summary:        Keep track of ownership of packages in Fedora
+Group:          Development/Tools
+License:        GPLv2
+Requires: python-fedora >= 0.3.7
+Requires: python-configobj
+
+%description clients
+Command line script to communicate with the Fedora PackageDB
 
 %prep
 %setup -q
@@ -55,13 +65,23 @@ rm -rf %{buildroot}
 %doc README COPYING AUTHORS NEWS ChangeLog
 %{_datadir}/fedora-packagedb/
 %{_sbindir}/start-pkgdb
-%{_bindir}/*
+%{_bindir}/pkgdb-status
+%{_bindir}/pkgdb-sync-bugzilla
+%{_bindir}/pkgdb-sync-repo
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
+%files clients
+%defattr(-,root,root,-)
+%{_sysconfdir}/pkgdb-client.cfg
+%{_bindir}/pkgdb-client
+
 %changelog
-* Thu Oct 9 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.8-1
-- Update for move from packager to uberpackager
+* Thu Oct 9  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.8-2
+- Install the client
+
+* Thu Oct 9  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.8-1
+- New upstream with bugfixes and packager => uberpackager switch.
 
 * Sat Aug 9  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.7-1
 - New upstream release. Many UI improvements and bugfixes.
