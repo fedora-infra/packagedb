@@ -190,7 +190,7 @@ TODO='Not yet implemented'
         <tr py:if="not tg.identity.anonymous or pkg.groups" colspan="4"><td colspan="4">
           <table class="groupacls" width="100%">
             <tr py:for="group in pkg.groups" class="aclgrouprow"
-              py:if="group.aclOrder['commit'].status.translations[0].statusname in ('Approved', 'Denied')">
+              py:if="group.aclOrder['commit'] and group.aclOrder['commit'].status.translations[0].statusname in ('Approved', 'Denied')">
               <td py:content="group.name" class="aclgroup"
                 py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
                 Name
