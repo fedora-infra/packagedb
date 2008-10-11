@@ -73,6 +73,9 @@ class PackageDispatcher(controllers.Controller):
             'uberpackager': 107427}
     groupnames = ('cvsadmin', 'uberpackager')
 
+    # Groups that a person must be in to own or comaintain a package
+    owner_memberships = ('cvsadmin', 'packager', 'uberpackager')
+
     # pylint: disable-msg=E1101
     # Status codes
     addedStatus = StatusTranslation.query.filter_by(
@@ -238,33 +241,33 @@ class PackageDispatcher(controllers.Controller):
                     # Any pseudo user can be the package owner
                     return True
                 elif [group for group in user['approved_memberships']
-                        if group['name'] in self.groupnames]:
+                        if group['name'] in self.owner_memberships]:
                     # If the user is in a knwon group they are allowed
                     return True
                 raise AclNotAllowedError('%s must be in one of these groups:' \
                         ' %s to own a package' %
-                        (user['username'], self.groupnames))
+                        (user['username'], self.owner_memberships))
             # Anyone in a known group can potentially own the package
-            elif identity.in_any_group(*self.groupnames):
+            elif identity.in_any_group(*self.owner_memberships):
                 return True
             raise AclNotAllowedError(
                     '%s must be in one of these groups: %s to own a package' %
-                    (identity.current.user_name, self.groupnames))
+                    (identity.current.user_name, self.owner_memberships))
 
         # For any other acl, check whether the person is in an allowed group
         if user:
             # If the person isn't in a known group raise an error
             if [group for group in user['approved_memberships']
-                    if group['name'] in self.groupnames]:
+                    if group['name'] in self.owner_membershipss]:
                 return True
             raise AclNotAllowedError(
                     '%s must be in one of these groups: %s to hold the %s acl' %
-                    (user['username'], self.groupnames, acl))
-        elif identity.in_any_group(*self.groupnames):
+                    (user['username'], self.owner_membershipss, acl))
+        elif identity.in_any_group(*self.owner_membershipss):
             return True
         raise AclNotAllowedError(
                 '%s must be in one of these groups: %s to hold the %s acl' %
-                (identity.current.user_name, self.groupnames, acl))
+                (identity.current.user_name, self.owner_membershipss, acl))
 
     def _create_or_modify_acl(self, pkg_listing, person_id, new_acl, status):
         '''Create or modify an acl.
