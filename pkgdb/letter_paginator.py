@@ -30,18 +30,18 @@ from cherrypy import request
 class Letters(controllers.Controller):
     '''Display package lists with letter pagination, search and links
     '''
-    
+
     def __init__(self, app_title=None):
         self.app_title = app_title
         self.removedStatus = model.StatusTranslation.query.filter_by(
                     statusname='Removed', language='C').first().statuscodeid
-        
+
     @expose(template='pkgdb.templates.pkgbugoverview')
     @paginate('packages', default_order='name', limit=100,
                 allow_limit_override=True, max_pages=13)
     def default(self, searchwords=''):
         '''Return a list of all packages in the database.
-    
+
            Arguments:
            :searchwords: optional - string to restrict the list, can use % or * 
            as wildcards
