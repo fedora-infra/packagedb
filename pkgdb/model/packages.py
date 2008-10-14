@@ -156,10 +156,8 @@ def collection_alias(pkg_listing):
     return pkg_listing.collection.simple_name()
 
 mapper(Package, PackageTable, properties = {
-    # listings is here for compatibility.
+    # listings is here for compatibility.  Will be removed in 0.4.x
     'listings': relation(PackageListing),
-    # listings2 is currently somewhat slow.  Not going to deprecate listings
-    # yet
     'listings2': relation(PackageListing, backref='package',
         collection_class = mapped_collection(collection_alias))
     })
