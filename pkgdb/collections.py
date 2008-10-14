@@ -20,12 +20,8 @@
 '''
 Controller for showing Package Collections.
 '''
-
-from sqlalchemy import and_
 from sqlalchemy.exceptions import InvalidRequestError
-
 from turbogears import controllers, expose, paginate
-
 from cherrypy import request
 
 from pkgdb.model import CollectionPackage, Collection, Package, PackageListing
@@ -120,10 +116,8 @@ class Collections(controllers.Controller):
         # SQLAlchemy mapped classes are monkey patched.
         # pylint:disable-msg=E1101
         # Retrieve the packagelist for this collection
-        packages = Package.query.filter(
-                and_(PackageListing.c.collectionid==collectionId,
-                    PackageListing.c.packageid==Package.c.id)
-                )
+        packages = Package.query.join(PackageListing).filter_by(
+                collectionid = collectionId)
         # pylint:enable-msg=E1101
         return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
             collection['version']), collection=collection, packages=packages)
