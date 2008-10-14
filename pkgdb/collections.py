@@ -24,7 +24,8 @@ from sqlalchemy.exceptions import InvalidRequestError
 from turbogears import controllers, expose, paginate
 from cherrypy import request
 
-from pkgdb.model import CollectionPackage, Collection, Package, PackageListing
+from pkgdb.model.collections import CollectionPackage, Collection
+from pkgdb.model.packages import Package, PackageListing
 
 class Collections(controllers.Controller):
     '''Controller that deals with Collections.
@@ -110,7 +111,7 @@ class Collections(controllers.Controller):
                 'ownername': user['username'],
                 'summary': collectionEntry.summary,
                 'description': collectionEntry.description,
-                'statusname': collectionEntry.status.translations[0].statusname
+                'statusname': collectionEntry.status.locale['C'].statusname
                 }
 
         # SQLAlchemy mapped classes are monkey patched.
