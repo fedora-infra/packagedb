@@ -20,6 +20,15 @@
 '''
 Controller for showing Package Collections.
 '''
+
+#
+# PyLint Disabling
+#
+
+# (E1101) SQLAlchemy mapped classes are monkey patched.  Unless otherwise
+#   noted, E1101 is disabled due to a static checker not having information
+#   about the monkey patches.
+
 from sqlalchemy.exceptions import InvalidRequestError
 from turbogears import controllers, expose, paginate
 from cherrypy import request
@@ -36,8 +45,8 @@ class Collections(controllers.Controller):
     def __init__(self, fas, app_title):
         '''Create a Packages Controller.
 
-        :fas: Fedora Account System object.
-        :app_title: Title of the web app.
+        :arg fas: Fedora Account System object.
+        :arg app_title: Title of the web app.
         '''
         self.fas = fas
         self.app_title = app_title
@@ -48,8 +57,7 @@ class Collections(controllers.Controller):
         '''
         # pylint: disable-msg=E1101
         collections = CollectionPackage.query.order_by(
-                (CollectionPackage.c.name,
-                    CollectionPackage.c.version))
+                (CollectionPackage.name, CollectionPackage.version))
         # pylint: enable-msg=E1101
 
         return dict(title=self.app_title + ' -- Collection Overview',
@@ -58,15 +66,19 @@ class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    def id(self, collectionId): # pylint: disable-msg=C0103
+    # (C0103) the id method is already part of the public API
+    def id(self, collection_id): # pylint: disable-msg=C0103
         '''Return a page with information on a particular Collection
+
+        :arg collection_id: Numeric id of the collection
         '''
+        collectionEntry = collection_id
         try:
-            collectionId = int(collectionId)
+            collection_id = int(collection_id)
         except ValueError:
             error = dict(status = False,
                     title = self.app_title + ' -- Invalid Collection Id',
-                    message = 'The collectionId you were linked to is not a' \
+                    message = 'The collection_id you were linked to is not a' \
                             ' valid id.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
                             ' report it.')
@@ -79,46 +91,47 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             # pylint: disable-msg=E1101
-            collectionEntry = Collection.query.filter_by(id=collectionId).one()
+            collection_entry = Collection.query.filter_by(id=collection_id
+                    ).one()
         except InvalidRequestError:
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
                     title = self.app_title + ' -- Invalid Collection Id',
-                    message = 'The collectionId you were linked to, %s, does' \
+                    message = 'The collection_id you were linked to, %s, does' \
                             ' not exist.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
-                            ' report it.' % collectionId)
+                            ' report it.' % collection_id)
             if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
 
         # Get ownership information from the fas
         try:
-            user = self.fas.cache[collectionEntry.owner]
+            user = self.fas.cache[collection_entry.owner]
         except KeyError:
             user = {}
-            user['username'] = 'User ID %i' % collectionEntry.owner
+            user['username'] = 'User ID %i' % collection_entry.owner
             user['email'] = 'unknown@fedoraproject.org'
 
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
         # 2) We need ownerName and statusname which are not in the specific
         #    table.
-        collection = {'name': collectionEntry.name,
-                'version': collectionEntry.version,
-                'owner': collectionEntry.owner,
+        collection = {'name': collection_entry.name,
+                'version': collection_entry.version,
+                'owner': collection_entry.owner,
                 'ownername': user['username'],
-                'summary': collectionEntry.summary,
-                'description': collectionEntry.description,
-                'statusname': collectionEntry.status.locale['C'].statusname
+                'summary': collection_entry.summary,
+                'description': collection_entry.description,
+                'statusname': collection_entry.status.locale['C'].statusname
                 }
 
-        # SQLAlchemy mapped classes are monkey patched.
-        # pylint:disable-msg=E1101
         # Retrieve the packagelist for this collection
+        # pylint:disable-msg=E1101
         packages = Package.query.join(PackageListing).filter_by(
-                collectionid = collectionId)
+                collectionid = collection_id)
         # pylint:enable-msg=E1101
+
         return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
             collection['version']), collection=collection, packages=packages)
