@@ -39,82 +39,6 @@ get_engine()
 #
 
 #
-# Statuses
-#
-
-class StatusTranslation(SABase):
-    '''Map status codes to status names in various languages.
-
-    Table -- StatusCodeTranslation
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, statuscodeid, statusname, language=None,
-            description=None):
-        '''
-        :statuscodeid: id of the status this translation applies to
-        :statusname: translated string
-        :language: Languages code that this string is for.  if not given.
-            defaults to 'C'
-        :description: a description of what this status means.  May be used in
-            online help
-        '''
-        # pylint: disable-msg=R0913
-        super(StatusTranslation, self).__init__()
-        self.statuscodeid = statuscodeid
-        self.statusname = statusname
-        self.language = language or None
-        self.description = description or None
-
-    def __repr__(self):
-        return 'StatusTranslation(%s, "%s", language="%s", description="%s")' \
-                % (self.statuscodeid, self.statusname, self.language,
-                        self.description)
-
-class BaseStatus(SABase):
-    '''Fields common to all Statuses.'''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, statuscodeid):
-        # pylint: disable-msg=R0913
-        super(BaseStatus, self).__init__()
-        self.statuscodeid = statuscodeid
-
-class CollectionStatus(BaseStatus):
-    '''Subset of status codes that are applicable to collections.
-
-    Table -- CollectionStatusCode
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __repr__(self):
-        return 'CollectionStatus(%s)' % self.statuscodeid
-
-class PackageStatus(BaseStatus):
-    '''Subset of status codes that apply to packages.
-
-    Table -- PackageStatusCode
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __repr__(self):
-        return 'PackageStatus(%s)' % self.statuscodeid
-
-class PackageListingStatus(BaseStatus):
-    '''Subset of status codes that are applicable to package listings.
-
-    Table -- PackageListingStatusCode
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __repr__(self):
-        return 'PackageListingStatus(%s)' % self.statuscodeid
-
-class PackageAclStatus(BaseStatus):
-    ''' Subset of status codes that apply to Person and Group Package Acls.
-
-    Table -- PackageAclStatusCode
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __repr__(self):
-        return 'PackageAclStatus(%s)' % self.statuscodeid
-
-#
 # Logs
 #
 
@@ -218,34 +142,6 @@ class GroupPackageListingAclLog(Log):
 # Mapped Tables
 #
 
-#
-# Statuses
-#
-
-# These are a bit convoluted as we have a 1:1:N relation between
-# SpecificStatusTable:StatusCodeTable:StatusTranslationTable
-
-# I'd like to merely override the pylint regex for this particular section of
-# code as # these variables are special.  They chould be treated more like
-# class definitions than constants.  Oh well.
-# pylint: disable-msg=C0103
-StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
-
-CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
-
-# Package Listing Status Table.  Like the other status tables, this one has to
-# connect translations to the statuses particular to the PackageListing.  This
-# make it somewhat more convoluted but all the status tables follow the same
-# pattern.
-PackageListingStatusTable = Table('packagelistingstatuscode', metadata,
-        autoload=True)
-
-# Package Status Table.
-PackageStatusTable = Table('packagestatuscode', metadata, autoload=True)
-
-# Package Acl Status Table
-PackageAclStatusTable = Table('packageaclstatuscode', metadata, autoload=True)
-
 # Log tables
 # The log tables all inherit from the base log table.
 
@@ -286,47 +182,6 @@ logJoin = polymorphic_union (
 #
 # Mappers between Tables and Classes
 #
-
-mapper(StatusTranslation, StatusTranslationTable)
-mapper(CollectionStatus, CollectionStatusTable, properties = {
-    'collections': relation(Collection, backref='status'),
-    'collectionPackages': relation(CollectionPackage, backref='status'),
-    'translations': relation(StatusTranslation,
-        order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid \
-                == CollectionStatusTable.c.statuscodeid,
-        foreign_keys=[StatusTranslationTable.c.statuscodeid],
-        backref=backref('cstatuscode',
-            foreign_keys=[CollectionStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid \
-                    == CollectionStatusTable.c.statuscodeid),
-        )})
-
-mapper(PackageListingStatus, PackageListingStatusTable, properties = {
-    'listings' : relation(PackageListing, backref='status'),
-    'translations' : relation(StatusTranslation,
-        order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid \
-                == PackageListingStatusTable.c.statuscodeid,
-        foreign_keys=[StatusTranslationTable.c.statuscodeid],
-        backref=backref('plstatuscode',
-            foreign_keys=[PackageListingStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid \
-                    == PackageListingStatusTable.c.statuscodeid)
-        )})
-
-mapper(PackageStatus, PackageStatusTable, properties = {
-    'packages' : relation(Package, backref='status'),
-    'translations' : relation(StatusTranslation,
-        order_by=StatusTranslationTable.c.language,
-        primaryjoin=StatusTranslationTable.c.statuscodeid \
-                == PackageStatusTable.c.statuscodeid,
-        foreign_keys=[StatusTranslationTable.c.statuscodeid],
-        backref=backref('pstatuscode',
-            foreign_keys=[PackageStatusTable.c.statuscodeid],
-            primaryjoin=StatusTranslationTable.c.statuscodeid \
-                    == PackageStatusTable.c.statuscodeid)
-        )})
 logMapper = mapper(Log, LogTable, select_table=logJoin,
         polymorphic_on=logJoin.c.kind, polymorphic_identity='log')
 mapper(PersonPackageListingAclLog, PersonPackageListingAclLogTable,
@@ -350,21 +205,6 @@ mapper(PackageListingLog, PackageListingLogTable,
         inherit_condition=LogTable.c.id==PackageListingLogTable.c.logid,
         polymorphic_identity='pkglistlog',
         properties={'listing': relation(PackageListing, backref='logs')})
-
-mapper(PackageAclStatus, PackageAclStatusTable,
-        properties={'pacls' : relation(PersonPackageListingAcl,
-                backref='status'),
-            'gacls' : relation(GroupPackageListingAcl, backref='status'),
-            'translations' : relation(StatusTranslation,
-                order_by=StatusTranslationTable.c.language,
-                primaryjoin=StatusTranslationTable.c.statuscodeid \
-                        == PackageAclStatusTable.c.statuscodeid,
-                foreign_keys=[StatusTranslationTable.c.statuscodeid],
-                backref=backref('pastatuscode',
-                    foreign_keys=[PackageAclStatusTable.c.statuscodeid],
-                    primaryjoin=StatusTranslationTable.c.statuscodeid \
-                            == PackageAclStatusTable.c.statuscodeid)
-                )})
 
 
 ### FIXME: Create sqlalchemy schema.
