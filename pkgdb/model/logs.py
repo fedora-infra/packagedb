@@ -18,7 +18,7 @@
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
-Mapping of python classes to Database Tables.
+Mapping of database tables for logs to python classes.
 '''
 
 from sqlalchemy import Table, Column, ForeignKey, Integer
@@ -38,10 +38,6 @@ get_engine()
 # Mapped Classes
 #
 
-#
-# Logs
-#
-
 class Log(SABase):
     '''Base Log record.
 
@@ -58,7 +54,7 @@ class Log(SABase):
         self.changetime = changetime
 
     def __repr__(self):
-        return 'Log(%s, description="%s", changetime="%s")' % (self.userid,
+        return 'Log(%r, description=%r, changetime=%r)' % (self.userid,
                 self.description, self.changetime)
 
 class PackageLog(Log):
@@ -75,8 +71,8 @@ class PackageLog(Log):
         self.packageid = packageid
 
     def __repr__(self):
-        return 'PackageLog(%s, %s, description="%s", changetime="%s",' \
-                ' packageid=%s)' % (self.userid, self.action,
+        return 'PackageLog(%r, %r, description=%r, changetime=%r,' \
+                ' packageid=%r)' % (self.userid, self.action,
                         self.description, self.changetime, self.packageid)
 
 class PackageListingLog(Log):
@@ -93,8 +89,8 @@ class PackageListingLog(Log):
         self.packagelistingid = packagelistingid
 
     def __repr__(self):
-        return 'PackageListingLog(%s, %s, description="%s", changetime="%s",' \
-                ' packagelistingid=%s)' % (self.userid,
+        return 'PackageListingLog(%r, %r, description=%r, changetime=%r,' \
+                ' packagelistingid=%r)' % (self.userid,
                 self.action, self.description, self.changetime,
                 self.packagelistingid)
 
@@ -113,8 +109,8 @@ class PersonPackageListingAclLog(Log):
         self.personpackagelistingaclid = personpackagelistingaclid
 
     def __repr__(self):
-        return 'PersonPackageListingAclLog(%s, %s, description="%s",' \
-                ' changetime="%s", personpackagelistingaclid= %s)' % (
+        return 'PersonPackageListingAclLog(%r, %r, description=%r,' \
+                ' changetime=%r, personpackagelistingaclid=%r)' % (
                         self.userid, self.action, self.description,
                         self.changetime, self.personpackagelistingaclid)
 
@@ -133,8 +129,8 @@ class GroupPackageListingAclLog(Log):
         self.grouppackagelistingaclid = grouppackagelistingaclid
 
     def __repr__(self):
-        return 'GroupPackageListingAclLog(%s, %s, description="%s",' \
-                ' changetime="%s", grouppackagelistingaclid= %s)' % (
+        return 'GroupPackageListingAclLog(%r, %r, description=%r,' \
+                ' changetime=%r, grouppackagelistingaclid=%r)' % (
                         self.userid, self.action, self.description,
                         self.changetime, self.grouppackagelistingaclid)
 
@@ -142,35 +138,34 @@ class GroupPackageListingAclLog(Log):
 # Mapped Tables
 #
 
-# Log tables
 # The log tables all inherit from the base log table.
+LogTable = Table('log', metadata, autoload = True)
 
-LogTable = Table('log', metadata, autoload=True)
-PackageLogTable = Table('packagelog', metadata, autoload=True)
-PackageListingLogTable = Table('packagelistinglog', metadata, autoload=True)
+PackageLogTable = Table('packagelog', metadata, autoload = True)
+PackageListingLogTable = Table('packagelistinglog', metadata, autoload = True)
 PersonPackageListingAclLogTable = Table('personpackagelistingacllog', metadata,
-        autoload=True)
+        autoload = True)
 GroupPackageListingAclLogTable = Table('grouppackagelistingacllog', metadata,
-        autoload=True)
+        autoload = True)
 
 logJoin = polymorphic_union (
-        {'pkglog' : select((LogTable.join(
+        {'pkglog': select((LogTable.join(
             PackageLogTable,
                 LogTable.c.id == PackageLogTable.c.logid),
             literal_column("'pkglog'").label('kind'))),
-         'pkglistlog' : select((LogTable.join(
+         'pkglistlog': select((LogTable.join(
             PackageListingLogTable,
                 LogTable.c.id == PackageListingLogTable.c.logid),
             literal_column("'pkglistlog'").label('kind'))),
-         'personpkglistacllog' : select((LogTable.join(
+         'personpkglistacllog': select((LogTable.join(
             PersonPackageListingAclLogTable,
                 LogTable.c.id == PersonPackageListingAclLogTable.c.logid),
             literal_column("'personpkglistacllog'").label('kind'))),
-         'grouppkglistacllog' : select((LogTable.join(
+         'grouppkglistacllog': select((LogTable.join(
             GroupPackageListingAclLogTable,
                 LogTable.c.id == GroupPackageListingAclLogTable.c.logid),
             literal_column("'grouppkglistacllog'").label('kind'))),
-         'log' : select((LogTable, literal_column("'log'").label('kind')),
+         'log': select((LogTable, literal_column("'log'").label('kind')),
              not_(LogTable.c.id.in_(select(
                  (LogTable.c.id,),
                  LogTable.c.id == PackageListingLogTable.c.logid)
@@ -180,46 +175,39 @@ logJoin = polymorphic_union (
         )
 
 #
-# Mappers between Tables and Classes
+# Mappers
 #
-logMapper = mapper(Log, LogTable, select_table=logJoin,
-        polymorphic_on=logJoin.c.kind, polymorphic_identity='log')
+
+logMapper = mapper(Log, LogTable, select_table = logJoin,
+        polymorphic_on = logJoin.c.kind, polymorphic_identity = 'log'
+        )
+
 mapper(PersonPackageListingAclLog, PersonPackageListingAclLogTable,
-        inherits=logMapper,
+        inherits = logMapper, polymorphic_identity = 'personpkglistacllog',
         inherit_condition = LogTable.c.id == \
                 PersonPackageListingAclLogTable.c.logid,
-        polymorphic_identity='personpkglistacllog',
-        properties={'acl': relation(PersonPackageListingAcl, backref='logs')})
+        properties = {
+            'acl': relation(PersonPackageListingAcl, backref = 'logs')
+            })
+
 mapper(GroupPackageListingAclLog, GroupPackageListingAclLogTable,
-        inherits=logMapper,
-        inherit_condition=LogTable.c.id==GroupPackageListingAclLogTable.c.logid,
-        polymorphic_identity='grouppkglistacllog',
-        properties={'acl': relation(GroupPackageListingAcl, backref='logs')})
+        inherits = logMapper, polymorphic_identity = 'grouppkglistacllog',
+        inherit_condition = LogTable.c.id == \
+                GroupPackageListingAclLogTable.c.logid,
+        properties = {
+            'acl': relation(GroupPackageListingAcl, backref = 'logs')
+            })
+
 mapper(PackageLog, PackageLogTable,
-        inherits=logMapper,
-        inherit_condition=LogTable.c.id==PackageLogTable.c.logid,
-        polymorphic_identity='pkglog',
-        properties={'package': relation(Package, backref='logs')})
+        inherits = logMapper, polymorphic_identity = 'pkglog',
+        inherit_condition = LogTable.c.id == PackageLogTable.c.logid,
+        properties = {
+            'package': relation(Package, backref = 'logs')
+            })
+
 mapper(PackageListingLog, PackageListingLogTable,
-        inherits=logMapper,
-        inherit_condition=LogTable.c.id==PackageListingLogTable.c.logid,
-        polymorphic_identity='pkglistlog',
-        properties={'listing': relation(PackageListing, backref='logs')})
-
-
-### FIXME: Create sqlalchemy schema.
-# By and large we'll follow steps similar to the Collection/Branch example
-# above.
-# List of tables not yet mapped::
-# StatusCode
-# CollectionLogStatusCode
-# PackageLogStatusCode
-# PackageBuildStatusCode
-# PackageBuildLogStatusCode
-# PackageListingLogStatusCode
-# PackageACLLogStatusCode
-# CollectionSet
-# PackageBuild
-# PackageBuildListing
-# CollectionLog
-# PackageBuildLog
+        inherits = logMapper, polymorphic_identity = 'pkglistlog',
+        inherit_condition = LogTable.c.id == PackageListingLogTable.c.logid,
+        properties = {
+            'listing': relation(PackageListing, backref = 'logs')
+            })

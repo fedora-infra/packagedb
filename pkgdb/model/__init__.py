@@ -20,12 +20,30 @@
 '''
 Mapping of python classes to Database Tables.
 '''
-# This is a temporary solution.  We want to break up the one model file into
-# several different files for each piece of data in the model.  When we do
-# that, we can update the code to reference each individual piece of the
-# model.
-from model import *
+### FIXME:  We've broken up the one model file into several different files
+# for each piece of data in the model.  We need to update the code that
+# references this to get the classes from the separate files.  Then we can get
+# rid of these imports
+
 from packages import *
 from collections import *
 from acls import *
 from statuses import *
+from log import *
+
+### FIXME: Create sqlalchemy schema.
+# By and large we'll follow steps similar to the Collection/Branch example
+# above.
+# List of tables not yet mapped::
+# StatusCode
+# CollectionLogStatusCode
+# PackageLogStatusCode
+# PackageBuildStatusCode
+# PackageBuildLogStatusCode
+# PackageListingLogStatusCode
+# PackageACLLogStatusCode
+# CollectionSet
+# PackageBuild
+# PackageBuildListing
+# CollectionLog
+# PackageBuildLog
