@@ -22,13 +22,27 @@
 '''
 Controller for displaying Package Bug Information.
 '''
+#
+# PyLint Disabling
+#
+
+# (E1101) SQLAlchemy mapped classes are monkey patched.  Unless otherwise
+#   noted, E1101 is disabled due to a static checker not having information
+#   about the monkey patches.
 
 from urllib import quote
 
-from turbogears import controllers, expose, paginate, config, redirect
+from turbogears import controllers, expose, config, redirect
 
 from sqlalchemy.exceptions import InvalidRequestError
+
 import bugzilla
+try:
+    # python-bugzilla 0.4
+    from bugzilla.base import Bug
+except ImportError:
+    # python-bugzilla 0.3
+    from bugzilla import Bug
 
 from pkgdb.model import StatusTranslation, Package
 from pkgdb.letter_paginator import Letters
@@ -59,10 +73,9 @@ class BugList(list):
         have to call bugzilla via one name on the internal network but someone
         clicking on the link in a web page needs to use a different address.)
 
-        Arguments:
-        :bug: A bug record returned from the python-bugzilla interface.
+        :arg bug: A bug record returned from the python-bugzilla interface.
         '''
-        if not isinstance(bug, bugzilla.Bug):
+        if not isinstance(bug, Bug):
             raise TypeError('Can only store bugzilla.Bug type')
         if self.query_url != self.public_url:
             bug.url = bug.url.replace(self.query_url, self.public_url)
