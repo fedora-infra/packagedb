@@ -24,6 +24,7 @@ Mapping of acl related database tables
 from sqlalchemy import Table, Column, ForeignKey, Integer
 from sqlalchemy import select, literal_column, not_
 from sqlalchemy.orm import polymorphic_union, relation, backref
+from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
@@ -119,10 +120,14 @@ class GroupPackageListingAcl(SABase):
 #
 
 mapper(PersonPackageListing, PersonPackageListingTable, properties = {
-    'acls':relation(PersonPackageListingAcl,
-        backref='personpackagelisting')})
+    'acls': relation(PersonPackageListingAcl),
+    'acls2': relation(PersonPackageListingAcl, backref='personpackagelisting',
+        collection_class = attribute_mapped_collection('acl'))
+    })
 mapper(GroupPackageListing, GroupPackageListingTable, properties = {
-    'acls':relation(GroupPackageListingAcl,
-        backref='grouppackagelisting')})
+    'acls': relation(GroupPackageListingAcl),
+    'acls2': relation(GroupPackageListingAcl, backref='grouppackagelisting',
+        collection_class = attribute_mapped_collection('acl'))
+    })
 mapper(PersonPackageListingAcl, PersonPackageListingAclTable)
 mapper(GroupPackageListingAcl, GroupPackageListingAclTable)

@@ -33,7 +33,8 @@ from sqlalchemy import Table, Column, ForeignKey, Integer
 from sqlalchemy import select, literal_column, not_
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import polymorphic_union, relation, backref
-from sqlalchemy.orm.collections import mapped_collection
+from sqlalchemy.orm.collections import mapped_collection, \
+        attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from turbogears.database import metadata, mapper, get_engine
@@ -162,6 +163,10 @@ mapper(Package, PackageTable, properties = {
         collection_class = mapped_collection(collection_alias))
     })
 mapper(PackageListing, PackageListingTable, properties = {
-    'people' : relation(PersonPackageListing, backref='packagelisting'),
-    'groups' : relation(GroupPackageListing, backref='packagelisting'),
+    'people' : relation(PersonPackageListing),
+    'people2' : relation(PersonPackageListing, backref='packagelisting',
+        collection_class = attribute_mapped_collection('userid')),
+    'groups' : relation(GroupPackageListing),
+    'groups2' : relation(GroupPackageListing, backref='packagelisting',
+        collection_class = attribute_mapped_collection('groupid')),
     })
