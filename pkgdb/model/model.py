@@ -28,6 +28,10 @@ from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
+from packages import Package, PackageListing
+from collections import CollectionPackage, Collection
+from acls import PersonPackageListingAcl, GroupPackageListingAcl
+
 get_engine()
 
 #
@@ -109,200 +113,6 @@ class PackageAclStatus(BaseStatus):
     # pylint: disable-msg=R0902, R0903
     def __repr__(self):
         return 'PackageAclStatus(%s)' % self.statuscodeid
-
-#
-# Collections
-#
-
-class Collection(SABase):
-    '''A Collection of packages.
-
-    Table -- Collection
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, name, version, statuscode, owner,
-            publishurltemplate=None, pendingurltemplate=None, summary=None,
-            description=None):
-        # pylint: disable-msg=R0913
-        super(Collection, self).__init__()
-        self.name = name
-        self.version = version
-        self.statuscode = statuscode
-        self.owner = owner
-        self.publishurltemplate = publishurltemplate
-        self.pendingurltemplate = pendingurltemplate
-        self.summary = summary
-        self.description = description
-
-    def __repr__(self):
-        return 'Collection("%s", "%s", "%s", "%s", publishurltemplate="%s",' \
-                ' pendingurltemplate="%s", summary="%s", description="%s")' % (
-                self.name, self.version, self.statuscode, self.owner,
-                self.publishurltemplate, self.pendingurltemplate,
-                self.summary, self.description)
-
-class Branch(Collection):
-    '''Collection that has a physical existence.
-
-    Some Collections are only present as a name and collection of packages.  The
-    Collections that have a branch record are also present in our VCS and
-    download repositories.
-
-    Table -- Branch
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, collectionid, branchname, disttag, parentid, *args):
-        # pylint: disable-msg=R0913
-        super(Branch, self).__init__(args)
-        self.collectionid = collectionid
-        self.branchname = branchname
-        self.disttag = disttag
-        self.parentid = parentid
-
-    def __repr__(self):
-        return 'Branch(%s, "%s", "%s", %s, "%s", "%s", "%s", "%s",' \
-                ' publishurltemplate="%s", pendingurltemplate="%s",' \
-                ' summary="%s", description="%s")' % (self.collectionid,
-                self.branchname, self.disttag, self.parentid,
-                self.name, self.version, self.statuscode, self.owner,
-                self.publishurltemplate, self.pendingurltemplate,
-                self.summary, self.description)
-
-class CollectionPackage(SABase):
-    '''Information about how many `Packages` are in a `Collection`
-
-    View -- CollectionPackage
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __repr__(self):
-        # pylint: disable-msg=E1101
-        return 'CollectionPackage(id="%s", name="%s", version="%s",' \
-                ' statuscode="%s", numpkgs="%s",' % (
-                self.id, self.name, self.version, self.statuscode,
-                self.numpkgs)
-
-#
-# Packages
-#
-
-class Package(SABase):
-    '''Software we are packaging.
-
-    This is equal to the software in one of our revision control directories.
-    It is unversioned and not associated with a particular collection.
-
-    Table -- Package
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, name, summary, statuscode, description=None,
-            reviewurl=None, shouldopen=None):
-        # pylint: disable-msg=R0913
-        super(Package, self).__init__()
-        self.name = name
-        self.summary = summary
-        self.statuscode = statuscode
-        self.description = description
-        self.reviewurl = reviewurl
-        self.shouldopen = shouldopen
-
-    def __repr__(self):
-        return 'Package("%s", "%s", %s, description="%s", reviewurl="%s", ' \
-               'shouldopen="%s")' % (
-                self.name, self.summary, self.statuscode, self.description,
-                self.reviewurl, self.shouldopen)
-
-class PackageListing(SABase):
-    '''This associates a package with a particular collection.
-
-    Table -- PackageListing
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, owner, statuscode, packageid=None, collectionid=None,
-            qacontact=None):
-        # pylint: disable-msg=R0913
-        super(PackageListing, self).__init__()
-        self.packageid = packageid
-        self.collectionid = collectionid
-        self.owner = owner
-        self.qacontact = qacontact
-        self.statuscode = statuscode
-
-    def __repr__(self):
-        return 'PackageListing(%s, %s, %s, %s, qacontact="%s")' % (
-                self.packageid, self.collectionid, self.owner,
-                self.statuscode, self.qacontact)
-
-#
-# Acls
-#
-
-class PersonPackageListing(SABase):
-    '''Associate a person with a PackageListing.
-
-    People who are watching or can modify a packagelisting.
-
-    Table -- PersonPackageListing
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, userid, packagelistingid=None):
-        # pylint: disable-msg=R0913
-        super(PersonPackageListing, self).__init__()
-        self.userid = userid
-        self.packagelistingid = packagelistingid
-
-    def __repr__(self):
-        return 'PersonPackageListing(%s, %s)' % (self.userid,
-                self.packagelistingid)
-
-class GroupPackageListing(SABase):
-    '''Associate a group with a PackageListing.
-
-    Table -- GroupPackageListing
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, groupid, packagelistingid=None):
-        # pylint: disable-msg=R0913
-        super(GroupPackageListing, self).__init__()
-        self.groupid = groupid
-        self.packagelistingid = packagelistingid
-
-    def __repr__(self):
-        return 'GroupPackageListing(%s, %s)' % (self.groupid,
-                self.packagelistingid)
-
-class PersonPackageListingAcl(SABase):
-    '''Acl on a package that a person owns.
-
-    Table -- PersonPackageListingAcl
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, acl, statuscode=None, personpackagelistingid=None):
-        # pylint: disable-msg=R0913
-        super(PersonPackageListingAcl, self).__init__()
-        self.personpackagelistingid = personpackagelistingid
-        self.acl = acl
-        self.statuscode = statuscode
-
-    def __repr__(self):
-        return 'PersonPackageListingAcl("%s", %s, personpackagelistingid=%s)' \
-                % (self.acl, self.statuscode, self.personpackagelistingid)
-
-class GroupPackageListingAcl(SABase):
-    '''Acl on a package that a group owns.
-
-    Table -- GroupPackageListingAcl
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, acl, statuscode=None, grouppackagelistingid=None):
-        # pylint: disable-msg=R0913
-        super(GroupPackageListingAcl, self).__init__()
-        self.grouppackagelistingid = grouppackagelistingid
-        self.acl = acl
-        self.statuscode = statuscode
-
-    def __repr__(self):
-        return 'GroupPackageListingAcl("%s", %s, grouppackagelistingid=%s)' % (
-                self.acl, self.statuscode, self.grouppackagelistingid)
 
 #
 # Logs
@@ -423,38 +233,6 @@ StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
 
 CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
 
-# Collections and Branches have an inheritance relationship.  ie: Branches are
-# just Collections that have additional data.
-CollectionTable = Table('collection', metadata, autoload=True)
-BranchTable = Table('branch', metadata, autoload=True)
-
-collectionJoin = polymorphic_union (
-        {'b' : select((CollectionTable.join(
-            BranchTable, CollectionTable.c.id == BranchTable.c.collectionid),
-            literal_column("'b'").label('kind'))),
-         'c' : select((CollectionTable, literal_column("'c'").label('kind')),
-             not_(CollectionTable.c.id.in_(select(
-                 (CollectionTable.c.id,),
-                 CollectionTable.c.id == BranchTable.c.collectionid)
-             )))
-         },
-        None
-        )
-
-#
-# CollectionTable that shows number of packages in a collection
-#
-CollectionPackageTable = Table('collectionpackage', metadata,
-        Column('id', Integer, primary_key=True),
-        Column('statuscode', Integer,
-            ForeignKey('collectionstatuscode.statuscodeid')),
-        autoload=True)
-
-# Package and PackageListing are straightforward translations.  Look at these
-# if you're looking for a straightforward example.
-PackageTable = Table('package', metadata, autoload=True)
-PackageListingTable = Table('packagelisting', metadata, autoload=True)
-
 # Package Listing Status Table.  Like the other status tables, this one has to
 # connect translations to the statuses particular to the PackageListing.  This
 # make it somewhat more convoluted but all the status tables follow the same
@@ -465,17 +243,7 @@ PackageListingStatusTable = Table('packagelistingstatuscode', metadata,
 # Package Status Table.
 PackageStatusTable = Table('packagestatuscode', metadata, autoload=True)
 
-#
-# Person and Group ACL information
-#
-PersonPackageListingTable = Table('personpackagelisting', metadata,
-        autoload=True)
-GroupPackageListingTable = Table('grouppackagelisting', metadata, autoload=True)
-PersonPackageListingAclTable = Table('personpackagelistingacl', metadata,
-        autoload=True)
-GroupPackageListingAclTable = Table('grouppackagelistingacl', metadata,
-        autoload=True)
-
+# Package Acl Status Table
 PackageAclStatusTable = Table('packageaclstatuscode', metadata, autoload=True)
 
 # Log tables
@@ -533,19 +301,6 @@ mapper(CollectionStatus, CollectionStatusTable, properties = {
             primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == CollectionStatusTable.c.statuscodeid),
         )})
-collectionMapper = mapper(Collection, CollectionTable,
-        select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
-        polymorphic_identity='c',
-        properties={'listings': relation(PackageListing, backref='collection')})
-mapper(Branch, BranchTable, inherits=collectionMapper,
-        inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
-        polymorphic_identity='b')
-mapper(CollectionPackage, CollectionPackageTable)
-mapper(Package, PackageTable, properties = {
-    'listings':relation(PackageListing, backref='package')})
-mapper(PackageListing, PackageListingTable, properties = {
-    'people' : relation(PersonPackageListing, backref='packagelisting'),
-    'groups' : relation(GroupPackageListing, backref='packagelisting')})
 
 mapper(PackageListingStatus, PackageListingStatusTable, properties = {
     'listings' : relation(PackageListing, backref='status'),
@@ -559,14 +314,7 @@ mapper(PackageListingStatus, PackageListingStatusTable, properties = {
             primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == PackageListingStatusTable.c.statuscodeid)
         )})
-mapper(PersonPackageListing, PersonPackageListingTable, properties = {
-    'acls':relation(PersonPackageListingAcl,
-        backref='personpackagelisting')})
-mapper(GroupPackageListing, GroupPackageListingTable, properties = {
-    'acls':relation(GroupPackageListingAcl,
-        backref='grouppackagelisting')})
-mapper(PersonPackageListingAcl, PersonPackageListingAclTable)
-mapper(GroupPackageListingAcl, GroupPackageListingAclTable)
+
 mapper(PackageStatus, PackageStatusTable, properties = {
     'packages' : relation(Package, backref='status'),
     'translations' : relation(StatusTranslation,
@@ -579,7 +327,6 @@ mapper(PackageStatus, PackageStatusTable, properties = {
             primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == PackageStatusTable.c.statuscodeid)
         )})
-
 logMapper = mapper(Log, LogTable, select_table=logJoin,
         polymorphic_on=logJoin.c.kind, polymorphic_identity='log')
 mapper(PersonPackageListingAclLog, PersonPackageListingAclLogTable,
