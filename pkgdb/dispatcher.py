@@ -258,16 +258,16 @@ class PackageDispatcher(controllers.Controller):
         if user:
             # If the person isn't in a known group raise an error
             if [group for group in user['approved_memberships']
-                    if group['name'] in self.owner_membershipss]:
+                    if group['name'] in self.owner_memberships]:
                 return True
             raise AclNotAllowedError(
                     '%s must be in one of these groups: %s to hold the %s acl' %
-                    (user['username'], self.owner_membershipss, acl))
-        elif identity.in_any_group(*self.owner_membershipss):
+                    (user['username'], self.owner_memberships, acl))
+        elif identity.in_any_group(*self.owner_memberships):
             return True
         raise AclNotAllowedError(
                 '%s must be in one of these groups: %s to hold the %s acl' %
-                (identity.current.user_name, self.owner_membershipss, acl))
+                (identity.current.user_name, self.owner_memberships, acl))
 
     def _create_or_modify_acl(self, pkg_listing, person_id, new_acl, status):
         '''Create or modify an acl.
