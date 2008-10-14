@@ -25,7 +25,7 @@ Controller for showing Package Collections.
 # PyLint Disabling
 #
 
-# (E1101) SQLAlchemy mapped classes are monkey patched.  Unless otherwise
+# :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
 #   noted, E1101 is disabled due to a static checker not having information
 #   about the monkey patches.
 
@@ -66,7 +66,7 @@ class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
             allow_limit_override=True, max_pages=13)
-    # (C0103) the id method is already part of the public API
+    # :C0103: the id method is already part of the public API
     def id(self, collection_id): # pylint: disable-msg=C0103
         '''Return a page with information on a particular Collection
 
