@@ -927,20 +927,28 @@ class PackageDispatcher(controllers.Controller):
     def _user_in_approveacls(self, pkg):
         '''Check that the current user is listed in approveacls.
 
-        Arguments:
-        :pkg: Package object on which we should be checking
-
-        Returns:
-        True if the person is in approveacls, False otherwise.
+        :arg pkg: Package object on which we should be checking
+        :returns: True if the person is in approveacls, False otherwise.
         '''
-        for people in (x.people for x in pkg.listings):
-            for person in people:
-                if person.userid == identity.current.user.id:
-                    for acl in person.acls:
-                        if acl.acl == 'approveacls' and acl.status \
-                                == self.approvedStatus:
+        people_lists = (listing.people for listing in pkg.listings)
+        while True:
+            try:
+                # Each iteration, retrieve a set of people from the list
+                people = people_lists.next()
+                # Retrieve all the lists of acls for the current user for each
+                # PackageListing
+                acl_lists = (p.acls for p in people
+                        if p.userid == identity.current.user.id)
+                # For each list of acls...
+                for acls in acl_lists:
+                    # Check each acl
+                    for acl in acls:
+                        if acl.acl == 'approveacls' and acl.statuscode \
+                                == self.approvedStatus.statuscodeid:
                             return True
-        return False
+            except StopIteration:
+                # Exhausted the list, approveaclswas not found
+                return False
 
     @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.
