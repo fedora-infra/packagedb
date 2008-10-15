@@ -177,8 +177,8 @@ class Packages(controllers.Controller):
                         for acls in acl_lists:
                             # ...check each acl
                             for acl in acls:
-                                if acl.acl == 'approveacls' and acl.status \
-                                        == self.approved_status:
+                                if acl.acl == 'approveacls' and \
+                                        acl.statuscode == self.approved_status:
                                     # If the user has approveacls we're done
                                     can_set_shouldopen = True
                                     raise StopIteration
