@@ -3,8 +3,19 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 22 Aug 2008
-:Version: 0.3.8
+:Date: 13 Oct 2008
+:Version: 0.3.9
+
+-----
+0.3.9
+-----
+
+Enhancements
+============
+* Utilize SQLAlchemy-0.4 features to make working with the database model
+  easier.  Note that this means that some properties of the model will be
+  deprecated for the 0.4.x version of the packagedb.
+* Now works with python-bugzilla 0.4
 
 -----
 0.3.8

@@ -21,16 +21,15 @@
 Mapping of database tables for logs to python classes.
 '''
 
-from sqlalchemy import Table, Column, ForeignKey, Integer
+from sqlalchemy import Table
 from sqlalchemy import select, literal_column, not_
-from sqlalchemy.orm import polymorphic_union, relation, backref
+from sqlalchemy.orm import polymorphic_union, relation
 from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
-from packages import Package, PackageListing
-from collections import CollectionPackage, Collection
-from acls import PersonPackageListingAcl, GroupPackageListingAcl
+from pkgdb.model.packages import Package, PackageListing
+from pkgdb.model.acls import PersonPackageListingAcl, GroupPackageListingAcl
 
 get_engine()
 
@@ -139,6 +138,10 @@ class GroupPackageListingAclLog(Log):
 #
 
 # The log tables all inherit from the base log table.
+
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
 LogTable = Table('log', metadata, autoload = True)
 
 PackageLogTable = Table('packagelog', metadata, autoload = True)

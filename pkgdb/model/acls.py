@@ -20,10 +20,17 @@
 '''
 Mapping of acl related database tables
 '''
+#
+# PyLint Explanation
+#
 
-from sqlalchemy import Table, Column, ForeignKey, Integer
-from sqlalchemy import select, literal_column, not_
-from sqlalchemy.orm import polymorphic_union, relation, backref
+# :R0903: Mapped classes will have few methods as SQLAlchemy will monkey patch
+#   more methods in later.
+# :R0913: The __init__ methods of the mapped classes may need many arguments
+#   to fill the database tables.
+
+from sqlalchemy import Table
+from sqlalchemy.orm import relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
 
@@ -35,6 +42,9 @@ get_engine()
 # Mapped Tables
 #
 
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
 PersonPackageListingTable = Table('personpackagelisting', metadata,
         autoload=True)
 GroupPackageListingTable = Table('grouppackagelisting', metadata, autoload=True)
@@ -42,6 +52,7 @@ PersonPackageListingAclTable = Table('personpackagelistingacl', metadata,
         autoload=True)
 GroupPackageListingAclTable = Table('grouppackagelistingacl', metadata,
         autoload=True)
+# pylint: enable-msg=C0103
 
 #
 # Mapped Classes
@@ -54,7 +65,7 @@ class PersonPackageListing(SABase):
 
     Table -- PersonPackageListing
     '''
-    # pylint: disable-msg=R0902, R0903
+    # pylint: disable-msg=R0903
     def __init__(self, userid, packagelistingid=None):
         # pylint: disable-msg=R0913
         super(PersonPackageListing, self).__init__()
@@ -70,7 +81,7 @@ class GroupPackageListing(SABase):
 
     Table -- GroupPackageListing
     '''
-    # pylint: disable-msg=R0902, R0903
+    # pylint: disable-msg=R0903
     def __init__(self, groupid, packagelistingid=None):
         # pylint: disable-msg=R0913
         super(GroupPackageListing, self).__init__()
@@ -86,7 +97,7 @@ class PersonPackageListingAcl(SABase):
 
     Table -- PersonPackageListingAcl
     '''
-    # pylint: disable-msg=R0902, R0903
+    # pylint: disable-msg=R0903
     def __init__(self, acl, statuscode=None, personpackagelistingid=None):
         # pylint: disable-msg=R0913
         super(PersonPackageListingAcl, self).__init__()
@@ -103,7 +114,7 @@ class GroupPackageListingAcl(SABase):
 
     Table -- GroupPackageListingAcl
     '''
-    # pylint: disable-msg=R0902, R0903
+    # pylint: disable-msg=R0903
     def __init__(self, acl, statuscode=None, grouppackagelistingid=None):
         # pylint: disable-msg=R0913
         super(GroupPackageListingAcl, self).__init__()

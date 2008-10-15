@@ -80,7 +80,7 @@ class Packages(controllers.Controller):
         # Return the information about a package.
         package = model.Package.query.filter(
                 model.Package.c.statuscode!=self.removed_status).filter_by(
-                name=package_name).first()
+                name=packageName).first()
         # pylint: enable-msg=E1101
         if not package:
             error = dict(status=False,
@@ -89,7 +89,7 @@ class Packages(controllers.Controller):
                         ' does not appear in the Package Database.' \
                         ' If you received this error from a link on the' \
                         ' fedoraproject.org website, please report it.' %
-                        package_name)
+                        packageName)
             if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
@@ -138,7 +138,7 @@ class Packages(controllers.Controller):
                 error = dict(status=False,
                         title=self.app_title + ' -- Not in Collection',
                         message='The package %s is not in Collection %s %s.' %
-                        (package_name, collectionName, collectionVersion or '')
+                        (packageName, collectionName, collectionVersion or '')
                         )
                 if request.params.get('tg_format', 'html') != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'

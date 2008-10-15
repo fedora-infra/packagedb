@@ -23,14 +23,13 @@ indirectly from here.
 '''
 
 from turbogears import controllers, expose, config, flash
-from turbogears.i18n.tg_gettext import gettext as _
 from turbogears import identity, redirect
 from cherrypy import request, response
 import logging
 
 from fedora.tg.util import request_format
 
-from pkgdb import release
+from pkgdb import release, _
 
 from pkgdb.listqueries import ListQueries
 from pkgdb.collections import Collections

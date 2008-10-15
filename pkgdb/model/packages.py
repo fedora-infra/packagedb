@@ -28,11 +28,19 @@ Mapping of package related database tables to python classes.
     groups have to be listed here in order for them to show up in the Package
     Database at all.
 '''
+#
+# PyLint Explanation
+#
 
-from sqlalchemy import Table, Column, ForeignKey, Integer
-from sqlalchemy import select, literal_column, not_
-from sqlalchemy.exceptions import InvalidRequestError
-from sqlalchemy.orm import polymorphic_union, relation, backref
+# :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
+#   have to disable this check wherever we use the mapper classes.
+# :R0903: Mapped classes will have few methods as SQLAlchemy will monkey patch
+#   more methods in later.
+# :R0913: The __init__ methods of the mapped classes may need many arguments
+#   to fill the database tables.
+
+from sqlalchemy import Table
+from sqlalchemy.orm import relation
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -41,8 +49,8 @@ from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
-from acls import PersonPackageListing
-from acls import GroupPackageListing
+from pkgdb.model.acls import PersonPackageListing, GroupPackageListing, \
+        GroupPackageListingAcl
 
 get_engine()
 
@@ -59,8 +67,13 @@ DEFAULT_GROUPS = {'uberpackager': {'commit': True, 'build': True,
 
 # Package and PackageListing are straightforward translations.  Look at these
 # if you're looking for a straightforward example.
+
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
+# pylint: enable-msg=C0103
 
 #
 # Mapped Classes
@@ -75,10 +88,9 @@ class Package(SABase):
     Table -- Package
     '''
 
-    # pylint: disable-msg=R0902, R0903
+    # pylint: disable-msg=R0903,R0913
     def __init__(self, name, summary, statuscode, description=None,
             reviewurl=None, shouldopen=None):
-        # pylint: disable-msg=R0913
         super(Package, self).__init__()
         self.name = name
         self.summary = summary
@@ -106,6 +118,7 @@ class Package(SABase):
         This creates a new PackageListing for this Package.  The PackageListing
         has default values set for group acls.
         '''
+        # pylint: disable-msg=E1101
         pkg_listing = PackageListing(owner, statuscode, packageid=self.id,
             collecitonid=collection.id, qacontact=qacontact)
         for group in DEFAULT_GROUPS:
@@ -117,7 +130,12 @@ class Package(SABase):
                 else:
                     acl_status = self.deniedStatus
                 group_acl = GroupPackageListingAcl(acl, acl_status)
+                # :W0201: grouppackagelisting is added to the model by
+                #   SQLAlchemy so it doesn't appear in __init__
+                # pylint: disable-msg=W0201
                 group_acl.grouppackagelisting = new_group
+                # pylint: enable-msg=W0201
+        # pylint: enable-msg=E1101
         return pkg_listing
 
 class PackageListing(SABase):
@@ -125,7 +143,7 @@ class PackageListing(SABase):
 
     Table -- PackageListing
     '''
-    # pylint: disable-msg=R0902, R0903
+    # pylint: disable-msg=R0903
     def __init__(self, owner, statuscode, packageid=None, collectionid=None,
             qacontact=None):
         # pylint: disable-msg=R0913

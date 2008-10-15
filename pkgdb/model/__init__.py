@@ -25,11 +25,15 @@ Mapping of python classes to Database Tables.
 # references this to get the classes from the separate files.  Then we can get
 # rid of these imports
 
-from packages import *
-from collections import *
-from acls import *
-from statuses import *
-from log import *
+# :W0401: use wildcard imports until we can deprecate this whole file.
+# :W0614: Importing these so that we can use them by importing them from
+#  pkgdb.model.
+# pylint: disable-msg=W0401,W0614
+from pkgdb.model.packages import *
+from pkgdb.model.collections import *
+from pkgdb.model.acls import *
+from pkgdb.model.statuses import *
+from pkgdb.model.logs import *
 
 ### FIXME: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example

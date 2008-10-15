@@ -23,13 +23,14 @@ Mapping of collection related database tables to python classes
 
 from sqlalchemy import Table, Column, ForeignKey, Integer
 from sqlalchemy import select, literal_column, not_
-from sqlalchemy.orm import polymorphic_union, relation, backref
+from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy.orm import polymorphic_union, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
-from packages import PackageListing
+from pkgdb.model.packages import PackageListing
 
 get_engine()
 
@@ -39,6 +40,10 @@ get_engine()
 
 # Collections and Branches have an inheritance relationship.  ie: Branches are
 # just Collections that have additional data.
+
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
 CollectionTable = Table('collection', metadata, autoload=True)
 BranchTable = Table('branch', metadata, autoload=True)
 
@@ -99,6 +104,9 @@ class Collection(SABase):
         '''Return a simple name for the Collection
         '''
         try:
+            # :E1101: If Collection is actually a branch, it will have a
+            # branchname attribute given it bySQLAlchemy
+            # pylint: disable-msg=E1101
             simple_name = self.branchname
         except AttributeError:
             simple_name = '-'.join((self.name, self.version))
@@ -116,6 +124,9 @@ class Collection(SABase):
         Collection name joined by a hyphen with the version.  ie:
         'Fedora EPEL-5'.
         '''
+        # :E1101: SQLAlchemy adds many methods to the Branch and Collection
+        # classes
+        # pylint: disable-msg=E1101
         try:
             collection = Branch.query.filter_by(branchname=simple_name).one()
         except InvalidRequestError:

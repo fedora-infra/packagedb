@@ -23,10 +23,10 @@
 Controller for displaying Package Bug Information.
 '''
 #
-# PyLint Disabling
+# PyLint Explanations
 #
 
-# (E1101) SQLAlchemy mapped classes are monkey patched.  Unless otherwise
+# :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
 #   noted, E1101 is disabled due to a static checker not having information
 #   about the monkey patches.
 
@@ -42,7 +42,8 @@ try:
     from bugzilla.base import Bug
 except ImportError:
     # python-bugzilla 0.3
-    from bugzilla import Bug
+    # :E0611: This is only found if we are using python-bugzilla 0.3
+    from bugzilla import Bug # pylint: disable-msg=E0611
 
 from pkgdb.model import StatusTranslation, Package
 from pkgdb.letter_paginator import Letters
@@ -147,7 +148,8 @@ class Bugs(controllers.Controller):
         query = {'product': 'Fedora',
                 'component': package_name,
                 'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
-        raw_bugs = self.bz_server.query(query)
+        # :E1101: python-bugzilla monkey patches this in
+        raw_bugs = self.bz_server.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
         for bug in raw_bugs:
             bugs.append(bug)
@@ -155,6 +157,7 @@ class Bugs(controllers.Controller):
         if not bugs:
             # Check that the package exists
             try:
+                # pylint: disable-msg=E1101
                 Package.query.filter_by(name=package_name).one()
             except InvalidRequestError:
                 error = dict(status = False,

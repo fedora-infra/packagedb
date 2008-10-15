@@ -20,6 +20,13 @@
 '''
 Module to be used for letter pagination and search.
 '''
+#
+# PyLint Explanations
+#
+
+# :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
+#   noted, E1101 is disabled due to a static checker not having information
+#   about the monkey patches.
 
 from sqlalchemy.sql import or_
 from turbogears import controllers, expose, paginate, config
@@ -32,6 +39,7 @@ class Letters(controllers.Controller):
     '''
 
     def __init__(self, app_title=None):
+        # pylint: disable-msg=E1101
         self.app_title = app_title
         self.removedStatus = model.StatusTranslation.query.filter_by(
                     statusname='Removed', language='C').first().statuscodeid
@@ -49,15 +57,18 @@ class Letters(controllers.Controller):
         if searchwords != '':
             searchwords = searchwords.replace('*','%')
             if searchwords.isdigit() and int(searchwords) < 10: # 0-9
+                # pylint: disable-msg=E1101
                 packages = model.Package.query.filter(or_(
                                model.Package.name.between('0','9'),
                                    model.Package.name.like('9%')))
             else: 
                 # sanitize for ilike:
                 searchwords = searchwords.replace('&','').replace('_','') 
+                # pylint: disable-msg=E1101
                 packages = model.Package.query.filter(model.Package.name.ilike(
                     searchwords)).order_by(model.Package.name.asc())
         else:
+            # pylint: disable-msg=E1101
             packages = model.Package.query
         searchwords = searchwords.replace('%','*')
         # minus removed packages

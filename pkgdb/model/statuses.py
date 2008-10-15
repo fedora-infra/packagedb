@@ -21,17 +21,16 @@
 Mapping of database tables related to Statuses to python classes
 '''
 
-from sqlalchemy import Table, Column, ForeignKey, Integer
-from sqlalchemy import select, literal_column, not_
-from sqlalchemy.orm import polymorphic_union, relation, backref
+from sqlalchemy import Table
+from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
-from packages import Package, PackageListing
-from collections import CollectionPackage, Collection
-from acls import PersonPackageListingAcl, GroupPackageListingAcl
+from pkgdb.model.packages import Package, PackageListing
+from pkgdb.model.collections import CollectionPackage, Collection
+from pkgdb.model.acls import PersonPackageListingAcl, GroupPackageListingAcl
 
 get_engine()
 
