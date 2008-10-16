@@ -72,6 +72,24 @@ New API Fixes
 
 .. _`store usernames`: NewDBModel.html#Change User and Group
 
+Too Much Data
+~~~~~~~~~~~~~
+
+Currently, many methods return whole data structures from the database like
+:class:`PackageListing`.  Because the remote end some other pieces of that,
+for instance the list of :class:`PersonPackageListingAcls` on the
+:class:`PackageListing`, we end up sending a huge nested data structure.  We
+should make an effort to pare that down to a more reasonable sizeso that the
+JSON data is smaller.
+
+New API Fixes
+-------------
+
+Need to analyze the data that's actually being used vs what's being sent.
+Then create different database queries that get more targetted data.  Also
+need to preprocess some of the data so that we don't include so much
+extraneous information when we finally send it.
+
 Some Parameters are Composites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
