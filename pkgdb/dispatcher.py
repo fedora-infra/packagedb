@@ -119,9 +119,9 @@ class PackageDispatcher(controllers.Controller):
         for status in acl_status:
             ### FIXME: At some point, we have to pull other translations out,
             # not just C
-            if status.translations[0].statusname != 'Obsolete':
+            if status.locale['C'].statusname != 'Obsolete':
                 self.acl_status_translations.append(
-                        status.translations[0].statusname)
+                        status.locale['C'].statusname)
 
     def _send_log_msg(self, msg, subject, author, listings, acls=None,
             other_email=None):
@@ -173,7 +173,7 @@ class PackageDispatcher(controllers.Controller):
             # pylint: enable-msg=E1101
 
             for acl in acl_users:
-                if acl.status.translations[0].statusname == 'Approved':
+                if acl.status.locale['C'].statusname == 'Approved':
                     try:
                         person = self.fas.cache[acl.personpackagelisting.userid]
                     except KeyError:
@@ -606,7 +606,7 @@ class PackageDispatcher(controllers.Controller):
         except InvalidRequestError:
             pass
         else:
-            if acl.status.translations[0].statusname == 'Approved':
+            if acl.status.locale['C'].statusname == 'Approved':
                 acl_status = 'Denied'
 
         status = {'Approved': self.approvedStatus,
@@ -677,7 +677,7 @@ class PackageDispatcher(controllers.Controller):
         except InvalidRequestError:
             pass
         else:
-            if acl.status.translations[0].statusname != 'Obsolete':
+            if acl.status.locale['C'].statusname != 'Obsolete':
                 acl_status = 'Obsolete'
 
         if acl_status != 'Obsolete':
