@@ -170,7 +170,8 @@ def collection_alias(pkg_listing):
     :returns: Collection Alias.  This is either the branchname or a combination
         of the collection name and version.
 
-    This is used to make Branch keys.
+    This is used to make Branch keys for the dictionary mapping of pkg listings
+    into packages.
     '''
     return pkg_listing.collection.simple_name()
 
