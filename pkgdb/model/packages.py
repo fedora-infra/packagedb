@@ -46,6 +46,8 @@ from sqlalchemy.orm.collections import mapped_collection, \
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from turbogears.database import metadata, mapper, get_engine
+# Not the way we want to do this.  We need to genericize the logs
+from turbogears import identity
 
 from fedora.tg.json import SABase
 
@@ -105,22 +107,27 @@ class Package(SABase):
                 self.name, self.summary, self.statuscode, self.description,
                 self.reviewurl, self.shouldopen)
 
-    def create_listing(self, collection, owner, statuscode,
+    def create_listing(self, collection, owner, status,
             qacontact=None):
         '''Create a new PackageListing branch on this Package.
 
         :arg collection: Collection that the new PackageListing lives on
         :arg owner: The owner of the PackageListing
-        :arg statuscode: Status to set the PackageListing to
+        :arg status: Status to set the PackageListing to
         :kwarg qacontact: QAContact for this PackageListing in bugzilla.
         :returns: The new PackageListing object.
 
         This creates a new PackageListing for this Package.  The PackageListing
         has default values set for group acls.
         '''
+        from pkgdb.utils import STATUS
+
         # pylint: disable-msg=E1101
-        pkg_listing = PackageListing(owner, statuscode, packageid=self.id,
-            collecitonid=collection.id, qacontact=qacontact)
+        from pkgdb.model.logs import PackageListingLog
+
+        pkg_listing = PackageListing(owner, status.statuscodeid,
+                packageid=self.id, collectionid=collection.id,
+                qacontact=qacontact)
         for group in DEFAULT_GROUPS:
             new_group = GroupPackageListing(GROUP_MAP[group])
             pkg_listing.groups.append(new_group)
@@ -135,6 +142,17 @@ class Package(SABase):
                 # pylint: disable-msg=W0201
                 group_acl.grouppackagelisting = new_group
                 # pylint: enable-msg=W0201
+
+        # Create a log message
+        log = PackageListingLog(identity.current.user.id,
+                STATUS['Added'].statuscodeid,
+                '%(user)s added a %(branch)s to %(pkg)s' %
+                {'user': identity.current.user_name, 'branch': collection,
+                    'pkg': self.name})
+        log.listing = pkg_listing
+
+    def __init__(self, userid, action, description=None, changetime=None,
+            packagelistingid=None):
         # pylint: enable-msg=E1101
         return pkg_listing
 
@@ -154,11 +172,97 @@ class PackageListing(SABase):
         self.qacontact = qacontact
         self.statuscode = statuscode
 
+    packagename = association_proxy('package', 'name')
+
     def __repr__(self):
         return 'PackageListing(%r, %r, packageid=%r, collectionid=%r,' \
                 ' qacontact=%r)' % (self.owner, self.statuscode,
                         self.packageid, self.collectionid, self.qacontact)
-    packagename = association_proxy('package', 'name')
+
+    def clone(self, branch):
+        '''Clone the permissions on this PackageListing to another `Branch`.
+
+        :arg branch: `branchname` to make a new clone for
+        :raises sqlalchemy.exceptions.InvalidRequestError: when a request
+            does something that violates the SQL integrity of the database
+            somehow.
+        :returns: new branch
+        :rtype: PackageListing
+        '''
+        from pkgdb.utils import STATUS
+        # Retrieve the PackageListing for the to clone branch
+        try:
+            clone_branch = PackageListing.query.join('package'
+                    ).join('collection').filter(
+                        and_(Package.name==self.package.name, Branch.branchname==branch)
+                        ).one()
+        except InvalidRequestError:
+            ### Create a new package listing for this release ###
+
+            # Retrieve the collection to make the branch for
+            clone_collection = Branch.query.filter_by(branchname=branch).one()
+
+            # Create the new PackageListing
+            clone_branch = self.package.create_listing(
+                clone_collection, self.owner,
+                STATUS['Approved'].statuscodeid,
+                qacontact=self.qacontact)
+
+        log_params = {'user': identity.current.user_name,
+                'pkg': self.package.name, 'branch': branch}
+        # Iterate through the acls in the master_branch
+        for group_name, group in self.groups2.iteritems():
+            log_params['group'] = group_name
+            if group_name not in clone_branch.groups2:
+                # Associate the group with the packagelisting
+                clone_branch.groups2[group_name] = \
+                        GroupPackageListing(group_name)
+            clone_group = clone_branch.groups2[group_name]
+            for acl_name, acl in group.acls2.iteritems():
+                if acl_name not in clone_group.acls2:
+                    clone_group.acls2[acl_name] = \
+                            GroupPackageListingAcl(acl_name, acl.statuscode)
+                else:
+                    # Set the acl to have the correct status
+                    if acl.statuscode != clone_group.acls2[acl_name].statuscode:
+                        clone_group.acls2[acl_name].statuscode = acl.statuscode
+
+                # Create a log message for this acl
+                log_params['acl'] = acl.acl
+                log_params['status'] = acl.status.locale['C'].statusname
+                log_msg = '%(user)s set %(acl)s status for %(group)s to' \
+                        ' %(status)s on (%(pkg)s %(branch)s)' % log_params
+                log = GroupPackageListingAclLog(identity.current.user.id,
+                        acl.statuscode, log_msg)
+                log.acl = clone_group.acls2[acl_name]
+
+        for person_name, person in self.people2:
+            log_params['person'] = person_name
+            if person_name not in clone_branch.people2:
+                # Associate the person with the packagelisting
+                clone_branch.people2[person_name] = \
+                        PersonPackageListing(person_name)
+            clone_person = clone_branch.people2[person_name]
+            for acl_name, acl in person.acls2.iteritems():
+                if acl_name not in clone_person.acls2:
+                    clone_person.acls2[acl_name] = \
+                            PersonPackageListingAcl(acl_name, acl.statuscode)
+                else:
+                    # Set the acl to have the correct status
+                    if clone_person.acls2[acl_name].statuscode \
+                            != acl.statuscode:
+                        clone_person.acls2[acl_name].statuscode = acl.statuscode
+
+                # Create a log message for this acl
+                log_params['acl'] = acl.acl
+                log_params['status'] = acl.status.locale['C'].statusname
+                log_msg = '%(user)s set %(acl)s status for %(person)s to' \
+                        ' %(status)s on (%(pkg)s %(branch)s)' % log_params
+                log = PersonPackageListingAclLog(identity.current.user.id,
+                        acl.statuscode, log_msg)
+                log.acl = clone_person.acls2[acl_name]
+
+        return clone_branch
 
 #
 # Mappers

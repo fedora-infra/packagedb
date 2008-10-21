@@ -155,12 +155,22 @@ if __name__ == '__main__':
         for retry in range(0, RETRIES+1):
             try:
                 if options.masterBranch:
-                    pkgdb.clone_branch(package, options.masterBranch,
-                            options.branchList, owner=options.owner,
-                            description=options.description,
-                            cc_list=options.ccList,
-                            comaintainers=options.comaintList,
-                            groups=group_dict)
+                    if group_dict or options.comaintList or options.ccList \
+                            or options.description or option.owner:
+                        # Make changes to the master branch before cloning
+                        try:
+                            pkg_info = pkgdb.get_package_info(pkg, master)
+                        except AppError, e:
+                            print '%(pkg)s has no %(branch)s branch; cannot' \
+                                    ' clone from it.  Error: %(msg)s' % {
+                                            'pkg': pkg, 'branch': master,
+                                            'msg': arg}
+
+                        pkgdb.add_edit_package(package, options.owner,
+                                options.description, [options.masterbranch],
+                                options.ccList, options.comaintList, group_dict)
+                    pkgdb.clone_branch(package, options.branchList,
+                            options.masterBranch)
                 else:
                     pkgdb.add_edit_package(package, owner=options.owner,
                             description=options.description,

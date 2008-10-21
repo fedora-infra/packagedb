@@ -33,7 +33,7 @@ from datetime import datetime
 from sqlalchemy import and_
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
 
-from turbogears import controllers, expose, identity, config
+from turbogears import controllers, expose, identity, config, flash
 from turbogears.database import session
 
 import simplejson
@@ -44,6 +44,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
         Collection, PersonPackageListingAclLog, GroupPackageListingAclLog, \
         PackageLog
 
+from pkgdb import _
 from pkgdb.notifier import EventLogger
 
 ORPHAN_ID = 9900
@@ -1283,3 +1284,64 @@ class PackageDispatcher(controllers.Controller):
                         identity.current.user_name),
                     identity.current.user, (pkg_listing,))
         return dict(status=True)
+
+    @expose(allow_json=True)
+    # Check that we have a tg.identity, otherwise you can't set any acls.
+    @identity.require(identity.in_group('cvsadmin'))
+    def clone_branch(self, pkg, branch, master, email_log=True):
+        '''Make `branch` permissions mirror `master`, creating if necessary.
+
+        Note: Branch names are short names like 'F-10', 'devel', 'EL-5'
+
+        This is a Layer 2 API
+
+        :arg pkg: Name of the package to clone
+        :arg branch: Name of branch to create
+        :arg master: Name of branch to take permissions from
+        :kwarg email_log: If False, do not email a log message
+        :type email_log: Boolean
+        :returns: The cloned branch
+        :rtype: PackageListing
+        '''
+        error_args  = {'package': package, 'master': master, 'branch': branch}
+
+        # Retrieve the packagelisting for the master branch
+        try:
+            master_branch = PackageListing.query.join('package'
+                    ).join('collection').filter(
+                        and_(Package.name==package, Branch.branchname==master)
+                        ).one()
+        except InvalidRequestError:
+            flash(_('"%(package)s" does not exist on branch "%(master)s"') %
+                    error_args)
+            return dict(exc='BranchInvalid')
+
+        try:
+            clone_branch = master_branch.clone(branch)
+        except InvalidRequestError, e:
+                # Not a valid collection
+                flash(_('"%(branch)s" is not a valid branch name' %
+                    {'branch': branch}))
+                return dict(exc='BranchInvalid')
+        except Exception, e:
+            flash(_('Unable to clone "%(package)s %(master)s" to'
+                ' "%(package)s %(branch)s"') % error_args)
+            return dict(exc='CannotClone')
+
+        try:
+            session.flush()
+        except SQLError, e:
+            flash(_('Unable to save clone of %(package)s %(master)s for'
+                ' %(branch)s to the database ') % error_args)
+            return dict(exc='DatabaseError')
+
+        if email_log:
+            log_params = {'user': identity.current.user_name,
+                'pkg': pkg, 'branch': branch, 'master': master}
+            msg = '%(user)s cloned %(pkg)s %(branch)s from %(master)s' % \
+                    log_params
+            subject = '%(pkg)s %(branch)s cloned from %(master)s' % log_params
+            self._send_log_msg(msg, subject,
+                identity.current.user, [clone_branch])
+
+        return dict(pkglisting=clone_branch)
