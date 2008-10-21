@@ -123,8 +123,10 @@ Normalize Statuscode/StatuscodeId
 :Status: Design Finalizing
 
 Statuses are identified by a numeric id.  :class:`StatusCodeTranslation` and
-all the StatusCode tables call that column `statuscodeid`.  Everything else
-calls it `statuscode`.  We should standardize on `statuscode`.
+all the StatusCode tables call that column `statuscodeid`.  Other instances
+call it `statuscode`.  We're going to standardize on `status_id` since this
+often shows up when we return database objects to the user and so should
+follow PEP8.
 
 Affected tables:
 
@@ -143,7 +145,7 @@ Affected tables:
 Porting
 =======
 
-Change all occurences of `statuscodeid` into `statuscode`.
+Change all occurences of `statuscodeid` and `statuscode` to `status_id`
 
 --------------------
 Reorganize the Model
@@ -229,3 +231,106 @@ Porting
 This touches internal API only and can be done in the 0.3.x branch.
 
 .. [#]: http://www.sqlalchemy.org/docs/04/mappers.html#advdatamapping_relation_strategies
+
+---------------------
+Pluralize Table Names
+---------------------
+Database tables hold sets of records.  So instead of describing a Table as
+Collection it should be collections.  However, the classes which map to the
+tables are single instances rather than multiples.  So they will remain
+singular.
+
+Porting
+=======
+
+Database tables will change to plural form.
+
+The Table definitions in model/\*.py will have to be adapted to find the right
+table.  The classes that are mapped to the tables will retain the same name so
+most code consuming the models will remain unchanged.  Sometimes there will be
+old SQLAlchemy-0.3 code which references the Tables directly will need to be
+changed.  These should be changed to reference the mapped class instead of
+merely changed to reference the new table name.
+
+Example::
+    # Old:
+    CollectionTable = Table('collection')
+    mapper(Collection, CollectionTable)
+    collection = Collection.query.filter(CollectionTable.c.version >= '8')
+
+    # New:
+    CollectionsTable = Table('collections')
+    mapper(Collection, CollectionsTable)
+    collection = Collection.query.filter(Collection.version >= '8')
+
+------------------------------
+Shorten Table and Column Names
+------------------------------
+Some table and column names are unwieldy because of their length.  We're going
+to use some standard abbreviations and simply shorten some other names to make
+these easier to use.
+
+This also has a good effect on the json output.  Since we sometimes return
+lists or database objects and the column names can show up there multiple
+times this can drastically cut the amount of data sent over the wire.
+
+
+Table Changes
+=============
+
+===========================  =================================
+Current Name                 New Name
+---------------------------  ---------------------------------
+collectionlogstatuscode      collectionlogstatus
+grouppackagelisting          group
+grouppackagelistingacl       groupacl
+packageacllogstatuscode      (merge with packageaclstatus)
+packageaclstatuscode         packageaclstatus
+packagelistinglogstatuscode  (merge with packagelistingstatus)
+packagelistingstatuscode     packagelistingstatus
+packagelog                   packagelog
+packagelogstatuscode         (merge with packagestatus)
+packagestatuscode            packagestatus
+personpackagelisting         person
+personpackagelistingacl      personacl
+personackagelistingacllog    personacllog
+statuscode                   status
+statuscodetranslation        statustranslation
+===========================  =================================
+
+Column Renames
+==============
+
+Package
+-------
+reviewurl review_url
+shouldopen should_open
+statuscode status_id
+
+Collection
+----------
+statuscode status_id
+publishurltemplate drop
+pendingurltemplate drop
+
+Logs
+----
+\*id  \*_id
+userid user
+changetime change_time
+
+CollectionPackage
+-----------------
+statuscode status_id
+numpkgs num_pkgs
+
+Groups
+------
+group_id group
+packagelistingid pkglisting_id
+
+GroupAcls
+---------
+grouppackagelistingid group_id
+statuscode status_id
+

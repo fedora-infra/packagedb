@@ -328,7 +328,7 @@ BaseClient will take care of raising an exception from this information for
 the client code to consume.
 
 DB Changes
-==========
+~~~~~~~~~~
 
 Please see the New DB Model Documentation.  Some of these changes will be
 internal and some of this will be externally visible.
@@ -337,6 +337,49 @@ internal and some of this will be externally visible.
    :maxdepth: 2
 
    NewDBModel.rst
+
+PEP8ify and Shorten Variable Names
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Names of public variables and parameters are unwieldy in several ways:
+
+1) They are too long.  This is especially seen in database column names.  This
+   is bad because returning values as json has to repeat the column name
+   multiple times.
+2) They do not comply with PEP8.  PEP8 specifies underscores to divide words.
+   We presently use camelCase.
+
+
+New API Fixes
+-------------
+
+Some of these changes will be fixed via `DB Changes`_.  Below
+is a list of changes to parameters and return values unrelated to the
+database.  In general the following rules are followed:
+
+1) If it's a db object, it folows the db object spelling
+2) If it's two words in standard usage, it becomes two words separated by
+   underscore.
+3) If it is abbreviated in one place, it is abbreviated everywhere.
+4) Numeric id parameters are being removed.  We'll pass symbolic names or fully
+   expanded names instead.  (pkg='foo', collectn='F-8' instead of
+   pkg_listing_id='10998')
+
+========================  ================
+Current Name              New Name
+------------------------  ----------------
+package                   pkg
+packageName               pkg_name
+package_name              pkg_name
+collection                collectn
+collectionName            collectn_name
+collectionVersion         collectn_version
+cc_list                   cc_list
+qacontact                 qa_contact
+fasname                   username
+pkg_listing_id            pkg, collectn
+collection_id             collectn
+========================  ================
 
 -----------------
 Internal Cleanups
