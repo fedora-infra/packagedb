@@ -447,10 +447,8 @@ function request_status_change(event) {
  * This mostly involves setting event handlers to be called when the user
  * clicks on something.
  */
-jQuery(document).ready(function() {
+function init(event) {
     logDebug('In Init');
-    /* Restore $() to whatever other library wants it */
-    jQuery.noConflict();
 
     /* Global commits hash.  When a change from the user is anticipated, add
      * relevant information to this hash.  After the change is committed or
@@ -458,7 +456,6 @@ jQuery(document).ready(function() {
      */
     commits = {};
 
-    //jQuery('input').class('ownerButton')
     var ownerButtons = getElementsByTagAndClassName('input', 'ownerButton');
     for (var buttonNum in ownerButtons) {
         var request_owner_change = partial(make_request, '/toggle_owner',
@@ -496,4 +493,6 @@ jQuery(document).ready(function() {
     for (var addButtonNum in addMyselfButtons) {
         connect(addMyselfButtons[addButtonNum], 'onclick', request_acl_gui);
     }
-});
+}
+
+connect(window, 'onload', init);
