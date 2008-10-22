@@ -1314,7 +1314,7 @@ class PackageDispatcher(controllers.Controller):
         except InvalidRequestError:
             flash(_('"%(package)s" does not exist on branch "%(master)s"') %
                     error_args)
-            return dict(exc='BranchInvalid')
+            return dict(exc='InvalidBranch')
 
         try:
             clone_branch = master_branch.clone(branch)
@@ -1322,7 +1322,7 @@ class PackageDispatcher(controllers.Controller):
                 # Not a valid collection
                 flash(_('"%(branch)s" is not a valid branch name' %
                     {'branch': branch}))
-                return dict(exc='BranchInvalid')
+                return dict(exc='InvalidBranch')
         except Exception, e:
             flash(_('Unable to clone "%(package)s %(master)s" to'
                 ' "%(package)s %(branch)s"') % error_args)
@@ -1345,3 +1345,80 @@ class PackageDispatcher(controllers.Controller):
                 identity.current.user, [clone_branch])
 
         return dict(pkglisting=clone_branch)
+
+    @expose(allow_json=True)
+    # Check that we have a tg.identity, otherwise you can't set any acls.
+    @identity.require(identity.in_group('cvsadmin'))
+    def mass_branch(self, branch):
+        '''Mass branch all packages listed as non-blocked in koji to the pkgdb.
+
+        Note: At some point, this will need to do the reverse: we'll maintain
+        the list of dead packages in the pkgdb and sync that information to
+        koji.
+
+        Note: It is safe to call this method repeatedly.  If all packages have
+        been branched already, new invokations will have no effect.
+
+        :arg branch: Name of the branch to branch all packages for
+        :returns: number of packages branched
+        :raises InvalidBranch: If the branch does not exist in the pkgdb or
+            koji
+        :raises ServiceError: If we cannot log into koji
+        :raises CannotClone: If some branches could not be cloned.  This will
+            also return the names of the uncloned packages in the `unbranched`
+            variable.
+        '''
+        import koji
+        koji_url = config.get('koji.huburl', 'https://koji.fedoraproject.org/kojihub')
+        pkgdb_cert = config.get('cert.user', '/etc/pki/pkgdb.cert')
+        user_ca = config.get('cert.user_ca', '/etc/pki/fedora-server-ca.cert')
+        server_ca = config.get('cert.server_ca', '/etc/pki/fedora-server-ca.cert')
+
+        try:
+            to_branch = Branch.query.filter_by(branchname=branch).one()
+        except InvalidRequestError, e:
+            flash(_('Unable to locate a branch for %(branch)s') % {'branch':
+                branch})
+            return dict(exc='InvalidBranch')
+
+        koji_name = to_branch.koji_name
+        if not koji_name:
+            flash(_('Unable to mass branch for %(branch)s because it is not managed by koji') % {'branch': branch})
+            return dict(exc='InvalidBranch')
+
+        koji_session = koji.ClientSession(koji_url)
+        if not koji_session.ssl_login(cert=pkgdb_cert, ca=user_ca, serverca=server_ca):
+            flash(_('Unable to log into koji'))
+            return dict(exc='ServiceError')
+
+        devel_branch = Collection.by_simple_name('devel')
+
+        pkglist = session.listPackages(tagID=koji_name, inherited=True)
+        pkgs = (pkg for pkg in pkglist if no pkg['blocked'])
+
+        unbranched = []
+        num_branched = 0
+        for pkg in pkgs:
+            if pkg.package_name not in to_branch.listings2:
+                if pkg.package_name in devel_branch.listings2:
+                    # clone the package from the devel branch
+                    try:
+                        devel_branch.listings2[pkg.package_name].clone(branch)
+                    except InvalidRequestError, e:
+                        pass
+                        # Error will be taked care of further down
+                    else:
+                        # Success, get us to the next package
+                        num_branched = num_branched + 1
+                        continue
+                # If we get down to here we had an error cloning this package
+                unbranched.append(pkg.package_name)
+
+        if unbranched:
+            # Uh oh, there were packages which weren't branched.  Tell the
+            # user
+            flash(_('%(count)s packages were unbranched for %(branch)s') %
+                    {'count': len(unbranched), 'branch': branch})
+            return dict(exc='CannotClone', branch_count=num_branched,
+                    unbranched=unbranched)
+        return dict(branch_count=num_branched)
