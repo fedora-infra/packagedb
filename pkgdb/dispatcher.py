@@ -1394,7 +1394,7 @@ class PackageDispatcher(controllers.Controller):
         devel_branch = Collection.by_simple_name('devel')
 
         pkglist = session.listPackages(tagID=koji_name, inherited=True)
-        pkgs = (pkg for pkg in pkglist if no pkg['blocked'])
+        pkgs = (pkg for pkg in pkglist if not pkg['blocked'])
 
         unbranched = []
         num_branched = 0
