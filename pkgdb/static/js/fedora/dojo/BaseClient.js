@@ -105,7 +105,7 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
     },
     create_throbber: function() {
         /* Create a new throbber inside this throbber group */
-        return new fedora.dojo.Throbber();
+        return new fedora.dojo.Throbber(this);
     },
     destroy_all_throbbers: function() {
         /* Remove all throbbers on the page */
@@ -131,13 +131,14 @@ dojo.declare('fedora.dojo.Throbber', null, {
         dojo.publish('FedoraDojoThrobber');
     },
     stop: function() {
-        /* Turn the Throbber off */
+        /* Turn the throbber off */
         dojo.query('#' + this.id).removeClass('active')
+            .forEach(dojo.hitch(this, function(node) {node.innerHTML=
+                    '<img src="' + this.group.inactive_image + '"/>'}));
     },
     destroy: function() {
         /* Remove the throbber from the DOM */
-        dojo.query('#' + this.id)
-            .orphan().forEach(function(node) {node.empty();})
+        dojo.query('#' + this.id).empty().orphan();
     },
 });
 

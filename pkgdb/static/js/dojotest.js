@@ -23,13 +23,13 @@ dojo.require('fedora.dojo.Throbber');
 
 function get_pkgdb_info(event) {
     /* Example of a non-auth'ed page */
-    var throbber = new throbber_group.create_throbber();
+    var throbber = throbber_group.create_throbber();
     var params = {collectionName: 'Fedora', collectionVersion: 'devel'};
     var action = pkgdb.start_request('packages/name/'+ event.target.id, {req_params: params});
 
     coords = dojo.coords(event.target);
     dojo.attr(throbber.domNode, {style: 'position: absolute; left: ' + (coords.x - coords.l) + '; top: ' + (coords.y - coords.h) + ';'});
-    event.target.appendChild(throbber.domNode);
+    dojo.query('body').adopt(throbber.domNode);
     throbber.start()
     action.addErrback(function(error, args) {
         console.warn('This was the error:' + error);
@@ -43,7 +43,7 @@ function get_pkgdb_info(event) {
         event.target.innerHTML=event.target.id + ' -- ' + data.packageListings[0].package.description;
         return data;
     });
-    action.addCallback(throbber.stop);
+    action.addBoth(function(data, args) {throbber.destroy(); return data;});
 };
 
 dojo.addOnLoad(function() {
