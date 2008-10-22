@@ -32,6 +32,7 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
         this.id = this.statics.nextid++;
         /* Throb every tenth of a second by default */
         this.timeout = kw['timeout'] || 100;
+        this.inactive_image = kw['inactive_image'] || null;
         this.images = [];
         var extension = kw['extension'] || '.png';
         var i;
@@ -47,6 +48,9 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
             this.images[i] = this.base_url + i + extension;
         }
 
+        if (!this.inactive_image) {
+            this.inactive_image = this.images[0];
+        }
         /* Precache the images asynchronously */
         precache.addCallback(this._precache());
     },
@@ -55,6 +59,7 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
         for (i = 0; i < this.images.length; i++) {
             new Image().src = this.images[i];
         }
+        new Image().src = this.inactive_image;
         return data;
     },
     _throb: function(seq_num) {
