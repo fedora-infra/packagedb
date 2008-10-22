@@ -164,12 +164,6 @@ dojo.declare('fedora.dojo.Throbber', null, {
  *
  */
 dojo.declare('fedora.dojo.BaseClient', null, {
-    base_url : null,
-    useragent: 'Fedora DojoClient/0.1',
-    session_name: 'tg-visit',
-    debug: false,
-    username: null,
-    password: null,
     constructor: function(base_url, kw) {
         /* 
          * Create a client configured for a particular service.
@@ -177,8 +171,6 @@ dojo.declare('fedora.dojo.BaseClient', null, {
          * :arg base_url: Base of every URL used to contact the server
          * :kwarg useragent: useragent string to use.  If not given, default
          *      to "Fedora DojoClient/VERSION"
-         * :kwarg session_name: name of the cookie to use with session
-         *      handling.  Default: 'tg-visit'
          * :kwarg username: Username for establishing authenticated connections
          * :kwarg password: Password to use with authenticated connections
          * :kwarg debug: If True, log debug information Default: false
@@ -193,7 +185,6 @@ dojo.declare('fedora.dojo.BaseClient', null, {
         this.base_url = base_url;
 
         this.useragent = kw['useragent'] || this.useragent;
-        this.session_name = kw['session_name'] || this.session_name;
         this.debug = kw['debug'] || this.debug;
         this.username = kw['username'] || this.username;
         this.password = kw['password'] || this.password;
@@ -248,8 +239,13 @@ dojo.declare('fedora.dojo.BaseClient', null, {
                  * into the errorback chain.
                  */
                 if (data['exc']) {
+                    name = data['exc'];
+                    delete data['exc'];
+                    message = data['tg_flash'];
+                    delete data['tg_flash'];
                     throw {name: data['exc'],
-                        message: data['tg_flash']
+                        message: data['tg_flash'],
+                        extras: data
                     };
                 }
                 return data;
