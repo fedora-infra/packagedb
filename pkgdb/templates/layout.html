@@ -28,9 +28,15 @@
     <script src="${tg.tg_js}/MochiKit.js" type="text/javascript"></script>
     <script src="${tg.url('/static/javascript/mochikit1.4.js')}" type="text/javascript"></script>
     <script type="text/javascript" py:if="not tg.identity.anonymous">
-      tgUserDisplayName = "${tg.identity.user.human_name}";
-      tgUserUserName = "${tg.identity.user.username}";
-      tgUserUserId = "${tg.identity.user.id}";
+      tg_baseurl = "${tg.url('/')}";
+      tg_userid = "${tg.identity.user.id}";
+      tg_username = "${tg.identity.user.username}";
+      tg_display_name = "${tg.identity.user.human_name}";
+
+      // Backwards Compatibility
+      tgUserDisplayName = tg_display_name;
+      tgUserUserName = tg_username;
+      tgUserUserId = tg_userid;
     </script>
     <script type="text/javascript">
         <!--
