@@ -7,6 +7,7 @@
     width: 171px;
 	overflow: hidden;
 }
+
 .dojoxCalendarBody {
     height: 138px;
     overflow: hidden;
@@ -14,6 +15,7 @@
     margin: auto;
     width: 171px;
 }
+
 .dojoxCalendar .dijitCalendarDayLabels, .dojoxCalendarMonthLabels, .dojoxCalendarYearLabels {
     width: 171px;
     height: 138px;
@@ -23,32 +25,41 @@
     margin: auto;
     text-align: center;
 }
+
 .dojoxCalendar .dijitCalendarDateTemplate { 
 	padding: 0px; 
 }
+
 .dojoxCalendar .noPointer, .dojoxCalendar .noPointer * {
 	cursor: auto;
 }
+
 .dojoxCalendarContainer table {
     font-size: 11px;
 }
+
 .dojoxCalendarHeader {
     height: 20px;
     width: 100%;
 }
+
 .dojoxCalendarDecrease, .dojoxCalendarIncrease {
     height: 15px;
     width: 15px;
     cursor: pointer;
 }
+
 .dojoxCalendarDecrease {
     background: transparent url(../../../dijit/themes/nihilo/images/spriteRoundedIconsSmall.png) no-repeat scroll left top;
     float: left;
 }
+
 .dojoxCalendarIncrease {
     background: transparent url(../../../dijit/themes/nihilo/images/spriteRoundedIconsSmall.png) no-repeat scroll -30px top;
     float: right;
 }
+
+
 .dojoxCalendarMonthLabel {
     cursor: pointer;
     height: 35px;
@@ -57,6 +68,7 @@
     text-align: center;
 	padding-top: 10px;
 }
+
 .dojoxCalendarYearLabel {
     cursor: pointer;
     height: 35px;
@@ -65,16 +77,19 @@
     text-align: center;
 	padding-top: 10px;
 }
+
 .dojoxCalendarTitle {
     cursor: pointer;
     font-weight: bold;
 }
+
 .dojoxCalendar .dijitCalendarDateLabel {
     height: 17px;
     width: 17px;
     padding: 1px 2px;
     text-align: center;
 }
+
 .dojoxCalendar .dijitCalendarDayLabel {
     cursor: pointer;
     height: 17px;
@@ -82,33 +97,42 @@
     padding: 0pt 2px;
     text-align: center;
 }
+
+
 .dojoxCalendar .dojoxCalendarContainer {
     background-color: white;
     border: 1px solid #656565;
     color: black;
 }
+
 .dojoxCalendar .dijitCalendarDisabledDate {
 	text-decoration:line-through !important;
 	cursor:default !important;
 }
+
 .dojoxCalendar .dojoxCalendarFooter {
     border-top: 1px solid #F4F4F4;
     height: 15px;
     padding-top: 4px;
     cursor: pointer;
 }
+
 .dojoxCalendar .dijitCalendarDateLabel {
     border-bottom: 1px solid #E4E4E4;
 }
+
 .dojoxCalendar .dijitCalendarDateLabel {
     border: 1px solid white;
 }
+
 .dojoxCalendar .dojoxCalendarMonthLabel {
     border: 1px solid white;
 }
+
 .dojoxCalendar .dojoxCalendarYearLabel {
     border: 1px solid white;
 }
+
 .dojoxCalendar .dijitCalendarNextMonth .dijitCalendarDateLabel,
 .dojoxCalendar .dijitCalendarPreviousMonth .dijitCalendarDateLabel  {
   	border: 0px;
@@ -116,11 +140,13 @@
 	padding-left: 0px;
 	padding-right: 0px;
 }
+
 .dojoxCalendar .dijitCalendarNextMonth, .dojoxCalendar .dijitCalendarPreviousMonth {
     background-color: #E4E4E4;
 	border-left: 1px solid #E4E4E4;
 	border-right: 1px solid #E4E4E4;
 }
+
 .dojoxCalendar .dijitCalendarNextMonth .dojoxCalendarYearLabel,
 .dojoxCalendar .dijitCalendarPreviousMonth .dojoxCalendarYearLabel {
     background-color: white;
@@ -128,14 +154,16 @@
     color: #646464;
 }
 .dojoxCalendar .dijitCalendarSelectedDate {
-	
+	/* cell for the selected date */
 	background-color:#ffe284 !important;
 	color:black !important;
 	border:#f7c95c solid 1px !important;
 }
+
 .dojoxCalendar .dijitCalendarSelectedDate .dijitCalendarDateLabel {
 	padding: 0px 1px;
 }
+
 .dojoxCalendar .monthOnly .dijitCalendarDayLabels,
 .dojoxCalendar .yearOnly .dijitCalendarDayLabels,
 .dojoxCalendar .monthOnly .dojoxCalendarComma,

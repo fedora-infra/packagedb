@@ -5,231 +5,264 @@
 */
 
 
-if(!dojo._hasResource["dojox.secure.DOM"]){
-dojo._hasResource["dojox.secure.DOM"]=true;
+if(!dojo._hasResource["dojox.secure.DOM"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.secure.DOM"] = true;
 dojo.provide("dojox.secure.DOM");
 dojo.require("dojox.lang.observable");
-dojox.secure.DOM=function(_1){
-function safeNode(_2){
-if(!_2){
-return _2;
-}
-var _3=_2;
-do{
-if(_3==_1){
-return wrap(_2);
-}
-}while((_3=_3.parentNode));
-return null;
-};
-function wrap(_4){
-if(_4){
-if(_4.nodeType){
-var _5=nodeObserver(_4);
-if(_4.nodeType==1&&typeof _5.style=="function"){
-_5.style=styleObserver(_4.style);
-_5.ownerDocument=safeDoc;
-_5.childNodes={__get__:function(i){
-return wrap(_4.childNodes[i]);
-},length:0};
-}
-return _5;
-}
-if(_4&&typeof _4=="object"){
-if(_4.__observable){
-return _4.__observable;
-}
-_5=_4 instanceof Array?[]:{};
-_4.__observable=_5;
-for(var i in _4){
-if(i!="__observable"){
-_5[i]=wrap(_4[i]);
-}
-}
-_5.data__=_4;
-return _5;
-}
-if(typeof _4=="function"){
-var _8=function(_9){
-if(typeof _9=="function"){
-return function(){
-for(var i=0;i<arguments.length;i++){
-arguments[i]=wrap(arguments[i]);
-}
-return _8(_9.apply(wrap(this),arguments));
-};
-}
-return dojox.secure.unwrap(_9);
-};
-return function(){
-if(_4.safetyCheck){
-_4.safetyCheck.apply(_8(this),arguments);
-}
-for(var i=0;i<arguments.length;i++){
-arguments[i]=_8(arguments[i]);
-}
-return wrap(_4.apply(_8(this),arguments));
-};
-}
-}
-return _4;
-};
-unwrap=dojox.secure.unwrap;
-function safeCSS(_c){
-_c+="";
-if(_c.match(/behavior:|content:|javascript:|binding|expression|\@import/)){
-throw new Error("Illegal CSS");
-}
-var id=_1.id||(_1.id="safe"+(""+Math.random()).substring(2));
-return _c.replace(/(\}|^)\s*([^\{]*\{)/g,function(t,a,b){
-return a+" #"+id+" "+b;
-});
-};
-function safeURL(url){
-if(url.match(/:/)&&!url.match(/^(http|ftp|mailto)/)){
-throw new Error("Unsafe URL "+url);
-}
-};
-function safeElement(el){
-if(el&&el.nodeType==1){
-if(el.tagName.match(/script/i)){
-var src=el.src;
-if(src&&src!=""){
-el.parentNode.removeChild(el);
-dojo.xhrGet({url:src,secure:true}).addCallback(function(_14){
-safeDoc.evaluate(_14);
-});
-}else{
-var _15=el.innerHTML;
-el.parentNode.removeChild(el);
-wrap.evaluate(_15);
-}
-}
-if(el.tagName.match(/link/i)){
-throw new Error("illegal tag");
-}
-if(el.tagName.match(/style/i)){
-var _16=function(_17){
-if(el.styleSheet){
-el.styleSheet.cssText=_17;
-}else{
-var _18=doc.createTextNode(_17);
-if(el.childNodes[0]){
-el.replaceChild(_18,el.childNodes[0]);
-}else{
-el.appendChild(_18);
-}
-}
-};
-src=el.src;
-if(src&&src!=""){
-alert("src"+src);
-el.src=null;
-dojo.xhrGet({url:src,secure:true}).addCallback(function(_19){
-_16(safeCSS(_19));
-});
-}
-_16(safeCSS(el.innerHTML));
-}
-if(el.style){
-safeCSS(el.style.cssText);
-}
-if(el.href){
-safeURL(el.href);
-}
-if(el.src){
-safeURL(el.src);
-}
-var _1a,i=0;
-while((_1a=el.attributes[i++])){
-if(_1a.name.substring(0,2)=="on"&&_1a.value!="null"&&_1a.value!=""){
-throw new Error("event handlers not allowed in the HTML, they must be set with element.addEventListener");
-}
-}
-var _1c=el.childNodes;
-for(i=0,l=_1c.length;i<l;i++){
-safeElement(_1c[i]);
-}
-}
-};
-function safeHTML(_1d){
-var div=document.createElement("div");
-if(_1d.match(/<object/i)){
-throw new Error("The object tag is not allowed");
-}
-div.innerHTML=_1d;
-safeElement(div);
-return div;
-};
-var doc=_1.ownerDocument;
-var _20={getElementById:function(id){
-return safeNode(doc.getElementById(id));
-},createElement:function(_22){
-return wrap(doc.createElement(_22));
-},createTextNode:function(_23){
-return wrap(doc.createTextNode(_23));
-},write:function(str){
-var div=safeHTML(str);
-while(div.childNodes.length){
-_1.appendChild(div.childNodes[0]);
-}
-}};
-_20.open=_20.close=function(){
-};
-var _26={innerHTML:function(_27,_28){
 
-_27.innerHTML=safeHTML(_28).innerHTML;
-}};
-_26.outerHTML=function(_29,_2a){
-throw new Error("Can not set this property");
+dojox.secure.DOM = function(element){
+	function safeNode(node){
+		if(!node){
+			return node;
+		}
+		var parent = node;
+		do {
+			if(parent == element){
+				return wrap(node);
+			}
+		} while((parent = parent.parentNode));
+		return null;
+	}
+	function wrap(result){
+		if(result){
+			if(result.nodeType){
+				// wrap the node
+				var wrapped = nodeObserver(result);
+				if(result.nodeType == 1 && typeof wrapped.style == 'function'){ // if it is a function, that means it is holding a slot for us, now we will override it
+					wrapped.style = styleObserver(result.style);
+					wrapped.ownerDocument = safeDoc;
+					wrapped.childNodes = {__get__:function(i){
+						return wrap(result.childNodes[i]);
+						},
+						length:0
+					};
+					//TODO: maybe add attributes
+				}
+				return wrapped;
+			}
+			if(result && typeof result == 'object'){
+				if(result.__observable){ 
+					// we have already wrapped it, this helps prevent circular/infinite loops
+					return result.__observable;
+				}
+				// wrap the node list
+				wrapped = result instanceof Array ? [] : {};
+				result.__observable = wrapped;
+				for(var i in result){
+					if (i != '__observable'){
+						wrapped[i] = wrap(result[i]);
+					}
+				}
+				wrapped.data__ = result;
+				
+				return wrapped;
+			}
+			if(typeof result == 'function'){
+				var unwrap = function(result){
+					if(typeof result == 'function'){
+						// if untrusted code passes a function to trusted code, we want the trusted code to be 
+						// able to execute it and have the arguments automatically wrapped 
+						return function(){
+							for (var i = 0; i < arguments.length; i++){
+								arguments[i] = wrap(arguments[i]);
+							}
+							return unwrap(result.apply(wrap(this),arguments));
+						}
+					}
+					return dojox.secure.unwrap(result);	
+				};
+				// when we wrap a function we make it so that we can untrusted code can execute 
+				// the function and the arguments will be unwrapped for the trusted code 
+				return function(){
+					if(result.safetyCheck){
+						result.safetyCheck.apply(unwrap(this),arguments);
+					}
+					for (var i = 0; i < arguments.length; i++){
+						arguments[i] = unwrap(arguments[i]);
+					}
+					return wrap(result.apply(unwrap(this),arguments));
+				}
+			}
+		}
+		return result;
+	}
+	unwrap = dojox.secure.unwrap;
+	
+	function safeCSS(css){
+		css += ''; // make sure it is a string
+		if(css.match(/behavior:|content:|javascript:|binding|expression|\@import/)){
+			throw new Error("Illegal CSS");
+		}
+		var id = element.id || (element.id = "safe" + ('' + Math.random()).substring(2));
+		return css.replace(/(\}|^)\s*([^\{]*\{)/g,function(t,a,b){ // put all the styles in the context of the id of the sandbox
+			return a + ' #' + id + ' ' + b; // need to remove body and html references something like: .replace(/body/g,''); but that would break mybody...
+		});
+	}
+	function safeURL(url){
+		// test a url to see if it is safe
+		if(url.match(/:/) && !url.match(/^(http|ftp|mailto)/)){ 
+			throw new Error("Unsafe URL " + url);
+		}
+	}
+	function safeElement(el){
+		// test an element to see if it is safe
+		if(el && el.nodeType == 1){
+			if(el.tagName.match(/script/i)){
+				var src = el.src;
+				if (src && src != ""){
+					// load the src and evaluate it safely
+					el.parentNode.removeChild(el);					
+					dojo.xhrGet({url:src,secure:true}).addCallback(function(result){
+						safeDoc.evaluate(result);
+					});
+				}
+				else{
+					//evaluate the script safely and remove it
+					var script = el.innerHTML;
+					el.parentNode.removeChild(el);
+					wrap.evaluate(script);
+				}
+			}
+			if(el.tagName.match(/link/i)){
+				throw new Error("illegal tag");
+			}
+			if(el.tagName.match(/style/i)){
+				var setCSS = function(cssStr){
+					if(el.styleSheet){// IE
+						el.styleSheet.cssText = cssStr;
+					} else {// w3c
+						var cssText = doc.createTextNode(cssStr);
+						if (el.childNodes[0]) 
+							el.replaceChild(cssText,el.childNodes[0])
+						else 
+							el.appendChild(cssText);
+					 }
+					
+				}
+				src = el.src;
+				if(src && src != ""){
+					alert('src' + src);
+					// try to load it by url and safely load it
+					el.src = null;
+					dojo.xhrGet({url:src,secure:true}).addCallback(function(result){
+						setCSS(safeCSS(result));
+					});
+				}
+				setCSS(safeCSS(el.innerHTML));
+			}
+			if(el.style){
+				safeCSS(el.style.cssText);
+			}
+			if(el.href){		
+				safeURL(el.href);
+			}		
+			if(el.src){
+				safeURL(el.src);
+			}
+			var attr,i = 0;
+			while ((attr=el.attributes[i++])){
+				if(attr.name.substring(0,2)== "on" && attr.value != "null" && attr.value != ""){ // must remove all the event handlers
+					throw new Error("event handlers not allowed in the HTML, they must be set with element.addEventListener");
+				}
+			}		
+			var children = el.childNodes;
+			for (i =0, l = children.length; i < l; i++){
+				safeElement(children[i]);
+			}
+		}
+	}
+	function safeHTML(html){
+		var div = document.createElement("div");
+		if(html.match(/<object/i))
+			throw new Error("The object tag is not allowed");
+		div.innerHTML = html; // this is safe with an unattached node
+		safeElement(div);
+		return div;
+	}
+	var doc = element.ownerDocument;
+	var safeDoc = {
+		getElementById : function(id){
+			return safeNode(doc.getElementById(id));
+		},
+		createElement : function(name){
+			return wrap(doc.createElement(name));
+		},
+		createTextNode : function(name){
+			return wrap(doc.createTextNode(name));
+		},
+		write : function(str){
+			var div = safeHTML(str);
+			while (div.childNodes.length){
+				// move all these children to the main node
+				element.appendChild(div.childNodes[0]);
+			}
+		}
+	};
+	safeDoc.open = safeDoc.close = function(){}; // no-op functions
+	var setters = {
+		innerHTML : function(node,value){
+			
+			node.innerHTML = safeHTML(value).innerHTML;
+		}
+	};
+	setters.outerHTML = function(node,value){
+		throw new Error("Can not set this property");
+	}; // blocked
+	function domChanger(name,newNodeArg){
+		return function(node,args){
+			safeElement(args[newNodeArg]);  // check to make sure the new node is safe
+			return node[name](args[0]);// execute the method
+		};
+	} 
+	var invokers = {
+		appendChild : domChanger("appendChild",0),
+		insertBefore : domChanger("insertBefore",0),
+		replaceChild : domChanger("replaceChild",1),
+		cloneNode : function(node,args){
+			return node.cloneNode(args[0]);
+		},
+		addEventListener : function(node,args){
+			dojo.connect(node,'on' + args[0],this,function(event){
+				event = nodeObserver(event || window.event);
+				args[1].call(this,event);
+			});
+		}
+	};
+	invokers.childNodes = invokers.style = invokers.ownerDocument = function(){}; // this is a trick to get these property slots available, they will be overridden  
+	function makeObserver(setter){ // we make two of these, but the setter for style nodes is different
+		return dojox.lang.makeObservable(
+			function(node, prop){
+				var result;
+				return node[prop];
+			},setter,
+			function(wrapper, node, methodName, args){
+				for (var i = 0; i < args.length; i++){
+					args[i] = unwrap(args[i]);
+				}
+				if(invokers[methodName]){
+					return wrap(invokers[methodName].call(wrapper,node,args));
+				}
+				return wrap(node[methodName].apply(node,args));
+			},invokers);
+	}
+	var nodeObserver = makeObserver(function(node, prop, value){
+			if(setters[prop]){
+				setters[prop](node,value);
+			}
+			node[prop] = value; 
+		});
+	var blockedStyles = {behavior:1,MozBinding:1}; 
+	var styleObserver = makeObserver(function(node, prop, value){
+			if(!blockedStyles[prop]){
+				node[prop] = safeCSS(value);
+			} 
+		}); 
+	wrap.safeHTML = safeHTML;
+	wrap.safeCSS = safeCSS;
+	return wrap;
 };
-function domChanger(_2b,_2c){
-return function(_2d,_2e){
-safeElement(_2e[_2c]);
-return _2d[_2b](_2e[0]);
+dojox.secure.unwrap = function unwrap(result){
+	return (result && result.data__) || result; 
 };
-};
-var _2f={appendChild:domChanger("appendChild",0),insertBefore:domChanger("insertBefore",0),replaceChild:domChanger("replaceChild",1),cloneNode:function(_30,_31){
-return _30.cloneNode(_31[0]);
-},addEventListener:function(_32,_33){
-dojo.connect(_32,"on"+_33[0],this,function(_34){
-_34=_35(_34||window.event);
-_33[1].call(this,_34);
-});
-}};
-_2f.childNodes=_2f.style=_2f.ownerDocument=function(){
-};
-function makeObserver(_36){
-return dojox.lang.makeObservable(function(_37,_38){
-var _39;
-return _37[_38];
-},_36,function(_3a,_3b,_3c,_3d){
-for(var i=0;i<_3d.length;i++){
-_3d[i]=unwrap(_3d[i]);
-}
-if(_2f[_3c]){
-return wrap(_2f[_3c].call(_3a,_3b,_3d));
-}
-return wrap(_3b[_3c].apply(_3b,_3d));
-},_2f);
-};
-var _35=makeObserver(function(_3f,_40,_41){
-if(_26[_40]){
-_26[_40](_3f,_41);
-}
-_3f[_40]=_41;
-});
-var _42={behavior:1,MozBinding:1};
-var _43=makeObserver(function(_44,_45,_46){
-if(!_42[_45]){
-_44[_45]=safeCSS(_46);
-}
-});
-wrap.safeHTML=safeHTML;
-wrap.safeCSS=safeCSS;
-return wrap;
-};
-dojox.secure.unwrap=function unwrap(_47){
-return (_47&&_47.data__)||_47;
-};
+
 }

@@ -5,492 +5,812 @@
 */
 
 
-if(!dojo._hasResource["dojo.data.ItemFileReadStore"]){
-dojo._hasResource["dojo.data.ItemFileReadStore"]=true;
+if(!dojo._hasResource["dojo.data.ItemFileReadStore"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojo.data.ItemFileReadStore"] = true;
 dojo.provide("dojo.data.ItemFileReadStore");
+
 dojo.require("dojo.data.util.filter");
 dojo.require("dojo.data.util.simpleFetch");
 dojo.require("dojo.date.stamp");
-dojo.declare("dojo.data.ItemFileReadStore",null,{constructor:function(_1){
-this._arrayOfAllItems=[];
-this._arrayOfTopLevelItems=[];
-this._loadFinished=false;
-this._jsonFileUrl=_1.url;
-this._jsonData=_1.data;
-this._datatypeMap=_1.typeMap||{};
-if(!this._datatypeMap["Date"]){
-this._datatypeMap["Date"]={type:Date,deserialize:function(_2){
-return dojo.date.stamp.fromISOString(_2);
-}};
-}
-this._features={"dojo.data.api.Read":true,"dojo.data.api.Identity":true};
-this._itemsByIdentity=null;
-this._storeRefPropName="_S";
-this._itemNumPropName="_0";
-this._rootItemPropName="_RI";
-this._reverseRefMap="_RRM";
-this._loadInProgress=false;
-this._queuedFetches=[];
-if(_1.urlPreventCache!==undefined){
-this.urlPreventCache=_1.urlPreventCache?true:false;
-}
-if(_1.clearOnClose){
-this.clearOnClose=true;
-}
-},url:"",data:null,typeMap:null,clearOnClose:false,urlPreventCache:false,_assertIsItem:function(_3){
-if(!this.isItem(_3)){
-throw new Error("dojo.data.ItemFileReadStore: Invalid item argument.");
-}
-},_assertIsAttribute:function(_4){
-if(typeof _4!=="string"){
-throw new Error("dojo.data.ItemFileReadStore: Invalid attribute argument.");
-}
-},getValue:function(_5,_6,_7){
-var _8=this.getValues(_5,_6);
-return (_8.length>0)?_8[0]:_7;
-},getValues:function(_9,_a){
-this._assertIsItem(_9);
-this._assertIsAttribute(_a);
-return _9[_a]||[];
-},getAttributes:function(_b){
-this._assertIsItem(_b);
-var _c=[];
-for(var _d in _b){
-if((_d!==this._storeRefPropName)&&(_d!==this._itemNumPropName)&&(_d!==this._rootItemPropName)&&(_d!==this._reverseRefMap)){
-_c.push(_d);
-}
-}
-return _c;
-},hasAttribute:function(_e,_f){
-return this.getValues(_e,_f).length>0;
-},containsValue:function(_10,_11,_12){
-var _13=undefined;
-if(typeof _12==="string"){
-_13=dojo.data.util.filter.patternToRegExp(_12,false);
-}
-return this._containsValue(_10,_11,_12,_13);
-},_containsValue:function(_14,_15,_16,_17){
-return dojo.some(this.getValues(_14,_15),function(_18){
-if(_18!==null&&!dojo.isObject(_18)&&_17){
-if(_18.toString().match(_17)){
-return true;
-}
-}else{
-if(_16===_18){
-return true;
-}
-}
-});
-},isItem:function(_19){
-if(_19&&_19[this._storeRefPropName]===this){
-if(this._arrayOfAllItems[_19[this._itemNumPropName]]===_19){
-return true;
-}
-}
-return false;
-},isItemLoaded:function(_1a){
-return this.isItem(_1a);
-},loadItem:function(_1b){
-this._assertIsItem(_1b.item);
-},getFeatures:function(){
-return this._features;
-},getLabel:function(_1c){
-if(this._labelAttr&&this.isItem(_1c)){
-return this.getValue(_1c,this._labelAttr);
-}
-return undefined;
-},getLabelAttributes:function(_1d){
-if(this._labelAttr){
-return [this._labelAttr];
-}
-return null;
-},_fetchItems:function(_1e,_1f,_20){
-var _21=this;
-var _22=function(_23,_24){
-var _25=[];
-if(_23.query){
-var _26=_23.queryOptions?_23.queryOptions.ignoreCase:false;
-var _27={};
-for(var key in _23.query){
-var _29=_23.query[key];
-if(typeof _29==="string"){
-_27[key]=dojo.data.util.filter.patternToRegExp(_29,_26);
-}
-}
-for(var i=0;i<_24.length;++i){
-var _2b=true;
-var _2c=_24[i];
-if(_2c===null){
-_2b=false;
-}else{
-for(var key in _23.query){
-var _29=_23.query[key];
-if(!_21._containsValue(_2c,key,_29,_27[key])){
-_2b=false;
-}
-}
-}
-if(_2b){
-_25.push(_2c);
-}
-}
-_1f(_25,_23);
-}else{
-for(var i=0;i<_24.length;++i){
-var _2d=_24[i];
-if(_2d!==null){
-_25.push(_2d);
-}
-}
-_1f(_25,_23);
-}
-};
-if(this._loadFinished){
-_22(_1e,this._getItemsArray(_1e.queryOptions));
-}else{
-if(this._jsonFileUrl){
-if(this._loadInProgress){
-this._queuedFetches.push({args:_1e,filter:_22});
-}else{
-this._loadInProgress=true;
-var _2e={url:_21._jsonFileUrl,handleAs:"json-comment-optional",preventCache:this.urlPreventCache};
-var _2f=dojo.xhrGet(_2e);
-_2f.addCallback(function(_30){
-try{
-_21._getItemsFromLoadedData(_30);
-_21._loadFinished=true;
-_21._loadInProgress=false;
-_22(_1e,_21._getItemsArray(_1e.queryOptions));
-_21._handleQueuedFetches();
-}
-catch(e){
-_21._loadFinished=true;
-_21._loadInProgress=false;
-_20(e,_1e);
-}
-});
-_2f.addErrback(function(_31){
-_21._loadInProgress=false;
-_20(_31,_1e);
-});
-}
-}else{
-if(this._jsonData){
-try{
-this._loadFinished=true;
-this._getItemsFromLoadedData(this._jsonData);
-this._jsonData=null;
-_22(_1e,this._getItemsArray(_1e.queryOptions));
-}
-catch(e){
-_20(e,_1e);
-}
-}else{
-_20(new Error("dojo.data.ItemFileReadStore: No JSON source data was provided as either URL or a nested Javascript object."),_1e);
-}
-}
-}
-},_handleQueuedFetches:function(){
-if(this._queuedFetches.length>0){
-for(var i=0;i<this._queuedFetches.length;i++){
-var _33=this._queuedFetches[i];
-var _34=_33.args;
-var _35=_33.filter;
-if(_35){
-_35(_34,this._getItemsArray(_34.queryOptions));
-}else{
-this.fetchItemByIdentity(_34);
-}
-}
-this._queuedFetches=[];
-}
-},_getItemsArray:function(_36){
-if(_36&&_36.deep){
-return this._arrayOfAllItems;
-}
-return this._arrayOfTopLevelItems;
-},close:function(_37){
-if(this.clearOnClose&&(this._jsonFileUrl!=="")){
-this._arrayOfAllItems=[];
-this._arrayOfTopLevelItems=[];
-this._loadFinished=false;
-this._itemsByIdentity=null;
-this._loadInProgress=false;
-this._queuedFetches=[];
-}
-},_getItemsFromLoadedData:function(_38){
-var _39=false;
-function valueIsAnItem(_3a){
-var _3b=((_3a!=null)&&(typeof _3a=="object")&&(!dojo.isArray(_3a)||_39)&&(!dojo.isFunction(_3a))&&(_3a.constructor==Object||dojo.isArray(_3a))&&(typeof _3a._reference=="undefined")&&(typeof _3a._type=="undefined")&&(typeof _3a._value=="undefined"));
-return _3b;
-};
-var _3c=this;
-function addItemAndSubItemsToArrayOfAllItems(_3d){
-_3c._arrayOfAllItems.push(_3d);
-for(var _3e in _3d){
-var _3f=_3d[_3e];
-if(_3f){
-if(dojo.isArray(_3f)){
-var _40=_3f;
-for(var k=0;k<_40.length;++k){
-var _42=_40[k];
-if(valueIsAnItem(_42)){
-addItemAndSubItemsToArrayOfAllItems(_42);
-}
-}
-}else{
-if(valueIsAnItem(_3f)){
-addItemAndSubItemsToArrayOfAllItems(_3f);
-}
-}
-}
-}
-};
-this._labelAttr=_38.label;
-var i;
-var _44;
-this._arrayOfAllItems=[];
-this._arrayOfTopLevelItems=_38.items;
-for(i=0;i<this._arrayOfTopLevelItems.length;++i){
-_44=this._arrayOfTopLevelItems[i];
-if(dojo.isArray(_44)){
-_39=true;
-}
-addItemAndSubItemsToArrayOfAllItems(_44);
-_44[this._rootItemPropName]=true;
-}
-var _45={};
-var key;
-for(i=0;i<this._arrayOfAllItems.length;++i){
-_44=this._arrayOfAllItems[i];
-for(key in _44){
-if(key!==this._rootItemPropName){
-var _47=_44[key];
-if(_47!==null){
-if(!dojo.isArray(_47)){
-_44[key]=[_47];
-}
-}else{
-_44[key]=[null];
-}
-}
-_45[key]=key;
-}
-}
-while(_45[this._storeRefPropName]){
-this._storeRefPropName+="_";
-}
-while(_45[this._itemNumPropName]){
-this._itemNumPropName+="_";
-}
-while(_45[this._reverseRefMap]){
-this._reverseRefMap+="_";
-}
-var _48;
-var _49=_38.identifier;
-if(_49){
-this._itemsByIdentity={};
-this._features["dojo.data.api.Identity"]=_49;
-for(i=0;i<this._arrayOfAllItems.length;++i){
-_44=this._arrayOfAllItems[i];
-_48=_44[_49];
-var _4a=_48[0];
-if(!this._itemsByIdentity[_4a]){
-this._itemsByIdentity[_4a]=_44;
-}else{
-if(this._jsonFileUrl){
-throw new Error("dojo.data.ItemFileReadStore:  The json data as specified by: ["+this._jsonFileUrl+"] is malformed.  Items within the list have identifier: ["+_49+"].  Value collided: ["+_4a+"]");
-}else{
-if(this._jsonData){
-throw new Error("dojo.data.ItemFileReadStore:  The json data provided by the creation arguments is malformed.  Items within the list have identifier: ["+_49+"].  Value collided: ["+_4a+"]");
-}
-}
-}
-}
-}else{
-this._features["dojo.data.api.Identity"]=Number;
-}
-for(i=0;i<this._arrayOfAllItems.length;++i){
-_44=this._arrayOfAllItems[i];
-_44[this._storeRefPropName]=this;
-_44[this._itemNumPropName]=i;
-}
-for(i=0;i<this._arrayOfAllItems.length;++i){
-_44=this._arrayOfAllItems[i];
-for(key in _44){
-_48=_44[key];
-for(var j=0;j<_48.length;++j){
-_47=_48[j];
-if(_47!==null&&typeof _47=="object"){
-if(_47._type&&_47._value){
-var _4c=_47._type;
-var _4d=this._datatypeMap[_4c];
-if(!_4d){
-throw new Error("dojo.data.ItemFileReadStore: in the typeMap constructor arg, no object class was specified for the datatype '"+_4c+"'");
-}else{
-if(dojo.isFunction(_4d)){
-_48[j]=new _4d(_47._value);
-}else{
-if(dojo.isFunction(_4d.deserialize)){
-_48[j]=_4d.deserialize(_47._value);
-}else{
-throw new Error("dojo.data.ItemFileReadStore: Value provided in typeMap was neither a constructor, nor a an object with a deserialize function");
-}
-}
-}
-}
-if(_47._reference){
-var _4e=_47._reference;
-if(!dojo.isObject(_4e)){
-_48[j]=this._itemsByIdentity[_4e];
-}else{
-for(var k=0;k<this._arrayOfAllItems.length;++k){
-var _50=this._arrayOfAllItems[k];
-var _51=true;
-for(var _52 in _4e){
-if(_50[_52]!=_4e[_52]){
-_51=false;
-}
-}
-if(_51){
-_48[j]=_50;
-}
-}
-}
-if(this.referenceIntegrity){
-var _53=_48[j];
-if(this.isItem(_53)){
-this._addReferenceToMap(_53,_44,key);
-}
-}
-}else{
-if(this.isItem(_47)){
-if(this.referenceIntegrity){
-this._addReferenceToMap(_47,_44,key);
-}
-}
-}
-}
-}
-}
-}
-},_addReferenceToMap:function(_54,_55,_56){
-},getIdentity:function(_57){
-var _58=this._features["dojo.data.api.Identity"];
-if(_58===Number){
-return _57[this._itemNumPropName];
-}else{
-var _59=_57[_58];
-if(_59){
-return _59[0];
-}
-}
-return null;
-},fetchItemByIdentity:function(_5a){
-if(!this._loadFinished){
-var _5b=this;
-if(this._jsonFileUrl){
-if(this._loadInProgress){
-this._queuedFetches.push({args:_5a});
-}else{
-this._loadInProgress=true;
-var _5c={url:_5b._jsonFileUrl,handleAs:"json-comment-optional",preventCache:this.urlPreventCache};
-var _5d=dojo.xhrGet(_5c);
-_5d.addCallback(function(_5e){
-var _5f=_5a.scope?_5a.scope:dojo.global;
-try{
-_5b._getItemsFromLoadedData(_5e);
-_5b._loadFinished=true;
-_5b._loadInProgress=false;
-var _60=_5b._getItemByIdentity(_5a.identity);
-if(_5a.onItem){
-_5a.onItem.call(_5f,_60);
-}
-_5b._handleQueuedFetches();
-}
-catch(error){
-_5b._loadInProgress=false;
-if(_5a.onError){
-_5a.onError.call(_5f,error);
-}
-}
-});
-_5d.addErrback(function(_61){
-_5b._loadInProgress=false;
-if(_5a.onError){
-var _62=_5a.scope?_5a.scope:dojo.global;
-_5a.onError.call(_62,_61);
-}
-});
-}
-}else{
-if(this._jsonData){
-_5b._getItemsFromLoadedData(_5b._jsonData);
-_5b._jsonData=null;
-_5b._loadFinished=true;
-var _63=_5b._getItemByIdentity(_5a.identity);
-if(_5a.onItem){
-var _64=_5a.scope?_5a.scope:dojo.global;
-_5a.onItem.call(_64,_63);
-}
-}
-}
-}else{
-var _63=this._getItemByIdentity(_5a.identity);
-if(_5a.onItem){
-var _64=_5a.scope?_5a.scope:dojo.global;
-_5a.onItem.call(_64,_63);
-}
-}
-},_getItemByIdentity:function(_65){
-var _66=null;
-if(this._itemsByIdentity){
-_66=this._itemsByIdentity[_65];
-}else{
-_66=this._arrayOfAllItems[_65];
-}
-if(_66===undefined){
-_66=null;
-}
-return _66;
-},getIdentityAttributes:function(_67){
-var _68=this._features["dojo.data.api.Identity"];
-if(_68===Number){
-return null;
-}else{
-return [_68];
-}
-},_forceLoad:function(){
-var _69=this;
-if(this._jsonFileUrl){
-var _6a={url:_69._jsonFileUrl,handleAs:"json-comment-optional",preventCache:this.urlPreventCache,sync:true};
-var _6b=dojo.xhrGet(_6a);
-_6b.addCallback(function(_6c){
-try{
-if(_69._loadInProgress!==true&&!_69._loadFinished){
-_69._getItemsFromLoadedData(_6c);
-_69._loadFinished=true;
-}else{
-if(_69._loadInProgress){
-throw new Error("dojo.data.ItemFileReadStore:  Unable to perform a synchronous load, an async load is in progress.");
-}
-}
-}
-catch(e){
 
-throw e;
-}
+dojo.declare("dojo.data.ItemFileReadStore", null,{
+	//	summary:
+	//		The ItemFileReadStore implements the dojo.data.api.Read API and reads
+	//		data from JSON files that have contents in this format --
+	//		{ items: [
+	//			{ name:'Kermit', color:'green', age:12, friends:['Gonzo', {_reference:{name:'Fozzie Bear'}}]},
+	//			{ name:'Fozzie Bear', wears:['hat', 'tie']},
+	//			{ name:'Miss Piggy', pets:'Foo-Foo'}
+	//		]}
+	//		Note that it can also contain an 'identifer' property that specified which attribute on the items 
+	//		in the array of items that acts as the unique identifier for that item.
+	//
+	constructor: function(/* Object */ keywordParameters){
+		//	summary: constructor
+		//	keywordParameters: {url: String}
+		//	keywordParameters: {data: jsonObject}
+		//	keywordParameters: {typeMap: object)
+		//		The structure of the typeMap object is as follows:
+		//		{
+		//			type0: function || object,
+		//			type1: function || object,
+		//			...
+		//			typeN: function || object
+		//		}
+		//		Where if it is a function, it is assumed to be an object constructor that takes the 
+		//		value of _value as the initialization parameters.  If it is an object, then it is assumed
+		//		to be an object of general form:
+		//		{
+		//			type: function, //constructor.
+		//			deserialize:	function(value) //The function that parses the value and constructs the object defined by type appropriately.
+		//		}
+	
+		this._arrayOfAllItems = [];
+		this._arrayOfTopLevelItems = [];
+		this._loadFinished = false;
+		this._jsonFileUrl = keywordParameters.url;
+		this._jsonData = keywordParameters.data;
+		this._datatypeMap = keywordParameters.typeMap || {};
+		if(!this._datatypeMap['Date']){
+			//If no default mapping for dates, then set this as default.
+			//We use the dojo.date.stamp here because the ISO format is the 'dojo way'
+			//of generically representing dates.
+			this._datatypeMap['Date'] = {
+											type: Date,
+											deserialize: function(value){
+												return dojo.date.stamp.fromISOString(value);
+											}
+										};
+		}
+		this._features = {'dojo.data.api.Read':true, 'dojo.data.api.Identity':true};
+		this._itemsByIdentity = null;
+		this._storeRefPropName = "_S";  // Default name for the store reference to attach to every item.
+		this._itemNumPropName = "_0"; // Default Item Id for isItem to attach to every item.
+		this._rootItemPropName = "_RI"; // Default Item Id for isItem to attach to every item.
+		this._reverseRefMap = "_RRM"; // Default attribute for constructing a reverse reference map for use with reference integrity
+		this._loadInProgress = false;	//Got to track the initial load to prevent duelling loads of the dataset.
+		this._queuedFetches = [];
+		if(keywordParameters.urlPreventCache !== undefined){
+			this.urlPreventCache = keywordParameters.urlPreventCache?true:false;
+		}
+		if(keywordParameters.clearOnClose){
+			this.clearOnClose = true;
+		}
+	},
+	
+	url: "",	// use "" rather than undefined for the benefit of the parser (#3539)
+
+	data: null,	// define this so that the parser can populate it
+
+	typeMap: null, //Define so parser can populate.
+	
+	//Parameter to allow users to specify if a close call should force a reload or not.
+	//By default, it retains the old behavior of not clearing if close is called.  But
+	//if set true, the store will be reset to default state.  Note that by doing this,
+	//all item handles will become invalid and a new fetch must be issued.
+	clearOnClose: false,
+
+	//Parameter to allow specifying if preventCache should be passed to the xhrGet call or not when loading data from a url.  
+	//Note this does not mean the store calls the server on each fetch, only that the data load has preventCache set as an option.
+	//Added for tracker: #6072
+	urlPreventCache: false,  
+
+	_assertIsItem: function(/* item */ item){
+		//	summary:
+		//		This function tests whether the item passed in is indeed an item in the store.
+		//	item: 
+		//		The item to test for being contained by the store.
+		if(!this.isItem(item)){ 
+			throw new Error("dojo.data.ItemFileReadStore: Invalid item argument.");
+		}
+	},
+
+	_assertIsAttribute: function(/* attribute-name-string */ attribute){
+		//	summary:
+		//		This function tests whether the item passed in is indeed a valid 'attribute' like type for the store.
+		//	attribute: 
+		//		The attribute to test for being contained by the store.
+		if(typeof attribute !== "string"){ 
+			throw new Error("dojo.data.ItemFileReadStore: Invalid attribute argument.");
+		}
+	},
+
+	getValue: function(	/* item */ item, 
+						/* attribute-name-string */ attribute, 
+						/* value? */ defaultValue){
+		//	summary: 
+		//		See dojo.data.api.Read.getValue()
+		var values = this.getValues(item, attribute);
+		return (values.length > 0)?values[0]:defaultValue; // mixed
+	},
+
+	getValues: function(/* item */ item, 
+						/* attribute-name-string */ attribute){
+		//	summary: 
+		//		See dojo.data.api.Read.getValues()
+
+		this._assertIsItem(item);
+		this._assertIsAttribute(attribute);
+		return item[attribute] || []; // Array
+	},
+
+	getAttributes: function(/* item */ item){
+		//	summary: 
+		//		See dojo.data.api.Read.getAttributes()
+		this._assertIsItem(item);
+		var attributes = [];
+		for(var key in item){
+			// Save off only the real item attributes, not the special id marks for O(1) isItem.
+			if((key !== this._storeRefPropName) && (key !== this._itemNumPropName) && (key !== this._rootItemPropName) && (key !== this._reverseRefMap)){
+				attributes.push(key);
+			}
+		}
+		return attributes; // Array
+	},
+
+	hasAttribute: function(	/* item */ item,
+							/* attribute-name-string */ attribute) {
+		//	summary: 
+		//		See dojo.data.api.Read.hasAttribute()
+		return this.getValues(item, attribute).length > 0;
+	},
+
+	containsValue: function(/* item */ item, 
+							/* attribute-name-string */ attribute, 
+							/* anything */ value){
+		//	summary: 
+		//		See dojo.data.api.Read.containsValue()
+		var regexp = undefined;
+		if(typeof value === "string"){
+			regexp = dojo.data.util.filter.patternToRegExp(value, false);
+		}
+		return this._containsValue(item, attribute, value, regexp); //boolean.
+	},
+
+	_containsValue: function(	/* item */ item, 
+								/* attribute-name-string */ attribute, 
+								/* anything */ value,
+								/* RegExp?*/ regexp){
+		//	summary: 
+		//		Internal function for looking at the values contained by the item.
+		//	description: 
+		//		Internal function for looking at the values contained by the item.  This 
+		//		function allows for denoting if the comparison should be case sensitive for
+		//		strings or not (for handling filtering cases where string case should not matter)
+		//	
+		//	item:
+		//		The data item to examine for attribute values.
+		//	attribute:
+		//		The attribute to inspect.
+		//	value:	
+		//		The value to match.
+		//	regexp:
+		//		Optional regular expression generated off value if value was of string type to handle wildcarding.
+		//		If present and attribute values are string, then it can be used for comparison instead of 'value'
+		return dojo.some(this.getValues(item, attribute), function(possibleValue){
+			if(possibleValue !== null && !dojo.isObject(possibleValue) && regexp){
+				if(possibleValue.toString().match(regexp)){
+					return true; // Boolean
+				}
+			}else if(value === possibleValue){
+				return true; // Boolean
+			}
+		});
+	},
+
+	isItem: function(/* anything */ something){
+		//	summary: 
+		//		See dojo.data.api.Read.isItem()
+		if(something && something[this._storeRefPropName] === this){
+			if(this._arrayOfAllItems[something[this._itemNumPropName]] === something){
+				return true;
+			}
+		}
+		return false; // Boolean
+	},
+
+	isItemLoaded: function(/* anything */ something){
+		//	summary: 
+		//		See dojo.data.api.Read.isItemLoaded()
+		return this.isItem(something); //boolean
+	},
+
+	loadItem: function(/* object */ keywordArgs){
+		//	summary: 
+		//		See dojo.data.api.Read.loadItem()
+		this._assertIsItem(keywordArgs.item);
+	},
+
+	getFeatures: function(){
+		//	summary: 
+		//		See dojo.data.api.Read.getFeatures()
+		return this._features; //Object
+	},
+
+	getLabel: function(/* item */ item){
+		//	summary: 
+		//		See dojo.data.api.Read.getLabel()
+		if(this._labelAttr && this.isItem(item)){
+			return this.getValue(item,this._labelAttr); //String
+		}
+		return undefined; //undefined
+	},
+
+	getLabelAttributes: function(/* item */ item){
+		//	summary: 
+		//		See dojo.data.api.Read.getLabelAttributes()
+		if(this._labelAttr){
+			return [this._labelAttr]; //array
+		}
+		return null; //null
+	},
+
+	_fetchItems: function(	/* Object */ keywordArgs, 
+							/* Function */ findCallback, 
+							/* Function */ errorCallback){
+		//	summary: 
+		//		See dojo.data.util.simpleFetch.fetch()
+		var self = this;
+		var filter = function(requestArgs, arrayOfItems){
+			var items = [];
+			if(requestArgs.query){
+				var ignoreCase = requestArgs.queryOptions ? requestArgs.queryOptions.ignoreCase : false; 
+
+				//See if there are any string values that can be regexp parsed first to avoid multiple regexp gens on the
+				//same value for each item examined.  Much more efficient.
+				var regexpList = {};
+				for(var key in requestArgs.query){
+					var value = requestArgs.query[key];
+					if(typeof value === "string"){
+						regexpList[key] = dojo.data.util.filter.patternToRegExp(value, ignoreCase);
+					}
+				}
+
+				for(var i = 0; i < arrayOfItems.length; ++i){
+					var match = true;
+					var candidateItem = arrayOfItems[i];
+					if(candidateItem === null){
+						match = false;
+					}else{
+						for(var key in requestArgs.query) {
+							var value = requestArgs.query[key];
+							if (!self._containsValue(candidateItem, key, value, regexpList[key])){
+								match = false;
+							}
+						}
+					}
+					if(match){
+						items.push(candidateItem);
+					}
+				}
+				findCallback(items, requestArgs);
+			}else{
+				// We want a copy to pass back in case the parent wishes to sort the array. 
+				// We shouldn't allow resort of the internal list, so that multiple callers 
+				// can get lists and sort without affecting each other.  We also need to
+				// filter out any null values that have been left as a result of deleteItem()
+				// calls in ItemFileWriteStore.
+				for(var i = 0; i < arrayOfItems.length; ++i){
+					var item = arrayOfItems[i];
+					if(item !== null){
+						items.push(item);
+					}
+				}
+				findCallback(items, requestArgs);
+			}
+		};
+
+		if(this._loadFinished){
+			filter(keywordArgs, this._getItemsArray(keywordArgs.queryOptions));
+		}else{
+
+			if(this._jsonFileUrl){
+				//If fetches come in before the loading has finished, but while
+				//a load is in progress, we have to defer the fetching to be 
+				//invoked in the callback.
+				if(this._loadInProgress){
+					this._queuedFetches.push({args: keywordArgs, filter: filter});
+				}else{
+					this._loadInProgress = true;
+					var getArgs = {
+							url: self._jsonFileUrl, 
+							handleAs: "json-comment-optional",
+							preventCache: this.urlPreventCache
+						};
+					var getHandler = dojo.xhrGet(getArgs);
+					getHandler.addCallback(function(data){
+						try{
+							self._getItemsFromLoadedData(data);
+							self._loadFinished = true;
+							self._loadInProgress = false;
+							
+							filter(keywordArgs, self._getItemsArray(keywordArgs.queryOptions));
+							self._handleQueuedFetches();
+						}catch(e){
+							self._loadFinished = true;
+							self._loadInProgress = false;
+							errorCallback(e, keywordArgs);
+						}
+					});
+					getHandler.addErrback(function(error){
+						self._loadInProgress = false;
+						errorCallback(error, keywordArgs);
+					});
+				}
+			}else if(this._jsonData){
+				try{
+					this._loadFinished = true;
+					this._getItemsFromLoadedData(this._jsonData);
+					this._jsonData = null;
+					filter(keywordArgs, this._getItemsArray(keywordArgs.queryOptions));
+				}catch(e){
+					errorCallback(e, keywordArgs);
+				}
+			}else{
+				errorCallback(new Error("dojo.data.ItemFileReadStore: No JSON source data was provided as either URL or a nested Javascript object."), keywordArgs);
+			}
+		}
+	},
+
+	_handleQueuedFetches: function(){
+		//	summary: 
+		//		Internal function to execute delayed request in the store.
+		//Execute any deferred fetches now.
+		if (this._queuedFetches.length > 0) {
+			for(var i = 0; i < this._queuedFetches.length; i++){
+				var fData = this._queuedFetches[i];
+				var delayedQuery = fData.args;
+				var delayedFilter = fData.filter;
+				if(delayedFilter){
+					delayedFilter(delayedQuery, this._getItemsArray(delayedQuery.queryOptions)); 
+				}else{
+					this.fetchItemByIdentity(delayedQuery);
+				}
+			}
+			this._queuedFetches = [];
+		}
+	},
+
+	_getItemsArray: function(/*object?*/queryOptions){
+		//	summary: 
+		//		Internal function to determine which list of items to search over.
+		//	queryOptions: The query options parameter, if any.
+		if(queryOptions && queryOptions.deep) {
+			return this._arrayOfAllItems; 
+		}
+		return this._arrayOfTopLevelItems;
+	},
+
+	close: function(/*dojo.data.api.Request || keywordArgs || null */ request){
+		 //	summary: 
+		 //		See dojo.data.api.Read.close()
+		 if(this.clearOnClose && (this._jsonFileUrl !== "")){
+			 //Reset all internalsback to default state.  This will force a reload
+			 //on next fetch, but only if the data came from a url.  Passed in data
+			 //means it should not clear the data.
+			 this._arrayOfAllItems = [];
+			 this._arrayOfTopLevelItems = [];
+			 this._loadFinished = false;
+			 this._itemsByIdentity = null;
+			 this._loadInProgress = false;
+			 this._queuedFetches = [];
+		 }
+	},
+
+	_getItemsFromLoadedData: function(/* Object */ dataObject){
+		//	summary:
+		//		Function to parse the loaded data into item format and build the internal items array.
+		//	description:
+		//		Function to parse the loaded data into item format and build the internal items array.
+		//
+		//	dataObject:
+		//		The JS data object containing the raw data to convery into item format.
+		//
+		// 	returns: array
+		//		Array of items in store item format.
+		
+		// First, we define a couple little utility functions...
+		var addingArrays = false;
+		
+		function valueIsAnItem(/* anything */ aValue){
+			// summary:
+			//		Given any sort of value that could be in the raw json data,
+			//		return true if we should interpret the value as being an
+			//		item itself, rather than a literal value or a reference.
+			// example:
+			// 	|	false == valueIsAnItem("Kermit");
+			// 	|	false == valueIsAnItem(42);
+			// 	|	false == valueIsAnItem(new Date());
+			// 	|	false == valueIsAnItem({_type:'Date', _value:'May 14, 1802'});
+			// 	|	false == valueIsAnItem({_reference:'Kermit'});
+			// 	|	true == valueIsAnItem({name:'Kermit', color:'green'});
+			// 	|	true == valueIsAnItem({iggy:'pop'});
+			// 	|	true == valueIsAnItem({foo:42});
+			var isItem = (
+				(aValue != null) &&
+				(typeof aValue == "object") &&
+				(!dojo.isArray(aValue) || addingArrays) &&
+				(!dojo.isFunction(aValue)) &&
+				(aValue.constructor == Object || dojo.isArray(aValue)) &&
+				(typeof aValue._reference == "undefined") && 
+				(typeof aValue._type == "undefined") && 
+				(typeof aValue._value == "undefined")
+			);
+			return isItem;
+		}
+		
+		var self = this;
+		function addItemAndSubItemsToArrayOfAllItems(/* Item */ anItem){
+			self._arrayOfAllItems.push(anItem);
+			for(var attribute in anItem){
+				var valueForAttribute = anItem[attribute];
+				if(valueForAttribute){
+					if(dojo.isArray(valueForAttribute)){
+						var valueArray = valueForAttribute;
+						for(var k = 0; k < valueArray.length; ++k){
+							var singleValue = valueArray[k];
+							if(valueIsAnItem(singleValue)){
+								addItemAndSubItemsToArrayOfAllItems(singleValue);
+							}
+						}
+					}else{
+						if(valueIsAnItem(valueForAttribute)){
+							addItemAndSubItemsToArrayOfAllItems(valueForAttribute);
+						}
+					}
+				}
+			}
+		}
+
+		this._labelAttr = dataObject.label;
+
+		// We need to do some transformations to convert the data structure
+		// that we read from the file into a format that will be convenient
+		// to work with in memory.
+
+		// Step 1: Walk through the object hierarchy and build a list of all items
+		var i;
+		var item;
+		this._arrayOfAllItems = [];
+		this._arrayOfTopLevelItems = dataObject.items;
+
+		for(i = 0; i < this._arrayOfTopLevelItems.length; ++i){
+			item = this._arrayOfTopLevelItems[i];
+			if(dojo.isArray(item)){
+				addingArrays = true;
+			}
+			addItemAndSubItemsToArrayOfAllItems(item);
+			item[this._rootItemPropName]=true;
+		}
+
+		// Step 2: Walk through all the attribute values of all the items, 
+		// and replace single values with arrays.  For example, we change this:
+		//		{ name:'Miss Piggy', pets:'Foo-Foo'}
+		// into this:
+		//		{ name:['Miss Piggy'], pets:['Foo-Foo']}
+		// 
+		// We also store the attribute names so we can validate our store  
+		// reference and item id special properties for the O(1) isItem
+		var allAttributeNames = {};
+		var key;
+
+		for(i = 0; i < this._arrayOfAllItems.length; ++i){
+			item = this._arrayOfAllItems[i];
+			for(key in item){
+				if (key !== this._rootItemPropName)
+				{
+					var value = item[key];
+					if(value !== null){
+						if(!dojo.isArray(value)){
+							item[key] = [value];
+						}
+					}else{
+						item[key] = [null];
+					}
+				}
+				allAttributeNames[key]=key;
+			}
+		}
+
+		// Step 3: Build unique property names to use for the _storeRefPropName and _itemNumPropName
+		// This should go really fast, it will generally never even run the loop.
+		while(allAttributeNames[this._storeRefPropName]){
+			this._storeRefPropName += "_";
+		}
+		while(allAttributeNames[this._itemNumPropName]){
+			this._itemNumPropName += "_";
+		}
+		while(allAttributeNames[this._reverseRefMap]){
+			this._reverseRefMap += "_";
+		}
+
+		// Step 4: Some data files specify an optional 'identifier', which is 
+		// the name of an attribute that holds the identity of each item. 
+		// If this data file specified an identifier attribute, then build a 
+		// hash table of items keyed by the identity of the items.
+		var arrayOfValues;
+
+		var identifier = dataObject.identifier;
+		if(identifier){
+			this._itemsByIdentity = {};
+			this._features['dojo.data.api.Identity'] = identifier;
+			for(i = 0; i < this._arrayOfAllItems.length; ++i){
+				item = this._arrayOfAllItems[i];
+				arrayOfValues = item[identifier];
+				var identity = arrayOfValues[0];
+				if(!this._itemsByIdentity[identity]){
+					this._itemsByIdentity[identity] = item;
+				}else{
+					if(this._jsonFileUrl){
+						throw new Error("dojo.data.ItemFileReadStore:  The json data as specified by: [" + this._jsonFileUrl + "] is malformed.  Items within the list have identifier: [" + identifier + "].  Value collided: [" + identity + "]");
+					}else if(this._jsonData){
+						throw new Error("dojo.data.ItemFileReadStore:  The json data provided by the creation arguments is malformed.  Items within the list have identifier: [" + identifier + "].  Value collided: [" + identity + "]");
+					}
+				}
+			}
+		}else{
+			this._features['dojo.data.api.Identity'] = Number;
+		}
+
+		// Step 5: Walk through all the items, and set each item's properties 
+		// for _storeRefPropName and _itemNumPropName, so that store.isItem() will return true.
+		for(i = 0; i < this._arrayOfAllItems.length; ++i){
+			item = this._arrayOfAllItems[i];
+			item[this._storeRefPropName] = this;
+			item[this._itemNumPropName] = i;
+		}
+
+		// Step 6: We walk through all the attribute values of all the items,
+		// looking for type/value literals and item-references.
+		//
+		// We replace item-references with pointers to items.  For example, we change:
+		//		{ name:['Kermit'], friends:[{_reference:{name:'Miss Piggy'}}] }
+		// into this:
+		//		{ name:['Kermit'], friends:[miss_piggy] } 
+		// (where miss_piggy is the object representing the 'Miss Piggy' item).
+		//
+		// We replace type/value pairs with typed-literals.  For example, we change:
+		//		{ name:['Nelson Mandela'], born:[{_type:'Date', _value:'July 18, 1918'}] }
+		// into this:
+		//		{ name:['Kermit'], born:(new Date('July 18, 1918')) } 
+		//
+		// We also generate the associate map for all items for the O(1) isItem function.
+		for(i = 0; i < this._arrayOfAllItems.length; ++i){
+			item = this._arrayOfAllItems[i]; // example: { name:['Kermit'], friends:[{_reference:{name:'Miss Piggy'}}] }
+			for(key in item){
+				arrayOfValues = item[key]; // example: [{_reference:{name:'Miss Piggy'}}]
+				for(var j = 0; j < arrayOfValues.length; ++j) {
+					value = arrayOfValues[j]; // example: {_reference:{name:'Miss Piggy'}}
+					if(value !== null && typeof value == "object"){
+						if(value._type && value._value){
+							var type = value._type; // examples: 'Date', 'Color', or 'ComplexNumber'
+							var mappingObj = this._datatypeMap[type]; // examples: Date, dojo.Color, foo.math.ComplexNumber, {type: dojo.Color, deserialize(value){ return new dojo.Color(value)}}
+							if(!mappingObj){ 
+								throw new Error("dojo.data.ItemFileReadStore: in the typeMap constructor arg, no object class was specified for the datatype '" + type + "'");
+							}else if(dojo.isFunction(mappingObj)){
+								arrayOfValues[j] = new mappingObj(value._value);
+							}else if(dojo.isFunction(mappingObj.deserialize)){
+								arrayOfValues[j] = mappingObj.deserialize(value._value);
+							}else{
+								throw new Error("dojo.data.ItemFileReadStore: Value provided in typeMap was neither a constructor, nor a an object with a deserialize function");
+							}
+						}
+						if(value._reference){
+							var referenceDescription = value._reference; // example: {name:'Miss Piggy'}
+							if(!dojo.isObject(referenceDescription)){
+								// example: 'Miss Piggy'
+								// from an item like: { name:['Kermit'], friends:[{_reference:'Miss Piggy'}]}
+								arrayOfValues[j] = this._itemsByIdentity[referenceDescription];
+							}else{
+								// example: {name:'Miss Piggy'}
+								// from an item like: { name:['Kermit'], friends:[{_reference:{name:'Miss Piggy'}}] }
+								for(var k = 0; k < this._arrayOfAllItems.length; ++k){
+									var candidateItem = this._arrayOfAllItems[k];
+									var found = true;
+									for(var refKey in referenceDescription){
+										if(candidateItem[refKey] != referenceDescription[refKey]){ 
+											found = false; 
+										}
+									}
+									if(found){ 
+										arrayOfValues[j] = candidateItem; 
+									}
+								}
+							}
+							if(this.referenceIntegrity){
+								var refItem = arrayOfValues[j];
+								if(this.isItem(refItem)){
+									this._addReferenceToMap(refItem, item, key);
+								}
+							}
+						}else if(this.isItem(value)){
+							//It's a child item (not one referenced through _reference).  
+							//We need to treat this as a referenced item, so it can be cleaned up
+							//in a write store easily.
+							if(this.referenceIntegrity){
+								this._addReferenceToMap(value, item, key);
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+
+	_addReferenceToMap: function(/*item*/ refItem, /*item*/ parentItem, /*string*/ attribute){
+		 //	summary:
+		 //		Method to add an reference map entry for an item and attribute.
+		 //	description:
+		 //		Method to add an reference map entry for an item and attribute. 		 //
+		 //	refItem:
+		 //		The item that is referenced.
+		 //	parentItem:
+		 //		The item that holds the new reference to refItem.
+		 //	attribute:
+		 //		The attribute on parentItem that contains the new reference.
+		 
+		 //Stub function, does nothing.  Real processing is in ItemFileWriteStore.
+	},
+
+	getIdentity: function(/* item */ item){
+		//	summary: 
+		//		See dojo.data.api.Identity.getIdentity()
+		var identifier = this._features['dojo.data.api.Identity'];
+		if(identifier === Number){
+			return item[this._itemNumPropName]; // Number
+		}else{
+			var arrayOfValues = item[identifier];
+			if(arrayOfValues){
+				return arrayOfValues[0]; // Object || String
+			}
+		}
+		return null; // null
+	},
+
+	fetchItemByIdentity: function(/* Object */ keywordArgs){
+		//	summary: 
+		//		See dojo.data.api.Identity.fetchItemByIdentity()
+
+		// Hasn't loaded yet, we have to trigger the load.
+		if(!this._loadFinished){
+			var self = this;
+			if(this._jsonFileUrl){
+
+				if(this._loadInProgress){
+					this._queuedFetches.push({args: keywordArgs});
+				}else{
+					this._loadInProgress = true;
+					var getArgs = {
+							url: self._jsonFileUrl, 
+							handleAs: "json-comment-optional",
+							preventCache: this.urlPreventCache
+					};
+					var getHandler = dojo.xhrGet(getArgs);
+					getHandler.addCallback(function(data){
+						var scope =  keywordArgs.scope?keywordArgs.scope:dojo.global;
+						try{
+							self._getItemsFromLoadedData(data);
+							self._loadFinished = true;
+							self._loadInProgress = false;
+							var item = self._getItemByIdentity(keywordArgs.identity);
+							if(keywordArgs.onItem){
+								keywordArgs.onItem.call(scope, item);
+							}
+							self._handleQueuedFetches();
+						}catch(error){
+							self._loadInProgress = false;
+							if(keywordArgs.onError){
+								keywordArgs.onError.call(scope, error);
+							}
+						}
+					});
+					getHandler.addErrback(function(error){
+						self._loadInProgress = false;
+						if(keywordArgs.onError){
+							var scope =  keywordArgs.scope?keywordArgs.scope:dojo.global;
+							keywordArgs.onError.call(scope, error);
+						}
+					});
+				}
+
+			}else if(this._jsonData){
+				// Passed in data, no need to xhr.
+				self._getItemsFromLoadedData(self._jsonData);
+				self._jsonData = null;
+				self._loadFinished = true;
+				var item = self._getItemByIdentity(keywordArgs.identity);
+				if(keywordArgs.onItem){
+					var scope =  keywordArgs.scope?keywordArgs.scope:dojo.global;
+					keywordArgs.onItem.call(scope, item);
+				}
+			} 
+		}else{
+			// Already loaded.  We can just look it up and call back.
+			var item = this._getItemByIdentity(keywordArgs.identity);
+			if(keywordArgs.onItem){
+				var scope =  keywordArgs.scope?keywordArgs.scope:dojo.global;
+				keywordArgs.onItem.call(scope, item);
+			}
+		}
+	},
+
+	_getItemByIdentity: function(/* Object */ identity){
+		//	summary:
+		//		Internal function to look an item up by its identity map.
+		var item = null;
+		if(this._itemsByIdentity){
+			item = this._itemsByIdentity[identity];
+		}else{
+			item = this._arrayOfAllItems[identity];
+		}
+		if(item === undefined){
+			item = null;
+		}
+		return item; // Object
+	},
+
+	getIdentityAttributes: function(/* item */ item){
+		//	summary: 
+		//		See dojo.data.api.Identity.getIdentifierAttributes()
+		 
+		var identifier = this._features['dojo.data.api.Identity'];
+		if(identifier === Number){
+			// If (identifier === Number) it means getIdentity() just returns
+			// an integer item-number for each item.  The dojo.data.api.Identity
+			// spec says we need to return null if the identity is not composed 
+			// of attributes 
+			return null; // null
+		}else{
+			return [identifier]; // Array
+		}
+	},
+	
+	_forceLoad: function(){
+		//	summary: 
+		//		Internal function to force a load of the store if it hasn't occurred yet.  This is required
+		//		for specific functions to work properly.  
+		var self = this;
+		if(this._jsonFileUrl){
+				var getArgs = {
+					url: self._jsonFileUrl, 
+					handleAs: "json-comment-optional",
+					preventCache: this.urlPreventCache,
+					sync: true
+				};
+			var getHandler = dojo.xhrGet(getArgs);
+			getHandler.addCallback(function(data){
+				try{
+					//Check to be sure there wasn't another load going on concurrently 
+					//So we don't clobber data that comes in on it.  If there is a load going on
+					//then do not save this data.  It will potentially clobber current data.
+					//We mainly wanted to sync/wait here.
+					//TODO:  Revisit the loading scheme of this store to improve multi-initial
+					//request handling.
+					if(self._loadInProgress !== true && !self._loadFinished){
+						self._getItemsFromLoadedData(data);
+						self._loadFinished = true;
+					}else if(self._loadInProgress){
+						//Okay, we hit an error state we can't recover from.  A forced load occurred
+						//while an async load was occurring.  Since we cannot block at this point, the best
+						//that can be managed is to throw an error.
+						throw new Error("dojo.data.ItemFileReadStore:  Unable to perform a synchronous load, an async load is in progress."); 
+					}
+				}catch(e){
+					
+					throw e;
+				}
+			});
+			getHandler.addErrback(function(error){
+				throw error;
+			});
+		}else if(this._jsonData){
+			self._getItemsFromLoadedData(self._jsonData);
+			self._jsonData = null;
+			self._loadFinished = true;
+		} 
+	}
 });
-_6b.addErrback(function(_6d){
-throw _6d;
-});
-}else{
-if(this._jsonData){
-_69._getItemsFromLoadedData(_69._jsonData);
-_69._jsonData=null;
-_69._loadFinished=true;
-}
-}
-}});
+//Mix in the simple fetch implementation to this class.
 dojo.extend(dojo.data.ItemFileReadStore,dojo.data.util.simpleFetch);
+
 }

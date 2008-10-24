@@ -5,160 +5,201 @@
 */
 
 
-if(!dojo._hasResource["dojox.dtl.tag.loop"]){
-dojo._hasResource["dojox.dtl.tag.loop"]=true;
+if(!dojo._hasResource["dojox.dtl.tag.loop"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.dtl.tag.loop"] = true;
 dojo.provide("dojox.dtl.tag.loop");
+
 dojo.require("dojox.dtl._base");
 dojo.require("dojox.string.tokenize");
+
 (function(){
-var dd=dojox.dtl;
-var _2=dd.tag.loop;
-_2.CycleNode=dojo.extend(function(_3,_4,_5,_6){
-this.cyclevars=_3;
-this.name=_4;
-this.contents=_5;
-this.shared=_6||{counter:-1,map:{}};
-},{render:function(_7,_8){
-if(_7.forloop&&!_7.forloop.counter0){
-this.shared.counter=-1;
-}
-++this.shared.counter;
-var _9=this.cyclevars[this.shared.counter%this.cyclevars.length];
-var _a=this.shared.map;
-if(!_a[_9]){
-_a[_9]=new dd._Filter(_9);
-}
-_9=_a[_9].resolve(_7,_8);
-if(this.name){
-_7[this.name]=_9;
-}
-this.contents.set(_9);
-return this.contents.render(_7,_8);
-},unrender:function(_b,_c){
-return this.contents.unrender(_b,_c);
-},clone:function(_d){
-return new this.constructor(this.cyclevars,this.name,this.contents.clone(_d),this.shared);
-}});
-_2.IfChangedNode=dojo.extend(function(_e,_f,_10){
-this.nodes=_e;
-this._vars=_f;
-this.shared=_10||{last:null,counter:0};
-this.vars=dojo.map(_f,function(_11){
-return new dojox.dtl._Filter(_11);
-});
-},{render:function(_12,_13){
-if(_12.forloop){
-if(_12.forloop.counter<=this.shared.counter){
-this.shared.last=null;
-}
-this.shared.counter=_12.forloop.counter;
-}
-var _14;
-if(this.vars.length){
-_14=dojo.toJson(dojo.map(this.vars,function(_15){
-return _15.resolve(_12);
-}));
-}else{
-_14=this.nodes.dummyRender(_12,_13);
-}
-if(_14!=this.shared.last){
-var _16=(this.shared.last===null);
-this.shared.last=_14;
-_12=_12.push();
-_12.ifchanged={firstloop:_16};
-_13=this.nodes.render(_12,_13);
-_12=_12.pop();
-}else{
-_13=this.nodes.unrender(_12,_13);
-}
-return _13;
-},unrender:function(_17,_18){
-return this.nodes.unrender(_17,_18);
-},clone:function(_19){
-return new this.constructor(this.nodes.clone(_19),this._vars,this.shared);
-}});
-_2.RegroupNode=dojo.extend(function(_1a,key,_1c){
-this._expression=_1a;
-this.expression=new dd._Filter(_1a);
-this.key=key;
-this.alias=_1c;
-},{_push:function(_1d,_1e,_1f){
-if(_1f.length){
-_1d.push({grouper:_1e,list:_1f});
-}
-},render:function(_20,_21){
-_20[this.alias]=[];
-var _22=this.expression.resolve(_20);
-if(_22){
-var _23=null;
-var _24=[];
-for(var i=0;i<_22.length;i++){
-var id=_22[i][this.key];
-if(_23!==id){
-this._push(_20[this.alias],_23,_24);
-_23=id;
-_24=[_22[i]];
-}else{
-_24.push(_22[i]);
-}
-}
-this._push(_20[this.alias],_23,_24);
-}
-return _21;
-},unrender:function(_27,_28){
-return _28;
-},clone:function(_29,_2a){
-return this;
-}});
-dojo.mixin(_2,{cycle:function(_2b,_2c){
-var _2d=_2c.split_contents();
-if(_2d.length<2){
-throw new Error("'cycle' tag requires at least two arguments");
-}
-if(_2d[1].indexOf(",")!=-1){
-var _2e=_2d[1].split(",");
-_2d=[_2d[0]];
-for(var i=0;i<_2e.length;i++){
-_2d.push("\""+_2e[i]+"\"");
-}
-}
-if(_2d.length==2){
-var _30=_2d[_2d.length-1];
-if(!_2b._namedCycleNodes){
-throw new Error("No named cycles in template: '"+_30+"' is not defined");
-}
-if(!_2b._namedCycleNodes[_30]){
-throw new Error("Named cycle '"+_30+"' does not exist");
-}
-return _2b._namedCycleNodes[_30];
-}
-if(_2d.length>4&&_2d[_2d.length-2]=="as"){
-var _30=_2d[_2d.length-1];
-var _31=new _2.CycleNode(_2d.slice(1,_2d.length-2),_30,_2b.create_text_node());
-if(!_2b._namedCycleNodes){
-_2b._namedCycleNodes={};
-}
-_2b._namedCycleNodes[_30]=_31;
-}else{
-_31=new _2.CycleNode(_2d.slice(1),null,_2b.create_text_node());
-}
-return _31;
-},ifchanged:function(_32,_33){
-var _34=_33.contents.split();
-var _35=_32.parse(["endifchanged"]);
-_32.delete_first_token();
-return new _2.IfChangedNode(_35,_34.slice(1));
-},regroup:function(_36,_37){
-var _38=dojox.string.tokenize(_37.contents,/(\s+)/g,function(_39){
-return _39;
-});
-if(_38.length<11||_38[_38.length-3]!="as"||_38[_38.length-7]!="by"){
-throw new Error("Expected the format: regroup list by key as newList");
-}
-var _3a=_38.slice(2,-8).join("");
-var key=_38[_38.length-5];
-var _3c=_38[_38.length-1];
-return new _2.RegroupNode(_3a,key,_3c);
-}});
+	var dd = dojox.dtl;
+	var ddtl = dd.tag.loop;
+
+	ddtl.CycleNode = dojo.extend(function(cyclevars, name, text, shared){
+		this.cyclevars = cyclevars;
+		this.name = name;
+		this.contents = text;
+		this.shared = shared || {counter: -1, map: {}};
+	},
+	{
+		render: function(context, buffer){
+			if(context.forloop && !context.forloop.counter0){
+				this.shared.counter = -1;
+			}
+
+			++this.shared.counter;
+			var value = this.cyclevars[this.shared.counter % this.cyclevars.length];
+
+			var map = this.shared.map;
+			if(!map[value]){
+				map[value] = new dd._Filter(value);
+			}
+			value = map[value].resolve(context, buffer);
+
+			if(this.name){
+				context[this.name] = value;
+			}
+			this.contents.set(value);
+			return this.contents.render(context, buffer);
+		},
+		unrender: function(context, buffer){
+			return this.contents.unrender(context, buffer);
+		},
+		clone: function(buffer){
+			return new this.constructor(this.cyclevars, this.name, this.contents.clone(buffer), this.shared);
+		}
+	});
+
+	ddtl.IfChangedNode = dojo.extend(function(nodes, vars, shared){
+		this.nodes = nodes;
+		this._vars = vars;
+		this.shared = shared || {last: null, counter: 0};
+		this.vars = dojo.map(vars, function(item){
+			return new dojox.dtl._Filter(item);
+		});
+	}, {
+		render: function(context, buffer){
+			if(context.forloop){
+				if(context.forloop.counter <= this.shared.counter){
+					this.shared.last = null;
+				}
+				this.shared.counter = context.forloop.counter;
+			}
+
+			var change;
+			if(this.vars.length){
+				change = dojo.toJson(dojo.map(this.vars, function(item){
+					return item.resolve(context);
+				}));
+			}else{
+				change = this.nodes.dummyRender(context, buffer);
+			}
+
+			if(change != this.shared.last){
+				var firstloop = (this.shared.last === null);
+				this.shared.last = change;
+				context = context.push();
+				context.ifchanged = {firstloop: firstloop}
+				buffer = this.nodes.render(context, buffer);
+				context = context.pop();
+			}else{
+				buffer = this.nodes.unrender(context, buffer);
+			}
+			return buffer;
+		},
+		unrender: function(context, buffer){
+			return this.nodes.unrender(context, buffer);
+		},
+		clone: function(buffer){
+			return new this.constructor(this.nodes.clone(buffer), this._vars, this.shared);
+		}
+	});
+
+	ddtl.RegroupNode = dojo.extend(function(expression, key, alias){
+		this._expression = expression;
+		this.expression = new dd._Filter(expression);
+		this.key = key;
+		this.alias = alias;
+	},
+	{
+		_push: function(container, grouper, stack){
+			if(stack.length){
+				container.push({ grouper: grouper, list: stack })
+			}
+		},
+		render: function(context, buffer){
+			context[this.alias] = [];
+			var list = this.expression.resolve(context);
+			if(list){
+				var last = null;
+				var stack = [];
+				for(var i = 0; i < list.length; i++){
+					var id = list[i][this.key];
+					if(last !== id){
+						this._push(context[this.alias], last, stack);
+						last = id;
+						stack = [list[i]];
+					}else{
+						stack.push(list[i]);
+					}
+				}
+				this._push(context[this.alias], last, stack);
+			}
+			return buffer;
+		},
+		unrender: function(context, buffer){
+			return buffer;
+		},
+		clone: function(context, buffer){
+			return this;
+		}
+	});
+
+	dojo.mixin(ddtl, {
+		cycle: function(parser, token){
+			// summary: Cycle among the given strings each time this tag is encountered
+			var args = token.split_contents();
+
+			if(args.length < 2){
+				throw new Error("'cycle' tag requires at least two arguments");
+			}
+
+			if(args[1].indexOf(",") != -1){
+				var vars = args[1].split(",");
+				args = [args[0]];
+				for(var i = 0; i < vars.length; i++){
+					args.push('"' + vars[i] + '"');
+				}
+			}
+
+			if(args.length == 2){
+				var name = args[args.length - 1];
+
+				if(!parser._namedCycleNodes){
+					throw new Error("No named cycles in template: '" + name + "' is not defined");
+				}
+				if(!parser._namedCycleNodes[name]){
+					throw new Error("Named cycle '" + name + "' does not exist");
+				}
+
+		        return parser._namedCycleNodes[name];
+			}
+
+			if(args.length > 4 && args[args.length - 2] == "as"){
+				var name = args[args.length - 1];
+
+				var node = new ddtl.CycleNode(args.slice(1, args.length - 2), name, parser.create_text_node());
+
+				if(!parser._namedCycleNodes){
+					parser._namedCycleNodes = {};
+				}
+				parser._namedCycleNodes[name] = node;
+			}else{
+				node = new ddtl.CycleNode(args.slice(1), null, parser.create_text_node());
+			}
+
+			return node;
+		},
+		ifchanged: function(parser, token){
+			var parts = token.contents.split();
+			var nodes = parser.parse(["endifchanged"]);
+			parser.delete_first_token();
+			return new ddtl.IfChangedNode(nodes, parts.slice(1));
+		},
+		regroup: function(parser, token){
+			var tokens = dojox.string.tokenize(token.contents, /(\s+)/g, function(spaces){
+				return spaces;
+			});
+			if(tokens.length < 11 || tokens[tokens.length - 3] != "as" || tokens[tokens.length - 7] != "by"){
+				throw new Error("Expected the format: regroup list by key as newList");
+			}
+			var expression = tokens.slice(2, -8).join("");
+			var key = tokens[tokens.length - 5];
+			var alias = tokens[tokens.length - 1];
+			return new ddtl.RegroupNode(expression, key, alias);
+		}
+	});
 })();
+
 }

@@ -5,142 +5,177 @@
 */
 
 
-if(!dojo._hasResource["dojox.charting.plot2d.Stacked"]){
-dojo._hasResource["dojox.charting.plot2d.Stacked"]=true;
+if(!dojo._hasResource["dojox.charting.plot2d.Stacked"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.charting.plot2d.Stacked"] = true;
 dojo.provide("dojox.charting.plot2d.Stacked");
+
 dojo.require("dojox.charting.plot2d.common");
 dojo.require("dojox.charting.plot2d.Default");
+
 dojo.require("dojox.lang.functional");
 dojo.require("dojox.lang.functional.sequence");
 dojo.require("dojox.lang.functional.reversed");
+
 (function(){
-var df=dojox.lang.functional,dc=dojox.charting.plot2d.common,_3=df.lambda("item.purgeGroup()");
-dojo.declare("dojox.charting.plot2d.Stacked",dojox.charting.plot2d.Default,{calculateAxes:function(_4){
-var _5=dc.collectStackedStats(this.series);
-this._maxRunLength=_5.hmax;
-this._calc(_4,_5);
-return this;
-},render:function(_6,_7){
-var _8=df.repeat(this._maxRunLength,"-> 0",0);
-for(var i=0;i<this.series.length;++i){
-var _a=this.series[i];
-for(var j=0;j<_a.data.length;++j){
-var v=_a.data[j];
-if(isNaN(v)){
-v=0;
-}
-_8[j]+=v;
-}
-}
-this.dirty=this.isDirty();
-if(this.dirty){
-dojo.forEach(this.series,_3);
-this.cleanGroup();
-var s=this.group;
-df.forEachRev(this.series,function(_e){
-_e.cleanGroup(s);
-});
-}
-var t=this.chart.theme,_10,_11,_12,_13,_14=this.events(),ht=this._hScaler.scaler.getTransformerFromModel(this._hScaler),vt=this._vScaler.scaler.getTransformerFromModel(this._vScaler);
-for(var i=this.series.length-1;i>=0;--i){
-var _a=this.series[i];
-if(!this.dirty&&!_a.dirty){
-continue;
-}
-_a.cleanGroup();
-var s=_a.group,_17=dojo.map(_8,function(v,i){
-return {x:ht(i+1)+_7.l,y:_6.height-_7.b-vt(v)};
-},this);
-if(!_a.fill||!_a.stroke){
-_12=new dojo.Color(t.next("color"));
-}
-var _1a=this.opt.tension?dc.curve(_17,this.opt.tension):"";
-if(this.opt.areas){
-var _1b=dojo.clone(_17);
-var _1c=_a.fill?_a.fill:dc.augmentFill(t.series.fill,_12);
-if(this.opt.tension){
-var p=dc.curve(_1b,this.opt.tension);
-p+=" L"+_17[_17.length-1].x+","+(_6.height-_7.b)+" L"+_17[0].x+","+(_6.height-_7.b)+" L"+_17[0].x+","+_17[0].y;
-_a.dyn.fill=s.createPath(p).setFill(_1c).getFill();
-}else{
-_1b.push({x:_17[_17.length-1].x,y:_6.height-_7.b});
-_1b.push({x:_17[0].x,y:_6.height-_7.b});
-_1b.push(_17[0]);
-_a.dyn.fill=s.createPolyline(_1b).setFill(_1c).getFill();
-}
-}
-if(this.opt.lines||this.opt.markers){
-_10=_a.stroke?dc.makeStroke(_a.stroke):dc.augmentStroke(t.series.stroke,_12);
-if(_a.outline||t.series.outline){
-_11=dc.makeStroke(_a.outline?_a.outline:t.series.outline);
-_11.width=2*_11.width+_10.width;
-}
-}
-if(this.opt.markers){
-_13=_a.dyn.marker=_a.marker?_a.marker:t.next("marker");
-}
-var _1e,_1f,_20;
-if(this.opt.shadows&&_10){
-var sh=this.opt.shadows,_22=new dojo.Color([0,0,0,0.3]),_23=dojo.map(_17,function(c){
-return {x:c.x+sh.dx,y:c.y+sh.dy};
-}),_25=dojo.clone(_11?_11:_10);
-_25.color=_22;
-_25.width+=sh.dw?sh.dw:0;
-if(this.opt.lines){
-if(this.opt.tension){
-_a.dyn.shadow=s.createPath(dc.curve(_23,this.opt.tension)).setStroke(_25).getStroke();
-}else{
-_a.dyn.shadow=s.createPolyline(_23).setStroke(_25).getStroke();
-}
-}
-if(this.opt.markers){
-_20=dojo.map(_23,function(c){
-return s.createPath("M"+c.x+" "+c.y+" "+_13).setStroke(_25).setFill(_22);
-},this);
-}
-}
-if(this.opt.lines){
-if(_11){
-if(this.opt.tension){
-_a.dyn.outline=s.createPath(_1a).setStroke(_11).getStroke();
-}else{
-_a.dyn.outline=s.createPolyline(_17).setStroke(_11).getStroke();
-}
-}
-if(this.opt.tension){
-_a.dyn.stroke=s.createPath(_1a).setStroke(_10).getStroke();
-}else{
-_a.dyn.stroke=s.createPolyline(_17).setStroke(_10).getStroke();
-}
-}
-if(this.opt.markers){
-_1e=new Array(_17.length);
-_1f=new Array(_17.length);
-dojo.forEach(_17,function(c,i){
-var _29="M"+c.x+" "+c.y+" "+_13;
-if(_11){
-_1f[i]=s.createPath(_29).setStroke(_11);
-}
-_1e[i]=s.createPath(_29).setStroke(_10).setFill(_10.color);
-},this);
-if(_14){
-dojo.forEach(_1e,function(s,i){
-var o={element:"marker",index:i,run:_a,plot:this,hAxis:this.hAxis||null,vAxis:this.vAxis||null,shape:s,outline:_1f[i]||null,shadow:_20&&_20[i]||null,cx:_17[i].x,cy:_17[i].y,x:i+1,y:_a.data[i]};
-this._connectEvents(s,o);
-},this);
-}
-}
-_a.dirty=false;
-for(var j=0;j<_a.data.length;++j){
-var v=_a.data[j];
-if(isNaN(v)){
-v=0;
-}
-_8[j]-=v;
-}
-}
-this.dirty=false;
-return this;
-}});
+	var df = dojox.lang.functional, dc = dojox.charting.plot2d.common,
+		purgeGroup = df.lambda("item.purgeGroup()");
+
+	dojo.declare("dojox.charting.plot2d.Stacked", dojox.charting.plot2d.Default, {
+		calculateAxes: function(dim){
+			var stats = dc.collectStackedStats(this.series);
+			this._maxRunLength = stats.hmax;
+			this._calc(dim, stats);
+			return this;
+		},
+		render: function(dim, offsets){
+			// stack all values
+			var acc = df.repeat(this._maxRunLength, "-> 0", 0);
+			for(var i = 0; i < this.series.length; ++i){
+				var run = this.series[i];
+				for(var j = 0; j < run.data.length; ++j){
+					var v = run.data[j];
+					if(isNaN(v)){ v = 0; }
+					acc[j] += v;
+				}
+			}
+			// draw runs in backwards
+			this.dirty = this.isDirty();
+			if(this.dirty){
+				dojo.forEach(this.series, purgeGroup);
+				this.cleanGroup();
+				var s = this.group;
+				df.forEachRev(this.series, function(item){ item.cleanGroup(s); });
+			}
+
+			var t = this.chart.theme, stroke, outline, color, marker, events = this.events(),
+				ht = this._hScaler.scaler.getTransformerFromModel(this._hScaler),
+				vt = this._vScaler.scaler.getTransformerFromModel(this._vScaler);
+			for(var i = this.series.length - 1; i >= 0; --i){
+				var run = this.series[i];
+				if(!this.dirty && !run.dirty){ continue; }
+				run.cleanGroup();
+				var s = run.group,
+					lpoly = dojo.map(acc, function(v, i){
+						return {
+							x: ht(i + 1) + offsets.l,
+							y: dim.height - offsets.b - vt(v)
+						};
+					}, this);
+				if(!run.fill || !run.stroke){
+					// need autogenerated color
+					color = new dojo.Color(t.next("color"));
+				}
+
+				var lpath = this.opt.tension ? dc.curve(lpoly, this.opt.tension) : "";
+				
+				if(this.opt.areas){
+					var apoly = dojo.clone(lpoly);
+					var fill = run.fill ? run.fill : dc.augmentFill(t.series.fill, color);
+					if(this.opt.tension){
+						var p=dc.curve(apoly, this.opt.tension);
+						p += " L" + lpoly[lpoly.length - 1].x + "," + (dim.height - offsets.b) +
+							" L" + lpoly[0].x + "," + (dim.height - offsets.b) +
+							" L" + lpoly[0].x + "," + lpoly[0].y;
+						run.dyn.fill = s.createPath(p).setFill(fill).getFill();
+					} else {
+						apoly.push({x: lpoly[lpoly.length - 1].x, y: dim.height - offsets.b});
+						apoly.push({x: lpoly[0].x, y: dim.height - offsets.b});
+						apoly.push(lpoly[0]);
+						run.dyn.fill = s.createPolyline(apoly).setFill(fill).getFill();
+					}
+				}
+				if(this.opt.lines || this.opt.markers){
+					// need a stroke
+					stroke = run.stroke ? dc.makeStroke(run.stroke) : dc.augmentStroke(t.series.stroke, color);
+					if(run.outline || t.series.outline){
+						outline = dc.makeStroke(run.outline ? run.outline : t.series.outline);
+						outline.width = 2 * outline.width + stroke.width;
+					}
+				}
+				if(this.opt.markers){
+					// need a marker
+					marker = run.dyn.marker = run.marker ? run.marker : t.next("marker");
+				}
+				var frontMarkers, outlineMarkers, shadowMarkers;
+				if(this.opt.shadows && stroke){
+					var sh = this.opt.shadows, shadowColor = new dojo.Color([0, 0, 0, 0.3]),
+						spoly = dojo.map(lpoly, function(c){
+							return {x: c.x + sh.dx, y: c.y + sh.dy};
+						}),
+						shadowStroke = dojo.clone(outline ? outline : stroke);
+					shadowStroke.color = shadowColor;
+					shadowStroke.width += sh.dw ? sh.dw : 0;
+					if(this.opt.lines){
+						if(this.opt.tension){
+							run.dyn.shadow = s.createPath(dc.curve(spoly, this.opt.tension)).setStroke(shadowStroke).getStroke();
+						} else {
+							run.dyn.shadow = s.createPolyline(spoly).setStroke(shadowStroke).getStroke();
+						}
+					}
+					if(this.opt.markers){
+						shadowMarkers = dojo.map(spoly, function(c){
+							return s.createPath("M" + c.x + " " + c.y + " " + marker).
+								setStroke(shadowStroke).setFill(shadowColor);
+						}, this);
+					}
+				}
+				if(this.opt.lines){
+					if(outline){
+						if(this.opt.tension){
+							run.dyn.outline = s.createPath(lpath).setStroke(outline).getStroke();
+						} else {
+							run.dyn.outline = s.createPolyline(lpoly).setStroke(outline).getStroke();
+						}
+					}
+					if(this.opt.tension){
+						run.dyn.stroke = s.createPath(lpath).setStroke(stroke).getStroke();
+					} else {
+						run.dyn.stroke = s.createPolyline(lpoly).setStroke(stroke).getStroke();
+					}
+				}
+				if(this.opt.markers){
+					frontMarkers = new Array(lpoly.length);
+					outlineMarkers = new Array(lpoly.length);
+					dojo.forEach(lpoly, function(c, i){
+						var path = "M" + c.x + " " + c.y + " " + marker;
+						if(outline){
+							outlineMarkers[i] = s.createPath(path).setStroke(outline);
+						}
+						frontMarkers[i] = s.createPath(path).setStroke(stroke).setFill(stroke.color);
+					}, this);
+					if(events){
+						dojo.forEach(frontMarkers, function(s, i){
+							var o = {
+								element: "marker",
+								index:   i,
+								run:     run,
+								plot:    this,
+								hAxis:   this.hAxis || null,
+								vAxis:   this.vAxis || null,
+								shape:   s,
+								outline: outlineMarkers[i] || null,
+								shadow:  shadowMarkers && shadowMarkers[i] || null,
+								cx:      lpoly[i].x,
+								cy:      lpoly[i].y,
+								x:       i + 1,
+								y:       run.data[i]
+							};
+							this._connectEvents(s, o);
+						}, this);
+					}
+				}
+				run.dirty = false;
+				// update the accumulator
+				for(var j = 0; j < run.data.length; ++j){
+					var v = run.data[j];
+					if(isNaN(v)){ v = 0; }
+					acc[j] -= v;
+				}
+			}
+			this.dirty = false;
+			return this;
+		}
+	});
 })();
+
 }

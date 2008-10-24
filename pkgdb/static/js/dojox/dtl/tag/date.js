@@ -5,29 +5,38 @@
 */
 
 
-if(!dojo._hasResource["dojox.dtl.tag.date"]){
-dojo._hasResource["dojox.dtl.tag.date"]=true;
+if(!dojo._hasResource["dojox.dtl.tag.date"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.dtl.tag.date"] = true;
 dojo.provide("dojox.dtl.tag.date");
+
 dojo.require("dojox.dtl._base");
 dojo.require("dojox.dtl.utils.date");
-dojox.dtl.tag.date.NowNode=function(_1,_2){
-this._format=_1;
-this.format=new dojox.dtl.utils.date.DateFormat(_1);
-this.contents=_2;
-};
-dojo.extend(dojox.dtl.tag.date.NowNode,{render:function(_3,_4){
-this.contents.set(this.format.format(new Date()));
-return this.contents.render(_3,_4);
-},unrender:function(_5,_6){
-return this.contents.unrender(_5,_6);
-},clone:function(_7){
-return new this.constructor(this._format,this.contents.clone(_7));
-}});
-dojox.dtl.tag.date.now=function(_8,_9){
-var _a=_9.split_contents();
-if(_a.length!=2){
-throw new Error("'now' statement takes one argument");
+
+dojox.dtl.tag.date.NowNode = function(format, node){
+	this._format = format;
+	this.format = new dojox.dtl.utils.date.DateFormat(format);
+	this.contents = node;
 }
-return new dojox.dtl.tag.date.NowNode(_a[1].slice(1,-1),_8.create_text_node());
-};
+dojo.extend(dojox.dtl.tag.date.NowNode, {
+	render: function(context, buffer){
+		this.contents.set(this.format.format(new Date()));
+		return this.contents.render(context, buffer);
+	},
+	unrender: function(context, buffer){
+		return this.contents.unrender(context, buffer);
+	},
+	clone: function(buffer){
+		return new this.constructor(this._format, this.contents.clone(buffer));
+	}
+});
+
+dojox.dtl.tag.date.now = function(parser, token){
+	// Split by either :" or :'
+	var parts = token.split_contents();
+	if(parts.length != 2){
+		throw new Error("'now' statement takes one argument");
+	}
+	return new dojox.dtl.tag.date.NowNode(parts[1].slice(1, -1), parser.create_text_node());
+}
+
 }

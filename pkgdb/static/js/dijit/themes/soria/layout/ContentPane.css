@@ -1,7 +1,10 @@
+/* ContentPane */
 
 .soria .dijitContentPane {
     padding: 0px;
 }
+
+/* nested layouts */
 .soria .dijitTabContainerTop-dijitContentPane,
 .soria .dijitTabContainerLeft-dijitContentPane,
 .soria .dijitTabContainerBottom-dijitContentPane,
@@ -11,6 +14,7 @@
     background-color: #fff;
     padding: 5px;
 }
+
 .soria .dijitSplitContainer-dijitContentPane,
 .soria .dijitBorderContainer-dijitContentPane {
     border: 1px #B1BADF solid;

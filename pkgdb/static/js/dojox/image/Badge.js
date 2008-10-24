@@ -5,99 +5,224 @@
 */
 
 
-if(!dojo._hasResource["dojox.image.Badge"]){
-dojo._hasResource["dojox.image.Badge"]=true;
+if(!dojo._hasResource["dojox.image.Badge"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.image.Badge"] = true;
 dojo.provide("dojox.image.Badge");
 dojo.experimental("dojox.image.Badge");
+
 dojo.require("dijit._Widget");
 dojo.require("dijit._Templated");
 dojo.require("dojo.fx.easing");
-dojo.declare("dojox.image.Badge",[dijit._Widget,dijit._Templated],{baseClass:"dojoxBadge",templateString:"<div class=\"dojoxBadge\" dojoAttachPoint=\"containerNode\"></div>",children:"div.dojoxBadgeImage",rows:4,cols:5,cellSize:50,delay:2000,threads:1,easing:"dojo.fx.easing.backOut",startup:function(){
-if(this._started){
-return;
-}
-if(dojo.isString(this.easing)){
-this.easing=dojo.getObject(this.easing);
-}
-this.inherited(arguments);
-this._init();
-},_init:function(){
-var _1=0,_w=this.cellSize;
-dojo.style(this.domNode,{width:_w*this.cols+"px",height:_w*this.rows+"px"});
-this._nl=dojo.query(this.children,this.containerNode).forEach(function(n,_4){
-var _5=_4%this.cols,t=_1*_w,l=_5*_w;
-dojo.style(n,{top:t+"px",left:l+"px",width:_w-2+"px",height:_w-2+"px"});
-if(_5==this.cols-1){
-_1++;
-}
-dojo.addClass(n,this.baseClass+"Image");
-},this);
-var l=this._nl.length;
-while(this.threads--){
-var s=Math.floor(Math.random()*l);
-setTimeout(dojo.hitch(this,"_enbiggen",{target:this._nl[s]}),this.delay*this.threads);
-}
-},_getCell:function(n){
-var _b=this._nl.indexOf(n);
-if(_b>=0){
-var _c=_b%this.cols;
-var _d=Math.floor(_b/this.cols);
-return {x:_c,y:_d,n:this._nl[_b],io:_b};
-}else{
-return undefined;
-}
-},_getImage:function(){
-return "url('')";
-},_enbiggen:function(e){
-var _f=this._getCell(e.target||e);
-if(_f){
-var _cc=(this.cellSize*2)-2;
-var _11={height:_cc,width:_cc};
-var _12=function(){
-return Math.round(Math.random());
-};
-if(_f.x==this.cols-1||(_f.x>0&&_12())){
-_11.left=this.cellSize*(_f.x-1);
-}
-if(_f.y==this.rows-1||(_f.y>0&&_12())){
-_11.top=this.cellSize*(_f.y-1);
-}
-var bc=this.baseClass;
-dojo.addClass(_f.n,bc+"Top");
-dojo.addClass(_f.n,bc+"Seen");
-dojo.animateProperty({node:_f.n,properties:_11,onEnd:dojo.hitch(this,"_loadUnder",_f,_11),easing:this.easing}).play();
-}
-},_loadUnder:function(_14,_15){
-var idx=_14.io;
-var _17=[];
-var _18=(_15.left>=0);
-var _19=(_15.top>=0);
-var c=this.cols,e=idx+(_18?-1:1),f=idx+(_19?-c:c),g=(_19?(_18?e-c:f+1):(_18?f-1:e+c)),bc=this.baseClass;
-dojo.forEach([e,f,g],function(x){
-var n=this._nl[x];
-if(n){
-if(dojo.hasClass(n,bc+"Seen")){
-dojo.removeClass(n,bc+"Seen");
-}
-}
-},this);
-setTimeout(dojo.hitch(this,"_disenbiggen",_14,_15),this.delay*1.25);
-},_disenbiggen:function(_21,_22){
-if(_22.top>=0){
-_22.top+=this.cellSize;
-}
-if(_22.left>=0){
-_22.left+=this.cellSize;
-}
-var _cc=this.cellSize-2;
-dojo.animateProperty({node:_21.n,properties:dojo.mixin(_22,{width:_cc,height:_cc}),onEnd:dojo.hitch(this,"_cycle",_21,_22)}).play(5);
-},_cycle:function(_24,_25){
-var bc=this.baseClass;
-dojo.removeClass(_24.n,bc+"Top");
-var ns=this._nl.filter(function(n){
-return !dojo.hasClass(n,bc+"Seen");
+
+dojo.declare("dojox.image.Badge", [dijit._Widget, dijit._Templated], {
+	// summary: A simple grid of Images that loops through thumbnails
+	//
+
+	baseClass: "dojoxBadge",
+	
+	templateString:'<div class="dojoxBadge" dojoAttachPoint="containerNode"></div>',
+
+	// children: String
+	// 		A CSS3 Selector that determines the node to become a child
+	children: "div.dojoxBadgeImage",
+
+	// rows: Integer
+	//		Number of Rows to display
+	rows: 4,
+	
+	// cols: Integer
+	//		Number of Columns to display 
+	cols: 5,
+	
+	// cellSize: Integer
+	//		Size in PX of each thumbnail
+	cellSize: 50,
+	
+	// delay: Integer
+	//		Time (in ms) to show the image before sizing down again
+	delay: 2000,
+	
+	// threads: Integer
+	//		how many cycles will be going "simultaneously" (>2 not reccommended)
+	threads: 1,
+	
+	// easing: Function|String
+	//		An easing function to use when showing the node (does not apply to shrinking)
+	easing: "dojo.fx.easing.backOut",
+	
+	startup: function(){
+		if(this._started){ return; }
+		if(dojo.isString(this.easing)){
+			this.easing = dojo.getObject(this.easing);
+		}
+		this.inherited(arguments);
+		this._init();
+	},
+	
+	_init: function(){
+		// summary: Setup and layout the images
+	
+		var _row = 0, 
+			_w = this.cellSize; 
+
+		dojo.style(this.domNode, {
+			width: _w * this.cols + "px",
+			height: _w * this.rows + "px"
+		});
+
+		this._nl = dojo.query(this.children, this.containerNode)
+			.forEach(function(n, _idx){
+
+				var _col = _idx % this.cols,
+					t = _row * _w,
+					l = _col * _w;
+			
+				dojo.style(n, {
+		 			top: t + "px",
+		 			left: l + "px",
+					width: _w - 2 + "px",
+					height: _w - 2 + "px"
+		 		});
+
+				if(_col == this.cols - 1){ _row++; }
+				dojo.addClass(n, this.baseClass + "Image");
+				
+			}, this);
+		;
+		
+		var l = this._nl.length;
+		while(this.threads--){
+			var s = Math.floor(Math.random() * l);
+			setTimeout(dojo.hitch(this,"_enbiggen", { target: this._nl[s] }), this.delay * this.threads);
+		}
+		
+	},
+	
+	_getCell: function(/* DomNode */ n){
+		// summary: Return information about the position for a given node
+		var _pos = this._nl.indexOf(n);
+		if(_pos >= 0){
+			var _col = _pos % this.cols;
+			var _row = Math.floor(_pos / this.cols);
+			return { x: _col, y: _row, n: this._nl[_pos], io: _pos };
+		}else{
+			return undefined;
+		}
+	},
+	
+	_getImage: function(){
+		// summary: Returns the next image in the list, or the first one if not available
+		return "url('')";
+	},
+	
+	_enbiggen: function(/* Event|DomNode */ e){
+		// summary: Show the passed node in the picker
+		var _pos = this._getCell(e.target || e);
+
+		if (_pos){
+			// we have a node, and know where it is
+
+			var _cc = (this.cellSize * 2) - 2; 
+			var props = {
+				height: _cc,
+				width: _cc
+			};
+			
+			var _tehDecider = function(){
+				// if we have room, we'll want to decide which direction to go
+				// let "teh decider" decide.
+				return Math.round(Math.random()); 
+			};
+			
+			if(_pos.x == this.cols - 1 || (_pos.x > 0 && _tehDecider() )){
+				// we have to go left, at right edge (or we want to and not on left edge)
+				props.left = this.cellSize * (_pos.x - 1);
+			}
+			
+			if(_pos.y == this.rows - 1 || (_pos.y > 0 && _tehDecider() )){
+				// we have to go up, at bottom edge (or we want to and not at top)
+				props.top = this.cellSize * (_pos.y - 1);
+			}
+
+			var bc = this.baseClass;
+			dojo.addClass(_pos.n, bc + "Top");
+			dojo.addClass(_pos.n, bc + "Seen");
+
+			dojo.animateProperty({ node: _pos.n, properties: props,
+				onEnd: dojo.hitch(this, "_loadUnder", _pos, props),
+				easing: this.easing 
+			}).play();
+			
+		}
+	},
+	
+	_loadUnder: function(info, props){
+		// summary: figure out which three images are being covered, and 
+		//		determine if they need loaded or not
+
+		var idx = info.io;
+		var nodes = [];
+
+		var isLeft = (props.left >= 0);
+		var isUp = (props.top >= 0);
+		
+		var c = this.cols,
+			// the three node index's we're allegedly over:
+			e = idx + (isLeft ? -1 : 1),
+			f = idx + (isUp ? -c : c),
+			// don't ask:
+			g = (isUp ? (isLeft ? e - c : f + 1) : (isLeft ? f - 1 : e + c)),
+
+			bc = this.baseClass;
+		
+		dojo.forEach([e, f, g], function(x){
+			var n = this._nl[x];
+			if(n){
+				if(dojo.hasClass(n, bc + "Seen")){
+					// change the background image out?
+					dojo.removeClass(n, bc + "Seen");
+				}
+			}
+		},this);
+		
+		setTimeout(dojo.hitch(this, "_disenbiggen", info, props), this.delay * 1.25);
+
+	},
+	
+	_disenbiggen: function(info, props){
+		// summary: Hide the passed node (info.n), passing along properties
+		//		received.
+		
+		if(props.top >= 0){
+			props.top += this.cellSize;
+		}
+		if(props.left >= 0){
+			props.left += this.cellSize; 
+		}
+		var _cc = this.cellSize - 2;
+		dojo.animateProperty({
+			node: info.n, 
+			properties: dojo.mixin(props, {
+				width:_cc, 
+				height:_cc
+			}),
+			onEnd: dojo.hitch(this, "_cycle", info, props)
+		}).play(5);
+	},
+	
+	_cycle: function(info, props){
+		// summary: Select an un-viewed image from the list, and show it
+
+		var bc = this.baseClass; 
+		dojo.removeClass(info.n, bc + "Top");
+		var ns = this._nl.filter(function(n){
+			return !dojo.hasClass(n, bc + "Seen")
+		});
+		var c = ns[Math.floor(Math.random() * ns.length)];
+		setTimeout(dojo.hitch(this,"_enbiggen", { target: c }), this.delay / 2)
+
+	}
+	
 });
-var c=ns[Math.floor(Math.random()*ns.length)];
-setTimeout(dojo.hitch(this,"_enbiggen",{target:c}),this.delay/2);
-}});
+
 }

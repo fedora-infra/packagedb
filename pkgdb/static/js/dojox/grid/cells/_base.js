@@ -5,234 +5,412 @@
 */
 
 
-if(!dojo._hasResource["dojox.grid.cells._base"]){
-dojo._hasResource["dojox.grid.cells._base"]=true;
+if(!dojo._hasResource["dojox.grid.cells._base"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.grid.cells._base"] = true;
 dojo.provide("dojox.grid.cells._base");
+
 dojo.require("dojox.grid.util");
+
 (function(){
-var _1=function(_2){
-try{
-dojox.grid.util.fire(_2,"focus");
-dojox.grid.util.fire(_2,"select");
-}
-catch(e){
-}
-};
-var _3=function(){
-setTimeout(dojo.hitch.apply(dojo,arguments),0);
-};
-var _4=dojox.grid.cells;
-dojo.declare("dojox.grid.cells._Base",null,{styles:"",classes:"",editable:false,alwaysEditing:false,formatter:null,defaultValue:"...",value:null,hidden:false,_valueProp:"value",_formatPending:false,constructor:function(_5){
-this._props=_5||{};
-dojo.mixin(this,_5);
-},format:function(_6,_7){
-var f,i=this.grid.edit.info,d=this.get?this.get(_6,_7):(this.value||this.defaultValue);
-if(this.editable&&(this.alwaysEditing||(i.rowIndex==_6&&i.cell==this))){
-return this.formatEditing(d,_6);
-}else{
-var v=(d!=this.defaultValue&&(f=this.formatter))?f.call(this,d,_6):d;
-return (typeof v=="undefined"?this.defaultValue:v);
-}
-},formatEditing:function(_c,_d){
-},getNode:function(_e){
-return this.view.getCellNode(_e,this.index);
-},getHeaderNode:function(){
-return this.view.getHeaderCellNode(this.index);
-},getEditNode:function(_f){
-return (this.getNode(_f)||0).firstChild||0;
-},canResize:function(){
-var uw=this.unitWidth;
-return uw&&(uw=="auto");
-},isFlex:function(){
-var uw=this.unitWidth;
-return uw&&(uw=="auto"||uw.slice(-1)=="%");
-},applyEdit:function(_12,_13){
-this.grid.edit.applyCellEdit(_12,this,_13);
-},cancelEdit:function(_14){
-this.grid.doCancelEdit(_14);
-},_onEditBlur:function(_15){
-if(this.grid.edit.isEditCell(_15,this.index)){
-this.grid.edit.apply();
-}
-},registerOnBlur:function(_16,_17){
-if(this.commitOnBlur){
-dojo.connect(_16,"onblur",function(e){
-setTimeout(dojo.hitch(this,"_onEditBlur",_17),250);
-});
-}
-},needFormatNode:function(_19,_1a){
-this._formatPending=true;
-_3(this,"_formatNode",_19,_1a);
-},cancelFormatNode:function(){
-this._formatPending=false;
-},_formatNode:function(_1b,_1c){
-if(this._formatPending){
-this._formatPending=false;
-dojo.setSelectable(this.grid.domNode,true);
-this.formatNode(this.getEditNode(_1c),_1b,_1c);
-}
-},formatNode:function(_1d,_1e,_1f){
-if(dojo.isIE){
-_3(this,"focus",_1f,_1d);
-}else{
-this.focus(_1f,_1d);
-}
-},dispatchEvent:function(m,e){
-if(m in this){
-return this[m](e);
-}
-},getValue:function(_22){
-return this.getEditNode(_22)[this._valueProp];
-},setValue:function(_23,_24){
-var n=this.getEditNode(_23);
-if(n){
-n[this._valueProp]=_24;
-}
-},focus:function(_26,_27){
-_1(_27||this.getEditNode(_26));
-},save:function(_28){
-this.value=this.value||this.getValue(_28);
-},restore:function(_29){
-this.setValue(_29,this.value);
-},_finish:function(_2a){
-dojo.setSelectable(this.grid.domNode,false);
-this.cancelFormatNode();
-},apply:function(_2b){
-this.applyEdit(this.getValue(_2b),_2b);
-this._finish(_2b);
-},cancel:function(_2c){
-this.cancelEdit(_2c);
-this._finish(_2c);
-}});
-_4._Base.markupFactory=function(_2d,_2e){
-var d=dojo;
-var _30=d.trim(d.attr(_2d,"formatter")||"");
-if(_30){
-_2e.formatter=dojo.getObject(_30);
-}
-var get=d.trim(d.attr(_2d,"get")||"");
-if(get){
-_2e.get=dojo.getObject(get);
-}
-var _32=d.trim(d.attr(_2d,"sortDesc")||"");
-if(_32){
-_2e.sortDesc=!(_32.toLowerCase()=="false");
-}
-var _33=d.trim(d.attr(_2d,"loadingText")||d.attr(_2d,"defaultValue")||"");
-if(_33){
-_2e.defaultValue=_33;
-}
-var _34=d.trim(d.attr(_2d,"editable")||"");
-if(_34){
-_2e.editable=!(_34.toLowerCase()=="false");
-}
-var _35=d.trim(d.attr(_2d,"alwaysEditing")||"");
-if(_35){
-_2e.alwaysEditing=!(_35.toLowerCase()=="false");
-}
-var _36=d.trim(d.attr(_2d,"styles")||"");
-if(_36){
-_2e.styles=_36;
-}
-var _37=d.trim(d.attr(_2d,"classes")||"");
-if(_37){
-_2e.classes=_37;
-}
-};
-dojo.declare("dojox.grid.cells.Cell",_4._Base,{constructor:function(){
-this.keyFilter=this.keyFilter;
-},keyFilter:null,formatEditing:function(_38,_39){
-this.needFormatNode(_38,_39);
-return "<input class=\"dojoxGridInput\" type=\"text\" value=\""+_38+"\">";
-},formatNode:function(_3a,_3b,_3c){
-this.inherited(arguments);
-this.registerOnBlur(_3a,_3c);
-},doKey:function(e){
-if(this.keyFilter){
-var key=String.fromCharCode(e.charCode);
-if(key.search(this.keyFilter)==-1){
-dojo.stopEvent(e);
-}
-}
-},_finish:function(_3f){
-this.inherited(arguments);
-var n=this.getEditNode(_3f);
-try{
-dojox.grid.util.fire(n,"blur");
-}
-catch(e){
-}
-}});
-_4.Cell.markupFactory=function(_41,_42){
-_4._Base.markupFactory(_41,_42);
-var d=dojo;
-var _44=d.trim(d.attr(_41,"keyFilter")||"");
-if(_44){
-_42.keyFilter=new RegExp(_44);
-}
-};
-dojo.declare("dojox.grid.cells.RowIndex",_4.Cell,{name:"Row",postscript:function(){
-this.editable=false;
-},get:function(_45){
-return _45+1;
-}});
-_4.RowIndex.markupFactory=function(_46,_47){
-_4.Cell.markupFactory(_46,_47);
-};
-dojo.declare("dojox.grid.cells.Select",_4.Cell,{options:null,values:null,returnIndex:-1,constructor:function(_48){
-this.values=this.values||this.options;
-},formatEditing:function(_49,_4a){
-this.needFormatNode(_49,_4a);
-var h=["<select class=\"dojoxGridSelect\">"];
-for(var i=0,o,v;((o=this.options[i])!==undefined)&&((v=this.values[i])!==undefined);i++){
-h.push("<option",(_49==v?" selected":"")," value=\""+v+"\"",">",o,"</option>");
-}
-h.push("</select>");
-return h.join("");
-},getValue:function(_4f){
-var n=this.getEditNode(_4f);
-if(n){
-var i=n.selectedIndex,o=n.options[i];
-return this.returnIndex>-1?i:o.value||o.innerHTML;
-}
-}});
-_4.Select.markupFactory=function(_53,_54){
-_4.Cell.markupFactory(_53,_54);
-var d=dojo;
-var _56=d.trim(d.attr(_53,"options")||"");
-if(_56){
-var o=_56.split(",");
-if(o[0]!=_56){
-_54.options=o;
-}
-}
-var _58=d.trim(d.attr(_53,"values")||"");
-if(_58){
-var v=_58.split(",");
-if(v[0]!=_58){
-_54.values=v;
-}
-}
-};
-dojo.declare("dojox.grid.cells.AlwaysEdit",_4.Cell,{alwaysEditing:true,_formatNode:function(_5a,_5b){
-this.formatNode(this.getEditNode(_5b),_5a,_5b);
-},applyStaticValue:function(_5c){
-var e=this.grid.edit;
-e.applyCellEdit(this.getValue(_5c),this,_5c);
-e.start(this,_5c,true);
-}});
-_4.AlwaysEdit.markupFactory=function(_5e,_5f){
-_4.Cell.markupFactory(_5e,_5f);
-};
-dojo.declare("dojox.grid.cells.Bool",_4.AlwaysEdit,{_valueProp:"checked",formatEditing:function(_60,_61){
-return "<input class=\"dojoxGridInput\" type=\"checkbox\""+(_60?" checked=\"checked\"":"")+" style=\"width: auto\" />";
-},doclick:function(e){
-if(e.target.tagName=="INPUT"){
-this.applyStaticValue(e.rowIndex);
-}
-}});
-_4.Bool.markupFactory=function(_63,_64){
-_4.AlwaysEdit.markupFactory(_63,_64);
-};
+	var focusSelectNode = function(inNode){
+		try{
+			dojox.grid.util.fire(inNode, "focus");
+			dojox.grid.util.fire(inNode, "select");
+		}catch(e){// IE sux bad
+		}
+	};
+	
+	var whenIdle = function(/*inContext, inMethod, args ...*/){
+		setTimeout(dojo.hitch.apply(dojo, arguments), 0);
+	};
+
+	var dgc = dojox.grid.cells;
+
+	dojo.declare("dojox.grid.cells._Base", null, {
+		// summary:
+		//	Respresents a grid cell and contains information about column options and methods
+		//	for retrieving cell related information.
+		//	Each column in a grid layout has a cell object and most events and many methods
+		//	provide access to these objects.
+		styles: '',
+		classes: '',
+		editable: false,
+		alwaysEditing: false,
+		formatter: null,
+		defaultValue: '...',
+		value: null,
+		hidden: false,
+		//private
+		_valueProp: "value",
+		_formatPending: false,
+
+		constructor: function(inProps){
+			this._props = inProps || {};
+			dojo.mixin(this, inProps);
+		},
+
+		// data source
+		format: function(inRowIndex, inItem){
+			// summary:
+			//	provides the html for a given grid cell.
+			// inRowIndex: int
+			// grid row index
+			// returns: html for a given grid cell
+			var f, i=this.grid.edit.info, d=this.get ? this.get(inRowIndex, inItem) : (this.value || this.defaultValue);
+			if(this.editable && (this.alwaysEditing || (i.rowIndex==inRowIndex && i.cell==this))){
+				return this.formatEditing(d, inRowIndex);
+			}else{
+				var v = (d != this.defaultValue && (f = this.formatter)) ? f.call(this, d, inRowIndex) : d;
+				return (typeof v == "undefined" ? this.defaultValue : v);
+			}
+		},
+		formatEditing: function(inDatum, inRowIndex){
+			// summary:
+			//	formats the cell for editing
+			// inDatum: anything
+			//	cell data to edit
+			// inRowIndex: int
+			//	grid row index
+			// returns: string of html to place in grid cell
+		},
+		// utility
+		getNode: function(inRowIndex){
+			// summary:
+			//	gets the dom node for a given grid cell.
+			// inRowIndex: int
+			// grid row index
+			// returns: dom node for a given grid cell
+			return this.view.getCellNode(inRowIndex, this.index);
+		},
+		getHeaderNode: function(){
+			return this.view.getHeaderCellNode(this.index);
+		},
+		getEditNode: function(inRowIndex){
+			return (this.getNode(inRowIndex) || 0).firstChild || 0;
+		},
+		canResize: function(){
+			var uw = this.unitWidth;
+			return uw && (uw=='auto');
+		},
+		isFlex: function(){
+			var uw = this.unitWidth;
+			return uw && (uw=='auto' || uw.slice(-1)=='%');
+		},
+		// edit support
+		applyEdit: function(inValue, inRowIndex){
+			this.grid.edit.applyCellEdit(inValue, this, inRowIndex);
+		},
+		cancelEdit: function(inRowIndex){
+			this.grid.doCancelEdit(inRowIndex);
+		},
+		_onEditBlur: function(inRowIndex){
+			if(this.grid.edit.isEditCell(inRowIndex, this.index)){
+				//
+				this.grid.edit.apply();
+			}
+		},
+		registerOnBlur: function(inNode, inRowIndex){
+			if(this.commitOnBlur){
+				dojo.connect(inNode, "onblur", function(e){
+					// hack: if editor still thinks this editor is current some ms after it blurs, assume we've focused away from grid
+					setTimeout(dojo.hitch(this, "_onEditBlur", inRowIndex), 250);
+				});
+			}
+		},
+		//protected
+		needFormatNode: function(inDatum, inRowIndex){
+			this._formatPending = true;
+			whenIdle(this, "_formatNode", inDatum, inRowIndex);
+		},
+		cancelFormatNode: function(){
+			this._formatPending = false;
+		},
+		//private
+		_formatNode: function(inDatum, inRowIndex){
+			if(this._formatPending){
+				this._formatPending = false;
+				// make cell selectable
+				dojo.setSelectable(this.grid.domNode, true);
+				this.formatNode(this.getEditNode(inRowIndex), inDatum, inRowIndex);
+			}
+		},
+		//protected
+		formatNode: function(inNode, inDatum, inRowIndex){
+			// summary:
+			//	format the editing dom node. Use when editor is a widget.
+			// inNode: dom node
+			// dom node for the editor
+			// inDatum: anything
+			//	cell data to edit
+			// inRowIndex: int
+			//	grid row index
+			if(dojo.isIE){
+				// IE sux bad
+				whenIdle(this, "focus", inRowIndex, inNode);
+			}else{
+				this.focus(inRowIndex, inNode);
+			}
+		},
+		dispatchEvent: function(m, e){
+			if(m in this){
+				return this[m](e);
+			}
+		},
+		//public
+		getValue: function(inRowIndex){
+			// summary:
+			//	returns value entered into editor
+			// inRowIndex: int
+			// grid row index
+			// returns:
+			//	value of editor
+			return this.getEditNode(inRowIndex)[this._valueProp];
+		},
+		setValue: function(inRowIndex, inValue){
+			// summary:
+			//	set the value of the grid editor
+			// inRowIndex: int
+			// grid row index
+			// inValue: anything
+			//	value of editor
+			var n = this.getEditNode(inRowIndex);
+			if(n){
+				n[this._valueProp] = inValue
+			};
+		},
+		focus: function(inRowIndex, inNode){
+			// summary:
+			//	focus the grid editor
+			// inRowIndex: int
+			// grid row index
+			// inNode: dom node
+			//	editor node
+			focusSelectNode(inNode || this.getEditNode(inRowIndex));
+		},
+		save: function(inRowIndex){
+			// summary:
+			//	save editor state
+			// inRowIndex: int
+			// grid row index
+			this.value = this.value || this.getValue(inRowIndex);
+			//
+		},
+		restore: function(inRowIndex){
+			// summary:
+			//	restore editor state
+			// inRowIndex: int
+			// grid row index
+			this.setValue(inRowIndex, this.value);
+			//
+		},
+		//protected
+		_finish: function(inRowIndex){
+			// summary:
+			//	called when editing is completed to clean up editor
+			// inRowIndex: int
+			// grid row index
+			dojo.setSelectable(this.grid.domNode, false);
+			this.cancelFormatNode();
+		},
+		//public
+		apply: function(inRowIndex){
+			// summary:
+			//	apply edit from cell editor
+			// inRowIndex: int
+			// grid row index
+			this.applyEdit(this.getValue(inRowIndex), inRowIndex);
+			this._finish(inRowIndex);
+		},
+		cancel: function(inRowIndex){
+			// summary:
+			//	cancel cell edit
+			// inRowIndex: int
+			// grid row index
+			this.cancelEdit(inRowIndex);
+			this._finish(inRowIndex);
+		}
+	});
+	dgc._Base.markupFactory = function(node, cellDef){
+		var d = dojo;
+		var formatter = d.trim(d.attr(node, "formatter")||"");
+		if(formatter){
+			cellDef.formatter = dojo.getObject(formatter);
+		}
+		var get = d.trim(d.attr(node, "get")||"");
+		if(get){
+			cellDef.get = dojo.getObject(get);
+		}
+		var sortDesc = d.trim(d.attr(node, "sortDesc")||"");
+		if(sortDesc){
+			cellDef.sortDesc = !(sortDesc.toLowerCase()=="false");
+		}
+		var value = d.trim(d.attr(node, "loadingText")||d.attr(node, "defaultValue")||"");
+		if(value){
+			cellDef.defaultValue = value;
+		}
+		var editable = d.trim(d.attr(node, "editable")||"");
+		if(editable){
+			cellDef.editable = !(editable.toLowerCase()=="false");
+		}
+		var alwaysEditing = d.trim(d.attr(node, "alwaysEditing")||"");
+		if(alwaysEditing){
+			cellDef.alwaysEditing = !(alwaysEditing.toLowerCase()=="false");
+		}
+		var styles = d.trim(d.attr(node, "styles")||"");
+		if(styles){
+			cellDef.styles = styles;
+		}
+		var classes = d.trim(d.attr(node, "classes")||"");
+		if(classes){
+			cellDef.classes = classes;
+		}
+	}
+
+	dojo.declare("dojox.grid.cells.Cell", dgc._Base, {
+		// summary
+		// grid cell that provides a standard text input box upon editing
+		constructor: function(){
+			this.keyFilter = this.keyFilter;
+		},
+		// keyFilter: RegExp
+		//		optional regex for disallowing keypresses
+		keyFilter: null,
+		formatEditing: function(inDatum, inRowIndex){
+			this.needFormatNode(inDatum, inRowIndex);
+			return '<input class="dojoxGridInput" type="text" value="' + inDatum + '">';
+		},
+		formatNode: function(inNode, inDatum, inRowIndex){
+			this.inherited(arguments);
+			// FIXME: feels too specific for this interface
+			this.registerOnBlur(inNode, inRowIndex);
+		},
+		doKey: function(e){
+			if(this.keyFilter){
+				var key = String.fromCharCode(e.charCode);
+				if(key.search(this.keyFilter) == -1){
+					dojo.stopEvent(e);
+				}
+			}
+		},
+		_finish: function(inRowIndex){
+			this.inherited(arguments);
+			var n = this.getEditNode(inRowIndex);
+			try{
+				dojox.grid.util.fire(n, "blur");
+			}catch(e){}
+		}
+	});
+	dgc.Cell.markupFactory = function(node, cellDef){
+		dgc._Base.markupFactory(node, cellDef);
+		var d = dojo;
+		var keyFilter = d.trim(d.attr(node, "keyFilter")||"");
+		if(keyFilter){
+			cellDef.keyFilter = new RegExp(keyFilter);
+		}
+	}
+
+	dojo.declare("dojox.grid.cells.RowIndex", dgc.Cell, {
+		name: 'Row',
+
+		postscript: function(){
+			this.editable = false;
+		},
+		get: function(inRowIndex){
+			return inRowIndex + 1;
+		}
+	});
+	dgc.RowIndex.markupFactory = function(node, cellDef){
+		dgc.Cell.markupFactory(node, cellDef);
+	}
+
+	dojo.declare("dojox.grid.cells.Select", dgc.Cell, {
+		// summary:
+		// grid cell that provides a standard select for editing
+
+		// options: Array
+		// 		text of each item
+		options: null,
+
+		// values: Array
+		//		value for each item
+		values: null,
+
+		// returnIndex: Integer
+		// 		editor returns only the index of the selected option and not the value
+		returnIndex: -1,
+
+		constructor: function(inCell){
+			this.values = this.values || this.options;
+		},
+		formatEditing: function(inDatum, inRowIndex){
+			this.needFormatNode(inDatum, inRowIndex);
+			var h = [ '<select class="dojoxGridSelect">' ];
+			for (var i=0, o, v; ((o=this.options[i]) !== undefined)&&((v=this.values[i]) !== undefined); i++){
+				h.push("<option", (inDatum==v ? ' selected' : ''), ' value="' + v + '"', ">", o, "</option>");
+			}
+			h.push('</select>');
+			return h.join('');
+		},
+		getValue: function(inRowIndex){
+			var n = this.getEditNode(inRowIndex);
+			if(n){
+				var i = n.selectedIndex, o = n.options[i];
+				return this.returnIndex > -1 ? i : o.value || o.innerHTML;
+			}
+		}
+	});
+	dgc.Select.markupFactory = function(node, cell){
+		dgc.Cell.markupFactory(node, cell);
+		var d=dojo;
+		var options = d.trim(d.attr(node, "options")||"");
+		if(options){
+			var o = options.split(',');
+			if(o[0] != options){
+				cell.options = o;
+			}
+		}
+		var values = d.trim(d.attr(node, "values")||"");
+		if(values){
+			var v = values.split(',');
+			if(v[0] != values){
+				cell.values = v;
+			}
+		}
+	}
+
+	dojo.declare("dojox.grid.cells.AlwaysEdit", dgc.Cell, {
+		// summary:
+		// grid cell that is always in an editable state, regardless of grid editing state
+		alwaysEditing: true,
+		_formatNode: function(inDatum, inRowIndex){
+			this.formatNode(this.getEditNode(inRowIndex), inDatum, inRowIndex);
+		},
+		applyStaticValue: function(inRowIndex){
+			var e = this.grid.edit;
+			e.applyCellEdit(this.getValue(inRowIndex), this, inRowIndex);
+			e.start(this, inRowIndex, true);
+		}
+	});
+	dgc.AlwaysEdit.markupFactory = function(node, cell){
+		dgc.Cell.markupFactory(node, cell);
+	}
+
+	dojo.declare("dojox.grid.cells.Bool", dgc.AlwaysEdit, {
+		// summary:
+		// grid cell that provides a standard checkbox that is always on for editing
+		_valueProp: "checked",
+		formatEditing: function(inDatum, inRowIndex){
+			return '<input class="dojoxGridInput" type="checkbox"' + (inDatum ? ' checked="checked"' : '') + ' style="width: auto" />';
+		},
+		doclick: function(e){
+			if(e.target.tagName == 'INPUT'){
+				this.applyStaticValue(e.rowIndex);
+			}
+		}
+	});
+	dgc.Bool.markupFactory = function(node, cell){
+		dgc.AlwaysEdit.markupFactory(node, cell);
+	}
 })();
+
 }

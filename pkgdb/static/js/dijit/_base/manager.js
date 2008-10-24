@@ -5,130 +5,201 @@
 */
 
 
-if(!dojo._hasResource["dijit._base.manager"]){
-dojo._hasResource["dijit._base.manager"]=true;
+if(!dojo._hasResource["dijit._base.manager"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dijit._base.manager"] = true;
 dojo.provide("dijit._base.manager");
-dojo.declare("dijit.WidgetSet",null,{constructor:function(){
-this._hash={};
-},add:function(_1){
-if(this._hash[_1.id]){
-throw new Error("Tried to register widget with id=="+_1.id+" but that id is already registered");
-}
-this._hash[_1.id]=_1;
-},remove:function(id){
-delete this._hash[id];
-},forEach:function(_3){
-for(var id in this._hash){
-_3(this._hash[id]);
-}
-},filter:function(_5){
-var _6=new dijit.WidgetSet();
-this.forEach(function(_7){
-if(_5(_7)){
-_6.add(_7);
-}
-});
-return _6;
-},byId:function(id){
-return this._hash[id];
-},byClass:function(_9){
-return this.filter(function(_a){
-return _a.declaredClass==_9;
-});
-}});
-dijit.registry=new dijit.WidgetSet();
-dijit._widgetTypeCtr={};
-dijit.getUniqueId=function(_b){
-var id;
-do{
-id=_b+"_"+(_b in dijit._widgetTypeCtr?++dijit._widgetTypeCtr[_b]:dijit._widgetTypeCtr[_b]=0);
-}while(dijit.byId(id));
-return id;
+
+dojo.declare("dijit.WidgetSet", null, {
+	// summary:
+	//	A set of widgets indexed by id
+
+	constructor: function(){
+		this._hash={};
+	},
+
+	add: function(/*Widget*/ widget){
+		if(this._hash[widget.id]){
+			throw new Error("Tried to register widget with id==" + widget.id + " but that id is already registered");
+		}
+		this._hash[widget.id]=widget;
+	},
+
+	remove: function(/*String*/ id){
+		delete this._hash[id];
+	},
+
+	forEach: function(/*Function*/ func){
+		for(var id in this._hash){
+			func(this._hash[id]);
+		}
+	},
+
+	filter: function(/*Function*/ filter){
+		var res = new dijit.WidgetSet();
+		this.forEach(function(widget){
+			if(filter(widget)){ res.add(widget); }
+		});
+		return res;		// dijit.WidgetSet
+	},
+
+	byId: function(/*String*/ id){
+		return this._hash[id];
+	},
+
+	byClass: function(/*String*/ cls){
+		return this.filter(function(widget){ return widget.declaredClass==cls; });	// dijit.WidgetSet
+	}
+	});
+
+/*=====
+dijit.registry = {
+	// summary: A list of widgets on a page.
+	// description: Is an instance of dijit.WidgetSet
 };
+=====*/
+dijit.registry = new dijit.WidgetSet();
+
+dijit._widgetTypeCtr = {};
+
+dijit.getUniqueId = function(/*String*/widgetType){
+	// summary
+	//	Generates a unique id for a given widgetType
+
+	var id;
+	do{
+		id = widgetType + "_" +
+			(widgetType in dijit._widgetTypeCtr ?
+				++dijit._widgetTypeCtr[widgetType] : dijit._widgetTypeCtr[widgetType] = 0);
+	}while(dijit.byId(id));
+	return id; // String
+};
+
+
 if(dojo.isIE){
-dojo.addOnWindowUnload(function(){
-dijit.registry.forEach(function(_d){
-_d.destroy();
-});
-});
+	// Only run this for IE because we think it's only necessary in that case,
+	// and because it causes problems on FF.  See bug #3531 for details.
+	dojo.addOnWindowUnload(function(){
+		dijit.registry.forEach(function(widget){ widget.destroy(); });
+	});
 }
-dijit.byId=function(id){
-return (dojo.isString(id))?dijit.registry.byId(id):id;
+
+dijit.byId = function(/*String|Widget*/id){
+	// summary:
+	//		Returns a widget by its id, or if passed a widget, no-op (like dojo.byId())
+	return (dojo.isString(id)) ? dijit.registry.byId(id) : id; // Widget
 };
-dijit.byNode=function(_f){
-return dijit.registry.byId(_f.getAttribute("widgetId"));
+
+dijit.byNode = function(/* DOMNode */ node){
+	// summary:
+	//		Returns the widget as referenced by node
+	return dijit.registry.byId(node.getAttribute("widgetId")); // Widget
 };
-dijit.getEnclosingWidget=function(_10){
-while(_10){
-if(_10.getAttribute&&_10.getAttribute("widgetId")){
-return dijit.registry.byId(_10.getAttribute("widgetId"));
-}
-_10=_10.parentNode;
-}
-return null;
+
+dijit.getEnclosingWidget = function(/* DOMNode */ node){
+	// summary:
+	//		Returns the widget whose dom tree contains node or null if
+	//		the node is not contained within the dom tree of any widget
+	while(node){
+		if(node.getAttribute && node.getAttribute("widgetId")){
+			return dijit.registry.byId(node.getAttribute("widgetId"));
+		}
+		node = node.parentNode;
+	}
+	return null;
 };
-dijit._tabElements={area:true,button:true,input:true,object:true,select:true,textarea:true};
-dijit._isElementShown=function(_11){
-var _12=dojo.style(_11);
-return (_12.visibility!="hidden")&&(_12.visibility!="collapsed")&&(_12.display!="none")&&(dojo.attr(_11,"type")!="hidden");
+
+// elements that are tab-navigable if they have no tabindex value set
+// (except for "a", which must have an href attribute)
+dijit._tabElements = {
+	area: true,
+	button: true,
+	input: true,
+	object: true,
+	select: true,
+	textarea: true
 };
-dijit.isTabNavigable=function(_13){
-if(dojo.hasAttr(_13,"disabled")){
-return false;
+
+dijit._isElementShown = function(/*Element*/elem){
+	var style = dojo.style(elem);
+	return (style.visibility != "hidden")
+		&& (style.visibility != "collapsed")
+		&& (style.display != "none")
+		&& (dojo.attr(elem, "type") != "hidden");
 }
-var _14=dojo.hasAttr(_13,"tabindex");
-var _15=dojo.attr(_13,"tabindex");
-if(_14&&_15>=0){
-return true;
-}
-var _16=_13.nodeName.toLowerCase();
-if(((_16=="a"&&dojo.hasAttr(_13,"href"))||dijit._tabElements[_16])&&(!_14||_15>=0)){
-return true;
-}
-return false;
+
+dijit.isTabNavigable = function(/*Element*/elem){
+	// summary:
+	//		Tests if an element is tab-navigable
+	if(dojo.hasAttr(elem, "disabled")){ return false; }
+	var hasTabindex = dojo.hasAttr(elem, "tabindex");
+	var tabindex = dojo.attr(elem, "tabindex");
+	if(hasTabindex && tabindex >= 0) {
+		return true; // boolean
+	}
+	var name = elem.nodeName.toLowerCase();
+	if(((name == "a" && dojo.hasAttr(elem, "href"))
+			|| dijit._tabElements[name])
+		&& (!hasTabindex || tabindex >= 0)){
+		return true; // boolean
+	}
+	return false; // boolean
 };
-dijit._getTabNavigable=function(_17){
-var _18,_19,_1a,_1b,_1c,_1d;
-var _1e=function(_1f){
-dojo.query("> *",_1f).forEach(function(_20){
-var _21=dijit._isElementShown(_20);
-if(_21&&dijit.isTabNavigable(_20)){
-var _22=dojo.attr(_20,"tabindex");
-if(!dojo.hasAttr(_20,"tabindex")||_22==0){
-if(!_18){
-_18=_20;
+
+dijit._getTabNavigable = function(/*DOMNode*/root){
+	// summary:
+	//		Finds the following descendants of the specified root node:
+	//		* the first tab-navigable element in document order
+	//		  without a tabindex or with tabindex="0"
+	//		* the last tab-navigable element in document order
+	//		  without a tabindex or with tabindex="0"
+	//		* the first element in document order with the lowest
+	//		  positive tabindex value
+	//		* the last element in document order with the highest
+	//		  positive tabindex value
+	var first, last, lowest, lowestTabindex, highest, highestTabindex;
+	var walkTree = function(/*DOMNode*/parent){
+		dojo.query("> *", parent).forEach(function(child){
+			var isShown = dijit._isElementShown(child);
+			if(isShown && dijit.isTabNavigable(child)){
+				var tabindex = dojo.attr(child, "tabindex");
+				if(!dojo.hasAttr(child, "tabindex") || tabindex == 0){
+					if(!first){ first = child; }
+					last = child;
+				}else if(tabindex > 0){
+					if(!lowest || tabindex < lowestTabindex){
+						lowestTabindex = tabindex;
+						lowest = child;
+					}
+					if(!highest || tabindex >= highestTabindex){
+						highestTabindex = tabindex;
+						highest = child;
+					}
+				}
+			}
+			if(isShown && child.nodeName.toUpperCase() != 'SELECT'){ walkTree(child) }
+		});
+	};
+	if(dijit._isElementShown(root)){ walkTree(root) }
+	return { first: first, last: last, lowest: lowest, highest: highest };
 }
-_19=_20;
-}else{
-if(_22>0){
-if(!_1a||_22<_1b){
-_1b=_22;
-_1a=_20;
-}
-if(!_1c||_22>=_1d){
-_1d=_22;
-_1c=_20;
-}
-}
-}
-}
-if(_21&&_20.nodeName.toUpperCase()!="SELECT"){
-_1e(_20);
-}
-});
+dijit.getFirstInTabbingOrder = function(/*String|DOMNode*/root){
+	// summary:
+	//		Finds the descendant of the specified root node
+	//		that is first in the tabbing order
+	var elems = dijit._getTabNavigable(dojo.byId(root));
+	return elems.lowest ? elems.lowest : elems.first; // Element
 };
-if(dijit._isElementShown(_17)){
-_1e(_17);
-}
-return {first:_18,last:_19,lowest:_1a,highest:_1c};
+
+dijit.getLastInTabbingOrder = function(/*String|DOMNode*/root){
+	// summary:
+	//		Finds the descendant of the specified root node
+	//		that is last in the tabbing order
+	var elems = dijit._getTabNavigable(dojo.byId(root));
+	return elems.last ? elems.last : elems.highest; // Element
 };
-dijit.getFirstInTabbingOrder=function(_23){
-var _24=dijit._getTabNavigable(dojo.byId(_23));
-return _24.lowest?_24.lowest:_24.first;
-};
-dijit.getLastInTabbingOrder=function(_25){
-var _26=dijit._getTabNavigable(dojo.byId(_25));
-return _26.last?_26.last:_26.highest;
-};
-dijit.defaultDuration=dojo.config["defaultDuration"]||200;
+
+// dijit.defaultDuration
+//	Default duration for wipe and fade animations within dijits
+dijit.defaultDuration = dojo.config["defaultDuration"] || 200;
+
 }

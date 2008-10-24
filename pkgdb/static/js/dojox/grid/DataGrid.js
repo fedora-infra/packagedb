@@ -5,333 +5,489 @@
 */
 
 
-if(!dojo._hasResource["dojox.grid.DataGrid"]){
-dojo._hasResource["dojox.grid.DataGrid"]=true;
+if(!dojo._hasResource["dojox.grid.DataGrid"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.grid.DataGrid"] = true;
 dojo.provide("dojox.grid.DataGrid");
+
 dojo.require("dojox.grid._Grid");
 dojo.require("dojox.grid.DataSelection");
-dojo.declare("dojox.grid.DataGrid",dojox.grid._Grid,{store:null,query:null,queryOptions:null,fetchText:"...",items:null,_store_connects:null,_by_idty:null,_by_idx:null,_cache:null,_pages:null,_pending_requests:null,_bop:-1,_eop:-1,_requests:0,rowCount:0,_isLoaded:false,_isLoading:false,postCreate:function(){
-this._pages=[];
-this._store_connects=[];
-this._by_idty={};
-this._by_idx=[];
-this._cache=[];
-this._pending_requests={};
-this._setStore(this.store);
-this.inherited(arguments);
-},createSelection:function(){
-this.selection=new dojox.grid.DataSelection(this);
-},get:function(_1,_2){
-return (!_2?this.defaultValue:(!this.field?this.value:this.grid.store.getValue(_2,this.field)));
-},_onSet:function(_3,_4,_5,_6){
-var _7=this.getItemIndex(_3);
-if(_7>-1){
-this.updateRow(_7);
-}
-},_addItem:function(_8,_9,_a){
-var _b=this._hasIdentity?this.store.getIdentity(_8):dojo.toJson(this.query)+":idx:"+_9+":sort:"+dojo.toJson(this.getSortProps());
-var o={idty:_b,item:_8};
-this._by_idty[_b]=this._by_idx[_9]=o;
-if(!_a){
-this.updateRow(_9);
-}
-},_onNew:function(_d,_e){
-this.updateRowCount(this.rowCount+1);
-this._addItem(_d,this.rowCount-1);
-this.showMessage();
-},_onDelete:function(_f){
-var idx=this._getItemIndex(_f,true);
-if(idx>=0){
-var o=this._by_idx[idx];
-this._by_idx.splice(idx,1);
-delete this._by_idty[o.idty];
-this.updateRowCount(this.rowCount-1);
-if(this.rowCount===0){
-this.showMessage(this.noDataMessage);
-}
-}
-},_onRevert:function(){
-this._refresh();
-},setStore:function(_12,_13,_14){
-this._setQuery(_13,_14);
-this._setStore(_12);
-this._refresh(true);
-},setQuery:function(_15,_16){
-this._setQuery(_15,_16);
-this._refresh(true);
-},setItems:function(_17){
-this.items=_17;
-this._setStore(this.store);
-this._refresh(true);
-},_setQuery:function(_18,_19){
-this.query=_18||this.query;
-this.queryOptions=_19||this.queryOptions;
-},_setStore:function(_1a){
-if(this.store&&this._store_connects){
-dojo.forEach(this._store_connects,function(arr){
-dojo.forEach(arr,dojo.disconnect);
-});
-}
-this.store=_1a;
-if(this.store){
-var f=this.store.getFeatures();
-var h=[];
-this._canEdit=!!f["dojo.data.api.Write"]&&!!f["dojo.data.api.Identity"];
-this._hasIdentity=!!f["dojo.data.api.Identity"];
-if(!!f["dojo.data.api.Notification"]&&!this.items){
-h.push(this.connect(this.store,"onSet","_onSet"));
-h.push(this.connect(this.store,"onNew","_onNew"));
-h.push(this.connect(this.store,"onDelete","_onDelete"));
-}
-if(this._canEdit){
-h.push(this.connect(this.store,"revert","_onRevert"));
-}
-this._store_connects=h;
-}
-},_onFetchBegin:function(_1e,req){
-if(this.rowCount!=_1e){
-if(req.isRender){
-this.scroller.init(_1e,this.keepRows,this.rowsPerPage);
-this.prerender();
-}
-this.updateRowCount(_1e);
-}
-},_onFetchComplete:function(_20,req){
-if(_20&&_20.length>0){
-dojo.forEach(_20,function(_22,idx){
-this._addItem(_22,req.start+idx,true);
-},this);
-this.updateRows(req.start,_20.length);
-if(req.isRender){
-this.setScrollTop(0);
-this.postrender();
-}else{
-if(this._lastScrollTop){
-this.setScrollTop(this._lastScrollTop);
-}
-}
-}
-delete this._lastScrollTop;
-if(!this._isLoaded){
-this._isLoading=false;
-this._isLoaded=true;
-if(!_20||!_20.length){
-this.showMessage(this.noDataMessage);
-}else{
-this.showMessage();
-}
-}
-this._pending_requests[req.start]=false;
-},_onFetchError:function(err,req){
 
-delete this._lastScrollTop;
-if(!this._isLoaded){
-this._isLoading=false;
-this._isLoaded=true;
-this.showMessage(this.errorMessage);
-}
-this.onFetchError(err,req);
-},onFetchError:function(err,req){
-},_fetch:function(_28,_29){
-var _28=_28||0;
-if(this.store&&!this._pending_requests[_28]){
-if(!this._isLoaded&&!this._isLoading){
-this._isLoading=true;
-this.showMessage(this.loadingMessage);
-}
-this._pending_requests[_28]=true;
-try{
-if(this.items){
-var _2a=this.items;
-var _2b=this.store;
-this.rowsPerPage=_2a.length;
-var req={start:_28,count:this.rowsPerPage,isRender:_29};
-this._onFetchBegin(_2a.length,req);
-var _2d=0;
-dojo.forEach(_2a,function(i){
-if(!_2b.isItemLoaded(i)){
-_2d++;
-}
+dojo.declare("dojox.grid.DataGrid", dojox.grid._Grid, {
+	store: null,
+	query: null,
+	queryOptions: null,
+	fetchText: '...',
+
+	// You can specify items instead of a query, if you like.  They do not need
+	// to be loaded - but the must be items in the store
+	items: null,
+	
+	_store_connects: null,
+	_by_idty: null,
+	_by_idx: null,
+	_cache: null,
+	_pages: null,
+	_pending_requests: null,
+	_bop: -1,
+	_eop: -1,
+	_requests: 0,
+	rowCount: 0,
+
+	_isLoaded: false,
+	_isLoading: false,
+	
+	postCreate: function(){
+		this._pages = [];
+		this._store_connects = [];
+		this._by_idty = {};
+		this._by_idx = [];
+		this._cache = [];
+		this._pending_requests = {};
+
+		this._setStore(this.store);
+		this.inherited(arguments);
+	},
+
+	createSelection: function(){
+		this.selection = new dojox.grid.DataSelection(this);
+	},
+
+	get: function(inRowIndex, inItem){
+		return (!inItem ? this.defaultValue : (!this.field ? this.value : this.grid.store.getValue(inItem, this.field)));
+	},
+
+	_onSet: function(item, attribute, oldValue, newValue){
+		var idx = this.getItemIndex(item);
+		if(idx>-1){
+			this.updateRow(idx);
+		}
+	},
+
+	_addItem: function(item, index, noUpdate){
+		var idty = this._hasIdentity ? this.store.getIdentity(item) : dojo.toJson(this.query) + ":idx:" + index + ":sort:" + dojo.toJson(this.getSortProps());
+		var o = { idty: idty, item: item };
+		this._by_idty[idty] = this._by_idx[index] = o;
+		if(!noUpdate){
+			this.updateRow(index);
+		}
+	},
+
+	_onNew: function(item, parentInfo){
+		this.updateRowCount(this.rowCount+1);
+		this._addItem(item, this.rowCount-1);
+		this.showMessage();
+	},
+
+	_onDelete: function(item){
+		var idx = this._getItemIndex(item, true);
+
+		if(idx >= 0){
+			var o = this._by_idx[idx];
+			this._by_idx.splice(idx, 1);
+			delete this._by_idty[o.idty];
+			this.updateRowCount(this.rowCount-1);
+			if(this.rowCount === 0){
+				this.showMessage(this.noDataMessage);
+			}
+		}
+	},
+
+	_onRevert: function(){
+		this._refresh();
+	},
+
+	setStore: function(store, query, queryOptions){
+		this._setQuery(query, queryOptions);
+		this._setStore(store);
+		this._refresh(true);
+	},
+	
+	setQuery: function(query, queryOptions){
+		this._setQuery(query, queryOptions);
+		this._refresh(true);
+	},
+	
+	setItems: function(items){
+		this.items = items;
+		this._setStore(this.store);
+		this._refresh(true);
+	},
+	
+	_setQuery: function(query, queryOptions){
+		this.query = query || this.query;
+		this.queryOptions = queryOptions || this.queryOptions;		
+	},
+
+	_setStore: function(store){
+		if(this.store&&this._store_connects){
+			dojo.forEach(this._store_connects,function(arr){
+				dojo.forEach(arr, dojo.disconnect);
+			});
+		}
+		this.store = store;
+
+		if(this.store){
+			var f = this.store.getFeatures();
+			var h = [];
+
+			this._canEdit = !!f["dojo.data.api.Write"] && !!f["dojo.data.api.Identity"];
+			this._hasIdentity = !!f["dojo.data.api.Identity"];
+
+			if(!!f["dojo.data.api.Notification"] && !this.items){
+				h.push(this.connect(this.store, "onSet", "_onSet"));
+				h.push(this.connect(this.store, "onNew", "_onNew"));
+				h.push(this.connect(this.store, "onDelete", "_onDelete"));
+			}
+			if(this._canEdit){
+				h.push(this.connect(this.store, "revert", "_onRevert"));
+			}
+
+			this._store_connects = h;
+		}
+	},
+
+	_onFetchBegin: function(size, req){
+		if(this.rowCount != size){
+			if(req.isRender){
+				this.scroller.init(size, this.keepRows, this.rowsPerPage);
+				this.prerender();
+			}
+			this.updateRowCount(size);
+		}
+	},
+
+	_onFetchComplete: function(items, req){
+		if(items && items.length > 0){
+			//
+			dojo.forEach(items, function(item, idx){
+				this._addItem(item, req.start+idx, true);
+			}, this);
+			this.updateRows(req.start, items.length);
+			if(req.isRender){
+				this.setScrollTop(0);
+				this.postrender();
+			}else if(this._lastScrollTop){
+				this.setScrollTop(this._lastScrollTop);
+			}
+		}
+		delete this._lastScrollTop;
+		if(!this._isLoaded){
+			this._isLoading = false;
+			this._isLoaded = true;
+			if(!items || !items.length){
+				this.showMessage(this.noDataMessage);
+			}else{
+				this.showMessage();
+			}
+		}
+		this._pending_requests[req.start] = false;
+	},
+
+	_onFetchError: function(err, req){
+		
+		delete this._lastScrollTop;
+		if(!this._isLoaded){
+			this._isLoading = false;
+			this._isLoaded = true;
+			this.showMessage(this.errorMessage);
+		}
+		this.onFetchError(err, req);
+	},
+
+	onFetchError: function(err, req){
+	},
+
+	_fetch: function(start, isRender){
+		var start = start || 0;
+		if(this.store && !this._pending_requests[start]){
+			if(!this._isLoaded && !this._isLoading){
+				this._isLoading = true;
+				this.showMessage(this.loadingMessage);
+			}
+			this._pending_requests[start] = true;
+			//
+			try{
+				if(this.items){
+					var items = this.items;
+					var store = this.store;
+					this.rowsPerPage = items.length
+					var req = {
+						start: start,
+						count: this.rowsPerPage,
+						isRender: isRender
+					};
+					this._onFetchBegin(items.length, req);
+					
+					// Load them if we need to
+					var waitCount = 0;
+					dojo.forEach(items, function(i){
+						if(!store.isItemLoaded(i)){ waitCount++; }
+					});
+					if(waitCount === 0){
+						this._onFetchComplete(items, req);
+					}else{
+						var onItem = function(item){
+							waitCount--;
+							if(waitCount === 0){
+								this._onFetchComplete(items, req);
+							}
+						};
+						dojo.forEach(items, function(i){
+							if(!store.isItemLoaded(i)){
+								store.loadItem({item: i, onItem: onItem, scope: this});
+							}
+						}, this);
+					}
+				}else{
+					this.store.fetch({
+						start: start,
+						count: this.rowsPerPage,
+						query: this.query,
+						sort: this.getSortProps(),
+						queryOptions: this.queryOptions,
+						isRender: isRender,
+						onBegin: dojo.hitch(this, "_onFetchBegin"),
+						onComplete: dojo.hitch(this, "_onFetchComplete"),
+						onError: dojo.hitch(this, "_onFetchError")
+					});
+				}
+			}catch(e){
+				this._onFetchError(e);
+			}
+		}
+	},
+
+	_clearData: function(){
+		this.updateRowCount(0);
+		this._by_idty = {};
+		this._by_idx = [];
+		this._pages = [];
+		this._bop = this._eop = -1;
+		this._isLoaded = false;
+		this._isLoading = false;
+	},
+
+	getItem: function(idx){
+		var data = this._by_idx[idx];
+		if(!data||(data&&!data.item)){
+			this._preparePage(idx);
+			return null;
+		}
+		return data.item;
+	},
+
+	getItemIndex: function(item){
+		return this._getItemIndex(item, false);
+	},
+	
+	_getItemIndex: function(item, isDeleted){
+		if(!isDeleted && !this.store.isItem(item)){
+			return -1;
+		}
+
+		var idty = this._hasIdentity ? this.store.getIdentity(item) : null;
+
+		for(var i=0, l=this._by_idx.length; i<l; i++){
+			var d = this._by_idx[i];
+			if(d && ((idty && d.idty == idty) || (d.item === item))){
+				return i;
+			}
+		}
+		return -1;
+	},
+
+	filter: function(query, reRender){
+		this.query = query;
+		if(reRender){
+			this._clearData();
+		}
+		this._fetch();
+	},
+
+	_getItemAttr: function(idx, attr){
+		var item = this.getItem(idx);
+		return (!item ? this.fetchText : this.store.getValue(item, attr));
+	},
+
+	// rendering
+	_render: function(){
+		if(this.domNode.parentNode){
+			this.scroller.init(this.rowCount, this.keepRows, this.rowsPerPage);
+			this.prerender();
+			this._fetch(0, true);
+		}
+	},
+
+	// paging
+	_requestsPending: function(inRowIndex){
+		return this._pending_requests[inRowIndex];
+	},
+
+	_rowToPage: function(inRowIndex){
+		return (this.rowsPerPage ? Math.floor(inRowIndex / this.rowsPerPage) : inRowIndex);
+	},
+
+	_pageToRow: function(inPageIndex){
+		return (this.rowsPerPage ? this.rowsPerPage * inPageIndex : inPageIndex);
+	},
+
+	_preparePage: function(inRowIndex){
+		if(inRowIndex < this._bop || inRowIndex >= this._eop){
+			var pageIndex = this._rowToPage(inRowIndex);
+			this._needPage(pageIndex);
+			this._bop = pageIndex * this.rowsPerPage;
+			this._eop = this._bop + (this.rowsPerPage || this.rowCount);
+		}
+	},
+
+	_needPage: function(inPageIndex){
+		if(!this._pages[inPageIndex]){
+			this._pages[inPageIndex] = true;
+			this._requestPage(inPageIndex);
+		}
+	},
+
+	_requestPage: function(inPageIndex){
+		var row = this._pageToRow(inPageIndex);
+		var count = Math.min(this.rowsPerPage, this.rowCount - row);
+		if(count > 0){
+			this._requests++;
+			if(!this._requestsPending(row)){
+				setTimeout(dojo.hitch(this, "_fetch", row, false), 1);
+				//this.requestRows(row, count);
+			}
+		}
+	},
+
+	getCellName: function(inCell){
+		return inCell.field;
+		//
+	},
+
+	_refresh: function(isRender){
+		this._clearData();
+		this._fetch(0, isRender);
+	},
+
+	sort: function(){
+		this._lastScrollTop = this.scrollTop;
+		this._refresh();
+	},
+
+	canSort: function(){
+		return (!this._isLoading);
+	},
+
+	getSortProps: function(){
+		var c = this.getCell(this.getSortIndex());
+		if(!c){
+			return null;
+		}else{
+			var desc = c["sortDesc"];
+			var si = !(this.sortInfo>0);
+			if(typeof desc == "undefined"){
+				desc = si;
+			}else{
+				desc = si ? !desc : desc;
+			}
+			return [{ attribute: c.field, descending: desc }];
+		}
+	},
+
+	styleRowState: function(inRow){
+		// summary: Perform row styling
+		if(this.store && this.store.getState){
+			var states=this.store.getState(inRow.index), c='';
+			for(var i=0, ss=["inflight", "error", "inserting"], s; s=ss[i]; i++){
+				if(states[s]){
+					c = ' dojoxGridRow-' + s;
+					break;
+				}
+			}
+			inRow.customClasses += c;
+		}
+	},
+
+	onStyleRow: function(inRow){
+		this.styleRowState(inRow);
+		this.inherited(arguments);
+	},
+
+	// editing
+	canEdit: function(inCell, inRowIndex){
+		return this._canEdit;
+	},
+
+	_copyAttr: function(idx, attr){
+		var row = {};
+		var backstop = {};
+		var src = this.getItem(idx);
+		return this.store.getValue(src, attr);
+	},
+
+	doStartEdit: function(inCell, inRowIndex){
+		if(!this._cache[inRowIndex]){
+			this._cache[inRowIndex] = this._copyAttr(inRowIndex, inCell.field);
+		}
+		this.onStartEdit(inCell, inRowIndex);
+	},
+
+	doApplyCellEdit: function(inValue, inRowIndex, inAttrName){
+		this.store.fetchItemByIdentity({
+			identity: this._by_idx[inRowIndex].idty,
+			onItem: dojo.hitch(this, function(item){
+				this.store.setValue(item, inAttrName, inValue);
+				this.onApplyCellEdit(inValue, inRowIndex, inAttrName);
+			})
+		});
+	},
+
+	doCancelEdit: function(inRowIndex){
+		var cache = this._cache[inRowIndex];
+		if(cache){
+			this.updateRow(inRowIndex);
+			delete this._cache[inRowIndex];
+		}
+		this.onCancelEdit.apply(this, arguments);
+	},
+
+	doApplyEdit: function(inRowIndex, inDataAttr){
+		var cache = this._cache[inRowIndex];
+		/*if(cache){
+			var data = this.getItem(inRowIndex);
+			if(this.store.getValue(data, inDataAttr) != cache){
+				this.update(cache, data, inRowIndex);
+			}
+			delete this._cache[inRowIndex];
+		}*/
+		this.onApplyEdit(inRowIndex);
+	},
+
+	removeSelectedRows: function(){
+		// summary:
+		//		Remove the selected rows from the grid.
+		if(this._canEdit){
+			this.edit.apply();
+			var items = this.selection.getSelected();
+			if(items.length){
+				dojo.forEach(items, this.store.deleteItem, this.store);
+				this.selection.clear();
+			}
+		}
+	}
 });
-if(_2d===0){
-this._onFetchComplete(_2a,req);
-}else{
-var _2f=function(_30){
-_2d--;
-if(_2d===0){
-this._onFetchComplete(_2a,req);
+
+dojox.grid.DataGrid.markupFactory = function(props, node, ctor, cellFunc){
+	return dojox.grid._Grid.markupFactory(props, node, ctor, function(node, cellDef){
+		var field = dojo.trim(dojo.attr(node, "field")||"");
+		if(field){
+			cellDef.field = field;
+		}
+		cellDef.field = cellDef.field||cellDef.name;
+		if(cellFunc){
+			cellFunc(node, cellDef);
+		}
+	});
 }
-};
-dojo.forEach(_2a,function(i){
-if(!_2b.isItemLoaded(i)){
-_2b.loadItem({item:i,onItem:_2f,scope:this});
-}
-},this);
-}
-}else{
-this.store.fetch({start:_28,count:this.rowsPerPage,query:this.query,sort:this.getSortProps(),queryOptions:this.queryOptions,isRender:_29,onBegin:dojo.hitch(this,"_onFetchBegin"),onComplete:dojo.hitch(this,"_onFetchComplete"),onError:dojo.hitch(this,"_onFetchError")});
-}
-}
-catch(e){
-this._onFetchError(e);
-}
-}
-},_clearData:function(){
-this.updateRowCount(0);
-this._by_idty={};
-this._by_idx=[];
-this._pages=[];
-this._bop=this._eop=-1;
-this._isLoaded=false;
-this._isLoading=false;
-},getItem:function(idx){
-var _33=this._by_idx[idx];
-if(!_33||(_33&&!_33.item)){
-this._preparePage(idx);
-return null;
-}
-return _33.item;
-},getItemIndex:function(_34){
-return this._getItemIndex(_34,false);
-},_getItemIndex:function(_35,_36){
-if(!_36&&!this.store.isItem(_35)){
-return -1;
-}
-var _37=this._hasIdentity?this.store.getIdentity(_35):null;
-for(var i=0,l=this._by_idx.length;i<l;i++){
-var d=this._by_idx[i];
-if(d&&((_37&&d.idty==_37)||(d.item===_35))){
-return i;
-}
-}
-return -1;
-},filter:function(_3b,_3c){
-this.query=_3b;
-if(_3c){
-this._clearData();
-}
-this._fetch();
-},_getItemAttr:function(idx,_3e){
-var _3f=this.getItem(idx);
-return (!_3f?this.fetchText:this.store.getValue(_3f,_3e));
-},_render:function(){
-if(this.domNode.parentNode){
-this.scroller.init(this.rowCount,this.keepRows,this.rowsPerPage);
-this.prerender();
-this._fetch(0,true);
-}
-},_requestsPending:function(_40){
-return this._pending_requests[_40];
-},_rowToPage:function(_41){
-return (this.rowsPerPage?Math.floor(_41/this.rowsPerPage):_41);
-},_pageToRow:function(_42){
-return (this.rowsPerPage?this.rowsPerPage*_42:_42);
-},_preparePage:function(_43){
-if(_43<this._bop||_43>=this._eop){
-var _44=this._rowToPage(_43);
-this._needPage(_44);
-this._bop=_44*this.rowsPerPage;
-this._eop=this._bop+(this.rowsPerPage||this.rowCount);
-}
-},_needPage:function(_45){
-if(!this._pages[_45]){
-this._pages[_45]=true;
-this._requestPage(_45);
-}
-},_requestPage:function(_46){
-var row=this._pageToRow(_46);
-var _48=Math.min(this.rowsPerPage,this.rowCount-row);
-if(_48>0){
-this._requests++;
-if(!this._requestsPending(row)){
-setTimeout(dojo.hitch(this,"_fetch",row,false),1);
-}
-}
-},getCellName:function(_49){
-return _49.field;
-},_refresh:function(_4a){
-this._clearData();
-this._fetch(0,_4a);
-},sort:function(){
-this._lastScrollTop=this.scrollTop;
-this._refresh();
-},canSort:function(){
-return (!this._isLoading);
-},getSortProps:function(){
-var c=this.getCell(this.getSortIndex());
-if(!c){
-return null;
-}else{
-var _4c=c["sortDesc"];
-var si=!(this.sortInfo>0);
-if(typeof _4c=="undefined"){
-_4c=si;
-}else{
-_4c=si?!_4c:_4c;
-}
-return [{attribute:c.field,descending:_4c}];
-}
-},styleRowState:function(_4e){
-if(this.store&&this.store.getState){
-var _4f=this.store.getState(_4e.index),c="";
-for(var i=0,ss=["inflight","error","inserting"],s;s=ss[i];i++){
-if(_4f[s]){
-c=" dojoxGridRow-"+s;
-break;
-}
-}
-_4e.customClasses+=c;
-}
-},onStyleRow:function(_54){
-this.styleRowState(_54);
-this.inherited(arguments);
-},canEdit:function(_55,_56){
-return this._canEdit;
-},_copyAttr:function(idx,_58){
-var row={};
-var _5a={};
-var src=this.getItem(idx);
-return this.store.getValue(src,_58);
-},doStartEdit:function(_5c,_5d){
-if(!this._cache[_5d]){
-this._cache[_5d]=this._copyAttr(_5d,_5c.field);
-}
-this.onStartEdit(_5c,_5d);
-},doApplyCellEdit:function(_5e,_5f,_60){
-this.store.fetchItemByIdentity({identity:this._by_idx[_5f].idty,onItem:dojo.hitch(this,function(_61){
-this.store.setValue(_61,_60,_5e);
-this.onApplyCellEdit(_5e,_5f,_60);
-})});
-},doCancelEdit:function(_62){
-var _63=this._cache[_62];
-if(_63){
-this.updateRow(_62);
-delete this._cache[_62];
-}
-this.onCancelEdit.apply(this,arguments);
-},doApplyEdit:function(_64,_65){
-var _66=this._cache[_64];
-this.onApplyEdit(_64);
-},removeSelectedRows:function(){
-if(this._canEdit){
-this.edit.apply();
-var _67=this.selection.getSelected();
-if(_67.length){
-dojo.forEach(_67,this.store.deleteItem,this.store);
-this.selection.clear();
-}
-}
-}});
-dojox.grid.DataGrid.markupFactory=function(_68,_69,_6a,_6b){
-return dojox.grid._Grid.markupFactory(_68,_69,_6a,function(_6c,_6d){
-var _6e=dojo.trim(dojo.attr(_6c,"field")||"");
-if(_6e){
-_6d.field=_6e;
-}
-_6d.field=_6d.field||_6d.name;
-if(_6b){
-_6b(_6c,_6d);
-}
-});
-};
+
 }

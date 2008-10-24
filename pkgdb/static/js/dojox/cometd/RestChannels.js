@@ -5,323 +5,472 @@
 */
 
 
-if(!dojo._hasResource["dojox.cometd.RestChannels"]){
-dojo._hasResource["dojox.cometd.RestChannels"]=true;
+if(!dojo._hasResource["dojox.cometd.RestChannels"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.cometd.RestChannels"] = true;
 dojo.provide("dojox.cometd.RestChannels");
+ 
 dojo.require("dojox.rpc.Client");
-if(dojox.data&&dojox.data.JsonRestStore){
-dojo.require("dojox.data.restListener");
+if(dojox.data && dojox.data.JsonRestStore){
+	dojo.require("dojox.data.restListener");
 }
-(function(){
-dojo.declare("dojox.cometd.RestChannels",null,{constructor:function(_1){
-dojo.mixin(this,_1);
-if(dojox.rpc.Rest&&this.autoSubscribeRoot){
-var _2=dojox.rpc.Rest._get;
-var _3=this;
-dojox.rpc.Rest._get=function(_4,id){
-var _6=dojo.xhrGet;
-dojo.xhrGet=function(r){
-var _8=_3.autoSubscribeRoot;
-return (_8&&r.url.substring(0,_8.length)==_8)?_3.get(r.url,r):_6(r);
-};
-var _9=_2.apply(this,arguments);
-dojo.xhrGet=_6;
-return _9;
-};
-}
-if(dojox.data&&dojox.data.restListener){
-this.receive=dojox.data.restListener;
-}
-},absoluteUrl:function(_a,_b){
-return new dojo._Url(_a,_b)+"";
-},acceptType:"x-application/rest+json,application/http;q=0.9,*/*;q=0.7",subscriptions:{},subCallbacks:{},autoReconnectTime:3000,sendAsJson:false,url:"/channels",autoSubscribeRoot:"/",open:function(){
-if(!this.connected){
-this.connectionId=dojox._clientId;
-var _c=this.started?"X-Client-Id":"X-Create-Client-Id";
-var _d={Accept:this.acceptType};
-_d[_c]=this.connectionId;
-var _e=dojo.xhrPost({headers:_d,url:this.url,noStatus:true});
-var _f=this;
-this.lastIndex=0;
-var _10,_11=function(_12){
-if(typeof dojo=="undefined"){
-return null;
-}
-_12=_12.substring(_f.lastIndex);
-var _13=xhr&&(xhr.contentType||xhr.getResponseHeader("Content-Type"));
-_f.started=true;
-var _15=_f.onprogress(xhr,_12,_13);
-if(_15){
-if(_10()){
-return new Error(_15);
-}
-}
-if(!xhr||xhr.readyState==4){
-xhr=null;
-if(_f.connected){
-_f.connected=false;
-_f.open();
-}
-}
-return _12;
-};
-_10=function(_16){
-if(xhr&&xhr.status==409){
+// Note that cometd _base is _not_ required, this can run standalone, but ifyou want 
+// cometd functionality, you must explicitly load/require it elsewhere, and cometd._base
+// MUST be loaded prior to RestChannels ifyou use it.
 
-_f.disconnected();
-return null;
-}
-if(_f.started){
-_f.started=false;
-_f.connected=false;
-var _17=_f.subscriptions;
-_f.subscriptions={};
-for(var i in _17){
-_f.subscribe(i,{since:_17[i]});
-}
-}else{
-_f.disconnected();
-}
-return _16;
-};
-_e.addCallbacks(_11,_10);
-var xhr=_e.ioArgs.xhr;
-if(xhr){
-xhr.onreadystatechange=function(){
-var _19;
-try{
-if(xhr.readyState==3){
-_f.readyState=3;
-_19=xhr.responseText;
-}
-}
-catch(e){
-}
-if(typeof _19=="string"){
-_11(_19);
-}
-};
-}
-if(window.attachEvent){
-attachEvent("onunload",function(){
-_f.connected=false;
-if(xhr){
-xhr.abort();
-}
-});
-}
-this.connected=true;
-}
-},_send:function(_1a,_1b,_1c){
-if(this.sendAsJson){
-_1b.postBody=dojo.toJson({target:_1b.url,method:_1a,content:_1c,params:_1b.content,subscribe:headers["X-Subscribe"]});
-_1b.url=this.url;
-_1a="POST";
-}else{
-_1b.postData=dojo.toJson(_1c);
-}
-return dojo.xhr(_1a,_1b,_1b.postBody);
-},subscribe:function(_1d,_1e){
-_1e=_1e||{};
-_1e.url=this.absoluteUrl(this.url,_1d);
-if(_1e.headers){
-delete _1e.headers.Range;
-}
-var _1f=this.subscriptions[_1d];
-var _20=_1e.method||"HEAD";
-var _21=_1e.since;
-var _22=_1e.callback;
-var _23=_1e.headers||(_1e.headers={});
-this.subscriptions[_1d]=_21||_1f||0;
-var _24=this.subCallbacks[_1d];
-if(_22){
-this.subCallbacks[_1d]=_24?function(m){
-_24(m);
-_22(m);
-}:_22;
-}
-if(!this.connected){
-this.open();
-}
-if(_1f===undefined||_1f!=_21){
-_23["Cache-Control"]="max-age=0";
-_21=typeof _21=="number"?new Date(_21).toUTCString():_21;
-if(_21){
-_23["X-Subscribe-Since"]=_21;
-}
-_23["X-Subscribe"]=_1e.unsubscribe?"none":"*";
-var dfd=this._send(_20,_1e);
-var _27=this;
-dfd.addBoth(function(_28){
-var xhr=dfd.ioArgs.xhr;
-if(!(_28 instanceof Error)){
-if(_1e.confirmation){
-_1e.confirmation();
-}
-}
-if(xhr&&xhr.getResponseHeader("X-Subscribed")=="OK"){
-var _2a=xhr.getResponseHeader("Last-Modified");
-if(xhr.responseText){
-_27.subscriptions[_1d]=_2a||new Date().toUTCString();
-}else{
-return null;
-}
-}else{
-if(xhr){
-delete _27.subscriptions[_1d];
-}
-}
-if(!(_28 instanceof Error)){
-var _2b={responseText:xhr&&xhr.responseText,channel:_1d,getResponseHeader:function(_2c){
-return xhr.getResponseHeader(_2c);
-},getAllResponseHeaders:function(){
-return xhr.getAllResponseHeaders();
-},result:_28};
-if(_27.subCallbacks[_1d]){
-_27.subCallbacks[_1d](_2b);
-}
-}else{
-if(_27.subCallbacks[_1d]){
-_27.subCallbacks[_1d](xhr);
-}
-}
-return _28;
-});
-return dfd;
-}
-return null;
-},publish:function(_2d,_2e){
-return this._send("POST",{url:_2d,contentType:"application/json"},_2e);
-},_processMessage:function(_2f){
-_2f.event=_2f.event||_2f.getResponseHeader("X-Event");
-if(_2f.event=="connection-conflict"){
-return "conflict";
-}
-try{
-_2f.result=_2f.result||dojo.fromJson(_2f.responseText);
-}
-catch(e){
-}
-var _30=this;
-var loc=_2f.channel=new dojo._Url(this.url,_2f.source||_2f.getResponseHeader("Content-Location"))+"";
-if(loc in this.subscriptions&&_2f.getResponseHeader){
-this.subscriptions[loc]=_2f.getResponseHeader("Last-Modified");
-}
-if(this.subCallbacks[loc]){
-setTimeout(function(){
-_30.subCallbacks[loc](_2f);
-},0);
-}
-this.receive(_2f);
-return null;
-},onprogress:function(xhr,_33,_34){
-if(!_34||_34.match(/application\/rest\+json/)){
-var _35=_33.length;
-_33=_33.replace(/^\s*[,\[]?/,"[").replace(/[,\]]?\s*$/,"]");
-try{
-var _36=dojo.fromJson(_33);
-this.lastIndex+=_35;
-}
-catch(e){
-}
-}else{
-if(dojox.io&&dojox.io.httpParse&&_34.match(/application\/http/)){
-var _37="";
-if(xhr&&xhr.getAllResponseHeaders){
-_37=xhr.getAllResponseHeaders();
-}
-_36=dojox.io.httpParse(_33,_37,xhr.readyState!=4);
-}
-}
-if(_36){
-for(var i=0;i<_36.length;i++){
-if(this._processMessage(_36[i])){
-return "conflict";
-}
-}
-return null;
-}
-if(!xhr){
-return "error";
-}
-if(xhr.readyState!=4){
-return null;
-}
-if(xhr.__proto__){
-xhr={channel:"channel",__proto__:xhr};
-}
-return this._processMessage(xhr);
-},get:function(_39,_3a){
-(_3a=_3a||{}).method="GET";
-return this.subscribe(_39,_3a);
-},receive:function(_3b){
-},disconnected:function(){
-var _3c=this;
-if(this.connected){
-setTimeout(function(){
-_3c.open();
-},this.autoReconnectTime);
-}
-this.connected=false;
-},unsubscribe:function(_3d,_3e){
-_3e=_3e||{};
-_3e.unsubscribe=true;
-this.subscribe(_3d,_3e);
-},disconnect:function(){
-this.connected=false;
-this.xhr.abort();
-}});
-var _3f=dojox.cometd.RestChannels.defaultInstance=new dojox.cometd.RestChannels();
-if(dojox.cometd.connectionTypes){
-_3f.startup=function(_40){
-_3f.open();
-this._cometd._deliver({channel:"/meta/connect",successful:true});
-};
-_3f.check=function(_41,_42,_43){
-for(var i=0;i<_41.length;i++){
-if(_41[i]=="rest-channels"){
-return !_43;
-}
-}
-return false;
-};
-_3f.deliver=function(_45){
-};
-dojo.connect(this,"receive",null,function(_46){
-_46.data=_46.result;
-this._cometd._deliver(_46);
-});
-_3f.sendMessages=function(_47){
-for(var i=0;i<_47.length;i++){
-var _49=_47[i];
-var _4a=_49.channel;
-var _4b=this._cometd;
-var _4c={confirmation:function(){
-_4b._deliver({channel:_4a,successful:true});
-}};
-if(_4a=="/meta/subscribe"){
-this.subscribe(_49.subscription,_4c);
-}else{
-if(_4a=="/meta/unsubscribe"){
-this.unsubscribe(_49.subscription,_4c);
-}else{
-if(_4a=="/meta/connect"){
-_4c.confirmation();
-}else{
-if(_4a=="/meta/disconnect"){
-_3f.disconnect();
-_4c.confirmation();
-}else{
-if(_4a.substring(0,6)!="/meta/"){
-this.publish(_4a,_49.data);
-}
-}
-}
-}
-}
-}
-};
-dojox.cometd.connectionTypes.register("rest-channels",_3f.check,_3f,false,true);
-}
+// summary:
+// 		REST Channels - An HTTP/REST Based approach to Comet transport with full REST messaging 
+// 		semantics
+// 		REST Channels is a efficient, reliable duplex transport for Comet
+
+// description:
+// 		This can be used:
+// 		1. As a cometd transport
+// 		2. As an enhancement for the REST RPC service, to enable "live" data (real-time updates directly alter the data in indexes)
+// 		2a. With the JsonRestStore (which is driven by the REST RPC service), so this dojo.data has real-time data. Updates can be heard through the dojo.data notification API.
+// 		3. As a standalone transport. To use it as a standalone transport looks like this:
+// 	|		dojox.cometd.RestChannels.open();
+// 	|		dojox.cometd.RestChannels.get("/myResource",{callback:function(){
+// 	|			// this is called when the resource is first retrieved and any time the 
+// 	|			// resource is changed in the future. This provides a means for retrieving a
+// 	|			// resource and subscribing to it in a single request
+// 	|		});
+// 	|	dojox.cometd.RestChannels.subscribe("/anotherResource",{callback:function(){
+// 	|		// this is called when the resource is changed in the future
+// 	|	});
+// 		Channels HTTP can be configured to a different delays:
+// 	|	dojox.cometd.RestChannels.autoReconnectTime = 60000; // reconnect after one minute
+//
+
+(function(){
+	dojo.declare("dojox.cometd.RestChannels", null, {
+		constructor: function(options){
+			// summary:
+			//		Initiates the REST Channels protocol
+			//	options:
+			//		Keyword arguments:
+			//	The *autoSubscribeRoot* parameter:
+			//		When this is set, all REST service requests that have this
+			// 		prefix will be auto-subscribed. The default is '/' (all REST requests).
+			//  The *url* parameter:
+			//		This is the url to connect to for server-sent messages. The default
+			//		is "/channels".
+			//	The *autoReconnectTime* parameter:
+			// 		This is amount time to wait to reconnect with a connection is broken	
+			dojo.mixin(this,options);
+			// If we have a Rest service available and we are auto subscribing, we will augment the Rest service 
+			if(dojox.rpc.Rest && this.autoSubscribeRoot){
+				// override the default Rest handler so we can add subscription requests
+				var defaultGet = dojox.rpc.Rest._get;
+				var self = this;
+				dojox.rpc.Rest._get = function(service, id){
+					// when there is a REST get, we will intercept and add our own xhr handler
+					var defaultXhrGet = dojo.xhrGet;
+					dojo.xhrGet = function(r){
+						var autoSubscribeRoot = self.autoSubscribeRoot;
+						return (autoSubscribeRoot && r.url.substring(0, autoSubscribeRoot.length) == autoSubscribeRoot) ?
+							self.get(r.url,r) : // auto-subscribe 
+							defaultXhrGet(r); // plain XHR request
+					};
+		
+					var result = defaultGet.apply(this,arguments);
+					dojo.xhrGet = defaultXhrGet;
+					return result;
+				};
+			}
+			if(dojox.data && dojox.data.restListener){
+				this.receive = dojox.data.restListener;
+			}
+		},
+		absoluteUrl: function(baseUrl,relativeUrl){
+			return new dojo._Url(baseUrl,relativeUrl)+'';
+		},
+		acceptType: "x-application/rest+json,application/http;q=0.9,*/*;q=0.7",
+		subscriptions: {},
+		subCallbacks: {},
+		autoReconnectTime: 3000,
+		sendAsJson: false,
+		url: '/channels',
+		autoSubscribeRoot: '/',
+		open: function(){
+			// summary:
+			// 		Startup the transport (connect to the "channels" resource to receive updates from the server).
+			//
+			// description:
+			//		Note that if there is no connection open, this is automatically called when you do a subscription,
+			// 		it is often not necessary to call this
+			//
+			if(!this.connected){
+				this.connectionId = dojox._clientId;
+				var clientIdHeader = this.started ? 'X-Client-Id' : 'X-Create-Client-Id';
+				var headers = {Accept:this.acceptType};
+				headers[clientIdHeader] = this.connectionId;
+				var dfd = dojo.xhrPost({headers:headers, url: this.url, noStatus: true});
+		  		var self = this;
+		  		this.lastIndex = 0; 
+				var onerror, onprogress = function(data){ // get all the possible event handlers
+					if(typeof dojo == 'undefined'){
+						return null;// this can be called after dojo is unloaded, just do nothing in that case
+					}
+					data = data.substring(self.lastIndex);
+					var contentType = xhr && (xhr.contentType || xhr.getResponseHeader("Content-Type"));
+					self.started = true;
+					var error = self.onprogress(xhr,data,contentType);
+					if(error){
+						if(onerror()){
+							return new Error(error);
+						}
+					}
+					if(!xhr || xhr.readyState==4){
+						xhr = null;
+						if(self.connected){
+							self.connected = false;
+							self.open();
+						}
+					}
+					return data;
+				};
+				onerror = function(error){
+					if(xhr && xhr.status == 409){
+						// a 409 indicates that there is a multiple connections, and we need to poll
+						
+						self.disconnected();
+						return null;
+					}
+					if(self.started){ // this means we need to reconnect
+						self.started = false;
+						self.connected = false;
+						var subscriptions = self.subscriptions;
+						self.subscriptions = {};
+						for(var i in subscriptions){
+							self.subscribe(i,{since:subscriptions[i]});
+						}
+					}else{
+						self.disconnected();
+					}
+					return error;
+			  	};
+			  	dfd.addCallbacks(onprogress,onerror);
+			  	var xhr = dfd.ioArgs.xhr; // this may not exist if we are not using XHR, but an alternate XHR plugin
+			  	if(xhr){
+			  		// if we are doing a monitorable XHR, we want to listen to streaming events
+	  				xhr.onreadystatechange = function(){
+	  					var responseText;
+						try{
+							if(xhr.readyState == 3){// only for progress, the deferred object will handle the finished responses
+								self.readyState = 3;
+								responseText = xhr.responseText;
+							}
+						} catch(e){
+						}
+	  					if(typeof responseText=='string'){
+	  						onprogress(responseText);
+	  					}
+	  				} 
+			  	}
+			  	
+	  			 
+				if(window.attachEvent){// IE needs a little help with cleanup
+					attachEvent("onunload",function(){
+						self.connected= false;
+						if(xhr){
+							xhr.abort();
+						}
+					});
+				}
+				
+				this.connected = true;
+			}
+		},
+		_send: function(method,args,data){
+			// fire an XHR with appropriate modification for JSON handling
+			if(this.sendAsJson){
+				// send use JSON Messaging
+				args.postBody = dojo.toJson({
+					target:args.url,
+					method:method,
+					content: data,
+					params:args.content,
+					subscribe:headers["X-Subscribe"]
+				});
+				args.url = this.url;
+				method = "POST";
+			}else{
+				args.postData = dojo.toJson(data);
+			}			
+			return dojo.xhr(method,args,args.postBody);
+		}, 
+		subscribe: function(/*String*/channel, /*dojo.__XhrArgs?*/args){
+			// summary:
+			// 		Subscribes to a channel/uri, and returns a dojo.Deferred object for the response from 
+			// 		the subscription request
+			//
+			// channel: 
+			// 		the uri for the resource you want to monitor
+			// 
+			// args: 
+			// 		See dojo.xhr
+			// 
+			// headers:
+			// 		These are the headers to be applied to the channel subscription request
+			//
+			// callback:
+			// 		This will be called when a event occurs for the channel
+			// 		The callback will be called with a single argument:
+			// 	|	callback(message)
+			// 		where message is an object that follows the XHR API:
+			// 		status : Http status
+			// 		statusText : Http status text
+			// 		getAllResponseHeaders() : The response headers
+			// 		getResponseHeaders(headerName) : Retrieve a header by name
+			// 		responseText : The response body as text
+			// 			with the following additional Bayeux properties 
+			// 		data : The response body as JSON
+			// 		channel : The channel/url of the response
+			args = args || {};
+			args.url = this.absoluteUrl(this.url, channel);
+			if(args.headers){ 
+				// FIXME: combining Ranges with notifications is very complicated, we will save that for a future version
+				delete args.headers.Range;
+			}
+			var oldSince = this.subscriptions[channel];
+			var method = args.method || "HEAD"; // HEAD is the default for a subscription
+			var since = args.since;
+			var callback = args.callback;
+			var headers = args.headers || (args.headers = {});
+			this.subscriptions[channel] = since || oldSince || 0;
+			var oldCallback = this.subCallbacks[channel];
+			if(callback){
+				this.subCallbacks[channel] = oldCallback ? function(m){
+					oldCallback(m);
+					callback(m);
+				} : callback;
+			} 
+			if(!this.connected){
+				this.open();
+			}
+			if(oldSince === undefined || oldSince != since){
+				headers["Cache-Control"] = "max-age=0";
+				since = typeof since == 'number' ? new Date(since).toUTCString() : since;
+				if(since){
+					headers["X-Subscribe-Since"] = since;
+				}
+				headers["X-Subscribe"] = args.unsubscribe ? 'none' : '*';
+				var dfd = this._send(method,args);
+				
+				var self = this;
+				dfd.addBoth(function(result){					
+					var xhr = dfd.ioArgs.xhr;
+					if(!(result instanceof Error)){
+						if(args.confirmation){
+							args.confirmation();
+						}
+					}
+					if(xhr && xhr.getResponseHeader("X-Subscribed")  == "OK"){
+						var lastMod = xhr.getResponseHeader('Last-Modified');
+						
+						if(xhr.responseText){ 
+							self.subscriptions[channel] = lastMod || new Date().toUTCString();
+						}else{
+							return null; // don't process the response, the response will be received in the main channels response
+						}
+					}else if(xhr){ // ifit is not a 202 response, that means it is did not accept the subscription
+						delete self.subscriptions[channel];
+					}
+					if(!(result instanceof Error)){
+						var message = {
+							responseText:xhr && xhr.responseText,
+							channel:channel,
+							getResponseHeader:function(name){
+								return xhr.getResponseHeader(name);
+							},
+							getAllResponseHeaders:function(){
+								return xhr.getAllResponseHeaders();
+							},
+							result: result
+						};
+						if(self.subCallbacks[channel]){
+							self.subCallbacks[channel](message); // call with the fake xhr object
+						}
+					}else{
+						if(self.subCallbacks[channel]){
+							self.subCallbacks[channel](xhr); // call with the actual xhr object
+						}
+					}
+					return result;
+				});
+				return dfd;
+			}
+			return null;
+		},
+		publish: function(channel,data){
+			// summary:
+			//		Publish an event.
+			// description:
+			// 		This does a simple POST operation to the provided URL,
+			// 		POST is the semantic equivalent of publishing a message within REST/Channels
+			// channel:
+			// 		Channel/resource path to publish to
+			// data:
+			//		data to publish
+			return this._send("POST",{url:channel,contentType : 'application/json'},data);
+		},
+		_processMessage: function(message){
+			message.event = message.event || message.getResponseHeader('X-Event');
+			if(message.event=="connection-conflict"){
+				return "conflict"; // indicate an error
+			}
+			try{
+				message.result = message.result || dojo.fromJson(message.responseText);
+			}
+			catch(e){}
+			var self = this;	
+			var loc = message.channel = new dojo._Url(this.url, message.source || message.getResponseHeader('Content-Location'))+'';//for cometd
+			if(loc in this.subscriptions && message.getResponseHeader){
+				this.subscriptions[loc] = message.getResponseHeader('Last-Modified'); 
+			}
+			if(this.subCallbacks[loc]){
+				setTimeout(function(){ //give it it's own stack 
+					self.subCallbacks[loc](message);
+				},0);
+			}
+			this.receive(message);
+			return null;		
+		},
+		onprogress: function(xhr,data,contentType){
+			// internal XHR progress handler
+			if(!contentType || contentType.match(/application\/rest\+json/)){
+				var size = data.length;
+				data = data.replace(/^\s*[,\[]?/,'['). // must start with a opening bracket
+					replace(/[,\]]?\s*$/,']'); // and end with a closing bracket
+				try{
+					// if this fails, it probably means we have an incomplete JSON object
+					var xhrs = dojo.fromJson(data);
+					this.lastIndex += size;
+				}
+				catch(e){
+				}
+			}
+			else if(dojox.io && dojox.io.httpParse && contentType.match(/application\/http/)){
+				// do HTTP tunnel parsing
+				var topHeaders = '';
+				if(xhr && xhr.getAllResponseHeaders){
+					// mixin/inherit headers from the container response
+					topHeaders = xhr.getAllResponseHeaders();
+				}
+				xhrs = dojox.io.httpParse(data,topHeaders,xhr.readyState != 4);
+			}
+			if(xhrs){
+				for(var i = 0;i < xhrs.length;i++){
+					if(this._processMessage(xhrs[i])){
+						return "conflict";
+					}
+				}
+				return null;
+			}
+			if(!xhr){
+				//no streaming and we didn't get any message, must be an error
+				return "error";
+			}
+			if(xhr.readyState != 4){ // we only want finished responses here if we are not streaming 
+				return null;
+			}
+			if(xhr.__proto__){// firefox uses this property, so we create an instance to shadow this property
+				xhr = {channel:"channel",__proto__:xhr};
+			}			
+			return this._processMessage(xhr);
+		
+		},
+		
+		get: function(/*String*/channel, /*dojo.__XhrArgs?*/args){
+			// summary:
+			// 		GET the initial value of the resource and subscribe to it  
+			//		See subscribe for parameter values
+			(args = args || {}).method = "GET"; 
+			return this.subscribe(channel,args);
+		},
+		receive: function(message){
+			// summary:
+			//		Called when a message is received from the server
+			//	message:
+			//		A cometd/XHR message
+		},
+		disconnected: function(){
+			// summary:
+			// 		called when our channel gets disconnected
+			var self = this;
+			if(this.connected){ // ifwe are connected, we shall tryto reconnect 
+				setTimeout(function(){ // auto reconnect
+					self.open();
+				},this.autoReconnectTime);
+			}
+			this.connected = false;
+		},
+		unsubscribe: function(/*String*/channel, /*dojo.__XhrArgs?*/args){
+			// summary:
+			// 		unsubscribes from the resource  
+			//		See subscribe for parameter values 
+			
+			args = args || {};
+			args.unsubscribe = true;
+			this.subscribe(channel,args); // change the time frame to after 5000AD 
+		},
+		disconnect: function(){
+			// summary:
+			// 		disconnect from the server  
+			this.connected = false;
+			this.xhr.abort();
+		}
+	});
+	var Channels = dojox.cometd.RestChannels.defaultInstance = new dojox.cometd.RestChannels();
+	if(dojox.cometd.connectionTypes){ 
+		// register as a dojox.cometd transport and wire everything for cometd handling
+		// below are the necessary adaptions for cometd
+		Channels.startup = function(data){ // must be able to handle objects or strings
+			Channels.open();
+			this._cometd._deliver({channel:"/meta/connect",successful:true}); // tell cometd we are connected so it can proceed to send subscriptions, even though we aren't yet 
+
+		};
+		Channels.check = function(types, version, xdomain){
+			for(var i = 0; i< types.length; i++){
+				if(types[i] == "rest-channels"){
+					return !xdomain;
+				}
+			}
+			return false;
+		};
+		Channels.deliver = function(message){ 
+			// nothing to do
+		};
+		dojo.connect(this,"receive",null,function(message){
+			message.data = message.result;
+			this._cometd._deliver(message);
+		});
+		Channels.sendMessages = function(messages){
+			for(var i = 0; i < messages.length; i++){
+				var message = messages[i];
+				var channel = message.channel;
+				var cometd = this._cometd;
+				var args = {
+					confirmation: function(){ // send a confirmation back to cometd
+						cometd._deliver({channel:channel,successful:true});
+					}
+				};
+				if(channel == '/meta/subscribe'){
+					this.subscribe(message.subscription,args);
+				}else if(channel == '/meta/unsubscribe'){
+					this.unsubscribe(message.subscription,args);
+				}else if(channel == '/meta/connect'){
+					args.confirmation();
+				}else if(channel == '/meta/disconnect'){
+					Channels.disconnect();
+					args.confirmation();
+				}else if(channel.substring(0,6) != '/meta/'){
+					this.publish(channel,message.data);
+				}
+			}
+		};
+		dojox.cometd.connectionTypes.register("rest-channels", Channels.check, Channels,false,true);
+	}
 })();
+
 }

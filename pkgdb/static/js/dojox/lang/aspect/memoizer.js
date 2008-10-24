@@ -5,43 +5,52 @@
 */
 
 
-if(!dojo._hasResource["dojox.lang.aspect.memoizer"]){
-dojo._hasResource["dojox.lang.aspect.memoizer"]=true;
+if(!dojo._hasResource["dojox.lang.aspect.memoizer"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.lang.aspect.memoizer"] = true;
 dojo.provide("dojox.lang.aspect.memoizer");
+
 (function(){
-var _1=dojox.lang.aspect;
-var _2={around:function(_3){
-var _4=_1.getContext(),_5=_4.joinPoint,_6=_4.instance,t,u,_9;
-if((t=_6.__memoizerCache)&&(t=t[_5.targetName])&&(_3 in t)){
-return t[_3];
-}
-var _9=_1.proceed.apply(null,arguments);
-if(!(t=_6.__memoizerCache)){
-t=_6.__memoizerCache={};
-}
-if(!(u=t[_5.targetName])){
-u=t[_5.targetName]={};
-}
-return u[_3]=_9;
-}};
-var _a=function(_b){
-return {around:function(){
-var _c=_1.getContext(),_d=_c.joinPoint,_e=_c.instance,t,u,ret,key=_b.apply(_e,arguments);
-if((t=_e.__memoizerCache)&&(t=t[_d.targetName])&&(key in t)){
-return t[key];
-}
-var ret=_1.proceed.apply(null,arguments);
-if(!(t=_e.__memoizerCache)){
-t=_e.__memoizerCache={};
-}
-if(!(u=t[_d.targetName])){
-u=t[_d.targetName]={};
-}
-return u[key]=ret;
-}};
-};
-_1.memoizer=function(_13){
-return arguments.length==0?_2:_a(_13);
-};
+	var aop = dojox.lang.aspect;
+
+	var memoize1 = {
+		around: function(key){
+			var ctx = aop.getContext(), self = ctx.joinPoint, that = ctx.instance, t, u, ret;
+			if((t = that.__memoizerCache) && (t = t[self.targetName]) && (key in t)){
+				return t[key];
+			}
+			var ret = aop.proceed.apply(null, arguments);
+			if(!(t = that.__memoizerCache)){ t = that.__memoizerCache = {}; }
+			if(!(u = t[self.targetName])){ u = t[self.targetName] = {}; }
+			return u[key] = ret;
+		}
+	};
+
+	var memoizeN = function(/*Function*/keyMaker){
+		return {
+			around: function(/*arguments*/){
+				var ctx = aop.getContext(), self = ctx.joinPoint, that = ctx.instance, t, u, ret,
+					key  = keyMaker.apply(that, arguments);
+				if((t = that.__memoizerCache) && (t = t[self.targetName]) && (key in t)){
+					return t[key];
+				}
+				var ret = aop.proceed.apply(null, arguments);
+				if(!(t = that.__memoizerCache)){ t = that.__memoizerCache = {}; }
+				if(!(u = t[self.targetName])){ u = t[self.targetName] = {}; }
+				return u[key] = ret;
+			}
+		};
+	};
+
+	aop.memoizer = function(/*Function?*/ keyMaker){
+		// summary:
+		//		Returns an object, which can be used to count calls to methods.
+		//
+		// keyMaker:
+		//		the function, which takes method's arguments and returns a key,
+		//		which can be used to index the result.
+
+		return arguments.length == 0 ? memoize1 : memoizeN(keyMaker);	// Object
+	};
 })();
+
 }

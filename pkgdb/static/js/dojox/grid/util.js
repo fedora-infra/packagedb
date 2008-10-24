@@ -5,59 +5,72 @@
 */
 
 
-if(!dojo._hasResource["dojox.grid.util"]){
-dojo._hasResource["dojox.grid.util"]=true;
+if(!dojo._hasResource["dojox.grid.util"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.grid.util"] = true;
 dojo.provide("dojox.grid.util");
+
+// summary: grid utility library
 (function(){
-var _1=dojox.grid.util;
-_1.na="...";
-_1.fire=function(ob,ev,_4){
-var fn=ob&&ev&&ob[ev];
-return fn&&(_4?fn.apply(ob,_4):ob[ev]());
-};
-_1.setStyleHeightPx=function(_6,_7){
-if(_7>=0){
-var s=_6.style;
-var v=_7+"px";
-if(_6&&s["height"]!=v){
-s["height"]=v;
-}
-}
-};
-_1.mouseEvents=["mouseover","mouseout","mousedown","mouseup","click","dblclick","contextmenu"];
-_1.keyEvents=["keyup","keydown","keypress"];
-_1.funnelEvents=function(_a,_b,_c,_d){
-var _e=(_d?_d:_1.mouseEvents.concat(_1.keyEvents));
-for(var i=0,l=_e.length;i<l;i++){
-_b.connect(_a,"on"+_e[i],_c);
-}
-},_1.removeNode=function(_11){
-_11=dojo.byId(_11);
-_11&&_11.parentNode&&_11.parentNode.removeChild(_11);
-return _11;
-};
-_1.arrayCompare=function(inA,inB){
-for(var i=0,l=inA.length;i<l;i++){
-if(inA[i]!=inB[i]){
-return false;
-}
-}
-return (inA.length==inB.length);
-};
-_1.arrayInsert=function(_16,_17,_18){
-if(_16.length<=_17){
-_16[_17]=_18;
-}else{
-_16.splice(_17,0,_18);
-}
-};
-_1.arrayRemove=function(_19,_1a){
-_19.splice(_1a,1);
-};
-_1.arraySwap=function(_1b,inI,inJ){
-var _1e=_1b[inI];
-_1b[inI]=_1b[inJ];
-_1b[inJ]=_1e;
-};
+	var dgu = dojox.grid.util;
+
+	dgu.na = '...';
+
+	dgu.fire = function(ob, ev, args){
+		var fn = ob && ev && ob[ev];
+		return fn && (args ? fn.apply(ob, args) : ob[ev]());
+	};
+	
+	dgu.setStyleHeightPx = function(inElement, inHeight){
+		if(inHeight >= 0){
+			var s = inElement.style;
+			var v = inHeight + 'px';
+			if(inElement && s['height'] != v){
+				s['height'] = v;
+			}
+		}
+	};
+	
+	dgu.mouseEvents = [ 'mouseover', 'mouseout', /*'mousemove',*/ 'mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu' ];
+
+	dgu.keyEvents = [ 'keyup', 'keydown', 'keypress' ];
+
+	dgu.funnelEvents = function(inNode, inObject, inMethod, inEvents){
+		var evts = (inEvents ? inEvents : dgu.mouseEvents.concat(dgu.keyEvents));
+		for (var i=0, l=evts.length; i<l; i++){
+			inObject.connect(inNode, 'on' + evts[i], inMethod);
+		}
+	},
+
+	dgu.removeNode = function(inNode){
+		inNode = dojo.byId(inNode);
+		inNode && inNode.parentNode && inNode.parentNode.removeChild(inNode);
+		return inNode;
+	};
+	
+	dgu.arrayCompare = function(inA, inB){
+		for(var i=0,l=inA.length; i<l; i++){
+			if(inA[i] != inB[i]){return false;}
+		}
+		return (inA.length == inB.length);
+	};
+	
+	dgu.arrayInsert = function(inArray, inIndex, inValue){
+		if(inArray.length <= inIndex){
+			inArray[inIndex] = inValue;
+		}else{
+			inArray.splice(inIndex, 0, inValue);
+		}
+	};
+	
+	dgu.arrayRemove = function(inArray, inIndex){
+		inArray.splice(inIndex, 1);
+	};
+	
+	dgu.arraySwap = function(inArray, inI, inJ){
+		var cache = inArray[inI];
+		inArray[inI] = inArray[inJ];
+		inArray[inJ] = cache;
+	};
 })();
+
 }

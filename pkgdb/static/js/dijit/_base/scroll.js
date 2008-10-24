@@ -5,122 +5,139 @@
 */
 
 
-if(!dojo._hasResource["dijit._base.scroll"]){
-dojo._hasResource["dijit._base.scroll"]=true;
+if(!dojo._hasResource["dijit._base.scroll"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dijit._base.scroll"] = true;
 dojo.provide("dijit._base.scroll");
-dijit.scrollIntoView=function(_1){
-_1=dojo.byId(_1);
-var _2=_1.ownerDocument.body;
-var _3=_2.parentNode;
-if(dojo.isFF==2||_1==_2||_1==_3){
-_1.scrollIntoView(false);
-return;
-}
-var _4=!dojo._isBodyLtr();
-var _5=dojo.doc.compatMode!="BackCompat";
-var _6=(_5&&!dojo.isSafari)?_3:_2;
-function addPseudoAttrs(_7){
-var _8=_7.parentNode;
-var _9=_7.offsetParent;
-if(_9==null){
-_7=_6;
-_9=_3;
-_8=null;
-}
-_7._offsetParent=(_9==_2)?_6:_9;
-_7._parent=(_8==_2)?_6:_8;
-_7._start={H:_7.offsetLeft,V:_7.offsetTop};
-_7._scroll={H:_7.scrollLeft,V:_7.scrollTop};
-_7._renderedSize={H:_7.offsetWidth,V:_7.offsetHeight};
-var bp=dojo._getBorderExtents(_7);
-_7._borderStart={H:bp.l,V:bp.t};
-_7._borderSize={H:bp.w,V:bp.h};
-_7._clientSize=(_7._offsetParent==_3&&dojo.isSafari&&_5)?{H:_3.clientWidth,V:_3.clientHeight}:{H:_7.clientWidth,V:_7.clientHeight};
-_7._scrollBarSize={V:null,H:null};
-for(var _b in _7._scrollBarSize){
-var _c=_7._renderedSize[_b]-_7._clientSize[_b]-_7._borderSize[_b];
-_7._scrollBarSize[_b]=(_7._clientSize[_b]>0&&_c>=15&&_c<=17)?_c:0;
-}
-_7._isScrollable={V:null,H:null};
-for(_b in _7._isScrollable){
-var _d=_b=="H"?"V":"H";
-_7._isScrollable[_b]=_7==_6||_7._scroll[_b]||_7._scrollBarSize[_d];
-}
+
+dijit.scrollIntoView = function(/* DomNode */node){
+	//	summary
+	//	Scroll the passed node into view, if it is not.
+
+	// don't rely on that node.scrollIntoView works just because the function is there
+	// it doesnt work in Konqueror or Opera even though the function is there and probably
+	//	not safari either
+	// native scrollIntoView() causes FF3's whole window to scroll if there is no scroll bar 
+	//	on the immediate parent
+	// dont like browser sniffs implementations but sometimes you have to use it
+	// It's not enough just to scroll the menu node into view if
+	// node.scrollIntoView hides part of the parent's scrollbar,
+	// so just manage the parent scrollbar ourselves
+
+	node = dojo.byId(node);
+	var body = node.ownerDocument.body;
+	var html = body.parentNode;
+	if(dojo.isFF == 2 || node == body || node == html){ // FF2 is perfect, too bad FF3 is not
+		node.scrollIntoView(false); // short-circuit to native if possible
+		return;
+	}
+	var rtl = !dojo._isBodyLtr();
+	var strict = dojo.doc.compatMode != 'BackCompat'; // not the same as !dojo.isQuirks
+	var scrollRoot = (strict && !dojo.isSafari)? html : body;
+
+	function addPseudoAttrs(element){
+		var parent = element.parentNode;
+		var offsetParent = element.offsetParent;
+		if(offsetParent == null){ // process only 1 of BODY/HTML
+			element = scrollRoot;
+			offsetParent = html;
+			parent = null;
+		}
+		// all the V/H object members below are to reuse code for both directions
+		element._offsetParent = (offsetParent == body)? scrollRoot : offsetParent;
+		element._parent = (parent == body)? scrollRoot : parent;
+		element._start = { H:element.offsetLeft, V:element.offsetTop };
+		element._scroll = { H:element.scrollLeft, V:element.scrollTop };
+		element._renderedSize = { H: element.offsetWidth, V: element.offsetHeight };
+		var bp = dojo._getBorderExtents(element);
+		element._borderStart = { H:bp.l, V:bp.t };
+		element._borderSize = { H:bp.w, V:bp.h };
+		element._clientSize = (element._offsetParent == html && dojo.isSafari && strict)? { H:html.clientWidth, V:html.clientHeight } : { H:element.clientWidth, V:element.clientHeight };
+		element._scrollBarSize = { V: null, H: null };
+		for(var dir in element._scrollBarSize){ // for both x and y directions
+			var scrollBar = element._renderedSize[dir] - element._clientSize[dir] - element._borderSize[dir];
+			element._scrollBarSize[dir] = (element._clientSize[dir] > 0 && scrollBar >= 15 && scrollBar <= 17)? scrollBar : 0; // sanity check
+		}
+		element._isScrollable = { V: null, H: null };
+		for(dir in element._isScrollable){ // for both x and y directions
+			var otherDir = dir=="H"? "V" : "H";
+			element._isScrollable[dir] = element == scrollRoot || element._scroll[dir] || element._scrollBarSize[otherDir];
+		}
+	}
+
+	var parent = node;
+	while(parent != null){
+		addPseudoAttrs(parent);
+		var next = parent._parent;
+		if(next){
+			next._child = parent;
+		}
+		parent = next;
+	}
+	for(var dir in scrollRoot._renderedSize){ scrollRoot._renderedSize[dir] = Math.min(scrollRoot._clientSize[dir], scrollRoot._renderedSize[dir]); }
+	var element = node;
+	while(element != scrollRoot){
+		parent = element._parent;
+		if(parent.tagName == "TD"){
+			var table = parent._parent._parent._parent; // point to TABLE
+			if(table._offsetParent == element._offsetParent && parent._offsetParent != element._offsetParent){
+				parent = table; // child of TD has the same offsetParent as TABLE, so skip TD, TR, and TBODY (ie. verticalslider)
+			}
+		}
+		// check if this node and its parent share the same offsetParent
+		var startIsRelative = element == scrollRoot || (parent._offsetParent != element._offsetParent);
+
+		for(dir in element._start){ // for both x and y directions
+			var otherDir = dir=="H"? "V" : "H";
+			if(rtl && dir=="H" && (dojo.isSafari || dojo.isIE) && parent._clientSize.H > 0){ // scroll starts on the right
+				var delta = parent.scrollWidth - parent._clientSize.H;
+				if(delta > 0){ parent._scroll.H -= delta; } // match FF3 which has cool negative scrollLeft values
+			}
+			if(dojo.isIE && parent._offsetParent.tagName == "TABLE"){ // make it consistent with Safari and FF3 and exclude the starting TABLE border of TABLE children
+				parent._start[dir] -= parent._offsetParent._borderStart[dir];
+				parent._borderStart[dir] = parent._borderSize[dir] = 0;
+			}
+			if(parent._clientSize[dir] == 0){ // TABLE on Safari3/FF3, and TBODY on IE6/7
+				parent._renderedSize[dir] = parent._clientSize[dir] = parent._child._clientSize[dir];
+				if(rtl && dir=="H"){ parent._start[dir] -= parent._renderedSize[dir]; }
+			}else{
+				parent._renderedSize[dir] -= parent._borderSize[dir] + parent._scrollBarSize[dir];
+			}
+			parent._start[dir] += parent._borderStart[dir];
+
+			// underflow = visible gap between parent and this node taking scrolling into account
+			// if negative, part of the node is obscured by the parent's beginning and should be scrolled to become visible
+			var underflow = element._start[dir] - (startIsRelative? 0 : parent._start[dir]) - parent._scroll[dir];
+			// if positive, number of pixels obscured by the parent's end
+			var overflow = underflow + element._renderedSize[dir] - parent._renderedSize[dir];
+			var scrollAmount, scrollAttr = (dir=="H")? "scrollLeft" : "scrollTop";
+			// see if we should scroll forward or backward
+			var reverse = (dir=="H" && rtl); // flip everything
+			var underflowScroll = reverse? -overflow : underflow;
+			var overflowScroll = reverse? -underflow : overflow;
+			if(underflowScroll <= 0){
+				scrollAmount = underflowScroll;
+			}else if(overflowScroll <= 0){
+				scrollAmount = 0;
+			}else if(underflowScroll < overflowScroll){
+				scrollAmount = underflowScroll;
+			}else{
+				scrollAmount = overflowScroll;
+			}
+			var scrolledAmount = 0;
+			if(scrollAmount != 0){
+				var oldScroll = parent[scrollAttr];
+				parent[scrollAttr] += reverse? -scrollAmount : scrollAmount; // actually perform the scroll
+				scrolledAmount = parent[scrollAttr] - oldScroll; // in case the scroll failed
+				underflow -= scrolledAmount;
+				overflowScroll -= reverse? -scrolledAmount : scrolledAmount;
+			}
+			parent._renderedSize[dir] = element._renderedSize[dir] + parent._scrollBarSize[dir] - 
+				// check for isScrollable since a nonscrolling parent could be smaller than the child but the child is fully visible
+				((parent._isScrollable[dir] && overflowScroll > 0)? overflowScroll : 0); // only show portion of the parent
+			parent._start[dir] += (underflow >= 0 || !parent._isScrollable[dir])? underflow : 0;
+		}
+		element = parent; // now see if the parent needs to be scrolled as well
+	}
 };
-var _e=_1;
-while(_e!=null){
-addPseudoAttrs(_e);
-var _f=_e._parent;
-if(_f){
-_f._child=_e;
-}
-_e=_f;
-}
-for(var dir in _6._renderedSize){
-_6._renderedSize[dir]=Math.min(_6._clientSize[dir],_6._renderedSize[dir]);
-}
-var _11=_1;
-while(_11!=_6){
-_e=_11._parent;
-if(_e.tagName=="TD"){
-var _12=_e._parent._parent._parent;
-if(_12._offsetParent==_11._offsetParent&&_e._offsetParent!=_11._offsetParent){
-_e=_12;
-}
-}
-var _13=_11==_6||(_e._offsetParent!=_11._offsetParent);
-for(dir in _11._start){
-var _14=dir=="H"?"V":"H";
-if(_4&&dir=="H"&&(dojo.isSafari||dojo.isIE)&&_e._clientSize.H>0){
-var _15=_e.scrollWidth-_e._clientSize.H;
-if(_15>0){
-_e._scroll.H-=_15;
-}
-}
-if(dojo.isIE&&_e._offsetParent.tagName=="TABLE"){
-_e._start[dir]-=_e._offsetParent._borderStart[dir];
-_e._borderStart[dir]=_e._borderSize[dir]=0;
-}
-if(_e._clientSize[dir]==0){
-_e._renderedSize[dir]=_e._clientSize[dir]=_e._child._clientSize[dir];
-if(_4&&dir=="H"){
-_e._start[dir]-=_e._renderedSize[dir];
-}
-}else{
-_e._renderedSize[dir]-=_e._borderSize[dir]+_e._scrollBarSize[dir];
-}
-_e._start[dir]+=_e._borderStart[dir];
-var _16=_11._start[dir]-(_13?0:_e._start[dir])-_e._scroll[dir];
-var _17=_16+_11._renderedSize[dir]-_e._renderedSize[dir];
-var _18,_19=(dir=="H")?"scrollLeft":"scrollTop";
-var _1a=(dir=="H"&&_4);
-var _1b=_1a?-_17:_16;
-var _1c=_1a?-_16:_17;
-if(_1b<=0){
-_18=_1b;
-}else{
-if(_1c<=0){
-_18=0;
-}else{
-if(_1b<_1c){
-_18=_1b;
-}else{
-_18=_1c;
-}
-}
-}
-var _1d=0;
-if(_18!=0){
-var _1e=_e[_19];
-_e[_19]+=_1a?-_18:_18;
-_1d=_e[_19]-_1e;
-_16-=_1d;
-_1c-=_1a?-_1d:_1d;
-}
-_e._renderedSize[dir]=_11._renderedSize[dir]+_e._scrollBarSize[dir]-((_e._isScrollable[dir]&&_1c>0)?_1c:0);
-_e._start[dir]+=(_16>=0||!_e._isScrollable[dir])?_16:0;
-}
-_11=_e;
-}
-};
+
 }

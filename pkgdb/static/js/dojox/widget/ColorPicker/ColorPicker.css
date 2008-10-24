@@ -6,16 +6,19 @@
 	-webkit-border-radius:5pt;
 	-webkit-drop-shadow:3pt;
 }
+
 .tundra .dojoxColorPicker {
 	background:#ededed;
 	border:1px solid #ccc;
 }
+
 .dojoxColorPickerBox {
 	position:relative;
 	width:150px;	
 	height:150px;	
 	margin:0; padding:0;
 }
+
 .dojoxColorPickerUnderlay {
 	position:absolute; 
 	top:0; left:0;
@@ -26,6 +29,7 @@
 .tundra .dojoxColorPickerUnderlay {
 	border:1px solid #a0a0a0;
 }
+
 .dojoxHuePickerUnderlay {
 	background:url(images/hue.png) no-repeat top center; 
 	position:absolute;
@@ -34,7 +38,9 @@
 	width:20px;
 	z-index:1;
 }
+
 .dojoxHuePicker { position:relative; top:-150px; left:157px; }
+
 .dojoxHuePickerPoint {
 	position:absolute;
 	top:0; left:0;
@@ -45,6 +51,8 @@
 	cursor:move;
 	background:url(images/hueHandle.png) no-repeat center center; 
 }
+
+
 .dojoxColorPickerPoint {
 	position:absolute;
 	width:10px; 
@@ -54,6 +62,7 @@
 	z-index:3; 
 	cursor:move; 
 }
+
 .dojoxColorPickerPreview {
 	display:block;	
 	width:45px;	
@@ -73,17 +82,20 @@
 	left:240px; 
 	border:1px solid #333; 
 }
+
 .dojoxColorPickerOptional {
 	position:relative;
 	top:-170px;
 	left:185px;
 }
+
 .dojoxColorPickerOptional input {
 	border:1px solid #a7a7a7;
 	width:25px;
 	padding:1px 3px 1px 3px;
 	line-height:1.1em;
 }
+
 .dojoxColorPickerRgb { position:absolute; top:0; left:0;  } 
 .dojoxColorPickerHsv { position:absolute; top:0; left:50px;  } 
 .dojoxColorPickerHex { position:absolute; top:73px; left:2px;  } 

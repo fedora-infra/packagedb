@@ -5,42 +5,64 @@
 */
 
 
-if(!dojo._hasResource["dojox.form.MultiComboBox"]){
-dojo._hasResource["dojox.form.MultiComboBox"]=true;
+if(!dojo._hasResource["dojox.form.MultiComboBox"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.form.MultiComboBox"] = true;
 dojo.provide("dojox.form.MultiComboBox");
-dojo.experimental("dojox.form.MultiComboBox");
+dojo.experimental("dojox.form.MultiComboBox"); 
 dojo.require("dijit.form.ComboBox");
 dojo.require("dijit.form.ValidationTextBox");
-dojo.declare("dojox.form.MultiComboBox",[dijit.form.ValidationTextBox,dijit.form.ComboBoxMixin],{delimiter:",",_previousMatches:false,_setValueAttr:function(_1){
-if(this.delimiter&&_1.length!=0){
-_1=_1+this.delimiter+" ";
-arguments[0]=this._addPreviousMatches(_1);
-}
-this.inherited(arguments);
-},_addPreviousMatches:function(_2){
-if(this._previousMatches){
-if(!_2.match(new RegExp("^"+this._previousMatches))){
-_2=this._previousMatches+_2;
-}
-_2=this._cleanupDelimiters(_2);
-}
-return _2;
-},_cleanupDelimiters:function(_3){
-if(this.delimiter){
-_3=_3.replace(new RegExp("  +")," ");
-_3=_3.replace(new RegExp("^ *"+this.delimiter+"* *"),"");
-_3=_3.replace(new RegExp(this.delimiter+" *"+this.delimiter),this.delimiter);
-}
-return _3;
-},_autoCompleteText:function(_4){
-arguments[0]=this._addPreviousMatches(_4);
-this.inherited(arguments);
-},_startSearch:function(_5){
-_5=this._cleanupDelimiters(_5);
-var re=new RegExp("^.*"+this.delimiter+" *");
-if((this._previousMatches=_5.match(re))){
-arguments[0]=_5.replace(re,"");
-}
-this.inherited(arguments);
-}});
+
+dojo.declare("dojox.form.MultiComboBox",
+	[dijit.form.ValidationTextBox, dijit.form.ComboBoxMixin],{
+	//
+	// summary: A ComboBox that accpets multiple inputs on a single line?
+	//
+	// delimiter: String
+	// 	The character to use to separate items in the ComboBox input
+	delimiter: ",",
+	_previousMatches: false,
+
+	_setValueAttr: function(value){
+		if (this.delimiter && value.length != 0){
+			value = value+this.delimiter+" ";
+			arguments[0] = this._addPreviousMatches(value);
+		}
+		this.inherited(arguments);
+	},
+
+	_addPreviousMatches: function(/* String */text){
+		if(this._previousMatches){
+			if(!text.match(new RegExp("^"+this._previousMatches))){
+				text = this._previousMatches+text;
+			}
+			text = this._cleanupDelimiters(text);
+		}
+		return text; // String
+	},
+
+	_cleanupDelimiters: function(/* String */text){
+		if(this.delimiter){
+			text = text.replace(new RegExp("  +"), " ");
+			text = text.replace(new RegExp("^ *"+this.delimiter+"* *"), "");
+			text = text.replace(new RegExp(this.delimiter+" *"+this.delimiter), this.delimiter);
+		}
+		return text;
+	},
+			
+	_autoCompleteText: function(/* String */text){
+		arguments[0] = this._addPreviousMatches(text);
+		this.inherited(arguments);
+	},
+
+	_startSearch: function(/* String */text){
+		text = this._cleanupDelimiters(text);
+		var re = new RegExp("^.*"+this.delimiter+" *");
+		
+		if((this._previousMatches = text.match(re))){
+			arguments[0] = text.replace(re, "");
+		}
+		this.inherited(arguments);
+	}		
+});
+
 }

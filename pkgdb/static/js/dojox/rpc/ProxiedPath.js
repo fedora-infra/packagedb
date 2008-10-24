@@ -5,26 +5,34 @@
 */
 
 
-if(!dojo._hasResource["dojox.rpc.ProxiedPath"]){
-dojo._hasResource["dojox.rpc.ProxiedPath"]=true;
+if(!dojo._hasResource["dojox.rpc.ProxiedPath"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.rpc.ProxiedPath"] = true;
 dojo.provide("dojox.rpc.ProxiedPath");
 dojo.require("dojox.rpc.Service");
-dojox.rpc.envelopeRegistry.register("PROXIED-PATH",function(_1){
-return _1=="PROXIED-PATH";
-},{serialize:function(_2,_3,_4){
-var i;
-var _6=dojox.rpc.getTarget(_2,_3);
-if(dojo.isArray(_4)){
-for(i=0;i<_4.length;i++){
-_6+="/"+(_4[i]==null?"":_4[i]);
-}
-}else{
-for(i in _4){
-_6+="/"+i+"/"+_4[i];
-}
-}
-return {data:"",target:(_3.proxyUrl||_2.proxyUrl)+"?url="+encodeURIComponent(_6)};
-},deserialize:function(_7){
-return _7;
-}});
+
+dojox.rpc.envelopeRegistry.register(
+	"PROXIED-PATH",function(str){return str == "PROXIED-PATH"},{
+		serialize:function(smd, method, data){
+			var i;
+			var target = dojox.rpc.getTarget(smd, method);
+			if(dojo.isArray(data)){
+				for(i = 0; i < data.length;i++){
+					target += '/' + (data[i] == null ? "" : data[i]);
+				}
+			}else{
+				for(i in data){
+					target += '/' + i + '/' + data[i];
+				}
+			}
+			return {
+				data:'',
+				target: (method.proxyUrl || smd.proxyUrl) + "?url=" + encodeURIComponent(target)
+			};
+		},
+		deserialize:function(results){
+			return results;
+		}
+	}
+);
+
 }

@@ -5,522 +5,827 @@
 */
 
 
-if(!dojo._hasResource["dojo.data.ItemFileWriteStore"]){
-dojo._hasResource["dojo.data.ItemFileWriteStore"]=true;
+if(!dojo._hasResource["dojo.data.ItemFileWriteStore"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojo.data.ItemFileWriteStore"] = true;
 dojo.provide("dojo.data.ItemFileWriteStore");
 dojo.require("dojo.data.ItemFileReadStore");
-dojo.declare("dojo.data.ItemFileWriteStore",dojo.data.ItemFileReadStore,{constructor:function(_1){
-this._features["dojo.data.api.Write"]=true;
-this._features["dojo.data.api.Notification"]=true;
-this._pending={_newItems:{},_modifiedItems:{},_deletedItems:{}};
-if(!this._datatypeMap["Date"].serialize){
-this._datatypeMap["Date"].serialize=function(_2){
-return dojo.date.stamp.toISOString(_2,{zulu:true});
-};
-}
-if(_1&&(_1.referenceIntegrity===false)){
-this.referenceIntegrity=false;
-}
-this._saveInProgress=false;
-},referenceIntegrity:true,_assert:function(_3){
-if(!_3){
-throw new Error("assertion failed in ItemFileWriteStore");
-}
-},_getIdentifierAttribute:function(){
-var _4=this.getFeatures()["dojo.data.api.Identity"];
-return _4;
-},newItem:function(_5,_6){
-this._assert(!this._saveInProgress);
-if(!this._loadFinished){
-this._forceLoad();
-}
-if(typeof _5!="object"&&typeof _5!="undefined"){
-throw new Error("newItem() was passed something other than an object");
-}
-var _7=null;
-var _8=this._getIdentifierAttribute();
-if(_8===Number){
-_7=this._arrayOfAllItems.length;
-}else{
-_7=_5[_8];
-if(typeof _7==="undefined"){
-throw new Error("newItem() was not passed an identity for the new item");
-}
-if(dojo.isArray(_7)){
-throw new Error("newItem() was not passed an single-valued identity");
-}
-}
-if(this._itemsByIdentity){
-this._assert(typeof this._itemsByIdentity[_7]==="undefined");
-}
-this._assert(typeof this._pending._newItems[_7]==="undefined");
-this._assert(typeof this._pending._deletedItems[_7]==="undefined");
-var _9={};
-_9[this._storeRefPropName]=this;
-_9[this._itemNumPropName]=this._arrayOfAllItems.length;
-if(this._itemsByIdentity){
-this._itemsByIdentity[_7]=_9;
-_9[_8]=[_7];
-}
-this._arrayOfAllItems.push(_9);
-var _a=null;
-if(_6&&_6.parent&&_6.attribute){
-_a={item:_6.parent,attribute:_6.attribute,oldValue:undefined};
-var _b=this.getValues(_6.parent,_6.attribute);
-if(_b&&_b.length>0){
-var _c=_b.slice(0,_b.length);
-if(_b.length===1){
-_a.oldValue=_b[0];
-}else{
-_a.oldValue=_b.slice(0,_b.length);
-}
-_c.push(_9);
-this._setValueOrValues(_6.parent,_6.attribute,_c,false);
-_a.newValue=this.getValues(_6.parent,_6.attribute);
-}else{
-this._setValueOrValues(_6.parent,_6.attribute,_9,false);
-_a.newValue=_9;
-}
-}else{
-_9[this._rootItemPropName]=true;
-this._arrayOfTopLevelItems.push(_9);
-}
-this._pending._newItems[_7]=_9;
-for(var _d in _5){
-if(_d===this._storeRefPropName||_d===this._itemNumPropName){
-throw new Error("encountered bug in ItemFileWriteStore.newItem");
-}
-var _e=_5[_d];
-if(!dojo.isArray(_e)){
-_e=[_e];
-}
-_9[_d]=_e;
-if(this.referenceIntegrity){
-for(var i=0;i<_e.length;i++){
-var val=_e[i];
-if(this.isItem(val)){
-this._addReferenceToMap(val,_9,_d);
-}
-}
-}
-}
-this.onNew(_9,_a);
-return _9;
-},_removeArrayElement:function(_11,_12){
-var _13=dojo.indexOf(_11,_12);
-if(_13!=-1){
-_11.splice(_13,1);
-return true;
-}
-return false;
-},deleteItem:function(_14){
-this._assert(!this._saveInProgress);
-this._assertIsItem(_14);
-var _15=_14[this._itemNumPropName];
-var _16=this.getIdentity(_14);
-if(this.referenceIntegrity){
-var _17=this.getAttributes(_14);
-if(_14[this._reverseRefMap]){
-_14["backup_"+this._reverseRefMap]=dojo.clone(_14[this._reverseRefMap]);
-}
-dojo.forEach(_17,function(_18){
-dojo.forEach(this.getValues(_14,_18),function(_19){
-if(this.isItem(_19)){
-if(!_14["backupRefs_"+this._reverseRefMap]){
-_14["backupRefs_"+this._reverseRefMap]=[];
-}
-_14["backupRefs_"+this._reverseRefMap].push({id:this.getIdentity(_19),attr:_18});
-this._removeReferenceFromMap(_19,_14,_18);
-}
-},this);
-},this);
-var _1a=_14[this._reverseRefMap];
-if(_1a){
-for(var _1b in _1a){
-var _1c=null;
-if(this._itemsByIdentity){
-_1c=this._itemsByIdentity[_1b];
-}else{
-_1c=this._arrayOfAllItems[_1b];
-}
-if(_1c){
-for(var _1d in _1a[_1b]){
-var _1e=this.getValues(_1c,_1d)||[];
-var _1f=dojo.filter(_1e,function(_20){
-return !(this.isItem(_20)&&this.getIdentity(_20)==_16);
-},this);
-this._removeReferenceFromMap(_14,_1c,_1d);
-if(_1f.length<_1e.length){
-this._setValueOrValues(_1c,_1d,_1f,true);
-}
-}
-}
-}
-}
-}
-this._arrayOfAllItems[_15]=null;
-_14[this._storeRefPropName]=null;
-if(this._itemsByIdentity){
-delete this._itemsByIdentity[_16];
-}
-this._pending._deletedItems[_16]=_14;
-if(_14[this._rootItemPropName]){
-this._removeArrayElement(this._arrayOfTopLevelItems,_14);
-}
-this.onDelete(_14);
-return true;
-},setValue:function(_21,_22,_23){
-return this._setValueOrValues(_21,_22,_23,true);
-},setValues:function(_24,_25,_26){
-return this._setValueOrValues(_24,_25,_26,true);
-},unsetAttribute:function(_27,_28){
-return this._setValueOrValues(_27,_28,[],true);
-},_setValueOrValues:function(_29,_2a,_2b,_2c){
-this._assert(!this._saveInProgress);
-this._assertIsItem(_29);
-this._assert(dojo.isString(_2a));
-this._assert(typeof _2b!=="undefined");
-var _2d=this._getIdentifierAttribute();
-if(_2a==_2d){
-throw new Error("ItemFileWriteStore does not have support for changing the value of an item's identifier.");
-}
-var _2e=this._getValueOrValues(_29,_2a);
-var _2f=this.getIdentity(_29);
-if(!this._pending._modifiedItems[_2f]){
-var _30={};
-for(var key in _29){
-if((key===this._storeRefPropName)||(key===this._itemNumPropName)||(key===this._rootItemPropName)){
-_30[key]=_29[key];
-}else{
-if(key===this._reverseRefMap){
-_30[key]=dojo.clone(_29[key]);
-}else{
-_30[key]=_29[key].slice(0,_29[key].length);
-}
-}
-}
-this._pending._modifiedItems[_2f]=_30;
-}
-var _32=false;
-if(dojo.isArray(_2b)&&_2b.length===0){
-_32=delete _29[_2a];
-_2b=undefined;
-if(this.referenceIntegrity&&_2e){
-var _33=_2e;
-if(!dojo.isArray(_33)){
-_33=[_33];
-}
-for(var i=0;i<_33.length;i++){
-var _35=_33[i];
-if(this.isItem(_35)){
-this._removeReferenceFromMap(_35,_29,_2a);
-}
-}
-}
-}else{
-var _36;
-if(dojo.isArray(_2b)){
-var _37=_2b;
-_36=_2b.slice(0,_2b.length);
-}else{
-_36=[_2b];
-}
-if(this.referenceIntegrity){
-if(_2e){
-var _33=_2e;
-if(!dojo.isArray(_33)){
-_33=[_33];
-}
-var map={};
-dojo.forEach(_33,function(_39){
-if(this.isItem(_39)){
-var id=this.getIdentity(_39);
-map[id.toString()]=true;
-}
-},this);
-dojo.forEach(_36,function(_3b){
-if(this.isItem(_3b)){
-var id=this.getIdentity(_3b);
-if(map[id.toString()]){
-delete map[id.toString()];
-}else{
-this._addReferenceToMap(_3b,_29,_2a);
-}
-}
-},this);
-for(var rId in map){
-var _3e;
-if(this._itemsByIdentity){
-_3e=this._itemsByIdentity[rId];
-}else{
-_3e=this._arrayOfAllItems[rId];
-}
-this._removeReferenceFromMap(_3e,_29,_2a);
-}
-}else{
-for(var i=0;i<_36.length;i++){
-var _35=_36[i];
-if(this.isItem(_35)){
-this._addReferenceToMap(_35,_29,_2a);
-}
-}
-}
-}
-_29[_2a]=_36;
-_32=true;
-}
-if(_2c){
-this.onSet(_29,_2a,_2e,_2b);
-}
-return _32;
-},_addReferenceToMap:function(_3f,_40,_41){
-var _42=this.getIdentity(_40);
-var _43=_3f[this._reverseRefMap];
-if(!_43){
-_43=_3f[this._reverseRefMap]={};
-}
-var _44=_43[_42];
-if(!_44){
-_44=_43[_42]={};
-}
-_44[_41]=true;
-},_removeReferenceFromMap:function(_45,_46,_47){
-var _48=this.getIdentity(_46);
-var _49=_45[this._reverseRefMap];
-var _4a;
-if(_49){
-for(_4a in _49){
-if(_4a==_48){
-delete _49[_4a][_47];
-if(this._isEmpty(_49[_4a])){
-delete _49[_4a];
-}
-}
-}
-if(this._isEmpty(_49)){
-delete _45[this._reverseRefMap];
-}
-}
-},_dumpReferenceMap:function(){
-var i;
-for(i=0;i<this._arrayOfAllItems.length;i++){
-var _4c=this._arrayOfAllItems[i];
-if(_4c&&_4c[this._reverseRefMap]){
 
-}
-}
-},_getValueOrValues:function(_4d,_4e){
-var _4f=undefined;
-if(this.hasAttribute(_4d,_4e)){
-var _50=this.getValues(_4d,_4e);
-if(_50.length==1){
-_4f=_50[0];
-}else{
-_4f=_50;
-}
-}
-return _4f;
-},_flatten:function(_51){
-if(this.isItem(_51)){
-var _52=_51;
-var _53=this.getIdentity(_52);
-var _54={_reference:_53};
-return _54;
-}else{
-if(typeof _51==="object"){
-for(var _55 in this._datatypeMap){
-var _56=this._datatypeMap[_55];
-if(dojo.isObject(_56)&&!dojo.isFunction(_56)){
-if(_51 instanceof _56.type){
-if(!_56.serialize){
-throw new Error("ItemFileWriteStore:  No serializer defined for type mapping: ["+_55+"]");
-}
-return {_type:_55,_value:_56.serialize(_51)};
-}
-}else{
-if(_51 instanceof _56){
-return {_type:_55,_value:_51.toString()};
-}
-}
-}
-}
-return _51;
-}
-},_getNewFileContentString:function(){
-var _57={};
-var _58=this._getIdentifierAttribute();
-if(_58!==Number){
-_57.identifier=_58;
-}
-if(this._labelAttr){
-_57.label=this._labelAttr;
-}
-_57.items=[];
-for(var i=0;i<this._arrayOfAllItems.length;++i){
-var _5a=this._arrayOfAllItems[i];
-if(_5a!==null){
-var _5b={};
-for(var key in _5a){
-if(key!==this._storeRefPropName&&key!==this._itemNumPropName){
-var _5d=key;
-var _5e=this.getValues(_5a,_5d);
-if(_5e.length==1){
-_5b[_5d]=this._flatten(_5e[0]);
-}else{
-var _5f=[];
-for(var j=0;j<_5e.length;++j){
-_5f.push(this._flatten(_5e[j]));
-_5b[_5d]=_5f;
-}
-}
-}
-}
-_57.items.push(_5b);
-}
-}
-var _61=true;
-return dojo.toJson(_57,_61);
-},_isEmpty:function(_62){
-var _63=true;
-if(dojo.isObject(_62)){
-var i;
-for(i in _62){
-_63=false;
-break;
-}
-}else{
-if(dojo.isArray(_62)){
-if(_62.length>0){
-_63=false;
-}
-}
-}
-return _63;
-},save:function(_65){
-this._assert(!this._saveInProgress);
-this._saveInProgress=true;
-var _66=this;
-var _67=function(){
-_66._pending={_newItems:{},_modifiedItems:{},_deletedItems:{}};
-_66._saveInProgress=false;
-if(_65&&_65.onComplete){
-var _68=_65.scope||dojo.global;
-_65.onComplete.call(_68);
-}
-};
-var _69=function(){
-_66._saveInProgress=false;
-if(_65&&_65.onError){
-var _6a=_65.scope||dojo.global;
-_65.onError.call(_6a);
-}
-};
-if(this._saveEverything){
-var _6b=this._getNewFileContentString();
-this._saveEverything(_67,_69,_6b);
-}
-if(this._saveCustom){
-this._saveCustom(_67,_69);
-}
-if(!this._saveEverything&&!this._saveCustom){
-_67();
-}
-},revert:function(){
-this._assert(!this._saveInProgress);
-var _6c;
-for(_6c in this._pending._modifiedItems){
-var _6d=this._pending._modifiedItems[_6c];
-var _6e=null;
-if(this._itemsByIdentity){
-_6e=this._itemsByIdentity[_6c];
-}else{
-_6e=this._arrayOfAllItems[_6c];
-}
-_6d[this._storeRefPropName]=this;
-_6e[this._storeRefPropName]=null;
-var _6f=_6e[this._itemNumPropName];
-this._arrayOfAllItems[_6f]=_6d;
-if(_6e[this._rootItemPropName]){
-var i;
-for(i=0;i<this._arrayOfTopLevelItems.length;i++){
-var _71=this._arrayOfTopLevelItems[i];
-if(this.getIdentity(_71)==_6c){
-this._arrayOfTopLevelItems[i]=_6d;
-break;
-}
-}
-}
-if(this._itemsByIdentity){
-this._itemsByIdentity[_6c]=_6d;
-}
-}
-var _72;
-for(_6c in this._pending._deletedItems){
-_72=this._pending._deletedItems[_6c];
-_72[this._storeRefPropName]=this;
-var _73=_72[this._itemNumPropName];
-if(_72["backup_"+this._reverseRefMap]){
-_72[this._reverseRefMap]=_72["backup_"+this._reverseRefMap];
-delete _72["backup_"+this._reverseRefMap];
-}
-this._arrayOfAllItems[_73]=_72;
-if(this._itemsByIdentity){
-this._itemsByIdentity[_6c]=_72;
-}
-if(_72[this._rootItemPropName]){
-this._arrayOfTopLevelItems.push(_72);
-}
-}
-for(_6c in this._pending._deletedItems){
-_72=this._pending._deletedItems[_6c];
-if(_72["backupRefs_"+this._reverseRefMap]){
-dojo.forEach(_72["backupRefs_"+this._reverseRefMap],function(_74){
-var _75;
-if(this._itemsByIdentity){
-_75=this._itemsByIdentity[_74.id];
-}else{
-_75=this._arrayOfAllItems[_74.id];
-}
-this._addReferenceToMap(_75,_72,_74.attr);
-},this);
-delete _72["backupRefs_"+this._reverseRefMap];
-}
-}
-for(_6c in this._pending._newItems){
-var _76=this._pending._newItems[_6c];
-_76[this._storeRefPropName]=null;
-this._arrayOfAllItems[_76[this._itemNumPropName]]=null;
-if(_76[this._rootItemPropName]){
-this._removeArrayElement(this._arrayOfTopLevelItems,_76);
-}
-if(this._itemsByIdentity){
-delete this._itemsByIdentity[_6c];
-}
-}
-this._pending={_newItems:{},_modifiedItems:{},_deletedItems:{}};
-return true;
-},isDirty:function(_77){
-if(_77){
-var _78=this.getIdentity(_77);
-return new Boolean(this._pending._newItems[_78]||this._pending._modifiedItems[_78]||this._pending._deletedItems[_78]).valueOf();
-}else{
-if(!this._isEmpty(this._pending._newItems)||!this._isEmpty(this._pending._modifiedItems)||!this._isEmpty(this._pending._deletedItems)){
-return true;
-}
-return false;
-}
-},onSet:function(_79,_7a,_7b,_7c){
-},onNew:function(_7d,_7e){
-},onDelete:function(_7f){
-},close:function(_80){
-if(this.clearOnClose){
-if(!this.isDirty()){
-this.inherited(arguments);
-}else{
-if(this._jsonFileUrl!==""){
-throw new Error("dojo.data.ItemFileWriteStore: There are unsaved changes present in the store.  Please save or revert the changes before invoking close.");
-}
-}
-}
-}});
+dojo.declare("dojo.data.ItemFileWriteStore", dojo.data.ItemFileReadStore, {
+	constructor: function(/* object */ keywordParameters){
+		//	keywordParameters: {typeMap: object)
+		//		The structure of the typeMap object is as follows:
+		//		{
+		//			type0: function || object,
+		//			type1: function || object,
+		//			...
+		//			typeN: function || object
+		//		}
+		//		Where if it is a function, it is assumed to be an object constructor that takes the 
+		//		value of _value as the initialization parameters.  It is serialized assuming object.toString()
+		//		serialization.  If it is an object, then it is assumed
+		//		to be an object of general form:
+		//		{
+		//			type: function, //constructor.
+		//			deserialize:	function(value) //The function that parses the value and constructs the object defined by type appropriately.
+		//			serialize:	function(object) //The function that converts the object back into the proper file format form.
+		//		}
+
+		// ItemFileWriteStore extends ItemFileReadStore to implement these additional dojo.data APIs
+		this._features['dojo.data.api.Write'] = true;
+		this._features['dojo.data.api.Notification'] = true;
+		
+		// For keeping track of changes so that we can implement isDirty and revert
+		this._pending = {
+			_newItems:{}, 
+			_modifiedItems:{}, 
+			_deletedItems:{}
+		};
+
+		if(!this._datatypeMap['Date'].serialize){
+			this._datatypeMap['Date'].serialize = function(obj){
+				return dojo.date.stamp.toISOString(obj, {zulu:true});
+			};
+		}
+		//Disable only if explicitly set to false.
+		if(keywordParameters && (keywordParameters.referenceIntegrity === false)){
+			this.referenceIntegrity = false;
+		}
+
+		// this._saveInProgress is set to true, briefly, from when save() is first called to when it completes
+		this._saveInProgress = false;
+	},
+
+	referenceIntegrity: true,  //Flag that defaultly enabled reference integrity tracking.  This way it can also be disabled pogrammatially or declaratively.
+
+	_assert: function(/* boolean */ condition){
+		if(!condition) {
+			throw new Error("assertion failed in ItemFileWriteStore");
+		}
+	},
+
+	_getIdentifierAttribute: function(){
+		var identifierAttribute = this.getFeatures()['dojo.data.api.Identity'];
+		// this._assert((identifierAttribute === Number) || (dojo.isString(identifierAttribute)));
+		return identifierAttribute;
+	},
+	
+	
+/* dojo.data.api.Write */
+
+	newItem: function(/* Object? */ keywordArgs, /* Object? */ parentInfo){
+		// summary: See dojo.data.api.Write.newItem()
+
+		this._assert(!this._saveInProgress);
+
+		if (!this._loadFinished){
+			// We need to do this here so that we'll be able to find out what
+			// identifierAttribute was specified in the data file.
+			this._forceLoad();
+		}
+
+		if(typeof keywordArgs != "object" && typeof keywordArgs != "undefined"){
+			throw new Error("newItem() was passed something other than an object");
+		}
+		var newIdentity = null;
+		var identifierAttribute = this._getIdentifierAttribute();
+		if(identifierAttribute === Number){
+			newIdentity = this._arrayOfAllItems.length;
+		}else{
+			newIdentity = keywordArgs[identifierAttribute];
+			if (typeof newIdentity === "undefined"){
+				throw new Error("newItem() was not passed an identity for the new item");
+			}
+			if (dojo.isArray(newIdentity)){
+				throw new Error("newItem() was not passed an single-valued identity");
+			}
+		}
+		
+		// make sure this identity is not already in use by another item, if identifiers were 
+		// defined in the file.  Otherwise it would be the item count, 
+		// which should always be unique in this case.
+		if(this._itemsByIdentity){
+			this._assert(typeof this._itemsByIdentity[newIdentity] === "undefined");
+		}
+		this._assert(typeof this._pending._newItems[newIdentity] === "undefined");
+		this._assert(typeof this._pending._deletedItems[newIdentity] === "undefined");
+		
+		var newItem = {};
+		newItem[this._storeRefPropName] = this;		
+		newItem[this._itemNumPropName] = this._arrayOfAllItems.length;
+		if(this._itemsByIdentity){
+			this._itemsByIdentity[newIdentity] = newItem;
+			//We have to set the identifier now, otherwise we can't look it
+			//up at calls to setValueorValues in parentInfo handling.
+			newItem[identifierAttribute] = [newIdentity];
+		}
+		this._arrayOfAllItems.push(newItem);
+
+		//We need to construct some data for the onNew call too...
+		var pInfo = null;
+		
+		// Now we need to check to see where we want to assign this thingm if any.
+		if(parentInfo && parentInfo.parent && parentInfo.attribute){
+			pInfo = {
+				item: parentInfo.parent,
+				attribute: parentInfo.attribute,
+				oldValue: undefined
+			};
+
+			//See if it is multi-valued or not and handle appropriately
+			//Generally, all attributes are multi-valued for this store
+			//So, we only need to append if there are already values present.
+			var values = this.getValues(parentInfo.parent, parentInfo.attribute);
+			if(values && values.length > 0){
+				var tempValues = values.slice(0, values.length);
+				if(values.length === 1){
+					pInfo.oldValue = values[0];
+				}else{
+					pInfo.oldValue = values.slice(0, values.length);
+				}
+				tempValues.push(newItem);
+				this._setValueOrValues(parentInfo.parent, parentInfo.attribute, tempValues, false);
+				pInfo.newValue = this.getValues(parentInfo.parent, parentInfo.attribute);
+			}else{
+				this._setValueOrValues(parentInfo.parent, parentInfo.attribute, newItem, false);
+				pInfo.newValue = newItem;
+			}
+		}else{
+			//Toplevel item, add to both top list as well as all list.
+			newItem[this._rootItemPropName]=true;
+			this._arrayOfTopLevelItems.push(newItem);
+		}
+		
+		this._pending._newItems[newIdentity] = newItem;
+		
+		//Clone over the properties to the new item
+		for(var key in keywordArgs){
+			if(key === this._storeRefPropName || key === this._itemNumPropName){
+				// Bummer, the user is trying to do something like
+				// newItem({_S:"foo"}).  Unfortunately, our superclass,
+				// ItemFileReadStore, is already using _S in each of our items
+				// to hold private info.  To avoid a naming collision, we 
+				// need to move all our private info to some other property 
+				// of all the items/objects.  So, we need to iterate over all
+				// the items and do something like: 
+				//    item.__S = item._S;
+				//    item._S = undefined;
+				// But first we have to make sure the new "__S" variable is 
+				// not in use, which means we have to iterate over all the 
+				// items checking for that.
+				throw new Error("encountered bug in ItemFileWriteStore.newItem");
+			}
+			var value = keywordArgs[key];
+			if(!dojo.isArray(value)){
+				value = [value];
+			}
+			newItem[key] = value;
+			if(this.referenceIntegrity){
+				for(var i = 0; i < value.length; i++){
+					var val = value[i];
+					if(this.isItem(val)){
+						this._addReferenceToMap(val, newItem, key);
+					}
+				}
+			}
+		}
+		this.onNew(newItem, pInfo); // dojo.data.api.Notification call
+		return newItem; // item
+	},
+	
+	_removeArrayElement: function(/* Array */ array, /* anything */ element){
+		var index = dojo.indexOf(array, element);
+		if (index != -1){
+			array.splice(index, 1);
+			return true;
+		}
+		return false;
+	},
+	
+	deleteItem: function(/* item */ item){
+		// summary: See dojo.data.api.Write.deleteItem()
+		this._assert(!this._saveInProgress);
+		this._assertIsItem(item);
+
+		// Remove this item from the _arrayOfAllItems, but leave a null value in place
+		// of the item, so as not to change the length of the array, so that in newItem() 
+		// we can still safely do: newIdentity = this._arrayOfAllItems.length;
+		var indexInArrayOfAllItems = item[this._itemNumPropName];
+		var identity = this.getIdentity(item);
+
+		//If we have reference integrity on, we need to do reference cleanup for the deleted item
+		if(this.referenceIntegrity){
+			//First scan all the attributes of this items for references and clean them up in the map 
+			//As this item is going away, no need to track its references anymore.
+
+			//Get the attributes list before we generate the backup so it 
+			//doesn't pollute the attributes list.
+			var attributes = this.getAttributes(item);
+
+			//Backup the map, we'll have to restore it potentially, in a revert.
+			if(item[this._reverseRefMap]){
+				item["backup_" + this._reverseRefMap] = dojo.clone(item[this._reverseRefMap]);
+			}
+			
+			//TODO:  This causes a reversion problem.  This list won't be restored on revert since it is
+			//attached to the 'value'. item, not ours.  Need to back tese up somehow too.
+			//Maybe build a map of the backup of the entries and attach it to the deleted item to be restored
+			//later.  Or just record them and call _addReferenceToMap on them in revert.
+			dojo.forEach(attributes, function(attribute){
+				dojo.forEach(this.getValues(item, attribute), function(value){
+					if(this.isItem(value)){
+						//We have to back up all the references we had to others so they can be restored on a revert.
+						if(!item["backupRefs_" + this._reverseRefMap]){
+							item["backupRefs_" + this._reverseRefMap] = [];
+						}
+						item["backupRefs_" + this._reverseRefMap].push({id: this.getIdentity(value), attr: attribute});
+						this._removeReferenceFromMap(value, item, attribute);
+					}
+				}, this);
+			}, this);
+
+			//Next, see if we have references to this item, if we do, we have to clean them up too.
+			var references = item[this._reverseRefMap];
+			if(references){
+				//Look through all the items noted as references to clean them up.
+				for(var itemId in references){
+					var containingItem = null;
+					if(this._itemsByIdentity){
+						containingItem = this._itemsByIdentity[itemId];
+					}else{
+						containingItem = this._arrayOfAllItems[itemId];
+					}
+					//We have a reference to a containing item, now we have to process the
+					//attributes and clear all references to the item being deleted.
+					if(containingItem){
+						for(var attribute in references[itemId]){
+							var oldValues = this.getValues(containingItem, attribute) || [];
+							var newValues = dojo.filter(oldValues, function(possibleItem){
+							   return !(this.isItem(possibleItem) && this.getIdentity(possibleItem) == identity);
+							}, this);
+							//Remove the note of the reference to the item and set the values on the modified attribute.
+							this._removeReferenceFromMap(item, containingItem, attribute); 
+							if(newValues.length < oldValues.length){
+								this._setValueOrValues(containingItem, attribute, newValues, true);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		this._arrayOfAllItems[indexInArrayOfAllItems] = null;
+
+		item[this._storeRefPropName] = null;
+		if(this._itemsByIdentity){
+			delete this._itemsByIdentity[identity];
+		}
+		this._pending._deletedItems[identity] = item;
+		
+		//Remove from the toplevel items, if necessary...
+		if(item[this._rootItemPropName]){
+			this._removeArrayElement(this._arrayOfTopLevelItems, item);
+		}
+		this.onDelete(item); // dojo.data.api.Notification call
+		return true;
+	},
+
+	setValue: function(/* item */ item, /* attribute-name-string */ attribute, /* almost anything */ value){
+		// summary: See dojo.data.api.Write.set()
+		return this._setValueOrValues(item, attribute, value, true); // boolean
+	},
+	
+	setValues: function(/* item */ item, /* attribute-name-string */ attribute, /* array */ values){
+		// summary: See dojo.data.api.Write.setValues()
+		return this._setValueOrValues(item, attribute, values, true); // boolean
+	},
+	
+	unsetAttribute: function(/* item */ item, /* attribute-name-string */ attribute){
+		// summary: See dojo.data.api.Write.unsetAttribute()
+		return this._setValueOrValues(item, attribute, [], true);
+	},
+	
+	_setValueOrValues: function(/* item */ item, /* attribute-name-string */ attribute, /* anything */ newValueOrValues, /*boolean?*/ callOnSet){
+		this._assert(!this._saveInProgress);
+		
+		// Check for valid arguments
+		this._assertIsItem(item);
+		this._assert(dojo.isString(attribute));
+		this._assert(typeof newValueOrValues !== "undefined");
+
+		// Make sure the user isn't trying to change the item's identity
+		var identifierAttribute = this._getIdentifierAttribute();
+		if(attribute == identifierAttribute){
+			throw new Error("ItemFileWriteStore does not have support for changing the value of an item's identifier.");
+		}
+
+		// To implement the Notification API, we need to make a note of what
+		// the old attribute value was, so that we can pass that info when
+		// we call the onSet method.
+		var oldValueOrValues = this._getValueOrValues(item, attribute);
+
+		var identity = this.getIdentity(item);
+		if(!this._pending._modifiedItems[identity]){
+			// Before we actually change the item, we make a copy of it to 
+			// record the original state, so that we'll be able to revert if 
+			// the revert method gets called.  If the item has already been
+			// modified then there's no need to do this now, since we already
+			// have a record of the original state.						
+			var copyOfItemState = {};
+			for(var key in item){
+				if((key === this._storeRefPropName) || (key === this._itemNumPropName) || (key === this._rootItemPropName)){
+					copyOfItemState[key] = item[key];
+				}else if(key === this._reverseRefMap){
+					copyOfItemState[key] = dojo.clone(item[key]);
+				}else{
+					copyOfItemState[key] = item[key].slice(0, item[key].length);
+				}
+			}
+			// Now mark the item as dirty, and save the copy of the original state
+			this._pending._modifiedItems[identity] = copyOfItemState;
+		}
+		
+		// Okay, now we can actually change this attribute on the item
+		var success = false;
+		
+		if(dojo.isArray(newValueOrValues) && newValueOrValues.length === 0){
+			
+			// If we were passed an empty array as the value, that counts
+			// as "unsetting" the attribute, so we need to remove this 
+			// attribute from the item.
+			success = delete item[attribute];
+			newValueOrValues = undefined; // used in the onSet Notification call below
+
+			if(this.referenceIntegrity && oldValueOrValues){
+				var oldValues = oldValueOrValues;
+				if (!dojo.isArray(oldValues)){
+					oldValues = [oldValues];
+				}
+				for(var i = 0; i < oldValues.length; i++){
+					var value = oldValues[i];
+					if(this.isItem(value)){
+						this._removeReferenceFromMap(value, item, attribute);
+					}
+				}
+			}
+		}else{
+			var newValueArray;
+			if(dojo.isArray(newValueOrValues)){
+				var newValues = newValueOrValues;
+				// Unfortunately, it's not safe to just do this:
+				//    newValueArray = newValues;
+				// Instead, we need to copy the array, which slice() does very nicely.
+				// This is so that our internal data structure won't  
+				// get corrupted if the user mucks with the values array *after*
+				// calling setValues().
+				newValueArray = newValueOrValues.slice(0, newValueOrValues.length);
+			}else{
+				newValueArray = [newValueOrValues];
+			}
+
+			//We need to handle reference integrity if this is on. 
+			//In the case of set, we need to see if references were added or removed
+			//and update the reference tracking map accordingly.
+			if(this.referenceIntegrity){
+				if(oldValueOrValues){
+					var oldValues = oldValueOrValues;
+					if(!dojo.isArray(oldValues)){
+						oldValues = [oldValues];
+					}
+					//Use an associative map to determine what was added/removed from the list.
+					//Should be O(n) performant.  First look at all the old values and make a list of them
+					//Then for any item not in the old list, we add it.  If it was already present, we remove it.
+					//Then we pass over the map and any references left it it need to be removed (IE, no match in
+					//the new values list).
+					var map = {};
+					dojo.forEach(oldValues, function(possibleItem){
+						if(this.isItem(possibleItem)){
+							var id = this.getIdentity(possibleItem);
+							map[id.toString()] = true;
+						}
+					}, this);
+					dojo.forEach(newValueArray, function(possibleItem){
+						if(this.isItem(possibleItem)){
+							var id = this.getIdentity(possibleItem);
+							if(map[id.toString()]){
+								delete map[id.toString()];
+							}else{
+								this._addReferenceToMap(possibleItem, item, attribute); 
+							}
+						}
+					}, this);
+					for(var rId in map){
+						var removedItem;
+						if(this._itemsByIdentity){
+							removedItem = this._itemsByIdentity[rId];
+						}else{
+							removedItem = this._arrayOfAllItems[rId];
+						}
+						this._removeReferenceFromMap(removedItem, item, attribute);
+					}
+				}else{
+					//Everything is new (no old values) so we have to just
+					//insert all the references, if any.
+					for(var i = 0; i < newValueArray.length; i++){
+						var value = newValueArray[i];
+						if(this.isItem(value)){
+							this._addReferenceToMap(value, item, attribute);
+						}
+					}
+				}
+			}
+			item[attribute] = newValueArray;
+			success = true;
+		}
+
+		// Now we make the dojo.data.api.Notification call
+		if(callOnSet){
+			this.onSet(item, attribute, oldValueOrValues, newValueOrValues); 
+		}
+		return success; // boolean
+	},
+
+	_addReferenceToMap: function(/*item*/ refItem, /*item*/ parentItem, /*string*/ attribute){
+		//	summary:
+		//		Method to add an reference map entry for an item and attribute.
+		//	description:
+		//		Method to add an reference map entry for an item and attribute. 		 //
+		//	refItem:
+		//		The item that is referenced.
+		//	parentItem:
+		//		The item that holds the new reference to refItem.
+		//	attribute:
+		//		The attribute on parentItem that contains the new reference.
+		 
+		var parentId = this.getIdentity(parentItem);
+		var references = refItem[this._reverseRefMap];
+
+		if(!references){
+			references = refItem[this._reverseRefMap] = {};
+		}
+		var itemRef = references[parentId];
+		if(!itemRef){
+			itemRef = references[parentId] = {};
+		}
+		itemRef[attribute] = true;
+	},
+
+	_removeReferenceFromMap: function(/* item */ refItem, /* item */ parentItem, /*strin*/ attribute){
+		//	summary:
+		//		Method to remove an reference map entry for an item and attribute.
+		//	description:
+		//		Method to remove an reference map entry for an item and attribute.  This will
+		//		also perform cleanup on the map such that if there are no more references at all to 
+		//		the item, its reference object and entry are removed.
+		//
+		//	refItem:
+		//		The item that is referenced.
+		//	parentItem:
+		//		The item holding a reference to refItem.
+		//	attribute:
+		//		The attribute on parentItem that contains the reference.
+		var identity = this.getIdentity(parentItem);
+		var references = refItem[this._reverseRefMap];
+		var itemId;
+		if(references){
+			for(itemId in references){
+				if(itemId == identity){
+					delete references[itemId][attribute];
+					if(this._isEmpty(references[itemId])){
+						delete references[itemId];
+					}
+				}
+			}
+			if(this._isEmpty(references)){
+				delete refItem[this._reverseRefMap];
+			}
+		}
+	},
+
+	_dumpReferenceMap: function(){
+		//	summary:
+		//		Function to dump the reverse reference map of all items in the store for debug purposes.
+		//	description:
+		//		Function to dump the reverse reference map of all items in the store for debug purposes.
+		var i;
+		for(i = 0; i < this._arrayOfAllItems.length; i++){
+			var item = this._arrayOfAllItems[i];
+			if(item && item[this._reverseRefMap]){
+				
+			}
+		}
+	},
+						   
+	_getValueOrValues: function(/* item */ item, /* attribute-name-string */ attribute){
+		var valueOrValues = undefined;
+		if(this.hasAttribute(item, attribute)){
+			var valueArray = this.getValues(item, attribute);
+			if(valueArray.length == 1){
+				valueOrValues = valueArray[0];
+			}else{
+				valueOrValues = valueArray;
+			}
+		}
+		return valueOrValues;
+	},
+	
+	_flatten: function(/* anything */ value){
+		if(this.isItem(value)){
+			var item = value;
+			// Given an item, return an serializable object that provides a 
+			// reference to the item.
+			// For example, given kermit:
+			//    var kermit = store.newItem({id:2, name:"Kermit"});
+			// we want to return
+			//    {_reference:2}
+			var identity = this.getIdentity(item);
+			var referenceObject = {_reference: identity};
+			return referenceObject;
+		}else{
+			if(typeof value === "object"){
+				for(var type in this._datatypeMap){
+					var typeMap = this._datatypeMap[type];
+					if (dojo.isObject(typeMap) && !dojo.isFunction(typeMap)){
+						if(value instanceof typeMap.type){
+							if(!typeMap.serialize){
+								throw new Error("ItemFileWriteStore:  No serializer defined for type mapping: [" + type + "]");
+							}
+							return {_type: type, _value: typeMap.serialize(value)};
+						}
+					} else if(value instanceof typeMap){
+						//SImple mapping, therefore, return as a toString serialization.
+						return {_type: type, _value: value.toString()};
+					}
+				}
+			}
+			return value;
+		}
+	},
+	
+	_getNewFileContentString: function(){
+		// summary: 
+		//		Generate a string that can be saved to a file.
+		//		The result should look similar to:
+		//		http://trac.dojotoolkit.org/browser/dojo/trunk/tests/data/countries.json
+		var serializableStructure = {};
+		
+		var identifierAttribute = this._getIdentifierAttribute();
+		if(identifierAttribute !== Number){
+			serializableStructure.identifier = identifierAttribute;
+		}
+		if(this._labelAttr){
+			serializableStructure.label = this._labelAttr;
+		}
+		serializableStructure.items = [];
+		for(var i = 0; i < this._arrayOfAllItems.length; ++i){
+			var item = this._arrayOfAllItems[i];
+			if(item !== null){
+				var serializableItem = {};
+				for(var key in item){
+					if(key !== this._storeRefPropName && key !== this._itemNumPropName){
+						var attribute = key;
+						var valueArray = this.getValues(item, attribute);
+						if(valueArray.length == 1){
+							serializableItem[attribute] = this._flatten(valueArray[0]);
+						}else{
+							var serializableArray = [];
+							for(var j = 0; j < valueArray.length; ++j){
+								serializableArray.push(this._flatten(valueArray[j]));
+								serializableItem[attribute] = serializableArray;
+							}
+						}
+					}
+				}
+				serializableStructure.items.push(serializableItem);
+			}
+		}
+		var prettyPrint = true;
+		return dojo.toJson(serializableStructure, prettyPrint);
+	},
+
+	_isEmpty: function(something){
+		//	summary: 
+		//		Function to determine if an array or object has no properties or values.
+		//	something:
+		//		The array or object to examine.
+		var empty = true;
+		if(dojo.isObject(something)){
+			var i;
+			for(i in something){
+				empty = false;
+				break;
+			}
+		}else if(dojo.isArray(something)){
+			if(something.length > 0){
+				empty = false;
+			}
+		}
+		return empty; //boolean
+	},
+	
+	save: function(/* object */ keywordArgs){
+		// summary: See dojo.data.api.Write.save()
+		this._assert(!this._saveInProgress);
+		
+		// this._saveInProgress is set to true, briefly, from when save is first called to when it completes
+		this._saveInProgress = true;
+		
+		var self = this;
+		var saveCompleteCallback = function(){
+			self._pending = {
+				_newItems:{}, 
+				_modifiedItems:{},
+				_deletedItems:{}
+			};
+
+			self._saveInProgress = false; // must come after this._pending is cleared, but before any callbacks
+			if(keywordArgs && keywordArgs.onComplete){
+				var scope = keywordArgs.scope || dojo.global;
+				keywordArgs.onComplete.call(scope);
+			}
+		};
+		var saveFailedCallback = function(){
+			self._saveInProgress = false;
+			if(keywordArgs && keywordArgs.onError){
+				var scope = keywordArgs.scope || dojo.global;
+				keywordArgs.onError.call(scope);
+			}
+		};
+		
+		if(this._saveEverything){
+			var newFileContentString = this._getNewFileContentString();
+			this._saveEverything(saveCompleteCallback, saveFailedCallback, newFileContentString);
+		}
+		if(this._saveCustom){
+			this._saveCustom(saveCompleteCallback, saveFailedCallback);
+		}
+		if(!this._saveEverything && !this._saveCustom){
+			// Looks like there is no user-defined save-handler function.
+			// That's fine, it just means the datastore is acting as a "mock-write"
+			// store -- changes get saved in memory but don't get saved to disk.
+			saveCompleteCallback();
+		}
+	},
+	
+	revert: function(){
+		// summary: See dojo.data.api.Write.revert()
+		this._assert(!this._saveInProgress);
+
+		var identity;
+		for(identity in this._pending._modifiedItems){
+			// find the original item and the modified item that replaced it
+			var originalItem = this._pending._modifiedItems[identity];
+			var modifiedItem = null;
+			if(this._itemsByIdentity){
+				modifiedItem = this._itemsByIdentity[identity];
+			}else{
+				modifiedItem = this._arrayOfAllItems[identity];
+			}
+			
+			// make the original item into a full-fledged item again
+			originalItem[this._storeRefPropName] = this;
+			modifiedItem[this._storeRefPropName] = null;
+
+			// replace the modified item with the original one
+			var arrayIndex = modifiedItem[this._itemNumPropName];
+			this._arrayOfAllItems[arrayIndex] = originalItem;
+			
+			if(modifiedItem[this._rootItemPropName]){
+				var i;
+				for (i = 0; i < this._arrayOfTopLevelItems.length; i++) {
+					var possibleMatch = this._arrayOfTopLevelItems[i];
+					if (this.getIdentity(possibleMatch) == identity){
+						this._arrayOfTopLevelItems[i] = originalItem;
+						break;
+					}
+				}
+			}
+			if(this._itemsByIdentity){
+				this._itemsByIdentity[identity] = originalItem;
+			}			
+		}
+		var deletedItem;
+		for(identity in this._pending._deletedItems){
+			deletedItem = this._pending._deletedItems[identity];
+			deletedItem[this._storeRefPropName] = this;
+			var index = deletedItem[this._itemNumPropName];
+
+			//Restore the reverse refererence map, if any.
+			if(deletedItem["backup_" + this._reverseRefMap]){
+				deletedItem[this._reverseRefMap] = deletedItem["backup_" + this._reverseRefMap];
+				delete deletedItem["backup_" + this._reverseRefMap];
+			}
+			this._arrayOfAllItems[index] = deletedItem;
+			if (this._itemsByIdentity) {
+				this._itemsByIdentity[identity] = deletedItem;
+			}
+			if(deletedItem[this._rootItemPropName]){
+				this._arrayOfTopLevelItems.push(deletedItem);
+			}	  
+		}
+		//We have to pass through it again and restore the reference maps after all the
+		//undeletes have occurred.
+		for(identity in this._pending._deletedItems){
+			deletedItem = this._pending._deletedItems[identity];
+			if(deletedItem["backupRefs_" + this._reverseRefMap]){
+				dojo.forEach(deletedItem["backupRefs_" + this._reverseRefMap], function(reference){
+					var refItem;
+					if(this._itemsByIdentity){
+						refItem = this._itemsByIdentity[reference.id];
+					}else{
+						refItem = this._arrayOfAllItems[reference.id];
+					}
+					this._addReferenceToMap(refItem, deletedItem, reference.attr);
+				}, this);
+				delete deletedItem["backupRefs_" + this._reverseRefMap]; 
+			}
+		}
+
+		for(identity in this._pending._newItems){
+			var newItem = this._pending._newItems[identity];
+			newItem[this._storeRefPropName] = null;
+			// null out the new item, but don't change the array index so
+			// so we can keep using _arrayOfAllItems.length.
+			this._arrayOfAllItems[newItem[this._itemNumPropName]] = null;
+			if(newItem[this._rootItemPropName]){
+				this._removeArrayElement(this._arrayOfTopLevelItems, newItem);
+			}
+			if(this._itemsByIdentity){
+				delete this._itemsByIdentity[identity];
+			}
+		}
+
+		this._pending = {
+			_newItems:{}, 
+			_modifiedItems:{}, 
+			_deletedItems:{}
+		};
+		return true; // boolean
+	},
+	
+	isDirty: function(/* item? */ item){
+		// summary: See dojo.data.api.Write.isDirty()
+		if(item){
+			// return true if the item is dirty
+			var identity = this.getIdentity(item);
+			return new Boolean(this._pending._newItems[identity] || 
+				this._pending._modifiedItems[identity] ||
+				this._pending._deletedItems[identity]).valueOf(); // boolean
+		}else{
+			// return true if the store is dirty -- which means return true
+			// if there are any new items, dirty items, or modified items
+			if(!this._isEmpty(this._pending._newItems) || 
+			   !this._isEmpty(this._pending._modifiedItems) ||
+			   !this._isEmpty(this._pending._deletedItems)){
+				return true;
+			}
+			return false; // boolean
+		}
+	},
+
+/* dojo.data.api.Notification */
+
+	onSet: function(/* item */ item, 
+					/*attribute-name-string*/ attribute, 
+					/*object | array*/ oldValue,
+					/*object | array*/ newValue){
+		// summary: See dojo.data.api.Notification.onSet()
+		
+		// No need to do anything. This method is here just so that the 
+		// client code can connect observers to it.
+	},
+
+	onNew: function(/* item */ newItem, /*object?*/ parentInfo){
+		// summary: See dojo.data.api.Notification.onNew()
+		
+		// No need to do anything. This method is here just so that the 
+		// client code can connect observers to it. 
+	},
+
+	onDelete: function(/* item */ deletedItem){
+		// summary: See dojo.data.api.Notification.onDelete()
+		
+		// No need to do anything. This method is here just so that the 
+		// client code can connect observers to it. 
+	},
+
+	close: function(/* object? */ request) {
+		 // summary:
+		 //		Over-ride of base close function of ItemFileReadStore to add in check for store state.
+		 // description:
+		 //		Over-ride of base close function of ItemFileReadStore to add in check for store state.
+		 //		If the store is still dirty (unsaved changes), then an error will be thrown instead of
+		 //		clearing the internal state for reload from the url.
+
+		 //Clear if not dirty ... or throw an error
+		 if(this.clearOnClose){
+			 if(!this.isDirty()){
+				 this.inherited(arguments);
+			 }else if(this._jsonFileUrl !== ""){
+				 //Only throw an error if the store was dirty and we were loading from a url (cannot reload from url until state is saved).
+				 throw new Error("dojo.data.ItemFileWriteStore: There are unsaved changes present in the store.  Please save or revert the changes before invoking close.");
+			 }
+		 }
+	}
+});
+
 }

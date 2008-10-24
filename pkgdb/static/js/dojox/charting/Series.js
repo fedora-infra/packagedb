@@ -5,19 +5,23 @@
 */
 
 
-if(!dojo._hasResource["dojox.charting.Series"]){
-dojo._hasResource["dojox.charting.Series"]=true;
+if(!dojo._hasResource["dojox.charting.Series"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.charting.Series"] = true;
 dojo.provide("dojox.charting.Series");
+
 dojo.require("dojox.charting.Element");
-dojo.declare("dojox.charting.Series",dojox.charting.Element,{constructor:function(_1,_2,_3){
-dojo.mixin(this,_3);
-if(typeof this.plot!="string"){
-this.plot="default";
-}
-this.data=_2;
-this.dirty=true;
-this.clear();
-},clear:function(){
-this.dyn={};
-}});
+
+dojo.declare("dojox.charting.Series", dojox.charting.Element, {
+	constructor: function(chart, data, kwArgs){
+		dojo.mixin(this, kwArgs);
+		if(typeof this.plot != "string"){ this.plot = "default"; }
+		this.data = data;
+		this.dirty = true;
+		this.clear();
+	},
+	clear: function(){
+		this.dyn = {};
+	}
+});
+
 }

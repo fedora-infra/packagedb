@@ -5,138 +5,361 @@
 */
 
 
-if(!dojo._hasResource["dojox.data.ServiceStore"]){
-dojo._hasResource["dojox.data.ServiceStore"]=true;
+if(!dojo._hasResource["dojox.data.ServiceStore"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.data.ServiceStore"] = true;
 dojo.provide("dojox.data.ServiceStore");
-dojo.declare("dojox.data.ServiceStore",dojox.data.ClientFilter,{constructor:function(_1){
-this.byId=this.fetchItemByIdentity;
-this._index={};
-if(_1){
-dojo.mixin(this,_1);
-}
-this.idAttribute=(_1&&_1.idAttribute)||(this.schema&&this.schema._idAttr);
-this.labelAttribute=this.labelAttribute||"label";
-},schema:null,idAttribute:"id",syncMode:false,getSchema:function(){
-return this.schema;
-},loadLazyValues:true,getValue:function(_2,_3,_4){
-var _5=_2[_3];
-return _5||(_3 in _2?_5:_2._loadObject?(dojox.rpc._sync=true)&&arguments.callee.call(this,dojox.data.ServiceStore.prototype.loadItem({item:_2})||{},_3,_4):_4);
-},getValues:function(_6,_7){
-var _8=this.getValue(_6,_7);
-return _8 instanceof Array?_8:_8===undefined?[]:[_8];
-},getAttributes:function(_9){
-var _a=[];
-for(var i in _9){
-_a.push(i);
-}
-return _a;
-},hasAttribute:function(_c,_d){
-return _d in _c;
-},containsValue:function(_e,_f,_10){
-return dojo.indexOf(this.getValues(_e,_f),_10)>-1;
-},isItem:function(_11){
-return typeof _11=="object";
-},isItemLoaded:function(_12){
-return _12&&!_12._loadObject;
-},loadItem:function(_13){
-var _14;
-if(_13.item._loadObject){
-_13.item._loadObject(function(_15){
-_14=_15;
-delete _14._loadObject;
-var _16=_15 instanceof Error?_13.onError:_13.onItem;
-if(_16){
-_16.call(_13.scope,_15);
-}
-});
-}
-return _14;
-},_currentId:0,_processResults:function(_17,_18){
-if(_17&&typeof _17=="object"){
-var id=_17.__id;
-if(!id){
-if(this.idAttribute){
-id=_17[this.idAttribute];
-}else{
-id=this._currentId++;
-}
-if(id!==undefined){
-var _1a=this._index[id];
-if(_1a){
-for(var j in _1a){
-delete _1a[j];
-}
-_17=dojo.mixin(_1a,_17);
-}
-_17.__id=id;
-this._index[id]=_17;
-}
-}
-for(var i in _17){
-_17[i]=this._processResults(_17[i],_18).items;
-}
-}
-var _1d=_17.length;
-return {totalCount:_18.request.count==_1d?_1d*2:_1d,items:_17};
-},close:function(_1e){
-return _1e&&_1e.abort&&_1e.abort();
-},fetch:function(_1f){
-_1f=_1f||{};
-if("syncMode" in _1f?_1f.syncMode:this.syncMode){
-dojox.rpc._sync=true;
-}
-var _20=this;
-var _21=_1f.scope||_20;
-var _22=this.cachingFetch?this.cachingFetch(_1f):this._doQuery(_1f);
-_22.request=_1f;
-_22.addCallback(function(_23){
-if(_1f.clientQuery){
-_23=_20.clientSideFetch({query:_1f.clientFetch,sort:_1f.sort,start:_1f.start,count:_1f.count},_23);
-}
-var _24=_20._processResults(_23,_22);
-_23=_1f.results=_24.items;
-if(_1f.onBegin){
-_1f.onBegin.call(_21,_24.totalCount,_1f);
-}
-if(_1f.onItem){
-for(var i=0;i<_23.length;i++){
-_1f.onItem.call(_21,_23[i],_1f);
-}
-}
-if(_1f.onComplete){
-_1f.onComplete.call(_21,_1f.onItem?null:_23,_1f);
-}
-return _23;
-});
-_22.addErrback(_1f.onError&&dojo.hitch(_21,_1f.onError));
-_1f.abort=function(){
-_22.ioArgs.xhr.abort();
-};
-_1f.store=this;
-return _1f;
-},_doQuery:function(_26){
-var _27=typeof _26.queryStr=="string"?_26.queryStr:_26.query;
-return this.service(_27);
-},getFeatures:function(){
-return {"dojo.data.api.Read":true,"dojo.data.api.Identity":true,"dojo.data.api.Schema":this.schema};
-},getLabel:function(_28){
-return this.getValue(_28,this.labelAttribute);
-},getLabelAttributes:function(_29){
-return [this.labelAttribute];
-},getIdentity:function(_2a){
-if(!("__id" in _2a)){
-throw new Error("Identity attribute not found");
-}
-return _2a.__id;
-},getIdentityAttributes:function(_2b){
-return [this.idAttribute];
-},fetchItemByIdentity:function(_2c){
-var _2d=this._index[(_2c._prefix||"")+_2c.identity];
-if(_2d&&_2c.onItem){
-_2c.onItem.call(_2c.scope,_2d);
-}else{
-return this.fetch({query:_2c.identity,onComplete:_2c.onItem,onError:_2c.onError,scope:_2c.scope}).results;
-}
-return _2d;
-}});
+
+// note that dojox.rpc.Service is not required, you can create your own services
+
+// A ServiceStore is a readonly data store that provides a data.data interface to an RPC service.
+// var myServices = new dojox.rpc.Service(dojo.moduleUrl("dojox.rpc.tests.resources", "test.smd"));
+// var serviceStore = new dojox.data.ServiceStore({service:myServices.ServiceStore});
+// 
+// The ServiceStore also supports lazy loading. References can be made to objects that have not been loaded.
+//  For example if a service returned:
+// {"name":"Example","lazyLoadedObject":{"$ref":"obj2"}}
+//
+// And this object has accessed using the dojo.data API:
+// var obj = serviceStore.getValue(myObject,"lazyLoadedObject");
+// The object would automatically be requested from the server (with an object id of "obj2").
+//
+
+dojo.declare("dojox.data.ServiceStore",
+	dojox.data.ClientFilter,
+	{
+		constructor: function(options){
+			//summary:
+			//		ServiceStore constructor, instantiate a new ServiceStore 
+			// 		A ServiceStore can be configured from a JSON Schema. Queries are just 
+			// 		passed through to the underlying services
+			//
+			// options: 
+			// 		Keyword arguments
+			// The *schema* parameter
+			//		This is a schema object for this store. This should be JSON Schema format.
+			// 
+			// The *service* parameter
+			// 		This is the service object that is used to retrieve lazy data and save results 
+			// 		The function should be directly callable with a single parameter of an object id to be loaded
+			//
+			// The *idAttribute* parameter
+			//		Defaults to 'id'. The name of the attribute that holds an objects id.
+			//		This can be a preexisting id provided by the server.  
+			//		If an ID isn't already provided when an object
+			//		is fetched or added to the store, the autoIdentity system
+			//		will generate an id for it and add it to the index. 
+			//
+			// The *syncMode* parameter
+			//		Setting this to true will set the store to using synchronous calls by default.
+			//		Sync calls return their data immediately from the calling function, so
+			//		callbacks are unnecessary
+			//
+			// description:
+			//		ServiceStore can do client side caching and result set updating if 
+			// 		dojox.data.ClientFilter is loaded. Do this add:
+			//	|	dojo.require("dojox.data.ClientFilter")
+			//		prior to loading the ServiceStore (ClientFilter must be loaded before ServiceStore).
+			//		To utilize client side filtering with a subclass, you can break queries into
+			//		client side and server side components by putting client side actions in
+			//		clientFilter property in fetch calls. For example you could override fetch:
+			//	|	fetch: function(args){
+  			//	|		// do the sorting and paging on the client side
+   			//	|		args.clientFilter = {start:args.start, count: args.count, sort: args.sort};
+   			//	|		// args.query will be passed to the service object for the server side handling
+   			//	|		return this.inherited(arguments);
+			//	|	}
+			//		When extending this class, if you would like to create lazy objects, you can follow
+			//		the example from dojox.data.tests.stores.ServiceStore:
+			// |	var lazyItem = {
+			// |		_loadObject: function(callback){
+			// |			this.name="loaded";
+			// |			delete this._loadObject;
+			// |			callback(this);
+			// |		}
+			// |	};
+			//setup a byId alias to the api call	
+			this.byId=this.fetchItemByIdentity;
+			this._index = {};
+			// if the advanced json parser is enabled, we can pass through object updates as onSet events
+			if(options){
+				dojo.mixin(this,options);
+			}
+			// We supply a default idAttribute for parser driven construction, but if no id attribute
+			//	is supplied, it should be null so that auto identification takes place properly
+			this.idAttribute = (options && options.idAttribute) || (this.schema && this.schema._idAttr);
+			this.labelAttribute = this.labelAttribute || "label";
+		},
+		schema: null,
+		idAttribute: "id",
+		syncMode: false,
+		getSchema: function(){
+			return this.schema; 
+		},
+
+		loadLazyValues:true,
+
+		getValue: function(/*Object*/ item, /*String*/property, /*value?*/defaultValue){
+			// summary:
+			//	Gets the value of an item's 'property'
+			//
+			//	item: 
+			//		The item to get the value from
+			//	property: 
+			//		property to look up value for	
+			//	defaultValue: 
+			//		the default value
+			var value = item[property];
+			return value || // return the plain value since it was found;
+						(property in item ? // a truthy value was not found, see if we actually have it 
+							value : // we do, so we can return it
+							item._loadObject ? // property was not found, maybe because the item is not loaded, we will try to load it synchronously so we can get the property 
+								(dojox.rpc._sync = true) && arguments.callee.call(this,dojox.data.ServiceStore.prototype.loadItem({item:item}) || {}, property, defaultValue) : // load the item and run getValue again 
+								defaultValue);// not in item -> return default value
+		},
+		getValues: function(item, property){
+			// summary:
+			//		Gets the value of an item's 'property' and returns
+			//		it.  If this value is an array it is just returned,
+			//		if not, the value is added to an array and that is returned.
+			//
+			//	item: /* object */
+			//	property: /* string */
+			//		property to look up value for	
+	
+			var val = this.getValue(item,property);
+			return val instanceof Array ? val : val === undefined ? [] : [val];
+		},
+
+		getAttributes: function(item){
+			// summary:
+			//	Gets the available attributes of an item's 'property' and returns
+			//	it as an array. 
+			//
+			//	item: /* object */
+
+			var res = [];
+			for(var i in item){
+				res.push(i);
+			}
+			return res;
+		},
+
+		hasAttribute: function(item,attribute){
+			// summary:
+			//		Checks to see if item has attribute
+			//
+			//	item: /* object */
+			//	attribute: /* string */
+			return attribute in item;		
+		},
+
+		containsValue: function(item, attribute, value){
+			// summary:
+			//		Checks to see if 'item' has 'value' at 'attribute'
+			//
+			//	item: /* object */
+			//	attribute: /* string */
+			//	value: /* anything */
+			return dojo.indexOf(this.getValues(item,attribute),value) > -1;
+		},
+
+
+		isItem: function(item){
+			// summary:
+			//		Checks to see if the argument is an item 
+			//
+			//	item: /* object */
+			//	attribute: /* string */
+		
+			// we have no way of determining if it belongs, we just have object returned from
+			// 	service queries
+			return typeof item == 'object'; 
+		},
+
+		isItemLoaded: function(item){
+			// summary:
+			//		Checks to see if the item is loaded. 
+			// 
+			//		item: /* object */
+
+			return item && !item._loadObject;
+		},
+
+		loadItem: function(args){
+			// summary:
+			// 		Loads an item that has not been loaded yet. 
+			// 		If you access a value directly through property access, you can use this to load
+			// 		a lazy (Deferred) value.
+			//
+			var item;
+			if(args.item._loadObject){
+				args.item._loadObject(function(result){
+					item = result; // in synchronous mode this can allow loadItem to return the value
+					delete item._loadObject;
+					var func = result instanceof Error ? args.onError : args.onItem;
+					if(func){
+						func.call(args.scope,result);				
+					}
+				});
+			}
+			return item;
+		},
+		_currentId : 0,
+		_processResults : function(results, deferred){
+			// this should return an object with the items as an array and the total count of 
+			// items (maybe more than currently in the result set).
+			// for example:
+			//	| {totalCount:10,[{id:1},{id:2}]}
+			
+			// index the results, assigning ids as necessary
+
+			if (results && typeof results == 'object'){
+				var id = results.__id;
+				if(!id){// if it hasn't been assigned yet
+					if(this.idAttribute){
+						// use the defined id if available
+						id = results[this.idAttribute];
+					}else{
+						id = this._currentId++;
+					}
+					if(id !== undefined){
+						var existingObj = this._index[id];
+						if(existingObj){
+							for(var j in existingObj){
+								delete existingObj[j]; // clear it so we can mixin
+							}
+							results = dojo.mixin(existingObj,results);
+						}
+						results.__id = id;
+						this._index[id] = results;
+					}
+				}
+				for (var i in results){
+					results[i] = this._processResults(results[i], deferred).items;
+				}
+			}
+			var count = results.length;
+			return {totalCount: deferred.request.count == count ? count * 2 : count, items: results};
+		},
+		close: function(request){
+			return request && request.abort && request.abort();
+		},
+		fetch: function(args){
+			// summary:
+			//		See dojo.data.api.Read.fetch
+			//
+			// The *queryOptions.cache* parameter 
+			//		If true, indicates that the query result should be cached for future use. This is only available 
+			// 		if dojox.data.ClientFilter has been loaded before the ServiceStore 
+			//
+			//	The *syncMode* parameter
+			//		Indicates that the call should be fetch synchronously if possible (this is not always possible)
+			//
+			// The *clientFetch* parameter
+			//		This is a fetch keyword argument for explicitly doing client side filtering, querying, and paging
+			
+			args = args || {};
+
+			if("syncMode" in args ? args.syncMode : this.syncMode){
+				dojox.rpc._sync = true;	
+			}
+			var self = this;
+			
+			var scope = args.scope || self;
+			var defResult = this.cachingFetch ? this.cachingFetch(args) : this._doQuery(args);
+			defResult.request = args; 
+			defResult.addCallback(function(results){
+				if(args.clientQuery){
+					results = self.clientSideFetch({query:args.clientFetch,sort:args.sort,start:args.start,count:args.count},results);
+				}
+				var resultSet = self._processResults(results, defResult);
+				results = args.results = resultSet.items;
+				if(args.onBegin){
+					args.onBegin.call(scope, resultSet.totalCount, args);
+				}
+				if(args.onItem){
+					for(var i=0; i<results.length;i++){	
+						args.onItem.call(scope, results[i], args);
+					}
+				}					
+				if(args.onComplete){
+					args.onComplete.call(scope, args.onItem ? null : results, args);
+				}
+				return results;
+			});
+			defResult.addErrback(args.onError && dojo.hitch(scope, args.onError));
+			args.abort = function(){
+				// abort the request
+				defResult.ioArgs.xhr.abort();
+			};
+			args.store = this;
+			return args;
+		},
+		_doQuery: function(args){
+			var query= typeof args.queryStr == 'string' ? args.queryStr : args.query;
+			return this.service(query);
+		},
+		getFeatures: function(){
+			// summary:
+			// 		return the store feature set
+
+			return { 
+				"dojo.data.api.Read": true,
+				"dojo.data.api.Identity": true, 
+				"dojo.data.api.Schema": this.schema
+			};
+		},
+
+		getLabel: function(item){
+			// summary
+			//		returns the label for an item. Just gets the "label" attribute.
+			//	
+			return this.getValue(item,this.labelAttribute);
+		},
+
+		getLabelAttributes: function(item){
+			// summary:
+			//		returns an array of attributes that are used to create the label of an item
+			return [this.labelAttribute];
+		},
+
+		//Identity API Support
+
+		
+		getIdentity: function(item){
+			if(!("__id" in item)){
+				throw new Error("Identity attribute not found");
+			}
+			return item.__id;
+		},
+
+		getIdentityAttributes: function(item){
+			// summary:
+			//		returns the attributes which are used to make up the 
+			//		identity of an item.  Basically returns this.idAttribute
+
+			return [this.idAttribute];
+		},
+
+		fetchItemByIdentity: function(args){
+			// summary: 
+			//		fetch an item by its identity, by looking in our index of what we have loaded
+			var item = this._index[(args._prefix || '') + args.identity];
+			if(item && args.onItem){
+				args.onItem.call(args.scope, item);
+			}else{
+				// convert the different spellings
+				return this.fetch({
+						query: args.identity,
+						onComplete: args.onItem,
+						onError: args.onError,
+						scope: args.scope
+					}).results;
+			}
+			return item;
+		}
+	
+	}
+);
+
 }

@@ -5,233 +5,407 @@
 */
 
 
-if(!dojo._hasResource["dojox.lang.mix"]){
-dojo._hasResource["dojox.lang.mix"]=true;
+if(!dojo._hasResource["dojox.lang.mix"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.lang.mix"] = true;
 dojo.provide("dojox.lang.mix");
+
+// This is a highly experimental functionality,
+// it will be split later on individual files,
+// and mixed with OO package
+
+// TODO: do we need to use hasOwnProperty() everywhere?
+
 (function(){
-var _1={},_2=dojox.lang.mix;
-_2.processProps=function(_3,_4,_5){
-if(_3){
-var t,i,j,l;
-if(_5){
-if(dojo.isArray(_5)){
-for(j=0,l=_5.length;j<l;++j){
-delete _3[_5[j]];
-}
-}else{
-for(var i in _5){
-if(_5.hasOwnProperty(i)){
-delete _3[i];
-}
-}
-}
-}
-if(_4){
-for(i in _4){
-if(_4.hasOwnProperty(i)&&_3.hasOwnProperty(i)){
-t=_3[i];
-delete _3[i];
-_3[_4[i]]=t;
-}
-}
-}
-}
-return _3;
-};
-var _a=function(_b,_c,_d){
-this.value=_b;
-this.rename=_c||_1;
-if(_d&&dojo.isArray(_d)){
-var p={};
-for(j=0,l=_d.length;j<l;++j){
-p[_d[j]]=1;
-}
-this.skip=p;
-}else{
-this.skip=_d||_1;
-}
-};
-dojo.extend(_a,{filter:function(_f){
-if(this.skip.hasOwnProperty(_f)){
-return "";
-}
-return this.rename.hasOwnProperty(_f)?this.rename[_f]:_f;
-}});
-var _10=function(_11){
-this.value=_11;
-};
-dojo.extend(_10,{process:function(_12,_13){
-if(this.value instanceof _10){
-this.value.process(_12,_13);
-}else{
-_12[_13]=this.value;
-}
-}});
-_2.mixer=function(_14,_15){
-var dcr=null,flt=null,i,l=arguments.length,_1a,_1b,_1c;
-for(i=1,l;i<l;++i){
-_15=arguments[i];
-if(_15 instanceof _10){
-dcr=_15;
-_15=dcr.value;
-}
-if(_15 instanceof _a){
-flt=_15;
-_15=flt.value;
-}
-for(_1a in _15){
-if(_15.hasOwnProperty(_1a)){
-_1b=_15[_1a];
-_1c=flt?flt.filter(_1a):_1a;
-if(!_1c){
-continue;
-}
-if(_1b instanceof _10){
-_1b.process(_14,_1c);
-}else{
-if(dcr){
-dcr.value=_1b;
-dcr.process(_14,_1c);
-}else{
-_14[_1c]=_1b;
-}
-}
-}
-}
-if(flt){
-_15=flt;
-flt=null;
-}
-if(dcr){
-dcr.value=_15;
-dcr=null;
-}
-}
-return _14;
-};
-_2.makeFilter=function(_1d){
-dojo.declare("dojox.__temp__",_a,_1d||_1);
-var t=dojox.__temp__;
-delete dojox.__temp__;
-return t;
-};
-_2.createFilter=function(_1f){
-var _20=_2.makeFilter(_1f&&{filter:_1f}||_1);
-return function(_21){
-return new _20(_21);
-};
-};
-_2.makeDecorator=function(_22){
-dojo.declare("dojox.__temp__",_10,_22||_1);
-var t=dojox.__temp__;
-delete dojox.__temp__;
-return t;
-};
-_2.createDecorator=function(_24){
-var _25=_2.makeDecorator(_24&&{process:_24}||_1);
-return function(_26){
-return new _25(_26);
-};
-};
-var _27=_2.makeDecorator({constructor:function(_28,_29){
-this.value=_29;
-this.context=_28;
-},process:function(_2a,_2b){
-var old=_2a[_2b],_2d=this.value,_2e=this.context;
-_2a[_2b]=function(){
-return _2d.call(_2e,this,arguments,_2b,old);
-};
-}});
-dojo.mixin(_2,{filter:_2.createFilter(),augment:_2.createDecorator(function(_2f,_30){
-if(!(_30 in _2f)){
-_2f[_30]=this.value;
-}
-}),override:_2.createDecorator(function(_31,_32){
-if(_32 in _31){
-_31[_32]=this.value;
-}
-}),replaceContext:function(_33,_34){
-return new _27(_33,_34);
-},shuffle:_2.createDecorator(function(_35,_36){
-if(_36 in _35){
-var old=_35[_36],_38=this.value;
-_35[_36]=function(){
-return old.apply(this,_38.apply(this,arguments));
-};
-}
-}),chainBefore:_2.createDecorator(function(_39,_3a){
-if(_3a in _39){
-var old=_39[_3a],_3c=this.value;
-_39[_3a]=function(){
-_3c.apply(this,arguments);
-return old.apply(this,arguments);
-};
-}else{
-_39[_3a]=this.value;
-}
-}),chainAfter:_2.createDecorator(function(_3d,_3e){
-if(_3e in _3d){
-var old=_3d[_3e],_40=this.value;
-_3d[_3e]=function(){
-old.apply(this,arguments);
-return _40.apply(this,arguments);
-};
-}else{
-_3d[_3e]=this.value;
-}
-}),before:_2.createDecorator(function(_41,_42){
-var old=_41[_42],_44=this.value;
-_41[_42]=old?function(){
-_44.apply(this,arguments);
-return old.apply(this,arguments);
-}:function(){
-_44.apply(this,arguments);
-};
-}),around:_2.createDecorator(function(_45,_46){
-var old=_45[_46],_48=this.value;
-_45[_46]=old?function(){
-return _48.call(this,old,arguments);
-}:function(){
-return _48.call(this,null,arguments);
-};
-}),afterReturning:_2.createDecorator(function(_49,_4a){
-var old=_49[_4a],_4c=this.value;
-_49[_4a]=old?function(){
-var ret=old.apply(this,arguments);
-_4c.call(this,ret);
-return ret;
-}:function(){
-_4c.call(this);
-};
-}),afterThrowing:_2.createDecorator(function(_4e,_4f){
-var old=_4e[_4f],_51=this.value;
-if(old){
-_4e[_4f]=function(){
-var ret;
-try{
-ret=old.apply(this,arguments);
-}
-catch(e){
-_51.call(this,e);
-throw e;
-}
-return ret;
-};
-}
-}),after:_2.createDecorator(function(_53,_54){
-var old=_53[_54],_56=this.value;
-_53[_54]=old?function(){
-var ret;
-try{
-ret=old.apply(this,arguments);
-}
-finally{
-_56.call(this);
-}
-return ret;
-}:function(){
-_56.call(this);
-};
-})});
+	var empty = {}, mix = dojox.lang.mix;
+	
+	mix.processProps = function(props, rename, remove){
+		// summary: process properties in place by renaming and removing them as needed,
+		//			only own properties are processed.
+		// description: properties are filtered by "skip" parameter, then renamed.
+		// props: Object: the object to be processed
+		// rename: Object?: the dictionary for renaming
+		// remove: Array?|Object?: the source of properties to be skipped
+		
+		if(props){
+			var t, i, j, l;
+			// delete properties
+			if(remove){
+				if(dojo.isArray(remove)){
+					for(j = 0, l = remove.length; j < l; ++j){
+						delete props[remove[j]];
+					}
+				}else{
+					for(var i in remove){
+						if(remove.hasOwnProperty(i)){
+							delete props[i];
+						}
+					}
+				}
+			}
+
+			// rename properties
+			if(rename){
+				for(i in rename){
+					if(rename.hasOwnProperty(i) && props.hasOwnProperty(i)){
+						t = props[i];
+						delete props[i];
+						props[rename[i]] = t;
+					}
+				}
+			}
+		}
+		return props;	// Object
+	};
+	
+	// preprocessing mixins
+	
+	var Filter = function(value, rename, skip){
+		// summary: filters an object by skipping properties and renaming them
+		// value: Object: object to be filtered
+		// rename: Object: the dictionary for renaming
+		// skip: Array?|Object?: the source of properties to be skipped
+		this.value = value;
+		this.rename = rename || empty;
+		if(skip && dojo.isArray(skip)){
+			var p = {};
+			for(j = 0, l = skip.length; j < l; ++j){
+				p[skip[j]] = 1;
+			}
+			this.skip = p;
+		}else{
+			this.skip = skip || empty;
+		}
+	};
+	dojo.extend(Filter, {
+		filter: function(name){
+			// summary: takes in name, and filters it according to criteria
+			// name: String: an input name
+			// returns: String: can be the same name, new name,
+			// or an empty string (when it should be deleted
+			if(this.skip.hasOwnProperty(name)){ return ""; }
+			return this.rename.hasOwnProperty(name) ? this.rename[name] : name;
+		}
+	});
+	
+	// mixing in members with decorators
+	
+	var Decorator = function(value){
+		// summary: this class serves as a base class for all decorators
+		// value: Object: a property to be mixed in later
+		this.value = value;
+	};
+	dojo.extend(Decorator, {
+		process: function(target, name){
+			// summary: the default processing
+			// target: Object: target object to accept a property
+			// name: String: property's name
+			if(this.value instanceof Decorator){
+				this.value.process(target, name);
+			}else{
+				target[name] = this.value;
+			}
+		}
+	});
+	
+	/*
+	 * Example:
+	 *  |	mix.mixer(target,
+	 *  |		mix.augment(someDefaultProperties),
+	 *  |		mix.filter(someOtherProperties, {exec: "doIt"}),
+	 *  |		{
+	 *  |			constructor: function(a, x){
+	 *  |				// we assume that constructors are chained automatically
+	 *  |				this.x = x;
+	 *  |			},
+	 *  |			advance: function(n){
+	 *  |				// this is normal undecorated method
+	 *  |				this.x += n;
+	 *  |			},
+	 *  |			log: mix.chainAfter(function(){
+	 *  |				// this function will be called after the previous log()
+	 *  |				
+	 *  |			}),
+	 *  |			debug: mix.augment(function(){
+	 *  |				// this function will be added only if it was not defined yet
+	 *  |				
+	 *  |			}),
+	 *  |			display: mix.override(function(){
+	 *  |				// this function will replace a previously defined display(),
+	 *  |				// otherwise it is not added
+	 *  |
+	 *  |				// ignore the call, and do nothing
+	 *  |			})
+	 *  |		}
+	 *  |	);
+	 */
+
+	mix.mixer = function(target, source){
+		// summary: mixes two objects processing decorators
+		// target: Object: target to receive new/updated properties
+		// source: Object...: source of properties, more than one source is allowed
+		// returns: Object: target
+		
+		// mixer can apply decorators by default for predefined names
+		// (it doesn't do it now)
+		// examples (see predefined decorators below):
+		//	- undecorated "constructor" can be treated similar to chainAfter
+		//	- undecorated "destroy" can be treated as chainBefore
+
+		var dcr = null, flt = null, i, l = arguments.length, name, prop, targetName;
+		for(i = 1, l; i < l; ++i){
+			source = arguments[i];
+			if(source instanceof Decorator){
+				// use the instance of decorator as a default processor
+				dcr = source;
+				// extract the real source
+				source = dcr.value;
+			}
+			if(source instanceof Filter){
+				flt = source;
+				source = flt.value;
+			}
+			for(name in source){
+				if(source.hasOwnProperty(name)){
+					prop = source[name];
+					targetName = flt ? flt.filter(name) : name;
+					if(!targetName){
+						// skip filtered out names
+						continue;
+					}
+					if(prop instanceof Decorator){
+						// decorator: process it
+						prop.process(target, targetName);
+					}else{
+						// no decorator: use the default
+						if(dcr){
+							dcr.value = prop;
+							dcr.process(target, targetName);
+						}else{
+							target[targetName] = prop;
+						}
+					}
+				}
+			}
+			if(flt){
+				source = flt;
+				flt = null;
+			}
+			if(dcr){
+				dcr.value = source;
+				dcr = null;
+			}
+		}
+		return target;	// Object
+	};
+
+	mix.makeFilter = function(mixin){
+		// summary: subclasses Filter and returns new class
+		// mixin: Object: new methods
+		// returns: Object: new class
+		
+		// don't do it at home!
+		dojo.declare("dojox.__temp__", Filter, mixin || empty);
+		var t = dojox.__temp__;
+		delete dojox.__temp__;
+		return t;	// Object
+	};
+
+	mix.createFilter = function(filter){
+		// summary: simple helper function to construct decorator creators
+		// filter: Function: the processing function
+		// returns: Function
+		var Filter = mix.makeFilter(filter && {filter: filter} || empty);
+		return function(value){ return new Filter(value); };	// Function
+	};
+
+	mix.makeDecorator = function(mixin){
+		// summary: subclasses Decorator and returns new class
+		// mixin: Object: new methods
+		// returns: Object: new class
+
+		// don't do it at home!
+		dojo.declare("dojox.__temp__", Decorator, mixin || empty);
+		var t = dojox.__temp__;
+		delete dojox.__temp__;
+		return t;	// Object
+	};
+
+	mix.createDecorator = function(process){
+		// summary: simple helper function to construct decorator creators
+		// process: Function: the processing function
+		// returns: Function
+		var Decorator = mix.makeDecorator(process && {process: process} || empty);
+		return function(value){ return new Decorator(value); };	// Function
+	};
+	
+	// predefined decorators
+
+	var ReplaceContextDecorator = mix.makeDecorator({
+		constructor: function(context, value){
+			this.value = value;	// override value
+			this.context = context;
+		},
+		process: function(target, name){
+			// summary: call the method in different context
+			// passing the original "this", original arguments,
+			// method's name, and the old value as 4 arguments
+			// target: Object: target object to accept a property
+			// name: String: property's name
+			var old = target[name], current = this.value, context = this.context;
+			target[name] = function(){
+				return current.call(context, this, arguments, name, old);
+			};
+		}
+	});
+
+	// TODO: should we check for properties to be actually functions?
+
+	dojo.mixin(mix, {
+		// defalt renaming and skipping filter
+		filter: mix.createFilter(),
+		// conditional mixing
+		augment: mix.createDecorator(function(target, name){
+			// summary: add property, if it was not defined before
+			if(!(name in target)){ target[name] = this.value; }
+		}),
+		override: mix.createDecorator(function(target, name){
+			// summary: override property only if it was already present
+			if(name in target){ target[name] = this.value; }
+		}),
+		// substitutions
+		replaceContext: function(context, value){
+			// summary: call the method in different context
+			// passing the original "this", original arguments,
+			// method's name, and the old value as 4 arguments
+			// context: Object: context for the call
+			// value: Function: function to call
+			return new ReplaceContextDecorator(context, value);
+		},
+		shuffle: mix.createDecorator(function(target, name){
+			// summary: replaces arguments for old method
+			if(name in target){
+				var old = target[name], current = this.value;
+				target[name] = function(){
+					return old.apply(this, current.apply(this, arguments));
+				};
+			}
+		}),
+		// chaining (see AOP mixing below for another way to do it)
+		chainBefore: mix.createDecorator(function(target, name){
+			// summary: creates a chain of calls where the new method is called
+			// before the old method
+			if(name in target){
+				var old = target[name], current = this.value;
+				target[name] = function(){
+					current.apply(this, arguments);
+					return old.apply(this, arguments);
+				};
+			}else{
+				target[name] = this.value;
+			}
+		}),
+		chainAfter: mix.createDecorator(function(target, name){
+			// summary: creates a chain of calls where the new method is called
+			// after the old method
+			if(name in target){
+				var old = target[name], current = this.value;
+				target[name] = function(){
+					old.apply(this, arguments);
+					return current.apply(this, arguments);
+				};
+			}else{
+				target[name] = this.value;
+			}
+		}),
+		// light-weight AOP mixing
+		before: mix.createDecorator(function(target, name){
+			// summary: creates a "before" advise
+			var old = target[name], before = this.value;
+			target[name] = old ? 
+				function(){
+					before.apply(this, arguments);
+					return old.apply(this, arguments);
+				} :
+				function(){
+					before.apply(this, arguments);
+				};
+		}),
+		around: mix.createDecorator(function(target, name){
+			// summary: creates an "around" advise,
+			// the previous value is passed as a first argument and can be "unknown",
+			// arguments are passed as a second argument
+			var old = target[name], around = this.value;
+			target[name] = old ?
+				function(){
+					return around.call(this, old, arguments);
+				} :
+				function(){
+					return around.call(this, null, arguments);
+				};
+		}),
+		afterReturning: mix.createDecorator(function(target, name){
+			// summary: creates an "afterReturning" advise,
+			// the returned value is passed as the only argument
+			var old = target[name], afterReturning = this.value;
+			target[name] = old ?
+				function(){
+					var ret = old.apply(this, arguments);
+					afterReturning.call(this, ret);
+					return ret;
+				} :
+				function(){
+					afterReturning.call(this);
+				};
+		}),
+		afterThrowing: mix.createDecorator(function(target, name){
+			// summary: creates an "afterThrowing" advise,
+			// the exception is passed as the only argument
+			var old = target[name], afterThrowing = this.value;
+			if(old){
+				target[name] = function(){
+					var ret;
+					try{
+						ret = old.apply(this, arguments);
+					}catch(e){
+						afterThrowing.call(this, e);
+						throw e;
+					}
+					return ret;
+				};
+			}
+		}),
+		after: mix.createDecorator(function(target, name){
+			// summary: creates an "after" advise,
+			// it takes no arguments
+			var old = target[name], after = this.value;
+			target[name] = old ?
+				function(){
+					var ret;
+					try{
+						ret = old.apply(this, arguments);
+					}finally{
+						after.call(this);
+					}
+					return ret;
+				} :
+				function(){
+					after.call(this);
+				}
+		})
+	});
+
+	/*
+		TODO: more possible decorators for the Mixer:
+			- AOP-related:
+				- concept checks
+				- logging/debugging
+				- argument manipulation
+				- wormholing
+				- memoizing
+			- renaming properties to avoid conflicts
+			- add complimentary properties
+			- special treatment of certain names (e.g., event names starting with "on")
+	*/
 })();
+
 }

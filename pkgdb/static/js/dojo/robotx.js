@@ -5,66 +5,121 @@
 */
 
 
-if(!dojo._hasResource["dojo.robotx"]){
-dojo._hasResource["dojo.robotx"]=true;
+if(!dojo._hasResource["dojo.robotx"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojo.robotx"] = true;
 dojo.provide("dojo.robotx");
 dojo.require("dojo.robot");
 dojo.experimental("dojo.robotx");
+
+// loads an external app into an iframe and points dojo.doc to the iframe document, allowing the robot to control it
+// to use: set robotURL in djConfig to the URL you want to load
+// dojo.require this file
+
 (function(){
+// have to wait for test page to load before testing!
 doh.robot._runsemaphore.lock.push("dojo.robotx.lock");
-var _1=document.getElementById("robotapplication");
-var _2=dojo.connect(doh,"_groupStarted",function(){
-dojo.disconnect(_2);
-if(!document.getElementById("robotconsole").childNodes.length){
-document.body.removeChild(document.getElementById("robotconsole"));
-_1.style.height="100%";
-}
-_1.style.visibility="visible";
+
+var iframe = document.getElementById('robotapplication');
+
+var groupStarted=dojo.connect(doh, '_groupStarted', function(){
+	dojo.disconnect(groupStarted);
+	if(!document.getElementById('robotconsole').childNodes.length){
+		document.body.removeChild(document.getElementById('robotconsole'));
+		iframe.style.height="100%";
+	}
+	iframe.style.visibility="visible";
 });
-var _3=function(){
-doh.robot._updateDocument();
-_3=null;
-doh.run();
+
+var onIframeLoad=function(){
+	//iframe = document.getElementById('robotapplication');
+	doh.robot._updateDocument();
+	onIframeLoad = null;
+	doh.run();
 };
-var _4=function(){
-if(_3){
-_3();
-}
-var _5=dojo.connect(dojo.body(),"onunload",function(){
-dojo.doc=document;
-dojo.disconnect(_5);
-});
+
+var iframeLoad=function(){
+	if(onIframeLoad){
+		onIframeLoad();
+	}
+	var unloadConnect = dojo.connect(dojo.body(), 'onunload', function(){
+		dojo.doc = document;
+		dojo.disconnect(unloadConnect);
+	});
 };
-dojo.config.debugContainerId="robotconsole";
-document.write("<div id=\"robotconsole\" style=\"position:absolute;left:0px;top:75%;width:100%; height:25%;\"></div>");
-_1=document.createElement("iframe");
-_1.setAttribute("ALLOWTRANSPARENCY","true");
-dojo.style(_1,{visibility:"hidden",border:"0px none",padding:"0px",margin:"0px",position:"absolute",left:"0px",top:"0px",width:"100%",height:"75%",zIndex:"1"});
-if(_1["attachEvent"]!==undefined){
-_1.attachEvent("onload",_4);
+
+// write the firebug console to a place it will fit
+dojo.config.debugContainerId = "robotconsole";
+document.write('<div id="robotconsole" style="position:absolute;left:0px;top:75%;width:100%; height:25%;"></div>');
+
+// write the iframe
+//document.writeln('<iframe id="robotapplication" style="visibility:hidden; border:0px none; padding:0px; margin:0px; position:absolute; left:0px; top:0px; width:100%; height:100%; z-index: 1;" src="'+dojo.config.robotURL+'" onload="iframeLoad();" ></iframe>');
+iframe = document.createElement('iframe');
+iframe.setAttribute("ALLOWTRANSPARENCY","true");
+dojo.style(iframe,{visibility:'hidden', border:'0px none', padding:'0px', margin:'0px', position:'absolute', left:'0px', top:'0px', width:'100%', height:'75%', zIndex:'1'});
+if(iframe['attachEvent'] !== undefined){
+	iframe.attachEvent('onload', iframeLoad);
 }else{
-dojo.connect(_1,"onload",_4);
+	dojo.connect(iframe, 'onload', iframeLoad);
 }
-dojo.mixin(doh.robot,{_updateDocument:function(){
-dojo.doc=_1.contentWindow.document;
-},initRobot:function(_6){
-_1.src=_6;
-dojo.addOnLoad(function(){
-dojo.style(document.body,{width:"100%",height:"100%"});
-document.body.appendChild(_1);
-var _7=document.createElement("base");
-_7.href=_6;
-document.getElementsByTagName("head")[0].appendChild(_7);
+
+dojo.mixin(doh.robot,{
+	_updateDocument: function(){
+		dojo.doc = iframe.contentWindow.document;
+	},
+
+	initRobot: function(/*String*/ url){
+		// summary:
+		//		Opens the application at the specified URL for testing, redirecting dojo to point to the application environment instead of the test environment.
+		//
+		// url:
+		//		URL to open. Any of the test's dojo.doc calls (e.g. dojo.byId()), and any dijit.registry calls (e.g. dijit.byId()) will point to elements and widgets inside this application.
+		//
+		iframe.src=url;
+		dojo.addOnLoad(function(){
+			dojo.style(document.body,{
+				width: '100%',
+				height: '100%'
+			});
+			document.body.appendChild(iframe);
+			var base=document.createElement('base');
+			base.href=url;
+			document.getElementsByTagName("head")[0].appendChild(base);
+		});
+	},
+
+	waitForPageToLoad: function(/*Function*/ submitActions){
+		// summary:
+		// 		Notifies DOH that the doh.robot is about to make a page change in the application it is driving,
+		//		returning a doh.Deferred object the user should return in their runTest function as part of a DOH test.
+		//
+		// description:
+		// 		Notifies DOH that the doh.robot is about to make a page change in the application it is driving,
+		//		returning a doh.Deferred object the user should return in their runTest function as part of a DOH test.
+		//		Example:
+		//			runTest:function(){
+		//				return waitForPageLoad(function(){ doh.robot.keyPress(dojo.keys.ENTER, 500); });
+		//			}
+		//
+		// submitActions:
+		//		The doh.robot will execute the actions the test passes into the submitActions argument (like clicking the submit button),
+		//		expecting these actions to create a page change (like a form submit).
+		//		After these actions execute and the resulting page loads, the next test will start.
+		//
+
+		var d = new doh.Deferred();
+		// create iframe event handler to track submit progress
+		onIframeLoad = function(){
+			onIframeLoad = null;
+			// set dojo.doc on every page change to point to the iframe doc so the robot works
+			doh.robot._updateDocument();
+			d.callback(true);
+		};
+		submitActions();
+		return d;
+	}
+
 });
-},waitForPageToLoad:function(_8){
-var d=new doh.Deferred();
-_3=function(){
-_3=null;
-doh.robot._updateDocument();
-d.callback(true);
-};
-_8();
-return d;
-}});
+
 })();
+
 }

@@ -5,22 +5,35 @@
 */
 
 
-if(!dojo._hasResource["dojox.charting.scaler.primitive"]){
-dojo._hasResource["dojox.charting.scaler.primitive"]=true;
+if(!dojo._hasResource["dojox.charting.scaler.primitive"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.charting.scaler.primitive"] = true;
 dojo.provide("dojox.charting.scaler.primitive");
-dojox.charting.scaler.primitive={buildScaler:function(_1,_2,_3,_4){
-return {bounds:{lower:_1,upper:_2,from:_1,to:_2,scale:_3/(_2-_1),span:_3},scaler:dojox.charting.scaler.primitive};
-},buildTicks:function(_5,_6){
-return {major:[],minor:[],micro:[]};
-},getTransformerFromModel:function(_7){
-var _8=_7.bounds.from,_9=_7.bounds.scale;
-return function(x){
-return (x-_8)*_9;
+
+dojox.charting.scaler.primitive = {
+	buildScaler: function(/*Number*/ min, /*Number*/ max, /*Number*/ span, /*Object*/ kwArgs){
+		return {
+			bounds: {
+				lower: min,
+				upper: max,
+				from:  min,
+				to:    max,
+				scale: span / (max - min),
+				span:  span
+			},
+			scaler: dojox.charting.scaler.primitive
+		};
+	},
+	buildTicks: function(/*Object*/ scaler, /*Object*/ kwArgs){
+		return {major: [], minor: [], micro: []};	// Object
+	},
+	getTransformerFromModel: function(/*Object*/ scaler){
+		var offset = scaler.bounds.from, scale = scaler.bounds.scale;
+		return function(x){ return (x - offset) * scale; };	// Function
+	},
+	getTransformerFromPlot: function(/*Object*/ scaler){
+		var offset = scaler.bounds.from, scale = scaler.bounds.scale;
+		return function(x){ return x / scale + offset; };	// Function
+	}
 };
-},getTransformerFromPlot:function(_b){
-var _c=_b.bounds.from,_d=_b.bounds.scale;
-return function(x){
-return x/_d+_c;
-};
-}};
+
 }

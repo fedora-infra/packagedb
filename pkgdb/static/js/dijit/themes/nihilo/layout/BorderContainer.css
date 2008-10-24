@@ -1,12 +1,18 @@
- 
+/** 
+ * dijit.layout.BorderContainer 
+ *
+ */ 
+
 .nihilo .dijitBorderContainer {
 	background-color: #fcfcfc;
 	padding: 5px;
 }
+
 .nihilo .dijitBorderContainer-dijitBorderContainer {
 	border: none;
 	padding: 0px;
 }
+
 .nihilo .dijitSplitterH,
 .nihilo .dijitGutterH {
 	background:#FCFCFC;
@@ -15,12 +21,14 @@
 	border-right:0px solid #d3d3d3;
 	height:5px;
 }
+
 .nihilo .dijitSplitterH .dijitSplitterThumb {
 	background:url("../images/splitContainerSizerH-thumb.png") no-repeat;
 	top:1px;
 	width:19px;
 	height:2px;
 }
+
 .nihilo .dijitSplitterV,
 .nihilo .dijitGutterV {
 	background:#FCFCFC;
@@ -29,12 +37,15 @@
 	border-bottom:0px solid #d3d3d3;
 	width:5px;
 }
+
 .nihilo .dijitSplitterV .dijitSplitterThumb {
 	background:url("../images/splitContainerSizerV-thumb.png") no-repeat;
 	left:1px;
 	height:19px;
 	width:5px;
 }
+
+/* active splitter */
 .nihilo .dijitSplitterActive {
 	font-size: 1px;
 	background-image: none;

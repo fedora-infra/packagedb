@@ -5,67 +5,107 @@
 */
 
 
-if(!dojo._hasResource["dojox.sketch.UndoStack"]){
-dojo._hasResource["dojox.sketch.UndoStack"]=true;
+if(!dojo._hasResource["dojox.sketch.UndoStack"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.sketch.UndoStack"] = true;
 dojo.provide("dojox.sketch.UndoStack");
 dojo.require("dojox.xml.DomParser");
+
 (function(){
-var ta=dojox.sketch;
-ta.CommandTypes={Create:"Create",Move:"Move",Modify:"Modify",Delete:"Delete",Convert:"Convert"};
-dojo.declare("dojox.sketch.UndoStack",null,{constructor:function(_2){
-this.figure=_2;
-this._steps=[];
-this._undoedSteps=[];
-},apply:function(_3,_4,to){
-if(!_4&&!to&&_3.fullText){
-this.figure.setValue(_3.fullText);
-return;
-}
-var _6=_4.shapeText;
-var _7=to.shapeText;
-if(_6.length==0&&_7.length==0){
-return;
-}
-if(_6.length==0){
-var o=dojox.xml.DomParser.parse(_7).documentElement;
-var a=this.figure._loadAnnotation(o);
-if(a){
-this.figure._add(a);
-}
-return;
-}
-if(_7.length==0){
-var _a=this.figure.get(_4.shapeId);
-this.figure._delete([_a],true);
-return;
-}
-var _b=this.figure.get(to.shapeId);
-var no=dojox.xml.DomParser.parse(_7).documentElement;
-_b.draw(no);
-this.figure.select(_b);
-return;
-},add:function(_d,_e,_f){
-var id=_e?_e.id:"";
-var _11=_e?_e.serialize():"";
-if(_d==ta.CommandTypes.Delete){
-_11="";
-}
-var _12={cmdname:_d,before:{shapeId:id,shapeText:_f||""},after:{shapeId:id,shapeText:_11}};
-this._steps.push(_12);
-this._undoedSteps=[];
-},destroy:function(){
-},undo:function(){
-var _13=this._steps.pop();
-if(_13){
-this._undoedSteps.push(_13);
-this.apply(_13,_13.after,_13.before);
-}
-},redo:function(){
-var _14=this._undoedSteps.pop();
-if(_14){
-this._steps.push(_14);
-this.apply(_14,_14.before,_14.after);
-}
-}});
+	var ta=dojox.sketch;
+	ta.CommandTypes={ Create:"Create", Move:"Move", Modify:"Modify", Delete:"Delete", Convert:"Convert"};
+
+	dojo.declare("dojox.sketch.UndoStack",null,{
+		constructor: function(figure){
+			this.figure=figure;
+			this._steps=[];
+			this._undoedSteps=[];
+		},
+		apply: function(state, from, to){
+			//	the key here is to neutrally move from one state to another.
+			//	we let the individual functions (i.e. undo and redo) actually
+			//	determine the from and to; all we do here is implement it.
+
+			//	check whether this is a fullText step
+			if(!from && !to && state.fullText){
+				this.figure.setValue(state.fullText);
+				return;
+			}
+
+			var fromText=from.shapeText;
+			var toText=to.shapeText;
+			
+			if(fromText.length==0&&toText.length==0){
+				//	nothing to reapply?
+				return;
+			}
+			if(fromText.length==0){
+				//	We are creating.
+				var o=dojox.xml.DomParser.parse(toText).documentElement;
+				var a=this.figure._loadAnnotation(o);
+				if(a) this.figure._add(a);
+				return;
+			}
+			if(toText.length==0){
+				//	we are deleting.
+				var ann=this.figure.get(from.shapeId);
+				this.figure._delete([ann],true);
+				return;
+			}
+			
+			//	we can simply reinit and draw from the shape itself,
+			//		regardless of the actual command.
+			var nann=this.figure.get(to.shapeId);
+			var no=dojox.xml.DomParser.parse(toText).documentElement;
+			nann.draw(no);
+			this.figure.select(nann);
+			return;
+		},
+		//	stack methods.
+		add: function(/*String*/cmd, /*ta.Annotation?*/ann, /*String?*/before){
+			var id=ann?ann.id:'';
+			//var bbox=ann?ann.getBBox():{};
+			var after=ann?ann.serialize():"";
+			if(cmd==ta.CommandTypes.Delete){ after=""; }
+			
+			/*if(ann){
+				//	fix the bbox x/y coords
+				var t=ann.transform;
+				bbox.x+=t.dx;
+				bbox.y+=t.dy;
+			}*/
+			var state={
+				cmdname:cmd,
+				//bbox:bbox,
+//					fullText:fullText,
+				before:{
+					shapeId: id,
+					shapeText:before||''
+				},
+				after:{
+					shapeId: id,
+					shapeText:after
+				}
+			};
+			//
+			this._steps.push(state);
+			this._undoedSteps = [];
+		},
+		destroy: function(){},
+		undo: function(){
+			var state=this._steps.pop();
+			if(state){
+				this._undoedSteps.push(state);
+				this.apply(state,state.after,state.before);
+			}
+		},
+		redo: function(){
+			var state=this._undoedSteps.pop();
+			if(state){
+				this._steps.push(state);
+				this.apply(state,state.before,state.after);
+			}
+		}
+	});
 })();
+
 }

@@ -5,72 +5,110 @@
 */
 
 
-if(!dojo._hasResource["dojox.charting.action2d.Highlight"]){
-dojo._hasResource["dojox.charting.action2d.Highlight"]=true;
+if(!dojo._hasResource["dojox.charting.action2d.Highlight"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.charting.action2d.Highlight"] = true;
 dojo.provide("dojox.charting.action2d.Highlight");
+
 dojo.require("dojox.charting.action2d.Base");
 dojo.require("dojox.color");
+
 (function(){
-var _1=100,_2=75,_3=50,c=dojox.color,cc=function(_6){
-return function(){
-return _6;
-};
-},hl=function(_8){
-var a=new c.Color(_8),x=a.toHsl();
-if(x.s==0){
-x.l=x.l<50?100:0;
-}else{
-x.s=_1;
-if(x.l<_3){
-x.l=_2;
-}else{
-if(x.l>_2){
-x.l=_3;
-}else{
-x.l=x.l-_3>_2-x.l?_3:_2;
-}
-}
-}
-return c.fromHsl(x);
-};
-dojo.declare("dojox.charting.action2d.Highlight",dojox.charting.action2d.Base,{defaultParams:{duration:400,easing:dojo.fx.easing.backOut},optionalParams:{highlight:"red"},constructor:function(_b,_c,_d){
-var a=_d&&_d.highlight;
-this.colorFun=a?(dojo.isFunction(a)?a:cc(a)):hl;
-this.connect();
-},process:function(o){
-if(!o.shape||!(o.type in this.overOutEvents)){
-return;
-}
-var _10=o.run.name,_11=o.index,_12,_13,_14;
-if(_10 in this.anim){
-_12=this.anim[_10][_11];
-}else{
-this.anim[_10]={};
-}
-if(_12){
-_12.action.stop(true);
-}else{
-var _15=o.shape.getFill();
-if(!_15||!(_15 instanceof dojo.Color)){
-return;
-}
-this.anim[_10][_11]=_12={start:_15,end:this.colorFun(_15)};
-}
-var _16=_12.start,end=_12.end;
-if(o.type=="onmouseout"){
-var t=_16;
-_16=end;
-end=t;
-}
-_12.action=dojox.gfx.fx.animateFill({shape:o.shape,duration:this.duration,easing:this.easing,color:{start:_16,end:end}});
-if(o.type=="onmouseout"){
-dojo.connect(_12.action,"onEnd",this,function(){
-if(this.anim[_10]){
-delete this.anim[_10][_11];
-}
-});
-}
-_12.action.play();
-}});
+	var DEFAULT_SATURATION  = 100,	// %
+		DEFAULT_LUMINOSITY1 = 75,	// %
+		DEFAULT_LUMINOSITY2 = 50,	// %
+
+		c = dojox.color,
+		
+		cc = function(color){
+			return function(){ return color; };
+		},
+		
+		hl = function(color){
+			var a = new c.Color(color),
+				x = a.toHsl();
+			if(x.s == 0){
+				x.l = x.l < 50 ? 100 : 0;
+			}else{
+				x.s = DEFAULT_SATURATION;
+				if(x.l < DEFAULT_LUMINOSITY2){
+					x.l = DEFAULT_LUMINOSITY1;
+				}else if(x.l > DEFAULT_LUMINOSITY1){
+					x.l = DEFAULT_LUMINOSITY2;
+				}else{
+					x.l = x.l - DEFAULT_LUMINOSITY2 > DEFAULT_LUMINOSITY1 - x.l ?
+						DEFAULT_LUMINOSITY2 : DEFAULT_LUMINOSITY1;
+				}
+			}
+			return c.fromHsl(x);
+		};
+	
+	dojo.declare("dojox.charting.action2d.Highlight", dojox.charting.action2d.Base, {
+		// the data description block for the widget parser
+		defaultParams: {
+			duration: 400,	// duration of the action in ms
+			easing:   dojo.fx.easing.backOut	// easing for the action
+		},
+		optionalParams: {
+			highlight: "red"	// name for the highlight color
+								// programmatic instantiation can use functions and color objects
+		},
+		
+		constructor: function(chart, plot, kwArgs){
+			// process optional named parameters
+			var a = kwArgs && kwArgs.highlight;
+			this.colorFun = a ? (dojo.isFunction(a) ? a : cc(a)) : hl;
+			
+			this.connect();
+		},
+		
+		process: function(o){
+			if(!o.shape || !(o.type in this.overOutEvents)){ return; }
+			
+			var runName = o.run.name, index = o.index, anim, startFill, endFill;
+	
+			if(runName in this.anim){
+				anim = this.anim[runName][index];
+			}else{
+				this.anim[runName] = {};
+			}
+			
+			if(anim){
+				anim.action.stop(true);
+			}else{
+				var color = o.shape.getFill();
+				if(!color || !(color instanceof dojo.Color)){
+					return;
+				}
+				this.anim[runName][index] = anim = {
+					start: color,
+					end:   this.colorFun(color)
+				};
+			}
+			
+			var start = anim.start, end = anim.end;
+			if(o.type == "onmouseout"){
+				// swap colors
+				var t = start;
+				start = end;
+				end = t;
+			}
+			
+			anim.action = dojox.gfx.fx.animateFill({
+				shape:    o.shape,
+				duration: this.duration,
+				easing:   this.easing,
+				color:    {start: start, end: end}
+			});
+			if(o.type == "onmouseout"){
+				dojo.connect(anim.action, "onEnd", this, function(){
+					if(this.anim[runName]){
+						delete this.anim[runName][index];
+					}
+				});
+			}
+			anim.action.play();
+		}
+	});
 })();
+
 }

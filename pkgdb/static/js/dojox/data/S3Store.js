@@ -5,25 +5,41 @@
 */
 
 
-if(!dojo._hasResource["dojox.data.S3Store"]){
-dojo._hasResource["dojox.data.S3Store"]=true;
+if(!dojo._hasResource["dojox.data.S3Store"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.data.S3Store"] = true;
 dojo.provide("dojox.data.S3Store");
 dojo.require("dojox.rpc.ProxiedPath");
 dojo.require("dojox.data.JsonRestStore");
-dojo.declare("dojox.data.S3Store",dojox.data.JsonRestStore,{_processResults:function(_1){
-var _2=_1.getElementsByTagName("Key");
-var _3=[];
-var _4=this;
-for(var i=0;i<_2.length;i++){
-var _6=_2[i];
-var _7={_loadObject:(function(_8,_9){
-return function(_a){
-delete this._loadObject;
-_4.service(_8).addCallback(_a);
-};
-})(_6.firstChild.nodeValue,_7)};
-_3.push(_7);
-}
-return {totalCount:_3.length,items:_3};
-}});
+
+// S3JsonRestStore is an extension of JsonRestStore to handle
+// Amazon's S3 service using JSON data
+
+dojo.declare("dojox.data.S3Store",
+	dojox.data.JsonRestStore,
+	{
+		_processResults : function(results){
+			// unfortunately, S3 returns query results in XML form
+			var keyElements = results.getElementsByTagName("Key");
+			var jsResults = [];
+			var self = this;
+			for(var i=0; i <keyElements.length;i++){
+				var keyElement = keyElements[i];
+				// manually create lazy loaded Deferred items for each item in the result array
+				var val = {
+					_loadObject: (function(key,val){
+						return function(callback){
+							// when a callback is added we will fetch it
+							delete this._loadObject;
+							self.service(key).addCallback(callback);
+						};
+					})(keyElement.firstChild.nodeValue,val)
+				};
+				jsResults.push(val);
+			}
+			
+			return {totalCount:jsResults.length, items: jsResults};
+		}
+	}
+);
+
 }

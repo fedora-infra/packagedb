@@ -1,7 +1,10 @@
+/* ContentPane */
 
 .tundra .dijitContentPane {
     padding: 0px;
 }
+
+/* nested layouts */
 .tundra .dijitTabContainerTop-dijitContentPane,
 .tundra .dijitTabContainerLeft-dijitContentPane,
 .tundra .dijitTabContainerBottom-dijitContentPane,
@@ -11,6 +14,7 @@
     background-color: #fff;
     padding: 5px;
 }
+
 .tundra .dijitSplitContainer-dijitContentPane,
 .tundra .dijitBorderContainer-dijitContentPane {
     border: 1px #ccc solid;

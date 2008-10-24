@@ -5,35 +5,46 @@
 */
 
 
-window.onload=function(){
-var _1=window.location.href;
-var _2=_1.match(/appName=([a-z0-9 \%]*)/i);
-var _3="Application";
-if(_2&&_2.length>0){
-_3=decodeURIComponent(_2[1]);
+window.onload = function(){
+	// get the app name from our URL
+	var href = window.location.href;
+	var matches = href.match(/appName=([a-z0-9 \%]*)/i);
+	var appName = "Application";
+	if(matches && matches.length > 0){
+		appName = decodeURIComponent(matches[1]);
+	}
+	
+	// set it in our UI
+	var appNameSpan = document.getElementById("dot-learn-how-app-name");
+	appNameSpan.innerHTML = "";
+	appNameSpan.appendChild(document.createTextNode(appName));
+	
+	// if we need an offline cache, and we already have one installed,
+	// update the UI
+	matches = href.match(/hasOfflineCache=(true|false)/);
+	var hasOfflineCache = false;
+	if(matches && matches.length > 0){
+		hasOfflineCache = matches[1];
+		// convert to boolean
+		hasOfflineCache = (hasOfflineCache == "true") ? true : false;
+	}
+	if(hasOfflineCache == true){
+		// delete the download and install steps
+		var downloadStep = document.getElementById("dot-download-step");
+		var installStep = document.getElementById("dot-install-step");
+		downloadStep.parentNode.removeChild(downloadStep);
+		installStep.parentNode.removeChild(installStep);
+	}
+	
+	// get our run link info and update the UI
+	matches = href.match(/runLink=([^\&]*)\&runLinkText=([^\&]*)/);
+	if(matches && matches.length > 0){
+		var runLink = decodeURIComponent(matches[1]);
+		var runLinkElem = document.getElementById("dot-learn-how-run-link");
+		runLinkElem.setAttribute("href", runLink);
+		
+		var runLinkText = decodeURIComponent(matches[2]);
+		runLinkElem.innerHTML = "";
+		runLinkElem.appendChild(document.createTextNode(runLinkText));
+	}
 }
-var _4=document.getElementById("dot-learn-how-app-name");
-_4.innerHTML="";
-_4.appendChild(document.createTextNode(_3));
-_2=_1.match(/hasOfflineCache=(true|false)/);
-var _5=false;
-if(_2&&_2.length>0){
-_5=_2[1];
-_5=(_5=="true")?true:false;
-}
-if(_5==true){
-var _6=document.getElementById("dot-download-step");
-var _7=document.getElementById("dot-install-step");
-_6.parentNode.removeChild(_6);
-_7.parentNode.removeChild(_7);
-}
-_2=_1.match(/runLink=([^\&]*)\&runLinkText=([^\&]*)/);
-if(_2&&_2.length>0){
-var _8=decodeURIComponent(_2[1]);
-var _9=document.getElementById("dot-learn-how-run-link");
-_9.setAttribute("href",_8);
-var _a=decodeURIComponent(_2[2]);
-_9.innerHTML="";
-_9.appendChild(document.createTextNode(_a));
-}
-};

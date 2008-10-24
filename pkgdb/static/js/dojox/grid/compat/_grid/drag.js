@@ -5,87 +5,116 @@
 */
 
 
-if(!dojo._hasResource["dojox.grid.compat._grid.drag"]){
-dojo._hasResource["dojox.grid.compat._grid.drag"]=true;
+if(!dojo._hasResource["dojox.grid.compat._grid.drag"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.grid.compat._grid.drag"] = true;
 dojo.provide("dojox.grid.compat._grid.drag");
-(function(){
-var _1=dojox.grid.drag={};
-_1.dragging=false;
-_1.hysteresis=2;
-_1.capture=function(_2){
-if(_2.setCapture){
-_2.setCapture();
-}else{
-document.addEventListener("mousemove",_2.onmousemove,true);
-document.addEventListener("mouseup",_2.onmouseup,true);
-document.addEventListener("click",_2.onclick,true);
-}
-};
-_1.release=function(_3){
-if(_3.releaseCapture){
-_3.releaseCapture();
-}else{
-document.removeEventListener("click",_3.onclick,true);
-document.removeEventListener("mouseup",_3.onmouseup,true);
-document.removeEventListener("mousemove",_3.onmousemove,true);
-}
-};
-_1.start=function(_4,_5,_6,_7,_8){
-if(!_4||_1.dragging){
 
-return;
+// summary:
+//	utility functions for dragging as used in grid.
+// begin closure
+(function(){
+
+var dgdrag = dojox.grid.drag = {};
+
+dgdrag.dragging = false;
+dgdrag.hysteresis = 2;
+
+dgdrag.capture = function(inElement) {
+	//
+	if (inElement.setCapture)
+		inElement.setCapture();
+	else {
+		document.addEventListener("mousemove", inElement.onmousemove, true);
+		document.addEventListener("mouseup", inElement.onmouseup, true);
+		document.addEventListener("click", inElement.onclick, true);
+	}
 }
-_1.dragging=true;
-_1.elt=_4;
-_1.events={drag:_5||dojox.grid.nop,end:_6||dojox.grid.nop,start:_8||dojox.grid.nop,oldmove:_4.onmousemove,oldup:_4.onmouseup,oldclick:_4.onclick};
-_1.positionX=(_7&&("screenX" in _7)?_7.screenX:false);
-_1.positionY=(_7&&("screenY" in _7)?_7.screenY:false);
-_1.started=(_1.position===false);
-_4.onmousemove=_1.mousemove;
-_4.onmouseup=_1.mouseup;
-_4.onclick=_1.click;
-_1.capture(_1.elt);
-};
-_1.end=function(){
-_1.release(_1.elt);
-_1.elt.onmousemove=_1.events.oldmove;
-_1.elt.onmouseup=_1.events.oldup;
-_1.elt.onclick=_1.events.oldclick;
-_1.elt=null;
-try{
-if(_1.started){
-_1.events.end();
+
+dgdrag.release = function(inElement) {
+	//
+	if(inElement.releaseCapture){
+		inElement.releaseCapture();
+	}else{
+		document.removeEventListener("click", inElement.onclick, true);
+		document.removeEventListener("mouseup", inElement.onmouseup, true);
+		document.removeEventListener("mousemove", inElement.onmousemove, true);
+	}
 }
+
+dgdrag.start = function(inElement, inOnDrag, inOnEnd, inEvent, inOnStart){
+	if(/*dgdrag.elt ||*/ !inElement || dgdrag.dragging){
+		
+		return;
+	}
+	dgdrag.dragging = true;
+	dgdrag.elt = inElement;
+	dgdrag.events = {
+		drag: inOnDrag || dojox.grid.nop, 
+		end: inOnEnd || dojox.grid.nop, 
+		start: inOnStart || dojox.grid.nop, 
+		oldmove: inElement.onmousemove, 
+		oldup: inElement.onmouseup, 
+		oldclick: inElement.onclick 
+	};
+	dgdrag.positionX = (inEvent && ('screenX' in inEvent) ? inEvent.screenX : false);
+	dgdrag.positionY = (inEvent && ('screenY' in inEvent) ? inEvent.screenY : false);
+	dgdrag.started = (dgdrag.position === false);
+	inElement.onmousemove = dgdrag.mousemove;
+	inElement.onmouseup = dgdrag.mouseup;
+	inElement.onclick = dgdrag.click;
+	dgdrag.capture(dgdrag.elt);
 }
-finally{
-_1.dragging=false;
+
+dgdrag.end = function(){
+	//
+	dgdrag.release(dgdrag.elt);
+	dgdrag.elt.onmousemove = dgdrag.events.oldmove;
+	dgdrag.elt.onmouseup = dgdrag.events.oldup;
+	dgdrag.elt.onclick = dgdrag.events.oldclick;
+	dgdrag.elt = null;
+	try{
+		if(dgdrag.started){
+			dgdrag.events.end();
+		}
+	}finally{
+		dgdrag.dragging = false;
+	}
 }
-};
-_1.calcDelta=function(_9){
-_9.deltaX=_9.screenX-_1.positionX;
-_9.deltaY=_9.screenY-_1.positionY;
-};
-_1.hasMoved=function(_a){
-return Math.abs(_a.deltaX)+Math.abs(_a.deltaY)>_1.hysteresis;
-};
-_1.mousemove=function(_b){
-_b=dojo.fixEvent(_b);
-dojo.stopEvent(_b);
-_1.calcDelta(_b);
-if((!_1.started)&&(_1.hasMoved(_b))){
-_1.events.start(_b);
-_1.started=true;
+
+dgdrag.calcDelta = function(inEvent){
+	inEvent.deltaX = inEvent.screenX - dgdrag.positionX;
+	inEvent.deltaY = inEvent.screenY - dgdrag.positionY;
 }
-if(_1.started){
-_1.events.drag(_b);
+
+dgdrag.hasMoved = function(inEvent){
+	return Math.abs(inEvent.deltaX) + Math.abs(inEvent.deltaY) > dgdrag.hysteresis;
 }
-};
-_1.mouseup=function(_c){
-dojo.stopEvent(dojo.fixEvent(_c));
-_1.end();
-};
-_1.click=function(_d){
-dojo.stopEvent(dojo.fixEvent(_d));
-};
+
+dgdrag.mousemove = function(inEvent){
+	inEvent = dojo.fixEvent(inEvent);
+	dojo.stopEvent(inEvent);
+	dgdrag.calcDelta(inEvent);
+	if((!dgdrag.started)&&(dgdrag.hasMoved(inEvent))){
+		dgdrag.events.start(inEvent);
+		dgdrag.started = true;
+	}
+	if(dgdrag.started){
+		dgdrag.events.drag(inEvent);
+	}
+}
+
+dgdrag.mouseup = function(inEvent){
+	//
+	dojo.stopEvent(dojo.fixEvent(inEvent));
+	dgdrag.end();
+}
+
+dgdrag.click = function(inEvent){
+	dojo.stopEvent(dojo.fixEvent(inEvent));
+	//dgdrag.end();
+}
+
 })();
+// end closure
+
 }

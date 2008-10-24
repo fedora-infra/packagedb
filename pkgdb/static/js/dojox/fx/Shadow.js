@@ -5,116 +5,154 @@
 */
 
 
-if(!dojo._hasResource["dojox.fx.Shadow"]){
-dojo._hasResource["dojox.fx.Shadow"]=true;
+if(!dojo._hasResource["dojox.fx.Shadow"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.fx.Shadow"] = true;
 dojo.provide("dojox.fx.Shadow");
-dojo.experimental("dojox.fx.Shadow");
-dojo.require("dijit._Widget");
-dojo.require("dojo.NodeList-fx");
-dojo.declare("dojox.fx.Shadow",dijit._Widget,{shadowPng:dojo.moduleUrl("dojox.fx","resources/shadow"),shadowThickness:7,shadowOffset:3,opacity:0.75,animate:false,node:null,startup:function(){
-this.inherited(arguments);
-this.node.style.position="relative";
-this.pieces={};
-var x1=-1*this.shadowThickness;
-var y0=this.shadowOffset;
-var y1=this.shadowOffset+this.shadowThickness;
-this._makePiece("tl","top",y0,"left",x1);
-this._makePiece("l","top",y1,"left",x1,"scale");
-this._makePiece("tr","top",y0,"left",0);
-this._makePiece("r","top",y1,"left",0,"scale");
-this._makePiece("bl","top",0,"left",x1);
-this._makePiece("b","top",0,"left",0,"crop");
-this._makePiece("br","top",0,"left",0);
-this.nodeList=dojo.query(".shadowPiece",this.node);
-this.setOpacity(this.opacity);
-this.resize();
-},_makePiece:function(_4,_5,_6,_7,_8,_9){
-var _a;
-var _b=this.shadowPng+_4.toUpperCase()+".png";
-if(dojo.isIE<7){
-_a=document.createElement("div");
-_a.style.filter="progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+_b+"'"+(_9?", sizingMethod='"+_9+"'":"")+")";
-}else{
-_a=document.createElement("img");
-_a.src=_b;
-}
-_a.style.position="absolute";
-_a.style[_5]=_6+"px";
-_a.style[_7]=_8+"px";
-_a.style.width=this.shadowThickness+"px";
-_a.style.height=this.shadowThickness+"px";
-dojo.addClass(_a,"shadowPiece");
-this.pieces[_4]=_a;
-this.node.appendChild(_a);
-},setOpacity:function(n,_d){
-if(dojo.isIE){
-return;
-}
-if(!_d){
-_d={};
-}
-if(this.animate){
-var _e=[];
-this.nodeList.forEach(function(_f){
-_e.push(dojo._fade(dojo.mixin(_d,{node:_f,end:n})));
+dojo.experimental("dojox.fx.Shadow"); 
+
+dojo.require("dijit._Widget"); 
+dojo.require("dojo.NodeList-fx"); 
+
+dojo.declare("dojox.fx.Shadow",
+	dijit._Widget,{
+	// summary: Adds a drop-shadow to a node.
+	// 
+	// example:
+	// |	// add drop shadows to all nodes with class="hasShadow"
+	// |	dojo.query(".hasShadow").forEach(function(n){
+	// |		var foo = new dojox.fx.Shadow({ node: n });
+	// |		foo.startup();
+	// |	});
+	//
+	// shadowPng: String
+	// 	Base location for drop-shadow images
+	shadowPng: dojo.moduleUrl("dojox.fx", "resources/shadow"),
+
+	// shadowThickness: Integer
+	// 	How wide (in px) to make the shadow
+	shadowThickness: 7,
+
+	// shadowOffset: Integer
+	//	How deep to make the shadow appear to be
+	shadowOffset: 3,
+
+	// opacity: Float
+	//	Overall opacity of the shadow
+	opacity: 0.75,
+
+	// animate: Boolean	
+	// 	A toggle to disable animated transitions
+	animate: false,
+
+	// node: DomNode
+	// 	The node we will be applying this shadow to
+	node: null,
+
+	startup: function(){
+		// summary: Initializes the shadow.
+
+		this.inherited(arguments);
+		this.node.style.position = "relative";
+		// make all the pieces of the shadow, and position/size them as much
+		// as possible (but a lot of the coordinates are set in sizeShadow
+		this.pieces={};
+		var x1 = -1 * this.shadowThickness;
+		var y0 = this.shadowOffset;
+		var y1 = this.shadowOffset + this.shadowThickness;
+		this._makePiece("tl", "top", y0, "left", x1);
+		this._makePiece("l", "top", y1, "left", x1, "scale");
+		this._makePiece("tr", "top", y0, "left", 0);
+		this._makePiece("r", "top", y1, "left", 0, "scale");
+		this._makePiece("bl", "top", 0, "left", x1);
+		this._makePiece("b", "top", 0, "left", 0, "crop");
+		this._makePiece("br", "top", 0, "left", 0);
+
+		this.nodeList = dojo.query(".shadowPiece",this.node);
+
+		this.setOpacity(this.opacity);
+		this.resize();
+	},
+
+	_makePiece: function(name, vertAttach, vertCoord, horzAttach, horzCoord, sizing){
+		// summary: append a shadow pieces to the node, and position it
+		var img;
+		var url = this.shadowPng + name.toUpperCase() + ".png";
+		if(dojo.isIE<7){
+			img=document.createElement("div");
+			img.style.filter="progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+url+"'"+
+				(sizing?", sizingMethod='"+sizing+"'":"") + ")";
+		}else{
+			img=document.createElement("img");
+			img.src=url;
+		}
+
+		img.style.position="absolute"; 
+		img.style[vertAttach]=vertCoord+"px";
+		img.style[horzAttach]=horzCoord+"px";
+		img.style.width=this.shadowThickness+"px";
+		img.style.height=this.shadowThickness+"px";
+		dojo.addClass(img,"shadowPiece"); 
+		this.pieces[name]=img;
+		this.node.appendChild(img);
+
+	},
+
+	setOpacity: function(/* Float */n,/* Object? */animArgs){
+		// summary: set the opacity of the underlay
+		// note: does not work in IE? FIXME.
+		if(dojo.isIE){ return; } 
+		if(!animArgs){ animArgs = {}; } 
+		if(this.animate){
+			var _anims = [];
+			this.nodeList.forEach(function(node){
+				_anims.push(dojo._fade(dojo.mixin(animArgs,{ node: node, end: n })));
+			});
+			dojo.fx.combine(_anims).play();
+		}else{
+			this.nodeList.style("opacity",n);
+		}	
+
+	},
+
+	setDisabled: function(/* Boolean */disabled){
+		// summary: enable / disable the shadow
+		if(disabled){
+			if(this.disabled){ return; }
+			if(this.animate){ this.nodeList.fadeOut().play(); 
+			}else{ this.nodeList.style("visibility","hidden"); }
+			this.disabled = true;
+		}else{
+			if(!this.disabled){ return; }
+			if(this.animate){ this.nodeList.fadeIn().play(); 
+			}else{ this.nodeList.style("visibility","visible"); }
+			this.disabled = false;
+		}
+	},
+
+	resize: function(/* dojox.fx._arg.ShadowResizeArgs */args){
+		// summary: Resizes the shadow based on width and height.
+		var x; var y;
+		if(args){ x = args.x; y = args.y;
+		}else{
+			var co = dojo._getBorderBox(this.node); 
+			x = co.w; y = co.h; 
+		}
+		var sideHeight = y - (this.shadowOffset+this.shadowThickness);
+		if (sideHeight < 0) { sideHeight = 0; }
+		if (y < 1) { y = 1; }
+		if (x < 1) { x = 1; }
+		with(this.pieces){
+			l.style.height = sideHeight+"px";
+			r.style.height = sideHeight+"px";
+			b.style.width = x+"px";
+			bl.style.top = y+"px";
+			b.style.top = y+"px";
+			br.style.top = y+"px";
+			tr.style.left = x+"px";
+			r.style.left = x+"px";
+			br.style.left = x+"px";
+		}
+	}
 });
-dojo.fx.combine(_e).play();
-}else{
-this.nodeList.style("opacity",n);
-}
-},setDisabled:function(_10){
-if(_10){
-if(this.disabled){
-return;
-}
-if(this.animate){
-this.nodeList.fadeOut().play();
-}else{
-this.nodeList.style("visibility","hidden");
-}
-this.disabled=true;
-}else{
-if(!this.disabled){
-return;
-}
-if(this.animate){
-this.nodeList.fadeIn().play();
-}else{
-this.nodeList.style("visibility","visible");
-}
-this.disabled=false;
-}
-},resize:function(_11){
-var x;
-var y;
-if(_11){
-x=_11.x;
-y=_11.y;
-}else{
-var co=dojo._getBorderBox(this.node);
-x=co.w;
-y=co.h;
-}
-var _15=y-(this.shadowOffset+this.shadowThickness);
-if(_15<0){
-_15=0;
-}
-if(y<1){
-y=1;
-}
-if(x<1){
-x=1;
-}
-with(this.pieces){
-l.style.height=_15+"px";
-r.style.height=_15+"px";
-b.style.width=x+"px";
-bl.style.top=y+"px";
-b.style.top=y+"px";
-br.style.top=y+"px";
-tr.style.left=x+"px";
-r.style.left=x+"px";
-br.style.left=x+"px";
-}
-}});
+
 }

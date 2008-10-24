@@ -5,87 +5,102 @@
 */
 
 
-if(!dojo._hasResource["dojox.data.css"]){
-dojo._hasResource["dojox.data.css"]=true;
-dojo.provide("dojox.data.css");
-dojo.provide("dojox.data.css.rules");
-dojox.data.css.rules.forEach=function(fn,_2,_3){
-if(_3){
-var _4=function(_5){
-dojo.forEach(_5[_5.cssRules?"cssRules":"rules"],function(_6){
-if(!_6.type||_6.type!==3){
-var _7="";
-if(_5&&_5.href){
-_7=_5.href;
-}
-fn.call(_2?_2:this,_6,_5,_7);
-}
-});
+if(!dojo._hasResource['dojox.data.css']){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource['dojox.data.css'] = true;
+dojo.provide('dojox.data.css');
+dojo.provide('dojox.data.css.rules');
+
+dojox.data.css.rules.forEach = function(fn,ctx,context){
+	if(context){
+		var _processSS = function(styleSheet){
+			//iterate across rules in the stylesheet
+			dojo.forEach(styleSheet[styleSheet.cssRules?"cssRules":"rules"], function(rule){
+				if(!rule.type || rule.type !== 3){// apply fn to current rule with approp ctx. rule is arg (all browsers)
+					var href = "";
+					if(styleSheet && styleSheet.href){
+						href = styleSheet.href;
+					}
+					fn.call(ctx?ctx:this,rule, styleSheet, href);
+				}
+			});
+			//process any child stylesheets
+		};
+		dojo.forEach(context,_processSS);
+	}
 };
-dojo.forEach(_3,_4);
-}
+dojox.data.css.findStyleSheets = function(sheets){
+	// Takes an array of stylesheet paths and finds the currently loaded StyleSheet objects matching
+	// those names
+	var sheetObjects = [];
+	var _processSS = function(styleSheet){
+		var s = dojox.data.css.findStyleSheet(styleSheet);
+		if(s){
+			dojo.forEach(s, function(sheet){
+				if(dojo.indexOf(sheetObjects, sheet) === -1){
+					sheetObjects.push(sheet);
+				}
+			});
+		}
+	};
+	dojo.forEach(sheets, _processSS);
+	return sheetObjects;
 };
-dojox.data.css.findStyleSheets=function(_8){
-var _9=[];
-var _a=function(_b){
-var s=dojox.data.css.findStyleSheet(_b);
-if(s){
-dojo.forEach(s,function(_d){
-if(dojo.indexOf(_9,_d)===-1){
-_9.push(_d);
-}
-});
-}
+dojox.data.css.findStyleSheet = function(sheet){
+	// Takes a stylesheet path and finds the currently loaded StyleSheet objects matching
+	// those names (and it's parent(s), if it is imported from another)
+	var sheetObjects = [];
+	if(sheet.charAt(0) === '.'){
+		sheet = sheet.substring(1);
+	}
+	var _processSS = function(styleSheet){
+		if(styleSheet.href && styleSheet.href.match(sheet)){
+			sheetObjects.push(styleSheet);
+			return true;
+		}
+		if(styleSheet.imports){
+			return dojo.some(styleSheet.imports, function(importedSS){ //IE stylesheet has imports[] containing @import'ed rules 
+				//
+				return _processSS(importedSS);
+			});
+		}
+		//iterate across rules in the stylesheet
+		return dojo.some(styleSheet[styleSheet.cssRules?"cssRules":"rules"], function(rule){
+			if(rule.type && rule.type === 3 && _processSS(rule.styleSheet)){// CSSImportRule (firefox)
+				//sheetObjects.push(styleSheet);
+				return true;
+			}
+			return false;
+		});
+	};
+	dojo.some(document.styleSheets, _processSS);
+	return sheetObjects;
 };
-dojo.forEach(_8,_a);
-return _9;
+dojox.data.css.determineContext = function(initialStylesheets){
+	// Takes an array of stylesheet paths and returns an array of all stylesheets that fall in the 
+	// given context.  If no paths are given, all stylesheets are returned.
+	var ret = [];
+	if(initialStylesheets && initialStylesheets.length > 0){
+		initialStylesheets = dojox.data.css.findStyleSheets(initialStylesheets);
+	}else{
+		initialStylesheets = document.styleSheets;
+	}
+	var _processSS = function(styleSheet){
+		ret.push(styleSheet);
+		if(styleSheet.imports){
+			dojo.forEach(styleSheet.imports, function(importedSS){ //IE stylesheet has imports[] containing @import'ed rules 
+				//
+				_processSS(importedSS);
+			});
+		}
+		//iterate across rules in the stylesheet
+		dojo.forEach(styleSheet[styleSheet.cssRules?"cssRules":"rules"], function(rule){
+			if(rule.type && rule.type === 3){// CSSImportRule (firefox)
+				_processSS(rule.styleSheet);
+			}
+		});
+	};
+	dojo.forEach(initialStylesheets,_processSS);
+	return ret;
 };
-dojox.data.css.findStyleSheet=function(_e){
-var _f=[];
-if(_e.charAt(0)==="."){
-_e=_e.substring(1);
-}
-var _10=function(_11){
-if(_11.href&&_11.href.match(_e)){
-_f.push(_11);
-return true;
-}
-if(_11.imports){
-return dojo.some(_11.imports,function(_12){
-return _10(_12);
-});
-}
-return dojo.some(_11[_11.cssRules?"cssRules":"rules"],function(_13){
-if(_13.type&&_13.type===3&&_10(_13.styleSheet)){
-return true;
-}
-return false;
-});
-};
-dojo.some(document.styleSheets,_10);
-return _f;
-};
-dojox.data.css.determineContext=function(_14){
-var ret=[];
-if(_14&&_14.length>0){
-_14=dojox.data.css.findStyleSheets(_14);
-}else{
-_14=document.styleSheets;
-}
-var _16=function(_17){
-ret.push(_17);
-if(_17.imports){
-dojo.forEach(_17.imports,function(_18){
-_16(_18);
-});
-}
-dojo.forEach(_17[_17.cssRules?"cssRules":"rules"],function(_19){
-if(_19.type&&_19.type===3){
-_16(_19.styleSheet);
-}
-});
-};
-dojo.forEach(_14,_16);
-return ret;
-};
+
 }

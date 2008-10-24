@@ -5,48 +5,62 @@
 */
 
 
-if(!dojo._hasResource["dojox.dtl.filter.misc"]){
-dojo._hasResource["dojox.dtl.filter.misc"]=true;
+if(!dojo._hasResource["dojox.dtl.filter.misc"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.dtl.filter.misc"] = true;
 dojo.provide("dojox.dtl.filter.misc");
-dojo.mixin(dojox.dtl.filter.misc,{filesizeformat:function(_1){
-_1=parseFloat(_1);
-if(_1<1024){
-return (_1==1)?_1+" byte":_1+" bytes";
-}else{
-if(_1<1024*1024){
-return (_1/1024).toFixed(1)+" KB";
-}else{
-if(_1<1024*1024*1024){
-return (_1/1024/1024).toFixed(1)+" MB";
-}
-}
-}
-return (_1/1024/1024/1024).toFixed(1)+" GB";
-},pluralize:function(_2,_3){
-_3=_3||"s";
-if(_3.indexOf(",")==-1){
-_3=","+_3;
-}
-var _4=_3.split(",");
-if(_4.length>2){
-return "";
-}
-var _5=_4[0];
-var _6=_4[1];
-if(parseInt(_2)!=1){
-return _6;
-}
-return _5;
-},_phone2numeric:{a:2,b:2,c:2,d:3,e:3,f:3,g:4,h:4,i:4,j:5,k:5,l:5,m:6,n:6,o:6,p:7,r:7,s:7,t:8,u:8,v:8,w:9,x:9,y:9},phone2numeric:function(_7){
-var dm=dojox.dtl.filter.misc;
-_7=_7+"";
-var _9="";
-for(var i=0;i<_7.length;i++){
-var _b=_7.charAt(i).toLowerCase();
-(dm._phone2numeric[_b])?_9+=dm._phone2numeric[_b]:_9+=_7.charAt(i);
-}
-return _9;
-},pprint:function(_c){
-return dojo.toJson(_c);
-}});
+
+dojo.mixin(dojox.dtl.filter.misc, {
+	filesizeformat: function(value){
+		// summary: Format the value like a 'human-readable' file size (i.e. 13 KB, 4.1 MB, 102bytes, etc).
+		value = parseFloat(value);
+		if(value < 1024){
+			return (value == 1) ? value + " byte" : value + " bytes";
+		}else if(value < 1024 * 1024){
+			return (value / 1024).toFixed(1) + " KB";
+		}else if(value < 1024 * 1024 * 1024){
+			return (value / 1024 / 1024).toFixed(1) + " MB";
+		}
+		return (value / 1024 / 1024 / 1024).toFixed(1) + " GB";
+	},
+	pluralize: function(value, arg){
+		// summary:
+		//		Returns a plural suffix if the value is not 1, for '1 vote' vs. '2 votes'
+		//	description:
+		//		By default, 's' is used as a suffix; if an argument is provided, that string
+		//		is used instead. If the provided argument contains a comma, the text before
+		//		the comma is used for the singular case.
+		arg = arg || 's';
+		if(arg.indexOf(",") == -1){
+			arg = "," + arg;
+		}
+		var parts = arg.split(",");
+		if(parts.length > 2){
+			return "";
+		}
+		var singular = parts[0];
+		var plural = parts[1];
+
+		if(parseInt(value) != 1){
+			return plural;
+		}
+		return singular;
+	},
+	_phone2numeric: { a: 2, b: 2, c: 2, d: 3, e: 3, f: 3, g: 4, h: 4, i: 4, j: 5, k: 5, l: 5, m: 6, n: 6, o: 6, p: 7, r: 7, s: 7, t: 8, u: 8, v: 8, w: 9, x: 9, y: 9 },
+	phone2numeric: function(value){
+		// summary: Takes a phone number and converts it in to its numerical equivalent
+		var dm = dojox.dtl.filter.misc;
+		value = value + "";
+		var output = "";
+		for(var i = 0; i < value.length; i++){
+			var chr = value.charAt(i).toLowerCase();
+			(dm._phone2numeric[chr]) ? output += dm._phone2numeric[chr] : output += value.charAt(i);
+		}
+		return output;
+	},
+	pprint: function(value){
+		// summary: A wrapper around toJson unless something better comes along
+		return dojo.toJson(value);
+	}
+});
+
 }

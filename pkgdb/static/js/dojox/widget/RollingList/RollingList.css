@@ -7,33 +7,40 @@
 	white-space: nowrap;
 	background-color: #FFF;
 }
+
 .dojoxRollingListPane {
 	overflow: scroll;
 	overflow-x: hidden;
 	overflow-y: scroll;
-	display:-moz-inline-box;		
-	display:inline-block;			
-	#zoom: 1; 
-	#display:inline; 
+	display:-moz-inline-box;		/* FF2 */
+	display:inline-block;			/* webkit and FF3 */
+	#zoom: 1; /* set hasLayout:true to mimic inline-block */
+	#display:inline; /* don't use .dj_ie since that increases the priority */
 	border:0;
 	padding:0;
 	vertical-align:middle;
-	#vertical-align: auto;	
+	#vertical-align: auto;	/* makes TextBox,Button line up w/native counterparts on IE6 */
 }
+
 .dojoxRollingListPane .dijitMenuItemLabel,
 .dojoxRollingListPane .dijitMenuItemIcon {
 	position: static !important;
 }
+
 .dj_safari .dojoxRollingListPane,
 .dj_ie .dojoxRollingListPane {
-	padding-right: 15px; 
+	padding-right: 15px; /* Account for scroll bar */
 }
+
 .dojoxRollingListPane .dijitMenu {
 	border: none !important;
 }
+
 .dojoxRollingListItem {
 	cursor: default;
 }
+
+/* Background colors to match menus */
 .tundra .dojoxRollingList {
 	border-color: #b3b3b3;
 }
@@ -59,6 +66,7 @@
 .tundra .dojoxRollingListItem {
 	font-family: inherit;
 }
+
 .soria .dojoxRollingList {
 	border-color: #8ba0bd;
 }
@@ -84,6 +92,8 @@
 .soria .dojoxRollingListItem {
 	font-family: inherit;
 }
+
+
 .nihilo .dojoxRollingList {
 	border-color: #d3d3d3;
 }
@@ -109,3 +119,4 @@
 .nihilo .dojoxRollingListItem {
 	font-family: inherit;
 }
+

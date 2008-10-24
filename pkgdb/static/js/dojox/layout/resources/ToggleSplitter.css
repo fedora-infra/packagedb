@@ -6,6 +6,7 @@
 .dijitBorderContainer .dojoxToggleSplitterRight {
 	width:16px;
 }
+
 .dijitBorderContainer .dijitSplitterH .dojoxToggleSplitterIcon {
 	width:16px;
 	height:16px;
@@ -18,6 +19,7 @@
 	left: 0;
 	cursor: pointer;
 }
+
 .tundra .dojoxToggleSplitterTop .dojoxToggleSplitterIconOpen, 
 .tundra .dojoxToggleSplitterBottom .dojoxToggleSplitterIconClosed 
  {
@@ -28,6 +30,7 @@
  {
 	background: transparent url('../../../dijit/themes/tundra/images/spriteRoundedIconsSmall.png') no-repeat -15px 50%;
 }
+
 .tundra .dojoxToggleSplitterLeft .dojoxToggleSplitterIconOpen, 
 .tundra .dojoxToggleSplitterRight .dojoxToggleSplitterIconClosed 
  {
@@ -38,6 +41,7 @@
  {
 	background: transparent url('../../../dijit/themes/tundra/images/spriteRoundedIconsSmall.png') no-repeat -30px 50%;
 }
+
 .soria .dojoxToggleSplitterTop .dojoxToggleSplitterIconOpen, 
 .soria .dojoxToggleSplitterBottom .dojoxToggleSplitterIconClosed 
  {
@@ -48,6 +52,7 @@
  {
 	background: transparent url('../../../dijit/themes/soria/images/spriteRoundedIconsSmall.png') no-repeat -15px 50%;
 }
+
 .soria .dojoxToggleSplitterLeft .dojoxToggleSplitterIconOpen, 
 .soria .dojoxToggleSplitterRight .dojoxToggleSplitterIconClosed 
  {
@@ -58,6 +63,7 @@
  {
 	background: transparent url('../../../dijit/themes/soria/images/spriteRoundedIconsSmall.png') no-repeat -30px 50%;
 }
+
 .nihilo .dojoxToggleSplitterTop .dojoxToggleSplitterIconOpen, 
 .nihilo .dojoxToggleSplitterBottom .dojoxToggleSplitterIconClosed 
  {
@@ -68,6 +74,7 @@
  {
 	background: transparent url('../../../dijit/themes/nihilo/images/spriteRoundedIconsSmall.png') no-repeat -15px 50%;
 }
+
 .nihilo .dojoxToggleSplitterLeft .dojoxToggleSplitterIconOpen, 
 .nihilo .dojoxToggleSplitterRight .dojoxToggleSplitterIconClosed 
  {

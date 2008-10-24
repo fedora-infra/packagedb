@@ -5,41 +5,62 @@
 */
 
 
-if(!dojo._hasResource["dojox.charting.action2d.Base"]){
-dojo._hasResource["dojox.charting.action2d.Base"]=true;
+if(!dojo._hasResource["dojox.charting.action2d.Base"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.charting.action2d.Base"] = true;
 dojo.provide("dojox.charting.action2d.Base");
+
 dojo.require("dojo.fx.easing");
 dojo.require("dojox.lang.functional.object");
 dojo.require("dojox.gfx.fx");
+
 (function(){
-var _1=400,_2=dojo.fx.easing.backOut,_3=dojox.lang.functional.object;
-dojo.declare("dojox.charting.action2d.Base",null,{overOutEvents:{onmouseover:1,onmouseout:1},constructor:function(_4,_5,_6){
-this.chart=_4;
-this.plot=_5?_5:"default";
-this.anim={};
-if(!_6){
-_6={};
-}
-this.duration=_6.duration?_6.duration:_1;
-this.easing=_6.easing?_6.easing:_2;
-},connect:function(){
-this.handle=this.chart.connectToPlot(this.plot,this,"process");
-},disconnect:function(){
-if(this.handle){
-dojo.disconnect(this.handle);
-this.handle=null;
-}
-},reset:function(){
-},destroy:function(){
-if(this.handle){
-this.disconnect();
-}
-_3.forIn(this.anim,function(o){
-_3.forIn(o,function(_8){
-_8.action.stop(true);
-});
-});
-this.anim={};
-}});
+	var DEFAULT_DURATION = 400,	// ms
+		DEFAULT_EASING   = dojo.fx.easing.backOut,
+
+		dfo = dojox.lang.functional.object;
+		
+	dojo.declare("dojox.charting.action2d.Base", null, {
+		
+		overOutEvents: {onmouseover: 1, onmouseout: 1},
+			
+		constructor: function(chart, plot, kwargs){
+			this.chart = chart;
+			this.plot = plot ? plot : "default";
+			this.anim = {};
+
+			// process common optional named parameters
+			if(!kwargs){ kwargs = {}; }
+			this.duration = kwargs.duration ? kwargs.duration : DEFAULT_DURATION;
+			this.easing   = kwargs.easing   ? kwargs.easing   : DEFAULT_EASING;
+		},
+		
+		connect: function(){
+			this.handle = this.chart.connectToPlot(this.plot, this, "process");
+		},
+		
+		disconnect: function(){
+			if(this.handle){
+				dojo.disconnect(this.handle);
+				this.handle = null;
+			}
+		},
+		
+		reset: function(){
+			// nothing by default
+		},
+	
+		destroy: function(){
+			if(this.handle){
+				this.disconnect();
+			}
+			dfo.forIn(this.anim, function(o){
+				dfo.forIn(o, function(anim){
+					anim.action.stop(true);
+				});
+			});
+			this.anim = {};
+		}
+	});
 })();
+
 }

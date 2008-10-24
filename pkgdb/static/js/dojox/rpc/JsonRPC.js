@@ -5,35 +5,62 @@
 */
 
 
-if(!dojo._hasResource["dojox.rpc.JsonRPC"]){
-dojo._hasResource["dojox.rpc.JsonRPC"]=true;
+if(!dojo._hasResource["dojox.rpc.JsonRPC"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.rpc.JsonRPC"] = true;
 dojo.provide("dojox.rpc.JsonRPC");
 dojo.require("dojox.rpc.Service");
+
 (function(){
-function jsonRpcEnvelope(_1){
-return {serialize:function(_2,_3,_4,_5){
-var d={id:this._requestId++,method:_3.name,params:_4};
-if(_1){
-d.jsonrpc=_1;
-}
-return {data:dojo.toJson(d),handleAs:"json",contentType:"application/json",transport:"POST"};
-},deserialize:function(_7){
-if("Error"==_7.name){
-_7=dojo.fromJson(_7.responseText);
-}
-if(_7.error){
-var e=new Error(_7.error.message||_7.error);
-e._rpcErrorObject=_7.error;
-return e;
-}
-return _7.result;
-}};
-};
-dojox.rpc.envelopeRegistry.register("JSON-RPC-1.0",function(_9){
-return _9=="JSON-RPC-1.0";
-},dojo.mixin({namedParams:false},jsonRpcEnvelope()));
-dojox.rpc.envelopeRegistry.register("JSON-RPC-2.0",function(_a){
-return _a=="JSON-RPC-2.0";
-},jsonRpcEnvelope("2.0"));
+	function jsonRpcEnvelope(version){
+		return {
+			serialize: function(smd, method, data, options){
+				//not converted to json it self. This  will be done, if
+				//appropriate, at the transport level
+	
+				var d = {
+					id: this._requestId++,
+					method: method.name,
+					params: data
+				};
+				if(version){
+					d.jsonrpc = version;
+				}
+				return {
+					data: dojo.toJson(d),
+					handleAs:'json',
+					contentType: 'application/json',
+					transport:"POST"
+				};
+			},
+	
+			deserialize: function(obj){
+				if ('Error' == obj.name){
+					obj = dojo.fromJson(obj.responseText);
+				}
+				if(obj.error) {
+					var e = new Error(obj.error.message || obj.error);
+					e._rpcErrorObject = obj.error;
+					return e;
+				}
+				return obj.result;
+			}
+		};
+	}
+	dojox.rpc.envelopeRegistry.register(
+		"JSON-RPC-1.0",
+		function(str){
+			return str == "JSON-RPC-1.0";
+		},
+		dojo.mixin({namedParams:false},jsonRpcEnvelope()) // 1.0 will only work with ordered params
+	);
+
+	dojox.rpc.envelopeRegistry.register(
+		"JSON-RPC-2.0",
+		function(str){
+			return str == "JSON-RPC-2.0";
+		},
+		jsonRpcEnvelope("2.0")
+	);
 })();
+
 }

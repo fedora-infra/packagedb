@@ -5,149 +5,218 @@
 */
 
 
-if(!dojo._hasResource["dojox.grid.compat._grid.selection"]){
-dojo._hasResource["dojox.grid.compat._grid.selection"]=true;
-dojo.provide("dojox.grid.compat._grid.selection");
-dojo.declare("dojox.grid.selection",null,{constructor:function(_1){
-this.grid=_1;
-this.selected=[];
-},multiSelect:true,selected:null,updating:0,selectedIndex:-1,onCanSelect:function(_2){
-return this.grid.onCanSelect(_2);
-},onCanDeselect:function(_3){
-return this.grid.onCanDeselect(_3);
-},onSelected:function(_4){
-return this.grid.onSelected(_4);
-},onDeselected:function(_5){
-return this.grid.onDeselected(_5);
-},onChanging:function(){
-},onChanged:function(){
-return this.grid.onSelectionChanged();
-},isSelected:function(_6){
-return this.selected[_6];
-},getFirstSelected:function(){
-for(var i=0,l=this.selected.length;i<l;i++){
-if(this.selected[i]){
-return i;
-}
-}
-return -1;
-},getNextSelected:function(_9){
-for(var i=_9+1,l=this.selected.length;i<l;i++){
-if(this.selected[i]){
-return i;
-}
-}
-return -1;
-},getSelected:function(){
-var _c=[];
-for(var i=0,l=this.selected.length;i<l;i++){
-if(this.selected[i]){
-_c.push(i);
-}
-}
-return _c;
-},getSelectedCount:function(){
-var c=0;
-for(var i=0;i<this.selected.length;i++){
-if(this.selected[i]){
-c++;
-}
-}
-return c;
-},beginUpdate:function(){
-if(this.updating==0){
-this.onChanging();
-}
-this.updating++;
-},endUpdate:function(){
-this.updating--;
-if(this.updating==0){
-this.onChanged();
-}
-},select:function(_11){
-this.unselectAll(_11);
-this.addToSelection(_11);
-},addToSelection:function(_12){
-_12=Number(_12);
-if(this.selected[_12]){
-this.selectedIndex=_12;
-}else{
-if(this.onCanSelect(_12)!==false){
-this.selectedIndex=_12;
-this.beginUpdate();
-this.selected[_12]=true;
-this.grid.onSelected(_12);
-this.endUpdate();
-}
-}
-},deselect:function(_13){
-_13=Number(_13);
-if(this.selectedIndex==_13){
-this.selectedIndex=-1;
-}
-if(this.selected[_13]){
-if(this.onCanDeselect(_13)===false){
-return;
-}
-this.beginUpdate();
-delete this.selected[_13];
-this.grid.onDeselected(_13);
-this.endUpdate();
-}
-},setSelected:function(_14,_15){
-this[(_15?"addToSelection":"deselect")](_14);
-},toggleSelect:function(_16){
-this.setSelected(_16,!this.selected[_16]);
-},insert:function(_17){
-this.selected.splice(_17,0,false);
-if(this.selectedIndex>=_17){
-this.selectedIndex++;
-}
-},remove:function(_18){
-this.selected.splice(_18,1);
-if(this.selectedIndex>=_18){
-this.selectedIndex--;
-}
-},unselectAll:function(_19){
-for(var i in this.selected){
-if((i!=_19)&&(this.selected[i]===true)){
-this.deselect(i);
-}
-}
-},shiftSelect:function(_1b,_1c){
-var s=(_1b>=0?_1b:_1c),e=_1c;
-if(s>e){
-e=s;
-s=_1c;
-}
-for(var i=s;i<=e;i++){
-this.addToSelection(i);
-}
-},clickSelect:function(_20,_21,_22){
-this.beginUpdate();
-if(!this.multiSelect){
-this.select(_20);
-}else{
-var _23=this.selectedIndex;
-if(!_21){
-this.unselectAll(_20);
-}
-if(_22){
-this.shiftSelect(_23,_20);
-}else{
-if(_21){
-this.toggleSelect(_20);
-}else{
-this.addToSelection(_20);
-}
-}
-}
-this.endUpdate();
-},clickSelectEvent:function(e){
-this.clickSelect(e.rowIndex,e.ctrlKey,e.shiftKey);
-},clear:function(){
-this.beginUpdate();
-this.unselectAll();
-this.endUpdate();
-}});
+if(!dojo._hasResource['dojox.grid.compat._grid.selection']){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource['dojox.grid.compat._grid.selection'] = true;
+dojo.provide('dojox.grid.compat._grid.selection');
+
+dojo.declare("dojox.grid.selection",
+	null,
+	{
+	// summary:
+	//		Manages row selection for grid. Owned by grid and used internally 
+	//		for selection. Override to implement custom selection.
+
+	constructor: function(inGrid){
+		this.grid = inGrid;
+		this.selected = [];
+	},
+	
+	multiSelect: true,
+	selected: null,
+	updating: 0,
+	selectedIndex: -1,
+
+	onCanSelect: function(inIndex){
+		return this.grid.onCanSelect(inIndex);
+	},
+
+	onCanDeselect: function(inIndex){
+		return this.grid.onCanDeselect(inIndex);
+	},
+
+	onSelected: function(inIndex){
+		return this.grid.onSelected(inIndex);
+	},
+
+	onDeselected: function(inIndex){
+		return this.grid.onDeselected(inIndex);
+	},
+
+	//onSetSelected: function(inIndex, inSelect) { };
+	onChanging: function(){
+	},
+
+	onChanged: function(){
+		return this.grid.onSelectionChanged();
+	},
+
+	isSelected: function(inIndex){
+		return this.selected[inIndex];
+	},
+
+	getFirstSelected: function(){
+		for(var i=0, l=this.selected.length; i<l; i++){
+			if(this.selected[i]){
+				return i;
+			}
+		}
+		return -1;
+	},
+
+	getNextSelected: function(inPrev){
+		for(var i=inPrev+1, l=this.selected.length; i<l; i++){
+			if(this.selected[i]){
+				return i;
+			}
+		}
+		return -1;
+	},
+
+	getSelected: function(){
+		var result = [];
+		for(var i=0, l=this.selected.length; i<l; i++){
+			if(this.selected[i]){
+				result.push(i);
+			}
+		}
+		return result;
+	},
+
+	getSelectedCount: function(){
+		var c = 0;
+		for(var i=0; i<this.selected.length; i++){
+			if(this.selected[i]){
+				c++;
+			}
+		}
+		return c;
+	},
+
+	beginUpdate: function(){
+		if(this.updating == 0){
+			this.onChanging();
+		}
+		this.updating++;
+	},
+
+	endUpdate: function(){
+		this.updating--;
+		if(this.updating == 0){
+			this.onChanged();
+		}
+	},
+
+	select: function(inIndex){
+		this.unselectAll(inIndex);
+		this.addToSelection(inIndex);
+	},
+
+	addToSelection: function(inIndex){
+		inIndex = Number(inIndex);
+		if(this.selected[inIndex]){
+			this.selectedIndex = inIndex;
+		}else{
+			if(this.onCanSelect(inIndex) !== false){
+				this.selectedIndex = inIndex;
+				this.beginUpdate();
+				this.selected[inIndex] = true;
+				this.grid.onSelected(inIndex);
+				//this.onSelected(inIndex);
+				//this.onSetSelected(inIndex, true);
+				this.endUpdate();
+			}
+		}
+	},
+
+	deselect: function(inIndex){
+		inIndex = Number(inIndex);
+		if(this.selectedIndex == inIndex){
+			this.selectedIndex = -1;
+		}
+		if(this.selected[inIndex]){
+			if(this.onCanDeselect(inIndex) === false){
+				return;
+			}
+			this.beginUpdate();
+			delete this.selected[inIndex];
+			this.grid.onDeselected(inIndex);
+			//this.onDeselected(inIndex);
+			//this.onSetSelected(inIndex, false);
+			this.endUpdate();
+		}
+	},
+
+	setSelected: function(inIndex, inSelect){
+		this[(inSelect ? 'addToSelection' : 'deselect')](inIndex);
+	},
+
+	toggleSelect: function(inIndex){
+		this.setSelected(inIndex, !this.selected[inIndex])
+	},
+
+	insert: function(inIndex){
+		this.selected.splice(inIndex, 0, false);
+		if(this.selectedIndex >= inIndex){
+			this.selectedIndex++;
+		}
+	},
+
+	remove: function(inIndex){
+		this.selected.splice(inIndex, 1);
+		if(this.selectedIndex >= inIndex){
+			this.selectedIndex--;
+		}
+	},
+
+	unselectAll: function(inExcept){
+		for(var i in this.selected){
+			if((i!=inExcept)&&(this.selected[i]===true)){
+				this.deselect(i);
+			}
+		}
+	},
+
+	shiftSelect: function(inFrom, inTo){
+		var s = (inFrom >= 0 ? inFrom : inTo), e = inTo;
+		if(s > e){
+			e = s;
+			s = inTo;
+		}
+		for(var i=s; i<=e; i++){
+			this.addToSelection(i);
+		}
+	},
+
+	clickSelect: function(inIndex, inCtrlKey, inShiftKey){
+		this.beginUpdate();
+		if(!this.multiSelect){
+			this.select(inIndex);
+		}else{
+			var lastSelected = this.selectedIndex;
+			if(!inCtrlKey){
+				this.unselectAll(inIndex);
+			}
+			if(inShiftKey){
+				this.shiftSelect(lastSelected, inIndex);
+			}else if(inCtrlKey){
+				this.toggleSelect(inIndex);
+			}else{
+				this.addToSelection(inIndex)
+			}
+		}
+		this.endUpdate();
+	},
+
+	clickSelectEvent: function(e){
+		this.clickSelect(e.rowIndex, e.ctrlKey, e.shiftKey);
+	},
+
+	clear: function(){
+		this.beginUpdate();
+		this.unselectAll();
+		this.endUpdate();
+	}
+
+});
+
 }

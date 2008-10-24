@@ -5,149 +5,271 @@
 */
 
 
-if(!dojo._hasResource["dojox.lang.observable"]){
-dojo._hasResource["dojox.lang.observable"]=true;
+if(!dojo._hasResource["dojox.lang.observable"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.lang.observable"] = true;
 dojo.provide("dojox.lang.observable");
+// Used to create a wrapper object with monitored reads and writes
+// 
 dojo.experimental("dojox.lang.observable");
-dojox.lang.observable=function(_1,_2,_3,_4){
-return dojox.lang.makeObservable(_2,_3,_4)(_1);
-};
-dojox.lang.makeObservable=function(_5,_6,_7,_8){
-_8=_8||{};
-_7=_7||function(_9,_a,_b,_c){
-return _a[_b].apply(_9,_c);
-};
-function makeInvoker(_d,_e,i){
-return function(){
-return _7(_d,_e,i,arguments);
-};
-};
-if(dojox.lang.lettableWin){
-var _10=dojox.lang.makeObservable;
-_10.inc=(_10.inc||0)+1;
-var _11="gettable_"+_10.inc;
-dojox.lang.lettableWin[_11]=_5;
-var _12="settable_"+_10.inc;
-dojox.lang.lettableWin[_12]=_6;
-var _13={};
-return function(_14){
-if(_14.__observable){
-return _14.__observable;
+// IMPORTANT DISCLAIMER: 
+// This is experimental and based on hideous hacks. 
+// There are severe limitations on the ability of wrapper objects:
+// Only properties that have vbscript-legal names are accessible (similar to JavaScript, but they can't start with an underscore).
+// The wrapper objects are not expando in IE, because they are built
+// from VBScript objects. This means you can't add new properties after an object is created.
+// The wrapper objects can not be used a prototype for other objects.
+// Only properties with primitive values can be wrapped.
+// This has performance implications as well.
+dojox.lang.observable = function(/*Object*/wrapped,/*function*/onRead,/*function*/onWrite,/*function*/onInvoke){
+	// 	summary:
+	// 		Creates a wrapper object, which can be observed. The wrapper object 
+	// 		is a proxy to the wrapped object. If you will be making multiple wrapper
+	// 		objects with the same set of listeners, it is recommended that you
+	// 		use makeObservable, as it is more memory efficient.	
+	// 
+	// 	wrapped:
+	// 		The object to be wrapped and monitored for property access and modification
+	//	
+	// onRead:
+	//		See dojox.lang.makeObservable.onRead
+	// onWrite:
+	//		See dojox.lang.makeObservable.onWrite
+	// onInvoke:
+	//		See dojox.lang.makeObservable.onInvoke
+	
+	return dojox.lang.makeObservable(onRead,onWrite,onInvoke)(wrapped);
 }
-if(_14.data__){
-throw new Error("Can wrap an object that is already wrapped");
-}
-var _15=[];
-for(var i in _8){
-_15.push(i);
-}
-vbReservedWords={type:1,event:1};
-for(i in _14){
-if(i.match(/^[a-zA-Z][\w\$_]*$/)&&!(i in _8)&&!(i in vbReservedWords)){
-_15.push(i);
-}
-}
-var _17=_15.join(",");
-var _18,_19=_13[_17];
-if(!_19){
-var _1a="dj_lettable_"+(_10.inc++);
-var _1b=_1a+"_dj_getter";
-var _1c=["Class "+_1a,"\tPublic data__"];
-for(i=0,l=_15.length;i<l;i++){
-_18=_15[i];
-var _1d=typeof _14[_18];
-if(_1d=="function"||_8[_18]){
-_1c.push("  Public "+_18);
-}else{
-if(_1d!="object"){
-_1c.push("\tPublic Property Let "+_18+"(val)","\t\tCall "+_12+"(me.data__,\""+_18+"\",val)","\tEnd Property","\tPublic Property Get "+_18,"\t\t"+_18+" = "+_11+"(me.data__,\""+_18+"\")","\tEnd Property");
-}
-}
-}
-_1c.push("End Class");
-_1c.push("Function "+_1b+"()","\tDim tmp","\tSet tmp = New "+_1a,"\tSet "+_1b+" = tmp","End Function");
-dojox.lang.lettableWin.vbEval(_1c.join("\n"));
-_13[_17]=_19=function(){
-return dojox.lang.lettableWin.construct(_1b);
-};
-}
-
-var _1e=_19();
-_1e.data__=_14;
-
-try{
-_14.__observable=_1e;
-}
-catch(e){
-}
-for(i=0,l=_15.length;i<l;i++){
-_18=_15[i];
-try{
-var val=_14[_18];
-}
-catch(e){
-
-}
-if(typeof val=="function"||_8[_18]){
-_1e[_18]=makeInvoker(_1e,_14,_18);
-}
-}
-return _1e;
-};
-}else{
-return function(_20){
-if(_20.__observable){
-return _20.__observable;
-}
-var _21=_20 instanceof Array?[]:{};
-_21.data__=_20;
-for(var i in _20){
-if(i.charAt(0)!="_"){
-if(typeof _20[i]=="function"){
-_21[i]=makeInvoker(_21,_20,i);
-}else{
-if(typeof _20[i]!="object"){
-(function(i){
-_21.__defineGetter__(i,function(){
-return _5(_20,i);
-});
-_21.__defineSetter__(i,function(_24){
-return _6(_20,i,_24);
-});
-})(i);
-}
-}
-}
-}
-for(i in _8){
-_21[i]=makeInvoker(_21,_20,i);
-}
-_20.__observable=_21;
-return _21;
-};
-}
+dojox.lang.makeObservable = function(/*function*/onRead,/*function*/onWrite,/*function*/onInvoke,/*Object*/hiddenFunctions){
+		
+	// 	summary:
+	// 		Creates and returns an observable creator function. All the objects that 
+	// 		are created with the returned constructor will use the provided onRead and
+	// 		onWrite listeners.
+	// 		The created constructor should be called with a single argument,
+	// 		the object that will be wrapped to be observed. The constructor will 
+	// 		return the wrapper object.
+	//
+	// onRead:
+	// 		This is called whenever one of the wrapper objects created 
+	// 		from the constructor has a property that is accessed. onRead
+	// 		will be called with two arguments, the first being the wrapped object,
+	// 		and the second is the name of property that is being accessed.
+	// 		The value that onRead returns will be used as the value returned 
+	// 		by the property access
+	//  
+	// onWrite:
+	// 		This is called whenever one of the wrapper objects created 
+	// 		from the constructor has a property that is modified. onWrite
+	// 		will be called with three arguments, the first being the wrapped object,
+	// 		the second is the name of property that is being modified, and the
+	// 		third is the value that is being set on the property.
+	// 
+	// 	onInvoke: 
+	// 		This is called when a method on the object is invoked. The first 
+	// 		argument is the wrapper object, the second is the original wrapped object, 
+	// 		the third is the method name, and the fourth is the arguments.
+	//
+	// hiddenFunctions: 
+	// 		allows you to define functions that should be delegated 
+	// 		but may not be enumerable on the wrapped objects, so they must be 
+	// 		explicitly included
+	//
+	// example:
+	// 		The following could be used to create a wrapper that would
+	// 		prevent functions from being accessed on an object:
+	// 	|	function onRead(obj,prop){
+	//	|		return typeof obj[prop] == 'function' ? null : obj[prop];
+	//	|	} 
+	//	|	var observable = dojox.lang.makeObservable(onRead,onWrite);
+	//	|	var obj = {foo:1,bar:function(){}};
+	//	|	obj = observable(obj);
+	//	|	obj.foo -> 1
+	//	|	obj.bar -> null
+	//
+	hiddenFunctions = hiddenFunctions || {};
+	onInvoke = onInvoke || function(scope,obj,method,args){
+		// default implementation for onInvoke, just passes the call through
+		return obj[method].apply(scope,args);
+	};
+	function makeInvoker(scope,wrapped,i){
+		return function(){
+			// this is function used for all methods in the wrapper object
+			return onInvoke(scope,wrapped,i,arguments);
+		};
+	}
+	
+	if(dojox.lang.lettableWin){ // create the vb class
+		var factory = dojox.lang.makeObservable;
+		factory.inc = (factory.inc || 0) + 1;
+		// create globals for the getters and setters so they can be accessed from the vbscript
+		var getName = "gettable_"+factory.inc;
+		dojox.lang.lettableWin[getName] = onRead;
+		var setName = "settable_"+factory.inc;
+		dojox.lang.lettableWin[setName] = onWrite;
+		var cache = {};
+		return function(wrapped){
+			if(wrapped.__observable){ // if it already has an observable, use that
+				return wrapped.__observable;
+			}
+			if(wrapped.data__){
+				throw new Error("Can wrap an object that is already wrapped");
+			}			
+			// create the class
+			var props = [];
+			for(var i in hiddenFunctions){
+				props.push(i);
+			}
+			vbReservedWords = {type:1,event:1};
+			// find the unique signature for the class so we can reuse it if possible
+			for(i in wrapped){ 
+				if(i.match(/^[a-zA-Z][\w\$_]*$/) && !(i in hiddenFunctions) && !(i in vbReservedWords)){ //can only do properties with valid vb names/tokens and primitive values
+					props.push(i);
+				}
+			}
+			var signature = props.join(",");
+			var prop,clazz = cache[signature]; 
+			if(!clazz){ 
+				var tname = "dj_lettable_"+(factory.inc++);
+				var gtname = tname+"_dj_getter";
+				var cParts = [
+					"Class "+tname,
+					"	Public data__" // this our reference to the original object
+				];
+				for(i = 0,  l = props.length; i < l; i++){
+					prop = props[i];
+					var type = typeof wrapped[prop];
+					if(type == 'function' || hiddenFunctions[prop]){ // functions must go in regular properties for delegation:/
+						cParts.push("  Public " + prop);
+					}else if(type != 'object'){ // the getters/setters can only be applied to primitives
+						cParts.push(
+							"	Public Property Let "+prop+"(val)",
+							"		Call "+setName+"(me.data__,\""+prop+"\",val)",
+							"	End Property",
+							"	Public Property Get "+prop,
+							"		"+prop+" = "+getName+"(me.data__,\""+prop+"\")",
+							"	End Property");
+					}
+				}
+				cParts.push("End Class");
+				cParts.push(
+					"Function "+gtname+"()",
+					"	Dim tmp",
+					"	Set tmp = New "+tname,
+					"	Set "+gtname+" = tmp",
+					"End Function");
+				dojox.lang.lettableWin.vbEval(cParts.join("\n"));
+					
+				// Put the new class in the cache
+				cache[signature] = clazz = function(){
+					return dojox.lang.lettableWin.construct(gtname); // the class can't be accessed, only called, so we have to wrap it with a function
+				};
+			}
+			
+			var newObj = clazz();
+			newObj.data__ = wrapped;
+			
+			try {
+				wrapped.__observable = newObj;
+			} catch(e){ // some objects are not expando
+			}
+			for(i = 0,  l = props.length; i < l; i++){
+				prop = props[i];
+				try {
+				var val = wrapped[prop];
+				}
+				catch(e){
+					
+				}
+				if(typeof val == 'function' || hiddenFunctions[prop]){ // we can make a delegate function here
+					newObj[prop] = makeInvoker(newObj,wrapped,prop);
+				}
+			}
+			return newObj;
+		};
+	}else{
+		return function(wrapped){ // do it with getters and setters
+			if(wrapped.__observable){ // if it already has an observable, use that
+				return wrapped.__observable;
+			}
+			var newObj = wrapped instanceof Array ? [] : {};
+			newObj.data__ = wrapped;
+			for(var i in wrapped){
+				if(i.charAt(0) != '_'){
+					if(typeof wrapped[i] == 'function'){
+						newObj[i] = makeInvoker(newObj,wrapped,i); // TODO: setup getters and setters so we can detect when this changes
+					}else if(typeof wrapped[i] != 'object'){
+						(function(i){
+							newObj.__defineGetter__(i,function(){
+								return onRead(wrapped,i);
+							});
+							newObj.__defineSetter__(i,function(value){
+								return onWrite(wrapped,i,value);
+							});
+						})(i);
+					}
+				}
+			}
+			for(i in hiddenFunctions){
+				newObj[i] = makeInvoker(newObj,wrapped,i);
+			}
+			wrapped.__observable = newObj;
+			return newObj;
+		};
+	}
 };
 if(!{}.__defineGetter__){
-if(dojo.isIE){
-var frame;
-if(document.body){
-frame=document.createElement("iframe");
-document.body.appendChild(frame);
-}else{
-document.write("<iframe id='dj_vb_eval_frame'></iframe>");
-frame=document.getElementById("dj_vb_eval_frame");
+	if(dojo.isIE){
+		// to setup the crazy lettable hack we need to
+		// introduce vb script eval
+		// the only way that seems to work for adding a VBScript to the page is with a document.write
+		// document.write is not always available, so we use an iframe to do the document.write
+		// the iframe also provides a good hiding place for all the global variables that we must
+		// create in order for JScript and VBScript to interact.
+		var frame;
+		if(document.body){ // if the DOM is ready we can add it
+			frame = document.createElement("iframe");
+			document.body.appendChild(frame);
+		}else{ // other we have to write it out
+			document.write("<iframe id='dj_vb_eval_frame'></iframe>");
+			frame = document.getElementById("dj_vb_eval_frame");
+		}
+		frame.style.display="none";
+		var doc = frame.contentWindow.document;
+		dojox.lang.lettableWin = frame.contentWindow;
+		doc.write('<html><head><script language="VBScript" type="text/VBScript">' + 
+			'Function vb_global_eval(code)' +
+				'ExecuteGlobal(code)' +
+			'End Function' +
+			'</script>' +
+			'<script type="text/javascript">' + 
+			'function vbEval(code){ \n' + // this has to be here to call it from another frame
+				'return vb_global_eval(code);' +
+			'}' +
+			'function construct(name){ \n' + // and this too 
+				'return window[name]();' +
+			'}' +
+			'</script>' +
+			'</head><body>vb-eval</body></html>');
+		doc.close();
+	}else{
+		throw new Error("This browser does not support getters and setters");
+	}
 }
-frame.style.display="none";
-var doc=frame.contentWindow.document;
-dojox.lang.lettableWin=frame.contentWindow;
-doc.write("<html><head><script language=\"VBScript\" type=\"text/VBScript\">"+"Function vb_global_eval(code)"+"ExecuteGlobal(code)"+"End Function"+"</script>"+"<script type=\"text/javascript\">"+"function vbEval(code){ \n"+"return vb_global_eval(code);"+"}"+"function construct(name){ \n"+"return window[name]();"+"}"+"</script>"+"</head><body>vb-eval</body></html>");
-doc.close();
-}else{
-throw new Error("This browser does not support getters and setters");
-}
-}
-dojox.lang.ReadOnlyProxy=dojox.lang.makeObservable(function(obj,i){
-return obj[i];
-},function(obj,i,_29){
+
+dojox.lang.ReadOnlyProxy =
+// summary: 
+// 		Provides a read only proxy to another object, this can be 
+// 		very useful in object-capability systems
+// example:
+// 	|	var obj = {foo:"bar"};
+// 	|	var readonlyObj = dojox.lang.ReadOnlyProxy(obj);
+// 	|	readonlyObj.foo = "test" // throws an error
+// 	|	obj.foo = "new bar";
+// 	|	readonlyObj.foo -> returns "new bar", always reflects the current value of the original (it is not just a copy) 
+dojox.lang.makeObservable(function(obj,i){
+		return obj[i];
+	},function(obj,i,value){
+		// just ignore, exceptions don't seem to propagate through the VB stack.
 });
+
 }

@@ -5,100 +5,165 @@
 */
 
 
-if(!dojo._hasResource["dojox.data.CssClassStore"]){
-dojo._hasResource["dojox.data.CssClassStore"]=true;
+if(!dojo._hasResource["dojox.data.CssClassStore"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.data.CssClassStore"] = true;
 dojo.provide("dojox.data.CssClassStore");
+
 dojo.require("dojox.data.CssRuleStore");
-dojo.declare("dojox.data.CssClassStore",dojox.data.CssRuleStore,{_labelAttribute:"class",_idAttribute:"class",_cName:"dojox.data.CssClassStore",getFeatures:function(){
-return {"dojo.data.api.Read":true,"dojo.data.api.Identity":true};
-},getAttributes:function(_1){
-this._assertIsItem(_1);
-return ["class","classSans"];
-},getValue:function(_2,_3,_4){
-var _5=this.getValues(_2,_3);
-if(_5&&_5.length>0){
-return _5[0];
-}
-return _4;
-},getValues:function(_6,_7){
-this._assertIsItem(_6);
-this._assertIsAttribute(_7);
-var _8=[];
-if(_7==="class"){
-_8=[_6.className];
-}else{
-if(_7==="classSans"){
-_8=[_6.className.replace(/\./g,"")];
-}
-}
-return _8;
-},_handleRule:function(_9,_a,_b){
-var _c={};
-var s=_9["selectorText"].split(" ");
-for(j=0;j<s.length;j++){
-var _e=s[j];
-var _f=_e.indexOf(".");
-if(_e&&_e.length>0&&_f!==-1){
-var _10=_e.indexOf(",")||_e.indexOf("[");
-_e=_e.substring(_f,((_10!==-1&&_10>_f)?_10:_e.length));
-_c[_e]=true;
-}
-}
-for(var key in _c){
-if(!this._allItems[key]){
-var _12={};
-_12.className=key;
-_12[this._storeRef]=this;
-this._allItems[key]=_12;
-}
-}
-},_handleReturn:function(){
-var _13=[];
-var _14={};
-for(var i in this._allItems){
-_14[i]=this._allItems[i];
-}
-var _16;
-while(this._pending.length){
-_16=this._pending.pop();
-_16.request._items=_14;
-_13.push(_16);
-}
-while(_13.length){
-_16=_13.pop();
-if(_16.fetch){
-this._handleFetchReturn(_16.request);
-}else{
-this._handleFetchByIdentityReturn(_16.request);
-}
-}
-},_handleFetchByIdentityReturn:function(_17){
-var _18=_17._items;
-var _19=_18[(dojo.isSafari?_17.identity.toLowerCase():_17.identity)];
-if(!this.isItem(_19)){
-_19=null;
-}
-if(_17.onItem){
-var _1a=_17.scope||dojo.global;
-_17.onItem.call(_1a,_19);
-}
-},getIdentity:function(_1b){
-this._assertIsItem(_1b);
-return this.getValue(_1b,this._idAttribute);
-},getIdentityAttributes:function(_1c){
-this._assertIsItem(_1c);
-return [this._idAttribute];
-},fetchItemByIdentity:function(_1d){
-_1d=_1d||{};
-if(!_1d.store){
-_1d.store=this;
-}
-if(this._pending&&this._pending.length>0){
-this._pending.push({request:_1d});
-}else{
-this._pending=[{request:_1d}];
-this._fetch(_1d);
-}
-return _1d;
-}});
+
+dojo.declare("dojox.data.CssClassStore", dojox.data.CssRuleStore, {
+	//	summary:
+	//		Basic store to display CSS information.
+	//	description:
+	//		The CssClassStore allows users to get information about active Css classes in the page running the CssClassStore.
+	//		It can also filter out classes from specific stylesheets.  The attributes it exposes on classes are as follows:
+	//			class:		The classname, including the '.'.
+	//			classSans:	The classname without the '.'.
+
+	_labelAttribute: 'class', // text representation of the Item [label and identifier may need to stay due to method names]
+	_idAttribute: 'class',
+	_cName: "dojox.data.CssClassStore",
+
+	getFeatures: function(){
+		//	summary: 
+		//		See dojo.data.api.Read.getFeatures()
+		return { 
+			"dojo.data.api.Read" : true,
+			"dojo.data.api.Identity" : true 
+		};
+	},
+
+	getAttributes: function(item){
+		//	summary: 
+		//		See dojo.data.api.Read.getAttributes()
+		this._assertIsItem(item);
+		return ['class', 'classSans'];
+	},
+
+	getValue: function(item, attribute, defaultValue){
+		//	summary: 
+		//		See dojo.data.api.Read.getValue()
+		var values = this.getValues(item, attribute);
+		if(values && values.length > 0){
+			return values[0];
+		}
+		return defaultValue;
+	},
+
+	getValues: function(item, attribute){
+		//	summary: 
+		//		See dojo.data.api.Read.getValues()
+		this._assertIsItem(item);
+		this._assertIsAttribute(attribute);
+		var value = [];
+		if(attribute === "class"){
+			value = [item.className];
+		}else if(attribute === "classSans"){
+			value = [item.className.replace(/\./g,'')];
+		}
+		return value;
+	},
+
+	_handleRule: function(rule, styleSheet, href){
+		//	summary:
+		//		Handles the creation of an item based on the passed rule.  In this store, this implies
+		//		parsing out all available class names.
+		var obj = {};
+		var s = rule['selectorText'].split(" ");
+		for(j = 0; j < s.length; j++){
+			var tmp = s[j];
+			var first = tmp.indexOf('.');
+			if(tmp && tmp.length > 0 && first !== -1){
+				var last = tmp.indexOf(',') || tmp.indexOf('[');
+				tmp = tmp.substring(first, ((last !== -1 && last > first)?last:tmp.length));
+				obj[tmp] = true;
+			}
+		}
+		for(var key in obj){
+			if(!this._allItems[key]){
+				var item = {};
+				item.className = key;
+				item[this._storeRef] = this;
+				this._allItems[key] = item;
+			}
+		}
+	},
+
+	_handleReturn: function(){
+		//	summary:
+		//		Handles the return from a fetching action.  Delegates requests to act on the resulting
+		//		item set to eitehr the _handleFetchReturn or _handleFetchByIdentityReturn depending on
+		//		where the request originated.  
+		var _inProgress = [];
+		
+		var items = {};
+		for(var i in this._allItems){
+			items[i] = this._allItems[i];
+		}
+		var requestInfo;
+		// One-level deep clone (can't use dojo.clone, since we don't want to clone all those store refs!)
+		while(this._pending.length){
+			requestInfo = this._pending.pop();
+			requestInfo.request._items = items;
+			_inProgress.push(requestInfo);
+		}
+
+		while (_inProgress.length) {
+			requestInfo = _inProgress.pop();
+			if(requestInfo.fetch){
+				this._handleFetchReturn(requestInfo.request);
+			}else{
+				this._handleFetchByIdentityReturn(requestInfo.request);
+			}
+		}
+	},
+
+	_handleFetchByIdentityReturn: function(request){
+		//	summary:
+		//		Handles a fetchByIdentity request by finding the correct item.
+		var items = request._items;
+		// Per https://bugs.webkit.org/show_bug.cgi?id=17935 , Safari 3.x always returns the selectorText 
+		// of a rule in full lowercase.
+		var item = items[(dojo.isSafari?request.identity.toLowerCase():request.identity)];
+		if(!this.isItem(item)){
+			item = null;
+		}
+		if(request.onItem){
+			var scope = request.scope || dojo.global;
+			request.onItem.call(scope, item);
+		}
+	},
+
+	/* Identity API */
+	getIdentity: function(/* item */ item){
+		//	summary: 
+		//		See dojo.data.api.Identity.getIdentity()
+		this._assertIsItem(item);
+		return this.getValue(item, this._idAttribute);
+	},
+
+	getIdentityAttributes: function(/* item */ item){
+		 //	summary: 
+		 //		See dojo.data.api.Identity.getIdentityAttributes()
+		this._assertIsItem(item);
+		return [this._idAttribute];
+	},
+
+	fetchItemByIdentity: function(/* request */ request){
+		//	summary: 
+		//		See dojo.data.api.Identity.fetchItemByIdentity()
+		request =  request || {};
+		if(!request.store){
+			request.store = this;
+		}
+		if(this._pending && this._pending.length > 0){
+			this._pending.push({request: request});
+		}else{
+			this._pending = [{request: request}];
+			this._fetch(request);
+		}
+		return request;
+	}
+});
+
 }

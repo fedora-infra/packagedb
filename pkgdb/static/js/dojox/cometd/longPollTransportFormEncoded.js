@@ -5,113 +5,159 @@
 */
 
 
-if(!dojo._hasResource["dojox.cometd.longPollTransportFormEncoded"]){
-dojo._hasResource["dojox.cometd.longPollTransportFormEncoded"]=true;
+if(!dojo._hasResource["dojox.cometd.longPollTransportFormEncoded"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.cometd.longPollTransportFormEncoded"] = true;
 dojo.provide("dojox.cometd.longPollTransportFormEncoded");
 dojo.require("dojox.cometd._base");
-dojox.cometd.longPollTransportFormEncoded=new function(){
-this._connectionType="long-polling";
-this._cometd=null;
-this.check=function(_1,_2,_3){
-return ((!_3)&&(dojo.indexOf(_1,"long-polling")>=0));
-};
-this.tunnelInit=function(){
-var _4={channel:"/meta/connect",clientId:this._cometd.clientId,connectionType:this._connectionType,id:""+this._cometd.messageId++};
-_4=this._cometd._extendOut(_4);
-this.openTunnelWith({message:dojo.toJson([_4])});
-};
-this.tunnelCollapse=function(){
-if(!this._cometd._initialized){
-return;
+
+dojox.cometd.longPollTransportFormEncoded = new function(){
+	// This is an alternative implementation to that provided in logPollTransport.js that 
+	// form encodes all messages instead of sending them as text/json
+	
+	this._connectionType = "long-polling";
+	this._cometd = null;
+
+	this.check = function(types, version, xdomain){
+		return ((!xdomain)&&(dojo.indexOf(types, "long-polling") >= 0));
+	}
+
+	this.tunnelInit = function(){
+		var message = {
+			channel: "/meta/connect",
+			clientId: this._cometd.clientId,
+			connectionType: this._connectionType,
+			id:	"" + this._cometd.messageId++
+		};
+		message = this._cometd._extendOut(message);
+		this.openTunnelWith({ message: dojo.toJson([message]) });
+	}
+
+	this.tunnelCollapse = function(){
+		// TODO handle transport specific advice
+		
+		if(!this._cometd._initialized){ return; }
+		if(this._cometd._advice && this._cometd._advice["reconnect"]=="none"){
+			return;
+		}
+		var interval = this._cometd._interval();
+		if (this._cometd._connected) {
+			setTimeout(dojo.hitch(this, "_connect"), interval);
+		}else{
+			setTimeout(dojo.hitch(this._cometd, function(){
+				this.init(this.url, this._props);
+			}), interval);
+		}
+	}
+
+	this._connect = function(){
+		if(!this._cometd._initialized){ return; }
+		if(this._cometd._polling) { return; }
+			
+		if((this._cometd._advice) && (this._cometd._advice["reconnect"]=="handshake")){
+			this._cometd._connected = false;
+			this._initialized = false;
+			this._cometd.init(this._cometd.url, this._cometd._props);
+ 		}else if(this._cometd._connected){
+			var message = {
+				channel: "/meta/connect",
+				connectionType: this._connectionType,
+				clientId: this._cometd.clientId,
+				id:	"" + this._cometd.messageId++
+			};
+			if(this._cometd.connectTimeout>=this._cometd.expectedNetworkDelay){
+				message.advice = { 
+					timeout: this._cometd.connectTimeout - this._cometd.expectedNetworkDelay
+				};
+			}
+			message = this._cometd._extendOut(message);
+			this.openTunnelWith({ message: dojo.toJson([message]) });
+		}
+	}
+
+	this.deliver = function(message){
+		// Nothing to do
+	}
+
+	this.openTunnelWith = function(content, url){
+		this._cometd._polling = true;
+		var post = {
+			url: (url||this._cometd.url),
+			content: content,
+			handleAs: this._cometd.handleAs,
+			load: dojo.hitch(this, function(data){
+				this._cometd._polling=false;
+				this._cometd.deliver(data);
+				this._cometd._backon();
+				this.tunnelCollapse();
+			}),
+			error: dojo.hitch(this, function(err){
+				this._cometd._polling=false;
+				this._cometd._publishMeta("connect",false);
+				this._cometd._backoff();
+				this.tunnelCollapse();
+			})
+		};
+
+		var connectTimeout = this._cometd._connectTimeout();
+		if(connectTimeout > 0){
+			post.timeout = connectTimeout;
+		}
+
+		this._poll = dojo.xhrPost(post);
+	}
+
+	this.sendMessages = function(messages){
+		for(var i=0; i < messages.length; i++){
+			messages[i].clientId = this._cometd.clientId;
+			messages[i].id = "" + this._cometd.messageId++;
+			messages[i]= this._cometd._extendOut(messages[i]);
+		}
+		return dojo.xhrPost({
+			url: this._cometd.url||dojo.config["cometdRoot"],
+			handleAs: this._cometd.handleAs,
+			load: dojo.hitch(this._cometd, "deliver"),
+			content: { message: dojo.toJson(messages) },
+			error: dojo.hitch(this, function(err){
+				this._cometd._publishMeta("publish",false,{messages:messages});
+			}),
+			timeout: this._cometd.expectedNetworkDelay
+		});
+	}
+
+	this.startup = function(handshakeData){
+		if(this._cometd._connected){ return; }
+		this.tunnelInit();
+	}
+
+	this.disconnect = function(){
+		var message = {
+			channel: "/meta/disconnect",
+			clientId: this._cometd.clientId,
+			id: "" + this._cometd.messageId++
+		};
+		message = this._cometd._extendOut(message);
+		dojo.xhrPost({
+			url: this._cometd.url || dojo.config["cometdRoot"],
+			handleAs: this._cometd.handleAs,
+			content: { message: dojo.toJson([message]) }
+		});
+	}
+
+	this.cancelConnect = function(){
+		if(this._poll){
+			this._poll.cancel();
+			this._cometd._polling=false;
+			this._cometd._publishMeta("connect",false,{cancel:true});
+			this._cometd._backoff();
+			this.disconnect();
+			this.tunnelCollapse();
+		}
+	}
 }
-if(this._cometd._advice&&this._cometd._advice["reconnect"]=="none"){
-return;
-}
-var _5=this._cometd._interval();
-if(this._cometd._connected){
-setTimeout(dojo.hitch(this,"_connect"),_5);
-}else{
-setTimeout(dojo.hitch(this._cometd,function(){
-this.init(this.url,this._props);
-}),_5);
-}
-};
-this._connect=function(){
-if(!this._cometd._initialized){
-return;
-}
-if(this._cometd._polling){
-return;
-}
-if((this._cometd._advice)&&(this._cometd._advice["reconnect"]=="handshake")){
-this._cometd._connected=false;
-this._initialized=false;
-this._cometd.init(this._cometd.url,this._cometd._props);
-}else{
-if(this._cometd._connected){
-var _6={channel:"/meta/connect",connectionType:this._connectionType,clientId:this._cometd.clientId,id:""+this._cometd.messageId++};
-if(this._cometd.connectTimeout>=this._cometd.expectedNetworkDelay){
-_6.advice={timeout:this._cometd.connectTimeout-this._cometd.expectedNetworkDelay};
-}
-_6=this._cometd._extendOut(_6);
-this.openTunnelWith({message:dojo.toJson([_6])});
-}
-}
-};
-this.deliver=function(_7){
-};
-this.openTunnelWith=function(_8,_9){
-this._cometd._polling=true;
-var _a={url:(_9||this._cometd.url),content:_8,handleAs:this._cometd.handleAs,load:dojo.hitch(this,function(_b){
-this._cometd._polling=false;
-this._cometd.deliver(_b);
-this._cometd._backon();
-this.tunnelCollapse();
-}),error:dojo.hitch(this,function(_c){
-this._cometd._polling=false;
-this._cometd._publishMeta("connect",false);
-this._cometd._backoff();
-this.tunnelCollapse();
-})};
-var _d=this._cometd._connectTimeout();
-if(_d>0){
-_a.timeout=_d;
-}
-this._poll=dojo.xhrPost(_a);
-};
-this.sendMessages=function(_e){
-for(var i=0;i<_e.length;i++){
-_e[i].clientId=this._cometd.clientId;
-_e[i].id=""+this._cometd.messageId++;
-_e[i]=this._cometd._extendOut(_e[i]);
-}
-return dojo.xhrPost({url:this._cometd.url||dojo.config["cometdRoot"],handleAs:this._cometd.handleAs,load:dojo.hitch(this._cometd,"deliver"),content:{message:dojo.toJson(_e)},error:dojo.hitch(this,function(err){
-this._cometd._publishMeta("publish",false,{messages:_e});
-}),timeout:this._cometd.expectedNetworkDelay});
-};
-this.startup=function(_11){
-if(this._cometd._connected){
-return;
-}
-this.tunnelInit();
-};
-this.disconnect=function(){
-var _12={channel:"/meta/disconnect",clientId:this._cometd.clientId,id:""+this._cometd.messageId++};
-_12=this._cometd._extendOut(_12);
-dojo.xhrPost({url:this._cometd.url||dojo.config["cometdRoot"],handleAs:this._cometd.handleAs,content:{message:dojo.toJson([_12])}});
-};
-this.cancelConnect=function(){
-if(this._poll){
-this._poll.cancel();
-this._cometd._polling=false;
-this._cometd._publishMeta("connect",false,{cancel:true});
-this._cometd._backoff();
-this.disconnect();
-this.tunnelCollapse();
-}
-};
-};
-dojox.cometd.longPollTransport=dojox.cometd.longPollTransportFormEncoded;
-dojox.cometd.connectionTypes.register("long-polling",dojox.cometd.longPollTransport.check,dojox.cometd.longPollTransportFormEncoded);
-dojox.cometd.connectionTypes.register("long-polling-form-encoded",dojox.cometd.longPollTransport.check,dojox.cometd.longPollTransportFormEncoded);
+
+dojox.cometd.longPollTransport = dojox.cometd.longPollTransportFormEncoded;
+
+dojox.cometd.connectionTypes.register("long-polling", dojox.cometd.longPollTransport.check, dojox.cometd.longPollTransportFormEncoded);
+dojox.cometd.connectionTypes.register("long-polling-form-encoded", dojox.cometd.longPollTransport.check, dojox.cometd.longPollTransportFormEncoded);
+
 }

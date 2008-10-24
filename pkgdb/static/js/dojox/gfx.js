@@ -5,82 +5,102 @@
 */
 
 
-if(!dojo._hasResource["dojox.gfx"]){
-dojo._hasResource["dojox.gfx"]=true;
+if(!dojo._hasResource["dojox.gfx"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.gfx"] = true;
 dojo.provide("dojox.gfx");
+
 dojo.require("dojox.gfx.matrix");
 dojo.require("dojox.gfx._base");
-dojo.loadInit(function(){
-var _1=dojo.getObject("dojox.gfx",true),sl,_3,_4;
-if(!_1.renderer){
-var _5=(typeof dojo.config.gfxRenderer=="string"?dojo.config.gfxRenderer:"svg,vml,silverlight,canvas").split(",");
-var ua=navigator.userAgent,_7=0,_8=0;
-if(dojo.isSafari>=3){
-if(ua.indexOf("iPhone")>=0||ua.indexOf("iPod")>=0){
-_4=ua.match(/Version\/(\d(\.\d)?(\.\d)?)\sMobile\/([^\s]*)\s?/);
-if(_4){
-_7=parseInt(_4[4].substr(0,3),16);
-}
-}
-if(!_7){
-_4=ua.match(/Android\s+(\d+\.\d+)/);
-if(_4){
-_8=parseFloat(_4[1]);
-}
-}
-}
-for(var i=0;i<_5.length;++i){
-switch(_5[i]){
-case "svg":
-if(!dojo.isIE&&(!_7||_7>=1521)&&!_8){
-dojox.gfx.renderer="svg";
-}
-break;
-case "vml":
-if(dojo.isIE){
-dojox.gfx.renderer="vml";
-}
-break;
-case "silverlight":
-try{
-if(dojo.isIE){
-sl=new ActiveXObject("AgControl.AgControl");
-if(sl&&sl.IsVersionSupported("1.0")){
-_3=true;
-}
-}else{
-if(navigator.plugins["Silverlight Plug-In"]){
-_3=true;
-}
-}
-}
-catch(e){
-_3=false;
-}
-finally{
-sl=null;
-}
-if(_3){
-dojox.gfx.renderer="silverlight";
-}
-break;
-case "canvas":
-if(!dojo.isIE){
-dojox.gfx.renderer="canvas";
-}
-break;
-}
-if(dojox.gfx.renderer){
-break;
-}
-}
-if(dojo.config.isDebug){
 
-}
-}
+dojo.loadInit(function(){
+	//Since loaderInit can be fired before any dojo.provide/require calls,
+	//make sure the dojox.gfx object exists and only run this logic if dojox.gfx.renderer
+	//has not been defined yet.
+	var gfx = dojo.getObject("dojox.gfx", true), sl, flag, match;
+	if(!gfx.renderer){
+		var renderers = (typeof dojo.config.gfxRenderer == "string" ?
+			dojo.config.gfxRenderer : "svg,vml,silverlight,canvas").split(",");
+
+		// mobile platform detection
+		// TODO: move to the base?
+
+		var ua = navigator.userAgent, iPhoneOsBuild = 0, androidVersion = 0;
+		if(dojo.isSafari >= 3){
+			// detect mobile version of WebKit starting with "version 3"
+
+			//	comprehensive iPhone test.  Have to figure out whether it's SVG or Canvas based on the build.
+			//	iPhone OS build numbers from en.wikipedia.org.
+			if(ua.indexOf("iPhone") >= 0 || ua.indexOf("iPod") >= 0){
+				//	grab the build out of this.  Expression is a little nasty because we want
+				//		to be sure we have the whole version string.
+				match = ua.match(/Version\/(\d(\.\d)?(\.\d)?)\sMobile\/([^\s]*)\s?/);
+				if(match){
+					//	grab the build out of the match.  Only use the first three because of specific builds.
+					iPhoneOsBuild = parseInt(match[4].substr(0,3), 16);
+				}
+			}
+
+			// Android detection
+			if(!iPhoneOsBuild){
+				match = ua.match(/Android\s+(\d+\.\d+)/);
+				if(match){
+					androidVersion = parseFloat(match[1]);
+					// Android 1.0 doesn't support SVG but supports Canvas
+				}
+			}
+		}
+
+		for(var i = 0; i < renderers.length; ++i){
+			switch(renderers[i]){
+				case "svg":
+					//	iPhone OS builds greater than 5F1 should have SVG.
+					if(!dojo.isIE && (!iPhoneOsBuild || iPhoneOsBuild >= 0x5f1) && !androidVersion){
+						dojox.gfx.renderer = "svg";
+					}
+					break;
+				case "vml":
+					if(dojo.isIE){
+						dojox.gfx.renderer = "vml";
+					}
+					break;
+				case "silverlight":
+					try{
+						if(dojo.isIE){
+							sl = new ActiveXObject("AgControl.AgControl");
+							if(sl && sl.IsVersionSupported("1.0")){
+								flag = true;
+							}
+						}else{
+							if(navigator.plugins["Silverlight Plug-In"]){
+								flag = true;
+							}
+						}
+					}catch(e){
+						flag = false;
+					}finally{
+						sl = null;
+					}
+					if(flag){ dojox.gfx.renderer = "silverlight"; }
+					break;
+				case "canvas":
+					//TODO: need more comprehensive test for Canvas
+					if(!dojo.isIE){
+						dojox.gfx.renderer = "canvas";
+					}
+					break;
+			}
+			if(dojox.gfx.renderer){ break; }
+		}
+		if(dojo.config.isDebug){
+			
+		}
+	}
 });
-dojo.requireIf(dojox.gfx.renderer=="svg","dojox.gfx.svg");
-dojo.requireIf(dojox.gfx.renderer=="vml","dojox.gfx.vml");
-dojo.requireIf(dojox.gfx.renderer=="silverlight","dojox.gfx.silverlight");
-dojo.requireIf(dojox.gfx.renderer=="canvas","dojox.gfx.canvas");
+
+// include a renderer conditionally
+dojo.requireIf(dojox.gfx.renderer == "svg", "dojox.gfx.svg");
+dojo.requireIf(dojox.gfx.renderer == "vml", "dojox.gfx.vml");
+dojo.requireIf(dojox.gfx.renderer == "silverlight", "dojox.gfx.silverlight");
+dojo.requireIf(dojox.gfx.renderer == "canvas", "dojox.gfx.canvas");
+
 }

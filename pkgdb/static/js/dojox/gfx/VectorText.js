@@ -5,362 +5,784 @@
 */
 
 
-if(!dojo._hasResource["dojox.gfx.VectorText"]){
-dojo._hasResource["dojox.gfx.VectorText"]=true;
+if(!dojo._hasResource["dojox.gfx.VectorText"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.gfx.VectorText"] = true;
 dojo.provide("dojox.gfx.VectorText");
 dojo.require("dojox.gfx");
 dojo.require("dojox.xml.DomParser");
 dojo.require("dojox.html.metrics");
+
 (function(){
-dojo.mixin(dojox.gfx,{vectorFontFitting:{NONE:0,FLOW:1,FIT:2},defaultVectorText:{type:"vectortext",x:0,y:0,width:null,height:null,text:"",align:"start",decoration:"none",fitting:0,leading:1.5},defaultVectorFont:{type:"vectorfont",size:"10pt",family:null},_vectorFontCache:{},_svgFontCache:{},getVectorFont:function(_1){
-if(dojox.gfx._vectorFontCache[_1]){
-return dojox.gfx._vectorFontCache[_1];
-}
-return new dojox.gfx.VectorFont(_1);
-}});
-dojo.declare("dojox.gfx.VectorFont",null,{_entityRe:/&(quot|apos|lt|gt|amp|#x[^;]+|#\d+);/g,_decodeEntitySequence:function(_2){
-if(!_2.match(this._entityRe)){
-return;
-}
-var _3={amp:"&",apos:"'",quot:"\"",lt:"<",gt:">"};
-var r,_5="";
-while((r=this._entityRe.exec(_2))!==null){
-if(r[1].charAt(1)=="x"){
-_5+=String.fromCharCode(r[1].slice(2),16);
-}else{
-if(!isNaN(parseInt(r[1].slice(1),10))){
-_5+=String.fromCharCode(r[1].slice(1));
-}else{
-_5+=_3(r[1]);
-}
-}
-}
-return _5;
-},_parse:function(_6,_7){
-var _8=dojox.gfx._svgFontCache[_7]||dojox.xml.DomParser.parse(_6);
-var f=_8.documentElement.byName("font")[0],_a=_8.documentElement.byName("font-face")[0];
-var _b=parseFloat(_a.getAttribute("units-per-em")||1000,10);
-var _c={x:parseFloat(f.getAttribute("horiz-adv-x"),10),y:parseFloat(f.getAttribute("vert-adv-y")||0,10)};
-if(!_c.y){
-_c.y=_b;
-}
-var _d={horiz:{x:parseFloat(f.getAttribute("horiz-origin-x")||0,10),y:parseFloat(f.getAttribute("horiz-origin-y")||0,10)},vert:{x:parseFloat(f.getAttribute("vert-origin-x")||0,10),y:parseFloat(f.getAttribute("vert-origin-y")||0,10)}};
-var _e=_a.getAttribute("font-family"),_f=_a.getAttribute("font-style")||"all",_10=_a.getAttribute("font-variant")||"normal",_11=_a.getAttribute("font-weight")||"all",_12=_a.getAttribute("font-stretch")||"normal",_13=_a.getAttribute("unicode-range")||"U+0-10FFFF",_14=_a.getAttribute("panose-1")||"0 0 0 0 0 0 0 0 0 0",_15=_a.getAttribute("cap-height"),_16=parseFloat(_a.getAttribute("ascent")||(_b-_d.vert.y),10),_17=parseFloat(_a.getAttribute("descent")||_d.vert.y,10),_18={};
-var _19=_e;
-if(_a.byName("font-face-name")[0]){
-_19=_a.byName("font-face-name")[0].getAttribute("name");
-}
-if(dojox.gfx._vectorFontCache[_19]){
-return;
-}
-dojo.forEach(["alphabetic","ideographic","mathematical","hanging"],function(_1a){
-var a=_a.getAttribute(_1a);
-if(a!==null){
-_18[_1a]=parseFloat(a,10);
-}
-});
-var _1c=parseFloat(_8.documentElement.byName("missing-glyph")[0].getAttribute("horiz-adv-x")||_c.x,10);
-var _1d={},_1e={},g=_8.documentElement.byName("glyph");
-dojo.forEach(g,function(_20){
-var _21=_20.getAttribute("unicode"),_19=_20.getAttribute("glyph-name"),_22=parseFloat(_20.getAttribute("horiz-adv-x")||_c.x,10),_23=_20.getAttribute("d");
-if(_21.match(this._entityRe)){
-_21=this._decodeEntitySequence(_21);
-}
-var o={code:_21,name:_19,xAdvance:_22,path:_23};
-_1d[_21]=o;
-_1e[_19]=o;
-},this);
-var _25=_8.documentElement.byName("hkern");
-dojo.forEach(_25,function(_26,i){
-var k=-parseInt(_26.getAttribute("k"),10);
-var u1=_26.getAttribute("u1"),g1=_26.getAttribute("g1"),u2=_26.getAttribute("u2"),g2=_26.getAttribute("g2"),gl;
-if(u1){
-u1=this._decodeEntitySequence(u1);
-if(_1d[u1]){
-gl=_1d[u1];
-}
-}else{
-if(_1e[g1]){
-gl=_1e[g1];
-}
-}
-if(gl){
-if(!gl.kern){
-gl.kern={};
-}
-if(u2){
-u2=this._decodeEntitySequence(u2);
-gl.kern[u2]={x:k};
-}else{
-if(_1e[g2]){
-gl.kern[_1e[g2].code]={x:k};
-}
-}
-}
-},this);
-dojo.mixin(this,{family:_e,name:_19,style:_f,variant:_10,weight:_11,stretch:_12,range:_13,viewbox:{width:_b,height:_b},origin:_d,advance:dojo.mixin(_c,{missing:{x:_1c,y:_1c}}),ascent:_16,descent:_17,baseline:_18,glyphs:_1d});
-dojox.gfx._vectorFontCache[_19]=this;
-dojox.gfx._vectorFontCache[_7]=this;
-if(_19!=_e&&!dojox.gfx._vectorFontCache[_e]){
-dojox.gfx._vectorFontCache[_e]=this;
-}
-if(!dojox.gfx._svgFontCache[_7]){
-dojox.gfx._svgFontCache[_7]=_8;
-}
-},_clean:function(){
-var _2e=this.name,_2f=this.family;
-dojo.forEach(["family","name","style","variant","weight","stretch","range","viewbox","origin","advance","ascent","descent","baseline","glyphs"],function(_30){
-try{
-delete this[_30];
-}
-catch(e){
-}
-},this);
-if(dojox.gfx._vectorFontCache[_2e]){
-delete dojox.gfx._vectorFontCache[_2e];
-}
-if(dojox.gfx._vectorFontCache[_2f]){
-delete dojox.gfx._vectorFontCache[_2f];
-}
-return this;
-},constructor:function(url){
-this._defaultLeading=1.5;
-if(url!==undefined){
-this.load(url);
-}
-},load:function(url){
-this.onLoadBegin(url.toString());
-this._parse(dojox.gfx._svgFontCache[url.toString()]||dojo._getText(url.toString()),url.toString());
-this.onLoad(this);
-return this;
-},initialized:function(){
-return (this.glyphs!==null);
-},_round:function(n){
-return Math.round(1000*n)/1000;
-},_leading:function(_34){
-return this.viewbox.height*(_34||this._defaultLeading);
-},_normalize:function(str){
-return str.replace(/\s+/g,String.fromCharCode(32));
-},_getWidth:function(_36){
-var w=0,_38=0,_39=null;
-dojo.forEach(_36,function(_3a,i){
-_38=_3a.xAdvance;
-if(_36[i]&&_3a.kern&&_3a.kern[_36[i].code]){
-_38+=_3a.kern[_36[i].code].x;
-}
-w+=_38;
-_39=_3a;
-});
-if(_39&&_39.code==" "){
-w-=_39.xAdvance;
-}
-return this._round(w);
-},_getLongestLine:function(_3c){
-var _3d=0,idx=0;
-dojo.forEach(_3c,function(_3f,i){
-var max=Math.max(_3d,this._getWidth(_3f));
-if(max>_3d){
-_3d=max;
-idx=i;
-}
-},this);
-return {width:_3d,index:idx,line:_3c[idx]};
-},_trim:function(_42){
-var fn=function(arr){
-if(!arr.length){
-return;
-}
-if(arr[arr.length-1].code==" "){
-arr.splice(arr.length-1,1);
-}
-if(!arr.length){
-return;
-}
-if(arr[0].code==" "){
-arr.splice(0,1);
-}
-};
-if(dojo.isArray(_42[0])){
-dojo.forEach(_42,fn);
-}else{
-fn(_42);
-}
-return _42;
-},_split:function(_45,_46){
-var w=this._getWidth(_45),_48=Math.floor(w/_46),_49=[],cw=0,c=[],_4c=false;
-for(var i=0,l=_45.length;i<l;i++){
-if(_45[i].code==" "){
-_4c=true;
-}
-cw+=_45[i].xAdvance;
-if(i+1<l&&_45[i].kern&&_45[i].kern[_45[i+1].code]){
-cw+=_45[i].kern[_45[i+1].code].x;
-}
-if(cw>=_48){
-var chr=_45[i];
-while(_4c&&chr.code!=" "&&i>=0){
-chr=c.pop();
-i--;
-}
-_49.push(c);
-c=[];
-cw=0;
-_4c=false;
-}
-c.push(_45[i]);
-}
-if(c.length){
-_49.push(c);
-}
-return this._trim(_49);
-},_getSizeFactor:function(_50){
-_50+="";
-var _51=dojox.html.metrics.getCachedFontMeasurements(),_52=this.viewbox.height,f=_51["1em"],_54=parseFloat(_50,10);
-if(_50.indexOf("em")>-1){
-return this._round((_51["1em"]*_54)/_52);
-}else{
-if(_50.indexOf("ex")>-1){
-return this._round((_51["1ex"]*_54)/_52);
-}else{
-if(_50.indexOf("pt")>-1){
-return this._round(((_51["12pt"]/12)*_54)/_52);
-}else{
-if(_50.indexOf("px")>-1){
-return this._round(((_51["16px"]/16)*_54)/_52);
-}else{
-if(_50.indexOf("%")>-1){
-return this._round((_51["1em"]*(_54/100))/_52);
-}else{
-f=_51[_50]||_51.medium;
-return this._round(f/_52);
-}
-}
-}
-}
-}
-},_getFitFactor:function(_55,w,h,l){
-if(!h){
-return this._round(w/this._getWidth(_55));
-}else{
-var _59=this._getLongestLine(_55).width,_5a=(_55.length*(this.viewbox.height*l))-((this.viewbox.height*l)-this.viewbox.height);
-return this._round(Math.min(w/_59,h/_5a));
-}
-},_getBestFit:function(_5b,w,h,_5e){
-var _5f=32,_60=0,_61=_5f;
-while(_5f>0){
-var f=this._getFitFactor(this._split(_5b,_5f),w,h,_5e);
-if(f>_60){
-_60=f;
-_61=_5f;
-}
-_5f--;
-}
-return {scale:_60,lines:this._split(_5b,_61)};
-},_getBestFlow:function(_63,w,_65){
-var _66=[],cw=0,c=[],_69=false;
-for(var i=0,l=_63.length;i<l;i++){
-if(_63[i].code==" "){
-_69=true;
-}
-var tw=_63[i].xAdvance;
-if(i+1<l&&_63[i].kern&&_63[i].kern[_63[i+1].code]){
-tw+=_63[i].kern[_63[i+1].code].x;
-}
-cw+=_65*tw;
-if(cw>=w){
-var chr=_63[i];
-while(_69&&chr.code!=" "&&i>=0){
-chr=c.pop();
-i--;
-}
-_66.push(c);
-c=[];
-cw=0;
-_69=false;
-}
-c.push(_63[i]);
-}
-if(c.length){
-_66.push(c);
-}
-return this._trim(_66);
-},getWidth:function(_6e,_6f){
-return this._getWidth(dojo.map(this._normalize(_6e).split(""),function(chr){
-return this.glyphs[chr]||{xAdvance:this.advance.missing.x};
-},this))*(_6f||1);
-},getLineHeight:function(_71){
-return this.viewbox.height*(_71||1);
-},getCenterline:function(_72){
-return (_72||1)*(this.viewbox.height/2);
-},getBaseline:function(_73){
-return (_73||1)*(this.viewbox.height+this.descent);
-},draw:function(_74,_75,_76,_77,_78){
-if(!this.initialized()){
-throw new Error("dojox.gfx.VectorFont.draw(): we have not been initialized yet.");
-}
-var g=_74.createGroup();
-if(_75.x||_75.y){
-_74.applyTransform({dx:_75.x||0,dy:_75.y||0});
-}
-var _7a=dojo.map(this._normalize(_75.text).split(""),function(chr){
-return this.glyphs[chr]||{path:null,xAdvance:this.advance.missing.x};
-},this);
-var _7c=_76.size,_7d=_75.fitting,_7e=_75.width,_7f=_75.height,_80=_75.align,_81=_75.leading||this._defaultLeading;
-if(_7d){
-if((_7d==dojox.gfx.vectorFontFitting.FLOW&&!_7e)||(_7d==dojox.gfx.vectorFontFitting.FIT&&(!_7e||!_7f))){
-_7d=dojox.gfx.vectorFontFitting.NONE;
-}
-}
-var _82,_83;
-switch(_7d){
-case dojox.gfx.vectorFontFitting.FIT:
-var o=this._getBestFit(_7a,_7e,_7f,_81);
-_83=o.scale;
-_82=o.lines;
-break;
-case dojox.gfx.vectorFontFitting.FLOW:
-_83=this._getSizeFactor(_7c);
-_82=this._getBestFlow(_7a,_7e,_83);
-break;
-default:
-_83=this._getSizeFactor(_7c);
-_82=[_7a];
-}
-_82=dojo.filter(_82,function(_85){
-return _85.length>0;
-});
-var cy=0,_87=this._getLongestLine(_82).width;
-for(var i=0,l=_82.length;i<l;i++){
-var cx=0,_8b=_82[i],_8c=this._getWidth(_8b),lg=g.createGroup();
-for(var j=0;j<_8b.length;j++){
-var _8f=_8b[j];
-if(_8f.path!==null){
-var p=lg.createPath(_8f.path).setFill(_77);
-if(_78){
-p.setStroke(_78);
-}
-p.setTransform([dojox.gfx.matrix.flipY,dojox.gfx.matrix.translate(cx,-this.viewbox.height-this.descent)]);
-}
-cx+=_8f.xAdvance;
-if(j+1<_8b.length&&_8f.kern&&_8f.kern[_8b[j+1].code]){
-cx+=_8f.kern[_8b[j+1].code].x;
-}
-}
-var dx=0;
-if(_80=="middle"){
-dx=_87/2-_8c/2;
-}else{
-if(_80=="end"){
-dx=_87-_8c;
-}
-}
-lg.setTransform({dx:dx,dy:cy});
-cy+=this.viewbox.height*_81;
-}
-g.setTransform(dojox.gfx.matrix.scale(_83));
-return g;
-},onLoadBegin:function(url){
-},onLoad:function(_93){
-}});
+	/*
+		dojox.gfx.VectorText
+		An implementation of the SVG Font 1.1 spec, using dojox.gfx.
+
+		Basic interface:
+		var f = new dojox.gfx.Font(url|string);
+		surface||group.createVectorText(text)
+			.setFill(fill)
+			.setStroke(stroke)
+			.setFont(fontStyleObject);
+
+		The arguments passed to createVectorText are the same as you would
+		pass to surface||group.createText; the difference is that this
+		is entirely renderer-agnostic, and the return value is a subclass
+		of dojox.gfx.Group.
+
+		Note also that the "defaultText" object is slightly different:
+		{ type:"vectortext", x:0, y:0, width:null, height: null,
+			text: "", align: "start", decoration: "none" }
+
+		...as well as the "defaultVectorFont" object:
+		{ type:"vectorfont", size:"10pt" }
+
+		The reason for this should be obvious: most of the style for the font is defined
+		by the font object itself.
+
+		Note that this will only render IF and WHEN you set the font.
+	 */
+	dojo.mixin(dojox.gfx, {
+		vectorFontFitting: {
+			NONE: 0,	//	render text according to passed size.
+			FLOW: 1,		//	render text based on the passed width and size
+			FIT: 2			//	render text based on a passed viewbox.
+		},
+		defaultVectorText: {
+			type:"vectortext", x:0, y:0, width: null, height: null,
+			text: "", align: "start", decoration: "none", fitting: 0,	//	vectorFontFitting.NONE
+			leading: 1.5	//	in ems.
+		},
+		defaultVectorFont: {
+			type:"vectorfont", size: "10pt", family: null
+		},
+		_vectorFontCache: {},
+		_svgFontCache: {},
+		getVectorFont: function(/* String */url){
+			if(dojox.gfx._vectorFontCache[url]){
+				return dojox.gfx._vectorFontCache[url];
+			}
+			return new dojox.gfx.VectorFont(url);
+		}
+	});
+
+	dojo.declare("dojox.gfx.VectorFont", null, {
+		_entityRe: /&(quot|apos|lt|gt|amp|#x[^;]+|#\d+);/g,
+		_decodeEntitySequence: function(str){
+			//	unescape the unicode sequences
+
+			//	nothing to decode
+			if(!str.match(this._entityRe)){ return; }  // undefined
+			var xmlEntityMap = {
+				amp:"&", apos:"'", quot:'"', lt:"<", gt:">"
+			};
+
+			//	we have at least one encoded entity.
+			var r, tmp="";
+			while((r=this._entityRe.exec(str))!==null){
+				if(r[1].charAt(1)=="x"){
+					tmp+=String.fromCharCode(r[1].slice(2), 16);
+				}
+				else if(!isNaN(parseInt(r[1].slice(1),10))){
+					tmp+=String.fromCharCode(r[1].slice(1));
+				}
+				else {
+					tmp+=xmlEntityMap(r[1]);
+				}
+			}
+			return tmp;	//	String
+		},
+		_parse: function(/* String */svg, /* String */url){
+			//	summary:
+			//		Take the loaded SVG Font definition file and convert the info
+			//		into things we can use. The SVG Font definition must follow
+			//		the SVG 1.1 Font specification.
+			var doc = dojox.gfx._svgFontCache[url]||dojox.xml.DomParser.parse(svg);
+
+			//	font information
+			var f = doc.documentElement.byName("font")[0], face = doc.documentElement.byName("font-face")[0];
+			var unitsPerEm = parseFloat(face.getAttribute("units-per-em")||1000, 10);
+			var advance = {
+				x: parseFloat(f.getAttribute("horiz-adv-x"), 10),
+				y: parseFloat(f.getAttribute("vert-adv-y")||0, 10)
+			};
+			if(!advance.y){
+				advance.y = unitsPerEm;
+			}
+
+			var origin = {
+				horiz: {
+					x: parseFloat(f.getAttribute("horiz-origin-x")||0, 10),
+					y: parseFloat(f.getAttribute("horiz-origin-y")||0, 10)
+				},
+				vert: {
+					x: parseFloat(f.getAttribute("vert-origin-x")||0, 10),
+					y: parseFloat(f.getAttribute("vert-origin-y")||0, 10)
+				}
+			};
+
+			//	face information
+			var family = face.getAttribute("font-family"),
+				style = face.getAttribute("font-style")||"all",
+				variant = face.getAttribute("font-variant")||"normal",
+				weight = face.getAttribute("font-weight")||"all",
+				stretch = face.getAttribute("font-stretch")||"normal",
+
+				//	additional info, may not be needed
+				range = face.getAttribute("unicode-range")||"U+0-10FFFF",
+				panose = face.getAttribute("panose-1") || "0 0 0 0 0 0 0 0 0 0",
+				capHeight = face.getAttribute("cap-height"),
+				ascent = parseFloat(face.getAttribute("ascent")||(unitsPerEm-origin.vert.y), 10),
+				descent = parseFloat(face.getAttribute("descent")||origin.vert.y, 10),
+				baseline = {};
+
+			//	check for font-face-src/font-face-name
+			var name = family;
+			if(face.byName("font-face-name")[0]){
+				name = face.byName("font-face-name")[0].getAttribute("name");
+			}
+
+			//	see if this is cached already, and if so, forget the rest of the parsing.
+			if(dojox.gfx._vectorFontCache[name]){ return; }
+
+			//	get any provided baseline alignment offsets.
+			dojo.forEach(["alphabetic", "ideographic", "mathematical", "hanging" ], function(attr){
+				var a = face.getAttribute(attr);
+				if(a !== null /* be explicit, might be 0 */){
+					baseline[attr] = parseFloat(a, 10);
+				}
+			});
+
+		/*
+			//	TODO: decoration hinting.
+			var decoration = { };
+			dojo.forEach(["underline", "strikethrough", "overline"], function(type){
+				if(face.getAttribute(type+"-position")!=null){
+					decoration[type]={ };
+				}
+			});
+		*/
+
+			//	missing glyph info
+			var missing = parseFloat(doc.documentElement.byName("missing-glyph")[0].getAttribute("horiz-adv-x")||advance.x, 10);
+
+			//	glyph information
+			var glyphs = {}, glyphsByName={}, g=doc.documentElement.byName("glyph");
+			dojo.forEach(g, function(node){
+				//	we are going to assume the following:
+				//		1) we have the unicode attribute
+				//		2) we have the name attribute
+				//		3) we have the horiz-adv-x and d attributes.
+				var code = node.getAttribute("unicode"),
+					name = node.getAttribute("glyph-name"),
+					xAdv = parseFloat(node.getAttribute("horiz-adv-x")||advance.x, 10),
+					path = node.getAttribute("d");
+
+				//	unescape the unicode sequences
+				if(code.match(this._entityRe)){
+					code = this._decodeEntitySequence(code);
+				}
+
+				// build our glyph objects
+				var o = { code: code, name: name, xAdvance: xAdv, path: path };
+				glyphs[code]=o;
+				glyphsByName[name]=o;
+			}, this);
+
+			//	now the fun part: look for kerning pairs.
+			var hkern=doc.documentElement.byName("hkern");
+			dojo.forEach(hkern, function(node, i){
+				var k = -parseInt(node.getAttribute("k"),10);
+				//	look for either a code or a name
+				var u1=node.getAttribute("u1"),
+					g1=node.getAttribute("g1"),
+					u2=node.getAttribute("u2"),
+					g2=node.getAttribute("g2"),
+					gl;
+
+				if(u1){
+					//	the first of the pair is a sequence of unicode characters.
+					//	TODO: deal with unicode ranges and mulitple characters.
+					u1 = this._decodeEntitySequence(u1);
+					if(glyphs[u1]){
+						gl = glyphs[u1];
+					}
+				} else {
+					//	we are referring to a name.
+					//	TODO: deal with multiple names
+					if(glyphsByName[g1]){
+						gl = glyphsByName[g1];
+					}
+				}
+
+				if(gl){
+					if(!gl.kern){ gl.kern = {}; }
+					if(u2){
+						//	see the notes above.
+						u2 = this._decodeEntitySequence(u2);
+						gl.kern[u2] = { x: k };
+					} else {
+						if(glyphsByName[g2]){
+							gl.kern[glyphsByName[g2].code] = { x: k };
+						}
+					}
+				}
+			}, this);
+
+			//	pop the final definition in the font cache.
+			dojo.mixin(this, {
+				family: family,
+				name: name,
+				style: style,
+				variant: variant,
+				weight: weight,
+				stretch: stretch,
+				range: range,
+				viewbox: { width: unitsPerEm, height: unitsPerEm },
+				origin: origin,
+				advance: dojo.mixin(advance, {
+					missing:{ x: missing, y: missing }
+				}),
+				ascent: ascent,
+				descent: descent,
+				baseline: baseline,
+				glyphs: glyphs
+			});
+
+			//	cache the parsed font
+			dojox.gfx._vectorFontCache[name] = this;
+			dojox.gfx._vectorFontCache[url] = this;
+			if(name!=family && !dojox.gfx._vectorFontCache[family]){
+				dojox.gfx._vectorFontCache[family] = this;
+			}
+
+			//	cache the doc
+			if(!dojox.gfx._svgFontCache[url]){
+				dojox.gfx._svgFontCache[url]=doc;
+			}
+		},
+		_clean: function(){
+			//	summary:
+			//		Clean off all of the given mixin parameters.
+			var name = this.name, family = this.family;
+			dojo.forEach(["family","name","style","variant",
+				"weight","stretch","range","viewbox",
+				"origin","advance","ascent","descent",
+				"baseline","glyphs"], function(prop){
+					try{ delete this[prop]; } catch(e) { }
+			}, this);
+
+			//	try to pull out of the font cache.
+			if(dojox.gfx._vectorFontCache[name]){
+				delete dojox.gfx._vectorFontCache[name];
+			}
+			if(dojox.gfx._vectorFontCache[family]){
+				delete dojox.gfx._vectorFontCache[family];
+			}
+			return this;
+		},
+
+		constructor: function(/* String|dojo._Url */url){
+			//	summary::
+			//		Create this font object based on the SVG Font definition at url.
+			this._defaultLeading = 1.5;
+			if(url!==undefined){
+				this.load(url);
+			}
+		},
+		load: function(/* String|dojo._Url */url){
+			//	summary::
+			//		Load the passed SVG and send it to the parser for parsing.
+			this.onLoadBegin(url.toString());
+			this._parse(
+				dojox.gfx._svgFontCache[url.toString()]||dojo._getText(url.toString()),
+				url.toString()
+			);
+			this.onLoad(this);
+			return this;	//	dojox.gfx.VectorFont
+		},
+		initialized: function(){
+			//	summary::
+			//		Return if we've loaded a font def, and the parsing was successful.
+			return (this.glyphs!==null);	//	Boolean
+		},
+
+		//	preset round to 3 places.
+		_round: function(n){ return Math.round(1000*n)/1000; },
+		_leading: function(unit){ return this.viewbox.height * (unit||this._defaultLeading); },
+		_normalize: function(str){
+			return str.replace(/\s+/g, String.fromCharCode(0x20));
+		},
+
+		_getWidth: function(glyphs){
+			var w=0, last=0, lastGlyph=null;
+			dojo.forEach(glyphs, function(glyph, i){
+				last=glyph.xAdvance;
+				if(glyphs[i] && glyph.kern && glyph.kern[glyphs[i].code]){
+					last += glyph.kern[glyphs[i].code].x;
+				}
+				w += last;
+				lastGlyph = glyph;
+			});
+
+			//	if the last glyph was a space, pull it off.
+			if(lastGlyph && lastGlyph.code == " "){
+				w -= lastGlyph.xAdvance;
+			}
+
+			return this._round(w/*-last*/);
+		},
+
+		_getLongestLine: function(lines){
+			var maxw=0, idx=0;
+			dojo.forEach(lines, function(line, i){
+				var max = Math.max(maxw, this._getWidth(line));
+				if(max > maxw){
+					maxw = max;
+					idx=i;
+				}
+			}, this);
+			return { width: maxw, index: idx, line: lines[idx] };
+		},
+
+		_trim: function(lines){
+			var fn = function(arr){
+				//	check if the first or last character is a space and if so, remove it.
+				if(!arr.length){ return; }
+				if(arr[arr.length-1].code == " "){ arr.splice(arr.length-1, 1); }
+				if(!arr.length){ return; }
+				if(arr[0].code == " "){ arr.splice(0, 1); }
+			};
+
+			if(dojo.isArray(lines[0])){
+				//	more than one line.
+				dojo.forEach(lines, fn);
+			} else {
+				fn(lines);
+			}
+			return lines;
+		},
+
+		_split: function(chars, nLines){
+			//	summary:
+			//		split passed chars into nLines by finding the closest whitespace.
+			var w = this._getWidth(chars),
+				limit = Math.floor(w/nLines),
+				lines = [],
+				cw = 0,
+				c = [],
+				found = false;
+
+			for(var i=0, l=chars.length; i<l; i++){
+				if(chars[i].code == " "){ found = true; }
+				cw += chars[i].xAdvance;
+				if(i+1<l && chars[i].kern && chars[i].kern[chars[i+1].code]){
+					cw += chars[i].kern[chars[i+1].code].x;
+				}
+
+				if(cw>=limit){
+					var chr=chars[i];
+					while(found && chr.code != " " && i>=0){
+						chr = c.pop(); i--;
+					}
+					lines.push(c);
+					c=[];
+					cw=0;
+					found=false;
+				}
+				c.push(chars[i]);
+			}
+			if(c.length){ lines.push(c); }
+			//	"trim" it
+			return this._trim(lines);
+		},
+
+		_getSizeFactor: function(size){
+			//	given the size, return a scaling factor based on the height of the
+			//	font as defined in the font definition file.
+			size += "";	//	force the string cast.
+			var metrics = dojox.html.metrics.getCachedFontMeasurements(),
+				height=this.viewbox.height,
+				f=metrics["1em"],
+				unit=parseFloat(size, 10);	//	the default.
+			if(size.indexOf("em")>-1){
+				return this._round((metrics["1em"]*unit)/height);
+			}
+			else if(size.indexOf("ex")>-1){
+				return this._round((metrics["1ex"]*unit)/height);
+			}
+			else if(size.indexOf("pt")>-1){
+				return this._round(((metrics["12pt"] / 12)*unit) / height);
+			}
+			else if(size.indexOf("px")>-1){
+				return this._round(((metrics["16px"] / 16)*unit) / height);
+			}
+			else if(size.indexOf("%")>-1){
+				return this._round((metrics["1em"]*(unit / 100)) / height);
+			}
+			else {
+				f=metrics[size]||metrics.medium;
+				return this._round(f/height);
+			}
+		},
+
+		_getFitFactor: function(lines, w, h, l){
+			//	summary:
+			//		Find the scaling factor for the given phrase set.
+			if(!h){
+				//	if no height was passed, we assume an array of glyphs instead of lines.
+				return this._round(w/this._getWidth(lines));
+			} else {
+				var maxw = this._getLongestLine(lines).width,
+					maxh = (lines.length*(this.viewbox.height*l))-((this.viewbox.height*l)-this.viewbox.height);
+				return this._round(Math.min(w/maxw, h/maxh));
+			}
+		},
+		_getBestFit: function(chars, w, h, ldng){
+			//	summary:
+			//		Get the best number of lines to return given w and h.
+			var limit=32,
+				factor=0,
+				lines=limit;
+			while(limit>0){
+				var f=this._getFitFactor(this._split(chars, limit), w, h, ldng);
+				if(f>factor){
+					factor = f;
+					lines=limit;
+				}
+				limit--;
+			}
+			return { scale: factor, lines: this._split(chars, lines) };
+		},
+
+		_getBestFlow: function(chars, w, scale){
+			//	summary:
+			//		Based on the given scale, do the best line splitting possible.
+			var lines = [],
+				cw = 0,
+				c = [],
+				found = false;
+			for(var i=0, l=chars.length; i<l; i++){
+				if(chars[i].code == " "){ found = true; }
+				var tw = chars[i].xAdvance;
+				if(i+1<l && chars[i].kern && chars[i].kern[chars[i+1].code]){
+					tw += chars[i].kern[chars[i+1].code].x;
+				}
+				cw += scale*tw;
+
+				if(cw>=w){
+					var chr=chars[i];
+					while(found && chr.code != " " && i>=0){
+						chr = c.pop(); i--;
+					}
+					lines.push(c);
+					c=[];
+					cw=0;
+					found=false;
+				}
+				c.push(chars[i]);
+			}
+			if(c.length){ lines.push(c); }
+			return this._trim(lines);
+		},
+
+		//	public functions
+		getWidth: function(/* String */text, /* Float? */scale){
+			//	summary:
+			//		Get the width of the rendered text without actually rendering it.
+			return this._getWidth(dojo.map(this._normalize(text).split(""), function(chr){
+				return this.glyphs[chr] || { xAdvance: this.advance.missing.x };
+			}, this)) * (scale || 1);	//	Float
+		},
+		getLineHeight: function(/* Float? */scale){
+			//	summary:
+			//		return the height of a single line, sans leading, based on scale.
+			return this.viewbox.height * (scale || 1);	//	Float
+		},
+
+		//	A note:
+		//		Many SVG exports do not include information such as x-height, caps-height
+		//		and other coords that may help alignment.  We can calc the baseline and
+		//		we can get a mean line (i.e. center alignment) but that's about all, reliably.
+		getCenterline: function(/* Float? */scale){
+			//	summary:
+			//		return the y coordinate that is the center of the viewbox.
+			return (scale||1) * (this.viewbox.height/2);
+		},
+		getBaseline: function(/* Float? */scale){
+			//	summary:
+			//		Find the baseline coord for alignment; adjust for scale if passed.
+			return (scale||1) * (this.viewbox.height+this.descent);	//	Float
+		},
+
+		draw: function(/* dojox.gfx.Container */group, /* dojox.gfx.__TextArgs */textArgs, /* dojox.gfx.__FontArgs */fontArgs, /* dojox.gfx.__FillArgs */fillArgs, /* dojox.gfx.__StrokeArgs? */strokeArgs){
+			//	summary:
+			//		based on the passed parameters, draw the given text using paths
+			//		defined by this font.
+			//
+			//	description:
+			//		The main method of a VectorFont, draw() will take a text fragment
+			//		and render it in a set of groups and paths based on the parameters
+			//		passed.
+			//
+			//		The basics of drawing text are simple enough: pass it your text as
+			//		part of the textArgs object, pass size and family info as part of
+			//		the fontArgs object, pass at least a color as the fillArgs object,
+			//		and if you are looking to create an outline, pass the strokeArgs
+			//		object as well. fillArgs and strokeArgs are the same as any other
+			//		gfx fill and stroke arguments; they are simply applied to any path
+			//		object generated by this method.
+			//
+			//		Resulting GFX structure
+			//		-----------------------
+			//
+			//		The result of this function is a set of gfx objects in the following
+			//		structure:
+			//
+			//	|	dojox.gfx.Group 			//	the parent group generated by this function
+			//	|	+	dojox.gfx.Group[]		//	a group generated for each line of text
+			//	|		+	dojox.gfx.Path[]	//	each glyph/character in the text
+			//
+			//		Scaling transformations (i.e. making the generated text the correct size)
+			//		are always applied to the parent Group that is generated (i.e. the top
+			//		node in the above example).  In theory, if you are looking to do any kind
+			//		of other transformations (such as a translation), you should apply it to
+			//		the group reference you pass to this method.  If you find that you need
+			//		to apply transformations to the group that is returned by this method,
+			//		you will need to reapply the scaling transformation as the *last* transform,
+			//		like so:
+			//
+			//	|	textGroup.setTransform(new dojox.gfx.Matrix2D([
+			//	|		dojox.gfx.matrix.translate({ dx: dx, dy: dy }),
+			//	|		textGroup.getTransform()
+			//	|	]));
+			//
+			//		In general, this should never be necessary unless you are doing advanced
+			//		placement of your text.
+			//
+			//		Advanced Layout Functionality
+			//		-----------------------------
+			//
+			//		In addition to straight text fragments, draw() supports a few advanced
+			//		operations not normally available with vector graphics:
+			//
+			//		* Flow operations (i.e. wrap to a given width)
+			//		* Fitting operations (i.e. find a best fit to a given rectangle)
+			//
+			//		To enable either, pass a `fitting` property along with the textArgs object.
+			//		The possible values are contained in the dojox.gfx.vectorFontFitting enum
+			//		(NONE, FLOW, FIT).
+			//
+			//		`Flow fitting`
+			//		Flow fitting requires both a passed size (in the fontArgs object) and a
+			//		width (passed with the textArgs object).  draw() will attempt to split the
+			//		passed text up into lines, at the closest whitespace according to the
+			//		passed width.  If a width is missing, it will revert to NONE.
+			//
+			//		`Best fit fitting`
+			//		Doing a "best fit" means taking the passed text, and finding the largest
+			//		size and line breaks so that it is the closest fit possible.  With best
+			//		fit, any size arguments are ignored; if a height is missing, it will revert
+			//		to NONE.
+			//
+			//		Other notes
+			//		-----------
+			//
+			//		`a11y`
+			//		Since the results of this method are rendering using pure paths (think
+			//		"convert to outlines" in Adobe Illustrator), any text rendered by this
+			//		code is NOT considered a11y-friendly.  If a11y is a requirement, we
+			//		suggest using other, more a11y-friendly methods.
+			//
+			//		`Font sources`
+			//		Always make sure that you are legally allowed to use any fonts that you
+			//		convert to SVG format; we claim no responsibility for any licensing
+			//		infractions that may be caused by the use of this code.
+			if(!this.initialized()){
+				throw new Error("dojox.gfx.VectorFont.draw(): we have not been initialized yet.");
+			}
+			//	TODO: BIDI handling.  Deal with layout/alignments based on font parameters.
+
+			//	start by creating the overall group.  This is the INNER group (the caller
+			//	should be the outer).
+			var g = group.createGroup();
+
+			//	do the x/y translation on the parent group
+			//	FIXME: this is probably not the best way of doing this.
+			if(textArgs.x || textArgs.y){
+				group.applyTransform({ dx: textArgs.x||0, dy: textArgs.y||0 });
+			}
+
+			//	go get the glyph array.
+			var text = dojo.map(this._normalize(textArgs.text).split(""), function(chr){
+				return this.glyphs[chr] || { path:null, xAdvance: this.advance.missing.x };
+			}, this);
+
+			//	determine the font style info, ignore decoration.
+			var size = fontArgs.size,
+				fitting = textArgs.fitting,
+				width = textArgs.width,
+				height = textArgs.height,
+				align = textArgs.align,
+				leading = textArgs.leading||this._defaultLeading;
+
+			//	figure out if we have to do fitting at all.
+			if(fitting){
+				//	more than zero.
+				if((fitting==dojox.gfx.vectorFontFitting.FLOW && !width) || (fitting==dojox.gfx.vectorFontFitting.FIT && (!width || !height))){
+					//	reset the fitting if we don't have everything we need.
+					fitting = dojox.gfx.vectorFontFitting.NONE;
+				}
+			}
+
+			//	set up the lines array and the scaling factor.
+			var lines, scale;
+			switch(fitting){
+				case dojox.gfx.vectorFontFitting.FIT:
+					var o=this._getBestFit(text, width, height, leading);
+					scale = o.scale;
+					lines = o.lines;
+					break;
+
+				case dojox.gfx.vectorFontFitting.FLOW:
+					scale = this._getSizeFactor(size);
+					lines = this._getBestFlow(text, width, scale);
+					break;
+
+				default:
+					scale = this._getSizeFactor(size);
+					lines = [ text ];
+
+			}
+
+			//	make sure lines doesn't have any empty lines.
+			lines = dojo.filter(lines, function(item){
+				return item.length>0;
+			});
+
+			//	let's start drawing.
+			var cy = 0,
+				maxw = this._getLongestLine(lines).width;
+
+			for(var i=0, l=lines.length; i<l; i++){
+				var cx = 0,
+					line=lines[i],
+					linew = this._getWidth(line),
+					lg=g.createGroup();
+
+				//	loop through the glyphs and add them to the line group (lg)
+				for (var j=0; j<line.length; j++){
+					var glyph=line[j];
+					if(glyph.path!==null){
+						var p = lg.createPath(glyph.path).setFill(fillArgs);
+						if(strokeArgs){ p.setStroke(strokeArgs); }
+						p.setTransform([
+							dojox.gfx.matrix.flipY,
+							dojox.gfx.matrix.translate(cx, -this.viewbox.height-this.descent)
+						]);
+					}
+					cx += glyph.xAdvance;
+					if(j+1<line.length && glyph.kern && glyph.kern[line[j+1].code]){
+						cx += glyph.kern[line[j+1].code].x;
+					}
+				}
+
+				//	transform the line group.
+				var dx = 0;
+				if(align=="middle"){ dx = maxw/2 - linew/2; }
+				else if(align=="end"){ dx = maxw - linew; }
+				lg.setTransform({ dx: dx, dy: cy });
+				cy += this.viewbox.height * leading;
+			}
+
+			//	scale the group
+			g.setTransform(dojox.gfx.matrix.scale(scale));
+
+			//	return the overall group
+			return g;	//	dojox.gfx.Group
+		},
+
+		//	events
+		onLoadBegin: function(/* String */url){ },
+		onLoad: function(/* dojox.gfx.VectorFont */font){ }
+	});
+
+	//	TODO: dojox.gfx integration
+/*
+
+	//	Inherit from Group but attach Text properties to it.
+	dojo.declare("dojox.gfx.VectorText", dojox.gfx.Group, {
+		constructor: function(rawNode){
+			dojox.gfx.Group._init.call(this);
+			this.fontStyle = null;
+		},
+
+		//	private methods.
+		_setFont: function(){
+			//	render this using the font code.
+			var f = this.fontStyle;
+			var font = dojox.gfx._vectorFontCache[f.family];
+			if(!font){
+				throw new Error("dojox.gfx.VectorText._setFont: the passed font family '" + f.family + "' was not found.");
+			}
+
+			//	the actual rendering belongs to the font itself.
+			font.draw(this, this.shape, this.fontStyle, this.fillStyle, this.strokeStyle);
+		},
+
+		getFont: function(){ return this.fontStyle; },
+
+		//	overridden public methods.
+		setShape: function(newShape){
+			dojox.gfx.Group.setShape.call(this);
+			this.shape = dojox.gfx.makeParameters(this.shape, newShape);
+			this.bbox = null;
+			this._setFont();
+			return this;
+		},
+
+		//	if we've been drawing, we should have exactly one child, and that
+		//		child will contain the real children.
+		setFill: function(fill){
+			this.fillStyle = fill;
+			if(this.children[0]){
+				dojo.forEach(this.children[0].children, function(group){
+					dojo.forEach(group.children, function(path){
+						path.setFill(fill);
+					});
+				}, this);
+			}
+			return this;
+		},
+		setStroke: function(stroke){
+			this.strokeStyle = stroke;
+			if(this.children[0]){
+				dojo.forEach(this.children[0].children, function(group){
+					dojo.forEach(group.children, function(path){
+						path.setStroke(stroke);
+					});
+				}, this);
+			}
+			return this;
+		},
+
+		setFont: function(newFont){
+			//	this will do the real rendering.
+			this.fontStyle = typeof newFont == "string" ? dojox.gfx.splitFontString(newFont)
+				: dojox.gfx.makeParameters(dojox.gfx.defaultFont, newFont);
+			this._setFont();
+			return this;
+		},
+
+		getBoundingBox: function(){
+			return this.bbox;
+		}
+	});
+
+	//	TODO: figure out how to add this to container objects!
+	dojox.gfx.shape.Creator.createVectorText = function(text){
+		return this.createObject(dojox.gfx.VectorText, text);
+	}
+*/
 })();
+
 }

@@ -5,60 +5,92 @@
 */
 
 
-if(!dojo._hasResource["dojox.data.CouchDBRestStore"]){
-dojo._hasResource["dojox.data.CouchDBRestStore"]=true;
+if(!dojo._hasResource["dojox.data.CouchDBRestStore"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.data.CouchDBRestStore"] = true;
 dojo.provide("dojox.data.CouchDBRestStore");
 dojo.require("dojox.data.JsonRestStore");
-dojo.declare("dojox.data.CouchDBRestStore",dojox.data.JsonRestStore,{save:function(_1){
-var _2=this.inherited(arguments);
-var _3=this.service.servicePath;
-for(var i=0;i<_2.length;i++){
-(function(_5,_6){
-_6.addCallback(function(_7){
-if(_7){
-_5.__id=_3+_7.id;
-_5._rev=_7.rev;
-}
-return _7;
-});
-})(_2[i].content,_2[i].deferred);
-}
-},fetch:function(_8){
-_8.query=_8.query||"_all_docs?";
-if(_8.start){
-_8.query=(_8.query?(_8.query+"&"):"")+"skip="+_8.start;
-delete _8.start;
-}
-if(_8.count){
-_8.query=(_8.query?(_8.query+"&"):"")+"count="+_8.count;
-delete _8.count;
-}
-return this.inherited(arguments);
-},_processResults:function(_9){
-var _a=_9.rows;
-if(_a){
-var _b=this.service.servicePath;
-var _c=this;
-for(var i=0;i<_a.length;i++){
-_a[i]={__id:_b+_a[i].id,_id:_a[i].id,_loadObject:function(_e){
-_c.fetchItemByIdentity({identity:this._id,onItem:_e});
-delete this._loadObject;
-}};
-}
-return {totalCount:_9.total_rows,items:_9.rows};
-}else{
-return {items:_9};
-}
-}});
-dojox.data.CouchDBRestStore.getStores=function(_f){
-var dfd=dojo.xhrGet({url:_f+"_all_dbs",handleAs:"json",sync:true});
-var _11={};
-dfd.addBoth(function(dbs){
-for(var i=0;i<dbs.length;i++){
-_11[dbs[i]]=new dojox.data.CouchDBRestStore({target:_f+dbs[i],idAttribute:"_id"});
-}
-return _11;
-});
-return _11;
+
+// A CouchDBRestStore is an extension of JsonRestStore to handle CouchDB's idiosyncrasies, special features,
+// and deviations from standard HTTP Rest.
+// NOTE: CouchDB is not designed to be run on a public facing network. There is no access control
+// on database documents, and you should NOT rely on client side control to implement security.
+
+
+dojo.declare("dojox.data.CouchDBRestStore",
+	dojox.data.JsonRestStore,
+	{
+		save: function(kwArgs) {
+			var actions = this.inherited(arguments); // do the default save and then update for version numbers
+			var prefix = this.service.servicePath;
+			for(var i = 0; i < actions.length; i++){
+				// need to update the item's version number after it has been committed
+				(function(item,dfd){
+					dfd.addCallback(function(result){
+						if(result){
+							item.__id = prefix + result.id; // update the object with the results of the post
+							item._rev = result.rev;
+						}
+						return result;
+					});
+				})(actions[i].content,actions[i].deferred);
+			}
+		},
+		fetch: function(args){
+			// summary:
+			// 		This only differs from JsonRestStore in that it, will put the query string the query part of the URL and it handles start and count
+			args.query = args.query || '_all_docs?';
+			if(args.start){
+				args.query = (args.query ? (args.query + '&') : '') + 'skip=' + args.start;
+				delete args.start;
+			}
+			if(args.count){
+				args.query = (args.query ? (args.query + '&') : '') + 'count=' + args.count;
+				delete args.count;
+			}
+			return this.inherited(arguments);
+		},
+		_processResults: function(results){
+			var rows = results.rows;
+			if(rows){
+				var prefix = this.service.servicePath;
+				var self = this;
+				for(var i = 0; i < rows.length;i++){
+					rows[i] = {
+						__id: prefix + rows[i].id, 
+						_id: rows[i].id,
+						_loadObject: function(callback){
+							self.fetchItemByIdentity({
+								identity: this._id,
+								onItem: callback
+							});
+							delete this._loadObject;
+						}
+					};
+				}
+				return {totalCount:results.total_rows, items:results.rows};
+			}else{
+				return {items:results};
+			}
+						
+		}
+	}
+);
+
+// create a set of stores
+dojox.data.CouchDBRestStore.getStores = function(couchServerUrl){
+	var dfd = dojo.xhrGet({
+		url: couchServerUrl+"_all_dbs",
+		handleAs: "json",
+		sync: true
+	});
+	var stores = {};
+	dfd.addBoth(function(dbs){
+		for(var i = 0; i < dbs.length; i++){
+			stores[dbs[i]] = new dojox.data.CouchDBRestStore({target:couchServerUrl + dbs[i],idAttribute:"_id"});
+		}
+		return stores;
+	});
+	return stores;
 };
+
 }

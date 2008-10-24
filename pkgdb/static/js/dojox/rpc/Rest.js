@@ -5,66 +5,125 @@
 */
 
 
-if(!dojo._hasResource["dojox.rpc.Rest"]){
-dojo._hasResource["dojox.rpc.Rest"]=true;
-dojo.provide("dojox.rpc.Rest");
+if(!dojo._hasResource["dojox.rpc.Rest"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.rpc.Rest"] = true;
+dojo.provide("dojox.rpc.Rest"); 
+// Note: This doesn't require dojox.rpc.Service, and if you want it you must require it 
+// yourself, and you must load it prior to dojox.rpc.Rest.
+
+// summary:
+// 		This provides a HTTP REST service with full range REST verbs include PUT,POST, and DELETE.
+// description:
+// 		A normal GET query is done by using the service directly:
+// 		| var restService = dojox.rpc.Rest("Project");
+// 		| restService("4");
+//		This will do a GET for the URL "/Project/4".
+//		| restService.put("4","new content");
+//		This will do a PUT to the URL "/Project/4" with the content of "new content".
+//		You can also use the SMD service to generate a REST service:
+// 		| var services = dojox.rpc.Service({services: {myRestService: {transport: "REST",...
+// 		| services.myRestService("parameters");
+//
+// 		The modifying methods can be called as sub-methods of the rest service method like:
+//  	| services.myRestService.put("parameters","data to put in resource");
+//  	| services.myRestService.post("parameters","data to post to the resource");
+//  	| services.myRestService['delete']("parameters");
 (function(){
-if(dojox.rpc&&dojox.rpc.transportRegistry){
-dojox.rpc.transportRegistry.register("REST",function(_1){
-return _1=="REST";
-},{getExecutor:function(_2,_3,_4){
-return new dojox.rpc.Rest(_3.name,(_3.contentType||_4._smd.contentType||"").match(/json|javascript/),null,function(id,_6){
-var _7=_4._getRequest(_3,[id]);
-_7.url=_7.target+(_7.data?"?"+_7.data:"");
-return _7;
-});
-}});
-}
-var _8;
-function index(_9,_a,_b,id){
-_9.addCallback(function(_d){
-if(_b){
-_b=_9.ioArgs.xhr&&_9.ioArgs.xhr.getResponseHeader("Content-Range");
-_9.fullLength=_b&&(_b=_b.match(/\/(.*)/))&&parseInt(_b[1]);
-}
-return _d;
-});
-return _9;
-};
-_8=dojox.rpc.Rest=function(_e,_f,_10,_11){
-var _12;
-_e=_e.match(/\/$/)?_e:(_e+"/");
-_12=function(id,_14){
-return _8._get(_12,id,_14);
-};
-_12.isJson=_f;
-_12._schema=_10;
-_12.cache={serialize:_f?((dojox.json&&dojox.json.ref)||dojo).toJson:function(_15){
-return _15;
-}};
-_12._getRequest=_11||function(id,_17){
-return {url:_e+(dojo.isObject(id)?"?"+dojo.objectToQuery(id):id==null?"":id),handleAs:_f?"json":"text",contentType:_f?"application/json":"text/plain",sync:dojox.rpc._sync,headers:{Accept:_f?"application/json,application/javascript":"*/*",Range:_17&&(_17.start>=0||_17.count>=0)?"items="+(_17.start||"0")+"-"+((_17.count&&(_17.count+(_17.start||0)-1))||""):undefined}};
-};
-function makeRest(_18){
-_12[_18]=function(id,_1a){
-return _8._change(_18,_12,id,_1a);
-};
-};
-makeRest("put");
-makeRest("post");
-makeRest("delete");
-_12.servicePath=_e;
-return _12;
-};
-_8._index={};
-_8._change=function(_1b,_1c,id,_1e){
-var _1f=_1c._getRequest(id);
-_1f[_1b+"Data"]=_1e;
-return index(dojo.xhr(_1b.toUpperCase(),_1f,true),_1c);
-};
-_8._get=function(_20,id,_22){
-_22=_22||{};
-return index(dojo.xhrGet(_20._getRequest(id,_22)),_20,(_22.start>=0||_22.count>=0),id);
-};
+	if(dojox.rpc && dojox.rpc.transportRegistry){
+		// register it as an RPC service if the registry is available
+		dojox.rpc.transportRegistry.register(
+			"REST",
+			function(str){return str == "REST";},
+			{
+				getExecutor : function(func,method,svc){
+					return new dojox.rpc.Rest(
+						method.name,
+						(method.contentType||svc._smd.contentType||"").match(/json|javascript/), // isJson
+						null,
+						function(id, args){
+							var request = svc._getRequest(method,[id]);
+							request.url= request.target + (request.data ? '?'+  request.data : '');
+							return request;
+						}
+					);
+				}
+			}
+		);
+	}
+	var drr;
+
+	function index(deferred, service, range, id){
+		deferred.addCallback(function(result){
+			if(range){
+				// try to record the total number of items from the range header
+				range = deferred.ioArgs.xhr && deferred.ioArgs.xhr.getResponseHeader("Content-Range");
+				deferred.fullLength = range && (range=range.match(/\/(.*)/)) && parseInt(range[1]);
+			}
+			return result;
+		});
+		return deferred;
+	}
+	drr = dojox.rpc.Rest = function(/*String*/path, /*Boolean?*/isJson, /*Object?*/schema, /*Function?*/getRequest){
+		// summary:
+		//		Creates a REST service using the provided path.
+		var service;
+		// it should be in the form /Table/
+		path = path.match(/\/$/) ? path : (path + '/');
+		service = function(id, args){
+			return drr._get(service, id, args);
+		};
+		service.isJson = isJson;
+		service._schema = schema;
+		// cache:
+		//		This is an object that provides indexing service
+		// 		This can be overriden to take advantage of more complex referencing/indexing
+		// 		schemes
+		service.cache = {
+			serialize: isJson ? ((dojox.json && dojox.json.ref) || dojo).toJson : function(result){
+				return result;
+			}
+		};
+		// the default XHR args creator:
+		service._getRequest = getRequest || function(id, args){
+			return {
+				url: path + (dojo.isObject(id) ? '?' + dojo.objectToQuery(id) : id == null ? "" : id), 
+				handleAs: isJson?'json':'text', 
+				contentType: isJson?'application/json':'text/plain',
+				sync: dojox.rpc._sync,
+				headers: {
+					Accept: isJson?'application/json,application/javascript':'*/*',
+					Range: args && (args.start >= 0 || args.count >= 0) ?  "items=" + (args.start || '0') + '-' + ((args.count && (args.count + (args.start || 0) - 1)) || '') : undefined
+				}
+			};
+		};
+		// each calls the event handler
+		function makeRest(name){
+			service[name] = function(id,content){
+				return drr._change(name,service,id,content); // the last parameter is to let the OfflineRest know where to store the item
+			};
+		}
+		makeRest('put');
+		makeRest('post');
+		makeRest('delete');
+		// record the REST services for later lookup
+		service.servicePath = path;
+		return service;
+	};
+
+	drr._index={};// the map of all indexed objects that have gone through REST processing
+	// these do the actual requests
+	drr._change = function(method,service,id,content){
+		// this is called to actually do the put, post, and delete
+		var request = service._getRequest(id);
+		request[method+"Data"] = content;
+		return index(dojo.xhr(method.toUpperCase(),request,true),service);
+	};
+
+	drr._get= function(service,id, args){
+		args = args || {};
+		// this is called to actually do the get
+		return index(dojo.xhrGet(service._getRequest(id, args)), service, (args.start >= 0 || args.count >= 0), id);
+	};
 })();
+
 }

@@ -1,4 +1,5 @@
-	
+	/* dojox.layout.ExpandoPane */
+
 	.dojoxExpandoPane {
 		overflow:hidden;
 		z-index:440;
@@ -7,37 +8,45 @@
 	.dojoxExpandoPane .dojoxExpandoWrapper {
 		overflow:hidden;
 	}
+
 	.dojoxExpandoClosed .dojoxExpandoTitleNode {
 		visibility:hidden;
 	}
-	
+
+	/* hide all layout children scrollbars when closed */
 	.dojoxExpandoClosed .dojoxExpandoWrapper * {
 		overflow:hidden !important;
 	}
+
 	.dojoxExpandoTitleNode {
 		padding-right:6px; 
 		padding-left:6px;
 	}
+
 	.dojoxExpandoIcon .a11yNode {
 		display:none;
 		visibility:hidden;
 	}
+
 	.dojoxExpandoBottom .dojoxExpandoIcon,
 	.dojoxExpandoTop .dojoxExpandoIcon,
 	.dojoxExpandoLeft .dojoxExpandoIcon {
 		float:right;
 		margin-right:5px;
 	}
+
 	.dojoxExpandoRight .dojoxExpandoIcon {
 		float:left;
 		margin-left:5px;
 	}
+
 	.dojoxExpandoIcon {
 		width:14px;
 		cursor:pointer;
 		background-position:-60px 0px;
 		height:14px;
 	}
+
 	.dojoxExpandoClosed .dojoxExpandoIcon {
 		background-position: 0px 0px;
 	}
@@ -46,7 +55,9 @@
 		border: 0px solid;
 		
 	}
-	
+
+	/* soria definitions */
+
 	.soria .dojoxExpandoTitle {
 		height:16px;
 		font-size:0.9em;
@@ -84,7 +95,7 @@
 		background-position:0px 0px;
 	}
 	
-	
+	/* tundra styles */
 	.tundra .dojoxExpandoTitle {
 		font-weight: bold;
 		padding: 3px;
@@ -112,13 +123,15 @@
 	.dj_safari .nihilo .dojoxExpandoTitle {
 		height:18px;
 	}
+
 	.tundra .dojoxExpandoRight .dojoxExpandoTitle,
 	.tundra .dojoxExpandoLeft .dojoxExpandoTitle,
 	.tundra .dojoxExpandoClosed .dojoxExpandoTitle,
 	.tundra .dojoxExpandoClosed {
 		background-color: #fafafa;
 	}
-	
+
+	/* open/closed states */
 	.tundra .dojoxExpandoIcon {
 		background: url('../../../dijit/themes/tundra/images/minusButton.gif') no-repeat;
 	}
@@ -126,7 +139,7 @@
 		background: url('../../../dijit/themes/tundra/images/plusButton.gif') no-repeat;
 	}
 	
-	
+	/* nihilo theme styles */
 	.nihilo .dojoxExpandoPane {
 		background: #fafafa;
 	}

@@ -5,78 +5,111 @@
 */
 
 
-if(!dojo._hasResource["dijit._editor._Plugin"]){
-dojo._hasResource["dijit._editor._Plugin"]=true;
+if(!dojo._hasResource["dijit._editor._Plugin"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dijit._editor._Plugin"] = true;
 dojo.provide("dijit._editor._Plugin");
 dojo.require("dijit._Widget");
 dojo.require("dijit.Editor");
 dojo.require("dijit.form.Button");
-dojo.declare("dijit._editor._Plugin",null,{constructor:function(_1,_2){
-if(_1){
-dojo.mixin(this,_1);
-}
-this._connects=[];
-},editor:null,iconClassPrefix:"dijitEditorIcon",button:null,queryCommand:null,command:"",commandArg:null,useDefaultCommand:true,buttonClass:dijit.form.Button,getLabel:function(_3){
-return this.editor.commands[_3];
-},_initButton:function(_4){
-if(this.command.length){
-var _5=this.getLabel(this.command);
-var _6=this.iconClassPrefix+" "+this.iconClassPrefix+this.command.charAt(0).toUpperCase()+this.command.substr(1);
-if(!this.button){
-_4=dojo.mixin({label:_5,showLabel:false,iconClass:_6,dropDown:this.dropDown,tabIndex:"-1"},_4||{});
-this.button=new this.buttonClass(_4);
-}
-}
-},destroy:function(f){
-dojo.forEach(this._connects,dojo.disconnect);
-},connect:function(o,f,tf){
-this._connects.push(dojo.connect(o,f,this,tf));
-},updateState:function(){
-var _e=this.editor;
-var _c=this.command;
-if(!_e){
-return;
-}
-if(!_e.isLoaded){
-return;
-}
-if(!_c.length){
-return;
-}
-if(this.button){
-try{
-var _d=_e.queryCommandEnabled(_c);
-if(this.enabled!==_d){
-this.enabled=_d;
-this.button.attr("disabled",!_d);
-}
-if(typeof this.button.checked=="boolean"){
-var _e=_e.queryCommandState(_c);
-if(this.checked!==_e){
-this.checked=_e;
-this.button.attr("checked",_e.queryCommandState(_c));
-}
-}
-}
-catch(e){
 
-}
-}
-},setEditor:function(_f){
-this.editor=_f;
-this._initButton();
-if(this.command.length&&!this.editor.queryCommandAvailable(this.command)){
-if(this.button){
-this.button.domNode.style.display="none";
-}
-}
-if(this.button&&this.useDefaultCommand){
-this.connect(this.button,"onClick",dojo.hitch(this.editor,"execCommand",this.command,this.commandArg));
-}
-this.connect(this.editor,"onNormalizedDisplayChanged","updateState");
-},setToolbar:function(_10){
-if(this.button){
-_10.addChild(this.button);
-}
-}});
+dojo.declare("dijit._editor._Plugin", null, {
+	// summary
+	//		This represents a "plugin" to the editor, which is basically
+	//		a single button on the Toolbar and some associated code
+	constructor: function(/*Object?*/args, /*DomNode?*/node){
+		if(args){
+			dojo.mixin(this, args);
+		}
+		this._connects=[];
+	},
+
+	editor: null,
+	iconClassPrefix: "dijitEditorIcon",
+	button: null,
+	queryCommand: null,
+	command: "",
+	commandArg: null,
+	useDefaultCommand: true,
+	buttonClass: dijit.form.Button,
+	getLabel: function(key){
+		return this.editor.commands[key];
+	},
+	_initButton: function(props){
+		if(this.command.length){
+			var label = this.getLabel(this.command);
+			var className = this.iconClassPrefix+" "+this.iconClassPrefix + this.command.charAt(0).toUpperCase() + this.command.substr(1);
+			if(!this.button){
+				props = dojo.mixin({
+					label: label,
+					showLabel: false,
+					iconClass: className,
+					dropDown: this.dropDown,
+					tabIndex: "-1"
+				}, props || {});
+				this.button = new this.buttonClass(props);
+			}
+		}
+	},
+	destroy: function(f){
+		dojo.forEach(this._connects, dojo.disconnect);
+	},
+	connect: function(o, f, tf){
+		this._connects.push(dojo.connect(o, f, this, tf));
+	},
+	updateState: function(){
+		var _e = this.editor;
+		var _c = this.command;
+		if(!_e){ return; }
+		if(!_e.isLoaded){ return; }
+		if(!_c.length){ return; }
+		if(this.button){
+			try{
+				var enabled = _e.queryCommandEnabled(_c);
+				if(this.enabled!==enabled){
+					this.enabled=enabled;
+					this.button.attr('disabled', !enabled);
+				}
+				if(typeof this.button.checked == 'boolean'){
+					var checked=_e.queryCommandState(_c);
+					if(this.checked!==checked){
+						this.checked=checked;
+						this.button.attr('checked', _e.queryCommandState(_c));
+					}
+				}
+			}catch(e){
+				
+			}
+		}
+	},
+	setEditor: function(/*Widget*/editor){
+		// FIXME: detatch from previous editor!!
+		this.editor = editor;
+
+		// FIXME: prevent creating this if we don't need to (i.e., editor can't handle our command)
+		this._initButton();
+
+		// FIXME: wire up editor to button here!
+		if(this.command.length &&
+			!this.editor.queryCommandAvailable(this.command)
+		){
+			// 
+			if(this.button){
+				this.button.domNode.style.display = "none";
+			}
+		}
+		if(this.button && this.useDefaultCommand){
+			this.connect(this.button, "onClick",
+				dojo.hitch(this.editor, "execCommand", this.command, this.commandArg)
+			);
+		}
+		this.connect(this.editor, "onNormalizedDisplayChanged", "updateState");
+	},
+	setToolbar: function(/*Widget*/toolbar){
+		if(this.button){
+			toolbar.addChild(this.button);
+		}
+		// 
+	}
+});
+
 }

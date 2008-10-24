@@ -3,29 +3,36 @@
 	position:absolute;
 	z-index:3;
 }
+
 .dojoxRotatorContent {
 	position:absolute;
 	z-index:1;
 }
+
 .dojoxRotatorContainer {
 	border:1px solid #9b9b9b;
 }
+
 .dojoxRotatorContainer .dijitStackController {
 	right:5px;
 	top:5px;
 }
+
 .dojoxRotatorContainer .dijitStackController .dijitToggleButtonChecked .dijitButtonNode {
 	background-color:#000;
 	background-image:none;
 	color:#fff;
 }
+
 .dojoxRotatorContainer .dojoxRotatorPager {
 	bottom:5px;
 	right:5px;
 }
+
 .tundra .rotatorIcons .dijitButtonText {
 	display:none;
 }
+
 .tundra .rotatorIcons button,
 .tundra .rotatorIcons .dijitButtonHover button,
 .tundra .rotatorIcons .dijitButtonActive button,
@@ -34,6 +41,7 @@
 	background:none;
 	border:0;
 }
+
 .tundra .rotatorIcons .previous,
 .tundra .rotatorIcons .next,
 .tundra .rotatorIcons .playPause,
@@ -44,6 +52,7 @@
 	height:16px;
 	width:16px;
 }
+
 .tundra .rotatorIcons .previous {
 	background-position:0 0;
 }
@@ -53,6 +62,7 @@
 .tundra .rotatorIcons .dijitButtonActive .previous { 
 	background-position:0 -32px;
 }
+
 .tundra .rotatorIcons .next{
 	background-position:-16px 0;
 }
@@ -62,6 +72,7 @@
 .tundra .rotatorIcons .dijitButtonActive .next{ 
 	background-position:-16px -32px;
 }
+
 .tundra .rotatorIcons .playPause{
 	background-position:-32px 0;
 }
@@ -71,6 +82,7 @@
 .tundra .rotatorIcons .dijitToggleButtonActive .playPause {
 	background-position:-32px -32px;
 }
+
 .tundra .rotatorIcons .dijitToggleButtonChecked .playPause {
 	background-position:-48px 0;
 }

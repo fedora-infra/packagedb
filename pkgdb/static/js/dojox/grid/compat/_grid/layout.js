@@ -5,52 +5,78 @@
 */
 
 
-if(!dojo._hasResource["dojox.grid.compat._grid.layout"]){
-dojo._hasResource["dojox.grid.compat._grid.layout"]=true;
+if(!dojo._hasResource["dojox.grid.compat._grid.layout"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.grid.compat._grid.layout"] = true;
 dojo.provide("dojox.grid.compat._grid.layout");
 dojo.require("dojox.grid.compat._grid.cell");
-dojo.declare("dojox.grid.layout",null,{constructor:function(_1){
-this.grid=_1;
-},cells:[],structure:null,defaultWidth:"6em",setStructure:function(_2){
-this.fieldIndex=0;
-this.cells=[];
-var s=this.structure=[];
-for(var i=0,_5,_6;(_5=_2[i]);i++){
-s.push(this.addViewDef(_5));
-}
-this.cellCount=this.cells.length;
-},addViewDef:function(_7){
-this._defaultCellProps=_7.defaultCell||{};
-return dojo.mixin({},_7,{rows:this.addRowsDef(_7.rows||_7.cells)});
-},addRowsDef:function(_8){
-var _9=[];
-for(var i=0,_b;_8&&(_b=_8[i]);i++){
-_9.push(this.addRowDef(i,_b));
-}
-return _9;
-},addRowDef:function(_c,_d){
-var _e=[];
-for(var i=0,def,_11;(def=_d[i]);i++){
-_11=this.addCellDef(_c,i,def);
-_e.push(_11);
-this.cells.push(_11);
-}
-return _e;
-},addCellDef:function(_12,_13,_14){
-var w=0;
-if(_14.colSpan>1){
-w=0;
-}else{
-if(!isNaN(_14.width)){
-w=_14.width+"em";
-}else{
-w=_14.width||this.defaultWidth;
-}
-}
-var _16=_14.field!=undefined?_14.field:(_14.get?-1:this.fieldIndex);
-if((_14.field!=undefined)||!_14.get){
-this.fieldIndex=(_14.field>-1?_14.field:this.fieldIndex)+1;
-}
-return new dojox.grid.cell(dojo.mixin({},this._defaultCellProps,_14,{grid:this.grid,subrow:_12,layoutIndex:_13,index:this.cells.length,fieldIndex:_16,unitWidth:w}));
-}});
+
+dojo.declare("dojox.grid.layout", null, {
+	// summary:
+	//	Controls grid cell layout. Owned by grid and used internally.
+	constructor: function(inGrid){
+		this.grid = inGrid;
+	},
+	// flat array of grid cells
+	cells: [],
+	// structured array of grid cells
+	structure: null,
+	// default cell width
+	defaultWidth: '6em',
+	// methods
+	setStructure: function(inStructure){
+		this.fieldIndex = 0;
+		this.cells = [];
+		var s = this.structure = [];
+		for(var i=0, viewDef, rows; (viewDef=inStructure[i]); i++){
+			s.push(this.addViewDef(viewDef));
+		}
+		this.cellCount = this.cells.length;
+	},
+	addViewDef: function(inDef){
+		this._defaultCellProps = inDef.defaultCell || {};
+		return dojo.mixin({}, inDef, {rows: this.addRowsDef(inDef.rows || inDef.cells)});
+	},
+	addRowsDef: function(inDef){
+		var result = [];
+		for(var i=0, row; inDef && (row=inDef[i]); i++){
+			result.push(this.addRowDef(i, row));
+		}
+		return result;
+	},
+	addRowDef: function(inRowIndex, inDef){
+		var result = [];
+		for(var i=0, def, cell; (def=inDef[i]); i++){
+			cell = this.addCellDef(inRowIndex, i, def);
+			result.push(cell);
+			this.cells.push(cell);
+		}
+		return result;
+	},
+	addCellDef: function(inRowIndex, inCellIndex, inDef){
+		var w = 0;
+		if(inDef.colSpan > 1){
+			w = 0;
+		}else if(!isNaN(inDef.width)){
+			w = inDef.width + "em";
+		}else{
+			w = inDef.width || this.defaultWidth;
+		}
+		// fieldIndex progresses linearly from the last indexed field
+		// FIXME: support generating fieldIndex based a text field name (probably in Grid)
+		var fieldIndex = inDef.field != undefined ? inDef.field : (inDef.get ? -1 : this.fieldIndex);
+		if((inDef.field != undefined) || !inDef.get){
+			this.fieldIndex = (inDef.field > -1 ? inDef.field : this.fieldIndex) + 1; 
+		}
+		return new dojox.grid.cell(
+			dojo.mixin({}, this._defaultCellProps, inDef, {
+				grid: this.grid,
+				subrow: inRowIndex,
+				layoutIndex: inCellIndex,
+				index: this.cells.length,
+				fieldIndex: fieldIndex,
+				unitWidth: w
+			}));
+	}
+});
+
 }

@@ -5,649 +5,1200 @@
 */
 
 
-if(!dojo._hasResource["dojox.data.jsonPathStore"]){
-dojo._hasResource["dojox.data.jsonPathStore"]=true;
+if(!dojo._hasResource["dojox.data.jsonPathStore"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.data.jsonPathStore"] = true;
 dojo.provide("dojox.data.jsonPathStore");
 dojo.require("dojox.jsonPath");
 dojo.require("dojo.date");
 dojo.require("dojo.date.locale");
 dojo.require("dojo.date.stamp");
-dojox.data.ASYNC_MODE=0;
-dojox.data.SYNC_MODE=1;
-dojo.declare("dojox.data.jsonPathStore",null,{mode:dojox.data.ASYNC_MODE,metaLabel:"_meta",hideMetaAttributes:false,autoIdPrefix:"_auto_",autoIdentity:true,idAttribute:"_id",indexOnLoad:true,labelAttribute:"",url:"",_replaceRegex:/\'\]/gi,constructor:function(_1){
-this.byId=this.fetchItemByIdentity;
-if(_1){
-dojo.mixin(this,_1);
-}
-this._dirtyItems=[];
-this._autoId=0;
-this._referenceId=0;
-this._references={};
-this._fetchQueue=[];
-this.index={};
-var _2="("+this.metaLabel+"'])";
-this.metaRegex=new RegExp(_2);
-if(!this.data&&!this.url){
-this.setData({});
-}
-if(this.data&&!this.url){
-this.setData(this.data);
-delete this.data;
-}
-if(this.url){
-dojo.xhrGet({url:_1.url,handleAs:"json",load:dojo.hitch(this,"setData"),sync:this.mode});
-}
-},_loadData:function(_3){
-if(this._data){
-delete this._data;
-}
-if(dojo.isString(_3)){
-this._data=dojo.fromJson(_3);
-}else{
-this._data=_3;
-}
-if(this.indexOnLoad){
-this.buildIndex();
-}
-this._updateMeta(this._data,{path:"$"});
-this.onLoadData(this._data);
-},onLoadData:function(_4){
-while(this._fetchQueue.length>0){
-var _5=this._fetchQueue.shift();
-this.fetch(_5);
-}
-},setData:function(_6){
-this._loadData(_6);
-},buildIndex:function(_7,_8){
-if(!this.idAttribute){
-throw new Error("buildIndex requires idAttribute for the store");
-}
-_8=_8||this._data;
-var _9=_7;
-_7=_7||"$";
-_7+="[*]";
-var _a=this.fetch({query:_7,mode:dojox.data.SYNC_MODE});
-for(var i=0;i<_a.length;i++){
-var _c,_d;
-if(dojo.isObject(_a[i])){
-var _e=_a[i][this.metaLabel]["path"];
-if(_9){
-_c=_9.split("['");
-_d=_c[_c.length-1].replace(this._replaceRegex,"");
-if(!dojo.isArray(_a[i])){
-this._addReference(_a[i],{parent:_8,attribute:_d});
-this.buildIndex(_e,_a[i]);
-}else{
-this.buildIndex(_e,_8);
-}
-}else{
-_c=_e.split("['");
-_d=_c[_c.length-1].replace(this._replaceRegex,"");
-this._addReference(_a[i],{parent:this._data,attribute:_d});
-this.buildIndex(_e,_a[i]);
-}
-}
-}
-},_correctReference:function(_f){
-if(this.index[_f[this.idAttribute]][this.metaLabel]===_f[this.metaLabel]){
-return this.index[_f[this.idAttribute]];
-}
-return _f;
-},getValue:function(_10,_11){
-_10=this._correctReference(_10);
-return _10[_11];
-},getValues:function(_12,_13){
-_12=this._correctReference(_12);
-return dojo.isArray(_12[_13])?_12[_13]:[_12[_13]];
-},getAttributes:function(_14){
-_14=this._correctReference(_14);
-var res=[];
-for(var i in _14){
-if(this.hideMetaAttributes&&(i==this.metaLabel)){
-continue;
-}
-res.push(i);
-}
-return res;
-},hasAttribute:function(_17,_18){
-_17=this._correctReference(_17);
-if(_18 in _17){
-return true;
-}
-return false;
-},containsValue:function(_19,_1a,_1b){
-_19=this._correctReference(_19);
-if(_19[_1a]&&_19[_1a]==_1b){
-return true;
-}
-if(dojo.isObject(_19[_1a])||dojo.isObject(_1b)){
-if(this._shallowCompare(_19[_1a],_1b)){
-return true;
-}
-}
-return false;
-},_shallowCompare:function(a,b){
-if((dojo.isObject(a)&&!dojo.isObject(b))||(dojo.isObject(b)&&!dojo.isObject(a))){
-return false;
-}
-if(a["getFullYear"]||b["getFullYear"]){
-if((a["getFullYear"]&&!b["getFullYear"])||(b["getFullYear"]&&!a["getFullYear"])){
-return false;
-}else{
-if(!dojo.date.compare(a,b)){
-return true;
-}
-return false;
-}
-}
-for(var i in b){
-if(dojo.isObject(b[i])){
-if(!a[i]||!dojo.isObject(a[i])){
-return false;
-}
-if(b[i]["getFullYear"]){
-if(!a[i]["getFullYear"]){
-return false;
-}
-if(dojo.date.compare(a,b)){
-return false;
-}
-}else{
-if(!this._shallowCompare(a[i],b[i])){
-return false;
-}
-}
-}else{
-if(!b[i]||(a[i]!=b[i])){
-return false;
-}
-}
-}
-for(var i in a){
-if(!b[i]){
-return false;
-}
-}
-return true;
-},isItem:function(_1f){
-if(!dojo.isObject(_1f)||!_1f[this.metaLabel]){
-return false;
-}
-if(this.requireId&&this._hasId&&!_1f[this._id]){
-return false;
-}
-return true;
-},isItemLoaded:function(_20){
-_20=this._correctReference(_20);
-return this.isItem(_20);
-},loadItem:function(_21){
-return true;
-},_updateMeta:function(_22,_23){
-if(_22&&_22[this.metaLabel]){
-dojo.mixin(_22[this.metaLabel],_23);
-return;
-}
-_22[this.metaLabel]=_23;
-},cleanMeta:function(_24,_25){
-_24=_24||this._data;
-if(_24[this.metaLabel]){
-if(_24[this.metaLabel]["autoId"]){
-delete _24[this.idAttribute];
-}
-delete _24[this.metaLabel];
-}
-if(dojo.isArray(_24)){
-for(var i=0;i<_24.length;i++){
-if(dojo.isObject(_24[i])||dojo.isArray(_24[i])){
-this.cleanMeta(_24[i]);
-}
-}
-}else{
-if(dojo.isObject(_24)){
-for(var i in _24){
-this.cleanMeta(_24[i]);
-}
-}
-}
-},fetch:function(_27){
-if(!this._data){
-this._fetchQueue.push(_27);
-return _27;
-}
-if(dojo.isString(_27)){
-_28=_27;
-_27={query:_28,mode:dojox.data.SYNC_MODE};
-}
-var _28;
-if(!_27||!_27.query){
-if(!_27){
-var _27={};
-}
-if(!_27.query){
-_27.query="$..*";
-_28=_27.query;
-}
-}
-if(dojo.isObject(_27.query)){
-if(_27.query.query){
-_28=_27.query.query;
-}else{
-_28=_27.query="$..*";
-}
-if(_27.query.queryOptions){
-_27.queryOptions=_27.query.queryOptions;
-}
-}else{
-_28=_27.query;
-}
-if(!_27.mode){
-_27.mode=this.mode;
-}
-if(!_27.queryOptions){
-_27.queryOptions={};
-}
-_27.queryOptions.resultType="BOTH";
-var _29=dojox.jsonPath.query(this._data,_28,_27.queryOptions);
-var tmp=[];
-var _2b=0;
-for(var i=0;i<_29.length;i++){
-if(_27.start&&i<_27.start){
-continue;
-}
-if(_27.count&&(_2b>=_27.count)){
-continue;
-}
-var _2d=_29[i]["value"];
-var _2e=_29[i]["path"];
-if(!dojo.isObject(_2d)){
-continue;
-}
-if(this.metaRegex.exec(_2e)){
-continue;
-}
-this._updateMeta(_2d,{path:_29[i].path});
-if(this.autoIdentity&&!_2d[this.idAttribute]){
-var _2f=this.autoIdPrefix+this._autoId++;
-_2d[this.idAttribute]=_2f;
-_2d[this.metaLabel]["autoId"]=true;
-}
-if(_2d[this.idAttribute]){
-this.index[_2d[this.idAttribute]]=_2d;
-}
-_2b++;
-tmp.push(_2d);
-}
-_29=tmp;
-var _30=_27.scope||dojo.global;
-if("sort" in _27){
 
-}
-if(_27.mode==dojox.data.SYNC_MODE){
-return _29;
-}
-if(_27.onBegin){
-_27["onBegin"].call(_30,_29.length,_27);
-}
-if(_27.onItem){
-for(var i=0;i<_29.length;i++){
-_27["onItem"].call(_30,_29[i],_27);
-}
-}
-if(_27.onComplete){
-_27["onComplete"].call(_30,_29,_27);
-}
-return _27;
-},dump:function(_31){
-var _31=_31||{};
-var d=_31.data||this._data;
-if(!_31.suppressExportMeta&&_31.clone){
-_33=dojo.clone(d);
-if(_33[this.metaLabel]){
-_33[this.metaLabel]["clone"]=true;
-}
-}else{
-var _33=d;
-}
-if(!_31.suppressExportMeta&&_33[this.metaLabel]){
-_33[this.metaLabel]["last_export"]=new Date().toString();
-}
-if(_31.cleanMeta){
-this.cleanMeta(_33);
-}
-switch(_31.type){
-case "raw":
-return _33;
-case "json":
-default:
-return dojo.toJson(_33,_31.pretty||false);
-}
-},getFeatures:function(){
-return {"dojo.data.api.Read":true,"dojo.data.api.Identity":true,"dojo.data.api.Write":true,"dojo.data.api.Notification":true};
-},getLabel:function(_34){
-_34=this._correctReference(_34);
-var _35="";
-if(dojo.isFunction(this.createLabel)){
-return this.createLabel(_34);
-}
-if(this.labelAttribute){
-if(dojo.isArray(this.labelAttribute)){
-for(var i=0;i<this.labelAttribute.length;i++){
-if(i>0){
-_35+=" ";
-}
-_35+=_34[this.labelAttribute[i]];
-}
-return _35;
-}else{
-return _34[this.labelAttribute];
-}
-}
-return _34.toString();
-},getLabelAttributes:function(_37){
-_37=this._correctReference(_37);
-return dojo.isArray(this.labelAttribute)?this.labelAttribute:[this.labelAttribute];
-},sort:function(a,b){
+dojox.data.ASYNC_MODE = 0;
+dojox.data.SYNC_MODE = 1;
 
-},getIdentity:function(_3a){
-if(this.isItem(_3a)){
-return _3a[this.idAttribute];
-}
-throw new Error("Id not found for item");
-},getIdentityAttributes:function(_3b){
-return [this.idAttribute];
-},fetchItemByIdentity:function(_3c){
-var id;
-if(dojo.isString(_3c)){
-id=_3c;
-_3c={identity:id,mode:dojox.data.SYNC_MODE};
-}else{
-if(_3c){
-id=_3c["identity"];
-}
-if(!_3c.mode){
-_3c.mode=this.mode;
-}
-}
-if(this.index&&(this.index[id]||this.index["identity"])){
-if(_3c.mode==dojox.data.SYNC_MODE){
-return this.index[id];
-}
-if(_3c.onItem){
-_3c["onItem"].call(_3c.scope||dojo.global,this.index[id],_3c);
-}
-return _3c;
-}else{
-if(_3c.mode==dojox.data.SYNC_MODE){
-return false;
-}
-}
-if(_3c.onError){
-_3c["onItem"].call(_3c.scope||dojo.global,new Error("Item Not Found: "+id),_3c);
-}
-return _3c;
-},newItem:function(_3e,_3f){
-var _40={};
-var _41={item:this._data};
-if(_3f){
-if(_3f.parent){
-_3f.item=_3f.parent;
-}
-dojo.mixin(_41,_3f);
-}
-if(this.idAttribute&&!_3e[this.idAttribute]){
-if(this.requireId){
-throw new Error("requireId is enabled, new items must have an id defined to be added");
-}
-if(this.autoIdentity){
-var _42=this.autoIdPrefix+this._autoId++;
-_3e[this.idAttribute]=_42;
-_40["autoId"]=true;
-}
-}
-if(!_41&&!_41.attribute&&!this.idAttribute&&!_3e[this.idAttribute]){
-throw new Error("Adding a new item requires, at a minumum, either the pInfo information, including the pInfo.attribute, or an id on the item in the field identified by idAttribute");
-}
-if(!_41.attribute){
-_41.attribute=_3e[this.idAttribute];
-}
-_41.oldValue=this._trimItem(_41.item[_41.attribute]);
-if(dojo.isArray(_41.item[_41.attribute])){
-this._setDirty(_41.item);
-_41.item[_41.attribute].push(_3e);
-}else{
-this._setDirty(_41.item);
-_41.item[_41.attribute]=_3e;
-}
-_41.newValue=_41.item[_41.attribute];
-if(_3e[this.idAttribute]){
-this.index[_3e[this.idAttribute]]=_3e;
-}
-this._updateMeta(_3e,_40);
-this._addReference(_3e,_41);
-this._setDirty(_3e);
-this.onNew(_3e,_41);
-return _3e;
-},_addReference:function(_43,_44){
-var rid="_ref_"+this._referenceId++;
-if(!_43[this.metaLabel]["referenceIds"]){
-_43[this.metaLabel]["referenceIds"]=[];
-}
-_43[this.metaLabel]["referenceIds"].push(rid);
-this._references[rid]=_44;
-},deleteItem:function(_46){
-_46=this._correctReference(_46);
+dojo.declare("dojox.data.jsonPathStore",
+        //      summary:
+        //              The jsonPathStore implements dojo.data.read, write, notify, and identity api's.  It is a local (in memory) store
+	//		and can take a javascript object with any arbitrary format and attach to it to provide a dojo.data interface to that object
+	//		data.  It uses jsonPath as the query language to search agains this store.
+	null,
+	{
+		mode: dojox.data.ASYNC_MODE,
+		metaLabel: "_meta",
+		hideMetaAttributes: false,
+		autoIdPrefix: "_auto_",
+		autoIdentity: true,
+		idAttribute: "_id",
+		indexOnLoad: true,
+		labelAttribute: "",
+		url: "",
+		_replaceRegex: /\'\]/gi,
+		
+		constructor: function(options){
+			//summary:
+			//	jsonPathStore constructor, instantiate a new jsonPathStore 
+			//
+			//	Takes a single optional parameter in the form of a Javascript object
+			//	containing one or more of the following properties. 
+			//
+			//	data: /*JSON String*/ || /* Javascript Object */, 
+			//		JSON String or Javascript object this store will control
+			//		JSON is converted into an object, and an object passed to
+			//		the store will be used directly.  If no data and no url
+			//		is provide, an empty object, {}, will be used as the initial
+			//		store.
+			//
+			//	url: /* string url */ 	
+			//		Load data from this url in JSON format and use the Object
+			//		created from the data as the data source.
+			//
+			//	indexOnLoad: /* boolean */ 
+			//		Defaults to true, but this may change in the near future.
+			//		Parse the data object and set individual objects up as
+			//		appropriate.  This will add meta data and assign
+			//		id's to objects that dont' have them as defined by the
+			//		idAttribute option.  Disabling this option will keep this 
+			//		parsing from happening until a query is performed at which
+			//		time only the top level of an item has meta info stored.
+			//		This might work in some situations, but you will almost
+			//		always want to indexOnLoad or use another option which
+			//		will create an index.  In the future we will support a 
+			//		generated index that maps by jsonPath allowing the
+			//		server to take some of this load for larger data sets. 
+			//
+			//	idAttribute: /* string */
+			//		Defaults to '_id'. The name of the attribute that holds an objects id.
+			//		This can be a preexisting id provided by the server.  
+			//		If an ID isn't already provided when an object
+			//		is fetched or added to the store, the autoIdentity system
+			//		will generate an id for it and add it to the index. There
+			//		are utility routines for exporting data from the store
+			//		that can clean any generated IDs before exporting and leave
+			//		preexisting id's in tact.
+			//
+			//	metaLabel: /* string */
+			//		Defaults to '_meta' overrides the attribute name that is used by the store
+			//		for attaching meta information to an object while
+			//		in the store's control.  Defaults to '_meta'. 
+			//	
+			//	hideMetaAttributes: /* boolean */
+			//		Defaults to False.  When enabled, calls to getAttributes() will not 
+			//		include the meta attribute.
+			//
+			//	autoIdPrefix: /*string*/
+			//		Defaults to "_auto_".  This string is used as the prefix to any
+			//		objects which have a generated id. A numeric index is appended
+			//		to this string to complete the ID
+			//
+			//	mode: dojox.data.ASYNC_MODE || dojox.data.SYNC_MODE
+			//		Defaults to ASYNC_MODE.  This option sets the default mode for this store.
+			//		Sync calls return their data immediately from the calling function
+			//		instead of calling the callback functions.  Functions such as 
+			//		fetchItemByIdentity() and fetch() both accept a string parameter in addtion
+			//		to the normal keywordArgs parameter.  When passed this option, SYNC_MODE will
+			//		automatically be used even when the default mode of the system is ASYNC_MODE.
+			//		A normal request to fetch or fetchItemByIdentity (with kwArgs object) can also 
+			//		include a mode property to override this setting for that one request.
 
-if(this.isItem(_46)){
-while(_46[this.metaLabel]["referenceIds"].length>0){
+			//setup a byId alias to the api call	
+			this.byId=this.fetchItemByIdentity;
+
+			if (options){
+				dojo.mixin(this,options);
+			}
+
+			this._dirtyItems=[];
+			this._autoId=0;
+			this._referenceId=0;
+			this._references={};
+			this._fetchQueue=[];
+			this.index={};
+
+			//regex to identify when we're travelling down metaObject (which we don't want to do) 
+			var expr="("+this.metaLabel+"\'\])";
+			this.metaRegex = new RegExp(expr);
 
 
-var rid=_46[this.metaLabel]["referenceIds"].pop();
-var _48=this._references[rid];
+			//no data or url, start with an empty object for a store
+			if (!this.data && !this.url){
+				this.setData({});
+			}	
 
-var _49=_48.parent;
-var _4a=_48.attribute;
-if(_49&&_49[_4a]&&!dojo.isArray(_49[_4a])){
-this._setDirty(_49);
-this.unsetAttribute(_49,_4a);
-delete _49[_4a];
-}
-if(dojo.isArray(_49[_4a])){
+			//we have data, but no url, set the store as the data
+			if (this.data && !this.url){
+				this.setData(this.data);
 
-var _4b=this._trimItem(_49[_4a]);
-var _4c=false;
-for(var i=0;i<_49[_4a].length&&!_4c;i++){
-if(_49[_4a][i][this.metaLabel]===_46[this.metaLabel]){
-_4c=true;
-}
-}
-if(_4c){
-this._setDirty(_49);
-var del=_49[_4a].splice(i-1,1);
-delete del;
-}
-var _4f=this._trimItem(_49[_4a]);
-this.onSet(_49,_4a,_4b,_4f);
-}
-delete this._references[rid];
-}
-this.onDelete(_46);
-delete _46;
-}
-},_setDirty:function(_50){
-for(var i=0;i<this._dirtyItems.length;i++){
-if(_50[this.idAttribute]==this._dirtyItems[i][this.idAttribute]){
-return;
-}
-}
-this._dirtyItems.push({item:_50,old:this._trimItem(_50)});
-this._updateMeta(_50,{isDirty:true});
-},setValue:function(_52,_53,_54){
-_52=this._correctReference(_52);
-this._setDirty(_52);
-var old=_52[_53]|undefined;
-_52[_53]=_54;
-this.onSet(_52,_53,old,_54);
-},setValues:function(_56,_57,_58){
-_56=this._correctReference(_56);
-if(!dojo.isArray(_58)){
-throw new Error("setValues expects to be passed an Array object as its value");
-}
-this._setDirty(_56);
-var old=_56[_57]||null;
-_56[_57]=_58;
-this.onSet(_56,_57,old,_58);
-},unsetAttribute:function(_5a,_5b){
-_5a=this._correctReference(_5a);
-this._setDirty(_5a);
-var old=_5a[_5b];
-delete _5a[_5b];
-this.onSet(_5a,_5b,old,null);
-},save:function(_5d){
-var _5e=[];
-if(!_5d){
-_5d={};
-}
-while(this._dirtyItems.length>0){
-var _5f=this._dirtyItems.pop()["item"];
-var t=this._trimItem(_5f);
-var d;
-switch(_5d.format){
-case "json":
-d=dojo.toJson(t);
-break;
-case "raw":
-default:
-d=t;
-}
-_5e.push(d);
-this._markClean(_5f);
-}
-this.onSave(_5e);
-},_markClean:function(_62){
-if(_62&&_62[this.metaLabel]&&_62[this.metaLabel]["isDirty"]){
-delete _62[this.metaLabel]["isDirty"];
-}
-},revert:function(){
-while(this._dirtyItems.length>0){
-var d=this._dirtyItems.pop();
-this._mixin(d.item,d.old);
-}
-this.onRevert();
-},_mixin:function(_64,_65){
-var mix;
-if(dojo.isObject(_65)){
-if(dojo.isArray(_65)){
-while(_64.length>0){
-_64.pop();
-}
-for(var i=0;i<_65.length;i++){
-if(dojo.isObject(_65[i])){
-if(dojo.isArray(_65[i])){
-mix=[];
-}else{
-mix={};
-if(_65[i][this.metaLabel]&&_65[i][this.metaLabel]["type"]&&_65[i][this.metaLabel]["type"]=="reference"){
-_64[i]=this.index[_65[i][this.idAttribute]];
-continue;
-}
-}
-this._mixin(mix,_65[i]);
-_64.push(mix);
-}else{
-_64.push(_65[i]);
-}
-}
-}else{
-for(var i in _64){
-if(i in _65){
-continue;
-}
-delete _64[i];
-}
-for(var i in _65){
-if(dojo.isObject(_65[i])){
-if(dojo.isArray(_65[i])){
-mix=[];
-}else{
-if(_65[i][this.metaLabel]&&_65[i][this.metaLabel]["type"]&&_65[i][this.metaLabel]["type"]=="reference"){
-_64[i]=this.index[_65[i][this.idAttribute]];
-continue;
-}
-mix={};
-}
-this._mixin(mix,_65[i]);
-_64[i]=mix;
-}else{
-_64[i]=_65[i];
-}
-}
-}
-}
-},isDirty:function(_68){
-_68=this._correctReference(_68);
-return _68&&_68[this.metaLabel]&&_68[this.metaLabel]["isDirty"];
-},_createReference:function(_69){
-var obj={};
-obj[this.metaLabel]={type:"reference"};
-obj[this.idAttribute]=_69[this.idAttribute];
-return obj;
-},_trimItem:function(_6b){
-var _6c;
-if(dojo.isArray(_6b)){
-_6c=[];
-for(var i=0;i<_6b.length;i++){
-if(dojo.isArray(_6b[i])){
-_6c.push(this._trimItem(_6b[i]));
-}else{
-if(dojo.isObject(_6b[i])){
-if(_6b[i]["getFullYear"]){
-_6c.push(dojo.date.stamp.toISOString(_6b[i]));
-}else{
-if(_6b[i][this.idAttribute]){
-_6c.push(this._createReference(_6b[i]));
-}else{
-_6c.push(this._trimItem(_6b[i]));
-}
-}
-}else{
-_6c.push(_6b[i]);
-}
-}
-}
-return _6c;
-}
-if(dojo.isObject(_6b)){
-_6c={};
-for(var _6e in _6b){
-if(!_6b[_6e]){
-_6c[_6e]=undefined;
-continue;
-}
-if(dojo.isArray(_6b[_6e])){
-_6c[_6e]=this._trimItem(_6b[_6e]);
-}else{
-if(dojo.isObject(_6b[_6e])){
-if(_6b[_6e]["getFullYear"]){
-_6c[_6e]=dojo.date.stamp.toISOString(_6b[_6e]);
-}else{
-if(_6b[_6e][this.idAttribute]){
-_6c[_6e]=this._createReference(_6b[_6e]);
-}else{
-_6c[_6e]=this._trimItem(_6b[_6e]);
-}
-}
-}else{
-_6c[_6e]=_6b[_6e];
-}
-}
-}
-return _6c;
-}
-},onSet:function(){
-},onNew:function(){
-},onDelete:function(){
-},onSave:function(_6f){
-},onRevert:function(){
-}});
+				//remove the original refernce, we're now using _data from here on out
+				delete this.data;
+			}
+
+			//given a url, load json data from as the store
+			if (this.url){
+				dojo.xhrGet({
+					url: options.url,
+					handleAs: "json",
+					load: dojo.hitch(this, "setData"),
+					sync: this.mode
+				});
+			}
+		},
+
+		_loadData: function(data){
+			// summary:
+			//	load data into the store. Index it if appropriate.
+			if (this._data){
+				delete this._data;
+			}
+
+			if (dojo.isString(data)){
+				this._data = dojo.fromJson(data);
+			}else{
+				this._data = data;
+			}
+			
+			if (this.indexOnLoad){
+				this.buildIndex();		
+			}	
+
+			this._updateMeta(this._data, {path: "$"});
+
+			this.onLoadData(this._data);
+		},
+
+		onLoadData: function(data){
+			// summary
+			//	Called after data has been loaded in the store.  
+			//	If any requests happened while the startup is happening
+			//	then process them now.
+
+			while (this._fetchQueue.length>0){
+				var req = this._fetchQueue.shift();
+				this.fetch(req);
+			}	
+
+		},
+
+		setData: function(data){
+			// summary:
+			//	set the stores' data to the supplied object and then 
+			//	load and/or setup that data with the required meta info		
+			this._loadData(data);
+		},
+
+		buildIndex: function(path, item){
+			//summary: 
+			//	parse the object structure, and turn any objects into
+			//	jsonPathStore items. Basically this just does a recursive
+			//	series of fetches which itself already examines any items
+			//	as they are retrieved and setups up the required meta information. 
+			//
+			//	path: /* string */
+			//		jsonPath Query for the starting point of this index construction.
+
+			if (!this.idAttribute){
+				throw new Error("buildIndex requires idAttribute for the store");
+			}
+
+			item = item || this._data;
+			var origPath = path;
+			path = path||"$";
+			path += "[*]";
+			var data = this.fetch({query: path,mode: dojox.data.SYNC_MODE});
+			for(var i=0; i<data.length;i++){
+				var parts, attribute;
+				if(dojo.isObject(data[i])){
+					var newPath = data[i][this.metaLabel]["path"];
+					if (origPath){
+						//
+						//
+						//
+						//
+						parts = origPath.split("\[\'");
+						attribute = parts[parts.length-1].replace(this._replaceRegex,'');
+						//
+						//
+						if (!dojo.isArray(data[i])){
+							this._addReference(data[i], {parent: item, attribute:attribute});
+							this.buildIndex(newPath, data[i]);
+						}else{
+							this.buildIndex(newPath,item);
+						}
+					}else{
+						parts = newPath.split("\[\'");
+						attribute = parts[parts.length-1].replace(this._replaceRegex,'');
+						this._addReference(data[i], {parent: this._data, attribute:attribute});
+						this.buildIndex(newPath, data[i]);
+					}
+				}
+			}
+		},
+
+		_correctReference: function(item){
+			// summary:
+			//	make sure we have an reference to the item in the store
+			//	and not a clone. Takes an item, matches it to the corresponding
+			//	item in the store and if it is the same, returns itself, otherwise
+			//	it returns the item from the store.
+		
+			if (this.index[item[this.idAttribute]][this.metaLabel]===item[this.metaLabel]){
+				return this.index[item[this.idAttribute]];
+			}
+			return item;	
+		},
+
+		getValue: function(item, property){
+			// summary:
+			//	Gets the value of an item's 'property'
+			//
+			//	item: /* object */
+			//	property: /* string */
+			//		property to look up value for	
+			item = this._correctReference(item);
+			return item[property];
+		},
+
+		getValues: function(item, property){
+			// summary:
+			//	Gets the value of an item's 'property' and returns
+			//	it.  If this value is an array it is just returned,
+			//	if not, the value is added to an array and that is returned.
+			//
+			//	item: /* object */
+			//	property: /* string */
+			//		property to look up value for	
+	
+			item = this._correctReference(item);
+			return dojo.isArray(item[property]) ? item[property] : [item[property]];
+		},
+
+		getAttributes: function(item){
+			// summary:
+			//	Gets the available attributes of an item's 'property' and returns
+			//	it as an array. If the store has 'hideMetaAttributes' set to true
+			//	the attributed identified by 'metaLabel' will not be included.
+			//
+			//	item: /* object */
+
+			item = this._correctReference(item);
+			var res = [];
+			for (var i in item){
+				if (this.hideMetaAttributes && (i==this.metaLabel)){continue;}
+				res.push(i);
+			}
+			return res;
+		},
+
+		hasAttribute: function(item,attribute){
+			// summary:
+			//	Checks to see if item has attribute
+			//
+			//	item: /* object */
+			//	attribute: /* string */
+		
+			item = this._correctReference(item);
+			if (attribute in item){return true;}
+			return false;	
+		},
+
+		containsValue: function(item, attribute, value){
+			// summary:
+			//	Checks to see if 'item' has 'value' at 'attribute'
+			//
+			//	item: /* object */
+			//	attribute: /* string */
+			//	value: /* anything */
+			item = this._correctReference(item);
+
+			if (item[attribute] && item[attribute]==value){return true}
+			if (dojo.isObject(item[attribute]) || dojo.isObject(value)){
+				if (this._shallowCompare(item[attribute],value)){return true}
+			}
+			return false;	
+		},
+
+		_shallowCompare: function(a, b){
+			//summary does a simple/shallow compare of properties on an object
+			//to the same named properties on the given item. Returns
+			//true if all props match. It will not descend into child objects
+			//but it will compare child date objects
+
+			if ((dojo.isObject(a) && !dojo.isObject(b))|| (dojo.isObject(b) && !dojo.isObject(a))) {
+				return false;
+			}
+
+			if ( a["getFullYear"] || b["getFullYear"] ){
+				//confirm that both are dates
+				if ( (a["getFullYear"] && !b["getFullYear"]) || (b["getFullYear"] && !a["getFullYear"]) ){
+					return false;
+				}else{
+					if (!dojo.date.compare(a,b)){
+						return true;
+					}
+					return false;
+       				}
+			}
+
+			for (var i in b){	
+				if (dojo.isObject(b[i])){
+					if (!a[i] || !dojo.isObject(a[i])){return false}
+
+					if (b[i]["getFullYear"]){
+						if(!a[i]["getFullYear"]){return false}
+						if (dojo.date.compare(a,b)){return false}	
+					}else{
+						if (!this._shallowCompare(a[i],b[i])){return false}
+					}
+				}else{	
+					if (!b[i] || (a[i]!=b[i])){return false}
+				}
+			}
+
+			//make sure there werent props on a that aren't on b, if there aren't, then
+			//the previous section will have already evaluated things.
+
+			for (var i in a){
+				if (!b[i]){return false}
+			}
+			
+			return true;
+		},
+
+		isItem: function(item){
+			// summary:
+			//	Checks to see if a passed 'item'
+			//	is really a jsonPathStore item.  Currently
+			//	it only verifies structure.  It does not verify
+			//	that it belongs to this store at this time.
+			//
+			//	item: /* object */
+			//	attribute: /* string */
+		
+			if (!dojo.isObject(item) || !item[this.metaLabel]){return false}
+			if (this.requireId && this._hasId && !item[this._id]){return false}
+			return true;
+		},
+
+		isItemLoaded: function(item){
+			// summary:
+			//	returns isItem() :)
+			//
+			//	item: /* object */
+
+			item = this._correctReference(item);
+			return this.isItem(item);
+		},
+
+		loadItem: function(item){
+			// summary:
+			//	returns true. Future implementatins might alter this 
+			return true;
+		},
+
+		_updateMeta: function(item, props){
+			// summary:
+			//	verifies that 'item' has a meta object attached
+			//	and if not it creates it by setting it to 'props'
+			//	if the meta attribute already exists, mix 'props'
+			//	into it.
+
+			if (item && item[this.metaLabel]){
+				dojo.mixin(item[this.metaLabel], props);
+				return;
+			}
+
+			item[this.metaLabel]=props;
+		},
+
+		cleanMeta: function(data, options){
+			// summary
+			//	Recurses through 'data' and removes an
+			//	meta information that has been attached. This
+			//	function will also removes any id's that were autogenerated
+			//	from objects.  It will not touch id's that were not generated
+
+			data = data || this._data;
+
+			if (data[this.metaLabel]){
+				if(data[this.metaLabel]["autoId"]){
+					delete data[this.idAttribute];
+				}
+				delete data[this.metaLabel];
+			}
+
+			if (dojo.isArray(data)){
+				for(var i=0; i<data.length;i++){
+					if(dojo.isObject(data[i]) || dojo.isArray(data[i]) ){
+						this.cleanMeta(data[i]);
+					}
+				}
+			} else if (dojo.isObject(data)){
+				for (var i in data){
+					this.cleanMeta(data[i]);
+				}
+			}
+		}, 
+
+		fetch: function(args){
+			//
+			// summary
+			//	
+			//	fetch takes either a string argument or a keywordArgs
+			//	object containing the parameters for the search.
+			//	If passed a string, fetch will interpret this string
+			//	as the query to be performed and will do so in 
+			//	SYNC_MODE returning the results immediately.
+			//	If an object is supplied as 'args', its options will be 
+			// 	parsed and then contained query executed. 
+			//
+			//	query: /* string or object */
+			//		Defaults to "$..*". jsonPath query to be performed 
+			//		on data store. **note that since some widgets
+			//		expect this to be an object, an object in the form
+			//		of {query: '$[*'], queryOptions: "someOptions"} is
+			//		acceptable	
+			//
+			//	mode: dojox.data.SYNC_MODE || dojox.data.ASYNC_MODE
+			//		Override the stores default mode.
+			//
+			//	queryOptions: /* object */
+			//		Options passed on to the underlying jsonPath query
+			//		system.
+			//
+			//	start: /* int */
+			//		Starting item in result set
+			//
+			//	count: /* int */
+			//		Maximum number of items to return
+			//
+			//	sort: /* function */
+			//		Not Implemented yet
+			//
+			//	The following only apply to ASYNC requests (the default)
+			//
+			//	onBegin: /* function */
+			//		called before any results are returned. Parameters
+			//		will be the count and the original fetch request
+			//	
+			//	onItem: /*function*/
+			//		called for each returned item.  Parameters will be
+			//		the item and the fetch request
+			//
+			//	onComplete: /* function */
+			//		called on completion of the request.  Parameters will	
+			//		be the complete result set and the request
+			//
+			//	onError: /* function */
+			//		colled in the event of an error
+
+			// we're not started yet, add this request to a queue and wait till we do	
+			if (!this._data){
+				this._fetchQueue.push(args);
+				return args;
+			}	
+			if(dojo.isString(args)){
+					query = args;
+					args={query: query, mode: dojox.data.SYNC_MODE};
+					
+			}
+
+			var query;
+			if (!args || !args.query){
+				if (!args){
+					var args={};	
+				}
+
+				if (!args.query){
+					args.query="$..*";
+					query=args.query;
+				}
+
+			}
+
+			if (dojo.isObject(args.query)){
+				if (args.query.query){
+					query = args.query.query;
+				}else{
+					query = args.query = "$..*";
+				}
+				if (args.query.queryOptions){
+					args.queryOptions=args.query.queryOptions
+				}
+			}else{
+				query=args.query;
+			}
+
+			if (!args.mode) {args.mode = this.mode;}
+			if (!args.queryOptions) {args.queryOptions={};}
+
+			args.queryOptions.resultType='BOTH';
+			var results = dojox.jsonPath.query(this._data, query, args.queryOptions);
+			var tmp=[];
+			var count=0;
+			for (var i=0; i<results.length; i++){
+				if(args.start && i<args.start){continue;}
+				if (args.count && (count >= args.count)) { continue; }
+
+				var item = results[i]["value"];
+				var path = results[i]["path"];
+				if (!dojo.isObject(item)){continue;}
+				if(this.metaRegex.exec(path)){continue;}
+
+				//this automatically records the objects path
+				this._updateMeta(item,{path: results[i].path});
+
+				//if autoIdentity and no id, generate one and add it to the item
+				if(this.autoIdentity && !item[this.idAttribute]){
+					var newId = this.autoIdPrefix + this._autoId++;
+					item[this.idAttribute]=newId;
+					item[this.metaLabel]["autoId"]=true;
+				}
+
+				//add item to the item index if appropriate
+				if(item[this.idAttribute]){this.index[item[this.idAttribute]]=item}
+				count++;
+				tmp.push(item);
+			}
+			results = tmp;
+			var scope = args.scope || dojo.global;
+
+			if ("sort" in args){
+				
+			}	
+
+			if (args.mode==dojox.data.SYNC_MODE){ 
+				return results; 
+			};
+
+			if (args.onBegin){	
+				args["onBegin"].call(scope, results.length, args);
+			}
+
+			if (args.onItem){
+				for (var i=0; i<results.length;i++){	
+					args["onItem"].call(scope, results[i], args);
+				}
+			}
+ 
+			if (args.onComplete){
+				args["onComplete"].call(scope, results, args);
+			}
+
+			return args;
+		},
+
+		dump: function(options){
+			// summary:
+			//
+			//	exports the store data set. Takes an options
+			//	object with a number of parameters
+			//
+			//	data: /* object */
+			//		Defaults to the root of the store.
+		 	//		The data to be exported.
+			//	
+			//	clone: /* boolean */
+			//		clone the data set before returning it 
+			//		or modifying it for export
+			//
+			//	cleanMeta: /* boolean */
+			//		clean the meta data off of the data. Note
+			//		that this will happen to the actual
+			//		store data if !clone. If you want
+			//		to continue using the store after
+			//		this operation, it is probably better to export
+			//		it as a clone if you want it cleaned.
+			//
+			//	suppressExportMeta: /* boolean */
+			//		By default, when data is exported from the store
+			//		some information, such as as a timestamp, is
+			//		added to the root of exported data.  This
+			//		prevents that from happening.  It is mainly used
+			//		for making tests easier.
+			//
+			//	type: "raw" || "json"
+			//		Defaults to 'json'. 'json' will convert the data into 
+			//		json before returning it. 'raw' will just return a
+			//		reference to the object	 
+
+			var options = options || {};
+			var d = options.data || this._data;
+	
+			if (!options.suppressExportMeta && options.clone){
+				data = dojo.clone(d);
+				if (data[this.metaLabel]){
+					data[this.metaLabel]["clone"]=true;
+				}
+			}else{
+				var data=d;
+			}
+
+			if (!options.suppressExportMeta &&  data[this.metaLabel]){
+				data[this.metaLabel]["last_export"]=new Date().toString()
+			}
+
+			if(options.cleanMeta){
+				this.cleanMeta(data);
+			}
+
+			//	
+			switch(options.type){
+				case "raw":
+					return data;
+				case "json":
+				default:
+					return dojo.toJson(data, options.pretty || false);
+			}
+		},	
+
+		getFeatures: function(){
+			// summary:
+			// 	return the store feature set
+
+			return { 
+				"dojo.data.api.Read": true,
+				"dojo.data.api.Identity": true,
+				"dojo.data.api.Write": true,
+				"dojo.data.api.Notification": true
+			}
+		},
+
+		getLabel: function(item){
+			// summary
+			//	returns the label for an item. The label
+			//	is created by setting the store's labelAttribute 
+			//	property with either an attribute name	or an array
+			//	of attribute names.  Developers can also
+			//	provide the store with a createLabel function which
+			//	will do the actaul work of creating the label.  If not
+			//	the default will just concatenate any of the identified
+			//	attributes together.
+			item = this._correctReference(item);
+			var label="";
+
+			if (dojo.isFunction(this.createLabel)){
+				return this.createLabel(item);
+			}
+
+			if (this.labelAttribute){
+				if (dojo.isArray(this.labelAttribute))	{
+					for(var i=0; i<this.labelAttribute.length; i++){
+						if (i>0) { label+=" ";}
+						label += item[this.labelAttribute[i]];
+					}
+					return label;
+				}else{
+					return item[this.labelAttribute];
+				}
+			}
+			return item.toString();
+		},
+
+		getLabelAttributes: function(item){
+			// summary:
+			//	returns an array of attributes that are used to create the label of an item
+			item = this._correctReference(item);
+			return dojo.isArray(this.labelAttribute) ? this.labelAttribute : [this.labelAttribute];
+		},
+
+		sort: function(a,b){
+			
+		},
+
+		//Identity API Support
+
+		getIdentity: function(item){
+			// summary
+			//	returns the identity of an item or throws
+			//	a not found error.
+
+			if (this.isItem(item)){
+				return item[this.idAttribute];
+			}
+			throw new Error("Id not found for item");
+		},
+
+		getIdentityAttributes: function(item){
+			// summary:
+			//	returns the attributes which are used to make up the 
+			//	identity of an item.  Basically returns this.idAttribute
+
+			return [this.idAttribute];
+		},
+
+		fetchItemByIdentity: function(args){
+			// summary: 
+			//	fetch an item by its identity. This store also provides
+			//	a much more finger friendly alias, 'byId' which does the
+			//	same thing as this function.  If provided a string
+			//	this call will be treated as a SYNC request and will 
+			//	return the identified item immediatly.  Alternatively it
+			// 	takes a object as a set of keywordArgs:
+			//	
+			//	identity: /* string */
+			//		the id of the item you want to retrieve
+			//	
+			//	mode: dojox.data.SYNC_MODE || dojox.data.ASYNC_MODE
+			//		overrides the default store fetch mode
+			//	
+			//	onItem: /* function */
+			//		Result call back.  Passed the fetched item.
+			//
+			//	onError: /* function */
+			//		error callback.	
+			var id;	
+			if (dojo.isString(args)){
+				id = args;
+				args = {identity: id, mode: dojox.data.SYNC_MODE}
+			}else{
+				if (args){
+					id = args["identity"];		
+				}
+				if (!args.mode){args.mode = this.mode}	
+			}
+
+			if (this.index && (this.index[id] || this.index["identity"])){
+				
+				if (args.mode==dojox.data.SYNC_MODE){
+					return this.index[id];
+				}
+
+				if (args.onItem){
+					args["onItem"].call(args.scope || dojo.global, this.index[id], args);
+				}
+
+				return args;
+			}else{
+				if (args.mode==dojox.data.SYNC_MODE){
+					return false;
+				}
+			}
+
+
+			if(args.onError){
+				args["onItem"].call(args.scope || dojo.global, new Error("Item Not Found: " + id), args);
+			}
+			
+			return args;
+		},
+
+		//Write API Support
+		newItem: function(data, options){
+			// summary:
+			//	adds a new item to the store at the specified point.
+			//	Takes two parameters, data, and options. 
+			//
+			//	data: /* object */
+			//		The data to be added in as an item.  This could be a
+			//		new javascript object, or it could be an item that 
+			//		already exists in the store.  If it already exists in the 
+			//		store, then this will be added as a reference.  
+			//
+			//	options: /* object */
+			//
+			//		item: /* item */
+			//			reference to an existing store item
+			//
+			//		attribute: /* string */
+			//			attribute to add the item at.  If this is
+			//			not provided, the item's id will be used as the
+			//			attribute name. If specified attribute is an
+			//			array, the new item will be push()d on to the
+			//			end of it.
+			//		oldValue: /* old value of item[attribute]
+			//		newValue: new value item[attribute]
+
+			var meta={};
+
+			//default parent to the store root;
+			var pInfo ={item:this._data};
+
+			if (options){
+				if (options.parent){
+					options.item = options.parent;
+				}
+
+				dojo.mixin(pInfo, options);
+			}
+
+			if (this.idAttribute && !data[this.idAttribute]){
+				if (this.requireId){throw new Error("requireId is enabled, new items must have an id defined to be added");}
+				if (this.autoIdentity){
+					var newId = this.autoIdPrefix + this._autoId++;
+					data[this.idAttribute]=newId;
+					meta["autoId"]=true;
+				}
+			}	
+
+			if (!pInfo && !pInfo.attribute && !this.idAttribute && !data[this.idAttribute]){
+				throw new Error("Adding a new item requires, at a minumum, either the pInfo information, including the pInfo.attribute, or an id on the item in the field identified by idAttribute");
+			}
+
+			//pInfo.parent = this._correctReference(pInfo.parent);
+			//if there is no parent info supplied, default to the store root
+			//and add to the pInfo.attribute or if that doestn' exist create an
+			//attribute with the same name as the new items ID 
+			if(!pInfo.attribute){pInfo.attribute = data[this.idAttribute]}
+
+			pInfo.oldValue = this._trimItem(pInfo.item[pInfo.attribute]);
+			if (dojo.isArray(pInfo.item[pInfo.attribute])){
+				this._setDirty(pInfo.item);
+				pInfo.item[pInfo.attribute].push(data);
+			}else{
+				this._setDirty(pInfo.item);
+				pInfo.item[pInfo.attribute]=data;
+			}
+
+			pInfo.newValue = pInfo.item[pInfo.attribute];
+
+			//add this item to the index
+			if(data[this.idAttribute]){this.index[data[this.idAttribute]]=data}
+
+			this._updateMeta(data, meta)
+
+			//keep track of all references in the store so we can delete them as necessary
+			this._addReference(data, pInfo);
+
+			//mark this new item as dirty
+			this._setDirty(data);
+
+			//Notification API
+			this.onNew(data, pInfo);
+
+			//returns the original item, now decorated with some meta info
+			return data;
+		},
+
+		_addReference: function(item, pInfo){
+			// summary
+			//	adds meta information to an item containing a reference id
+			//	so that references can be deleted as necessary, when passed
+			//	only a string, the string for parent info, it will only
+			//	it will be treated as a string reference
+
+			//	
+			var rid = '_ref_' + this._referenceId++;
+			if (!item[this.metaLabel]["referenceIds"]){
+				item[this.metaLabel]["referenceIds"]=[];
+			}
+
+			item[this.metaLabel]["referenceIds"].push(rid);
+			this._references[rid] = pInfo;				
+		},
+
+		deleteItem: function(item){	
+			// summary
+			//	deletes item and any references to that item from the store.
+			//	If the desire is to delete only one reference, unsetAttribute or
+			//	setValue is the way to go.
+
+			item = this._correctReference(item);
+			
+			if (this.isItem(item)){
+				while(item[this.metaLabel]["referenceIds"].length>0){
+					
+					
+					var rid = item[this.metaLabel]["referenceIds"].pop();
+					var pInfo = this._references[rid];
+
+					
+					var parentItem = pInfo.parent;
+					var attribute = pInfo.attribute;	
+					if(parentItem && parentItem[attribute] && !dojo.isArray(parentItem[attribute])){
+						this._setDirty(parentItem);
+						this.unsetAttribute(parentItem, attribute);
+						delete parentItem[attribute];
+					}
+
+					if (dojo.isArray(parentItem[attribute])){
+						
+						var oldValue = this._trimItem(parentItem[attribute]);
+						var found=false;
+						for (var i=0; i<parentItem[attribute].length && !found;i++){
+							if (parentItem[attribute][i][this.metaLabel]===item[this.metaLabel]){
+								found=true;	
+							}			
+						}	
+
+						if (found){
+							this._setDirty(parentItem);
+							var del =  parentItem[attribute].splice(i-1,1);
+							delete del;
+						}
+
+						var newValue = this._trimItem(parentItem[attribute]);
+						this.onSet(parentItem,attribute,oldValue,newValue);	
+					}
+					delete this._references[rid];
+
+				}
+				this.onDelete(item);		
+				delete item;
+			}
+		},
+
+		_setDirty: function(item){
+			// summary:
+			//	adds an item to the list of dirty items.  This item
+			//	contains a reference to the item itself as well as a
+			//	cloned and trimmed version of old item for use with
+			//	revert.
+
+			//if an item is already in the list of dirty items, don't add it again
+			//or it will overwrite the premodification data set.
+			for (var i=0; i<this._dirtyItems.length; i++){
+				if (item[this.idAttribute]==this._dirtyItems[i][this.idAttribute]){
+					return; 
+				}	
+			}
+
+			this._dirtyItems.push({item: item, old: this._trimItem(item)});
+			this._updateMeta(item, {isDirty: true});
+		},
+
+		setValue: function(item, attribute, value){
+			// summary:
+			//	sets 'attribute' on 'item' to 'value'
+			item = this._correctReference(item);
+
+			this._setDirty(item);
+			var old = item[attribute] | undefined;
+			item[attribute]=value;
+			this.onSet(item,attribute,old,value);
+
+		},
+
+		setValues: function(item, attribute, values){
+			// summary:
+			//	sets 'attribute' on 'item' to 'value' value
+			//	must be an array.
+
+
+			item = this._correctReference(item);
+			if (!dojo.isArray(values)){throw new Error("setValues expects to be passed an Array object as its value");}
+			this._setDirty(item);
+			var old = item[attribute] || null;
+			item[attribute]=values
+			this.onSet(item,attribute,old,values);
+		},
+
+		unsetAttribute: function(item, attribute){
+			// summary:
+			//	unsets 'attribute' on 'item'
+
+			item = this._correctReference(item);
+			this._setDirty(item);
+			var old = item[attribute];
+			delete item[attribute];
+			this.onSet(item,attribute,old,null);
+		},
+
+		save: function(kwArgs){
+			// summary:
+			//	Takes an optional set of keyword Args with
+			//	some save options.  Currently only format with options
+			//	being "raw" or "json".  This function goes through
+			//	the dirty item lists, clones and trims the item down so that
+			//	the items children are not part of the data (the children are replaced
+			//	with reference objects). This data is compiled into a single array, the dirty objects
+			//	are all marked as clean, and the new data is then passed on to the onSave handler.
+
+			var data = [];
+		
+			if (!kwArgs){kwArgs={}}
+			while (this._dirtyItems.length > 0){
+				var item = this._dirtyItems.pop()["item"];
+				var t = this._trimItem(item);
+				var d;	
+				switch(kwArgs.format){	
+					case "json":
+						d = dojo.toJson(t);	
+						break;
+					case "raw":
+					default:
+						d = t;
+				}
+				data.push(d);
+				this._markClean(item);
+			}
+
+			this.onSave(data);
+		},
+
+		_markClean: function(item){
+			// summary
+			//	remove this meta information marking an item as "dirty"
+
+			if (item && item[this.metaLabel] && item[this.metaLabel]["isDirty"]){
+				delete item[this.metaLabel]["isDirty"];
+			}	
+		},
+
+		revert: function(){
+			// summary
+			//	returns any modified data to its original state prior to a save();
+
+			while (this._dirtyItems.length>0){
+				var d = this._dirtyItems.pop();
+				this._mixin(d.item, d.old);
+			}
+			this.onRevert();
+		},
+
+		_mixin: function(target, data){
+			// summary:
+			//	specialized mixin that hooks up objects in the store where references are identified.
+			var mix;
+
+			if (dojo.isObject(data)){
+				if (dojo.isArray(data)){
+					while(target.length>0){target.pop();}
+					for (var i=0; i<data.length;i++){
+						if (dojo.isObject(data[i])){
+							if (dojo.isArray(data[i])){
+								mix=[];
+							}else{
+								mix={};
+								if (data[i][this.metaLabel] && data[i][this.metaLabel]["type"] && data[i][this.metaLabel]["type"]=='reference'){
+									target[i]=this.index[data[i][this.idAttribute]];
+									continue;
+								}
+							}
+
+							this._mixin(mix, data[i]);
+							target.push(mix);
+						}else{
+							target.push(data[i]);
+						}
+					}	
+				}else{
+					for (var i in target){
+						if (i in data){continue;}
+						delete target[i];
+					}
+
+					for (var i in data){
+						if (dojo.isObject(data[i])){
+							if (dojo.isArray(data[i])){
+								mix=[];
+							}else{
+								if (data[i][this.metaLabel] && data[i][this.metaLabel]["type"] && data[i][this.metaLabel]["type"]=='reference'){
+									target[i]=this.index[data[i][this.idAttribute]];
+									continue;
+								}
+
+								mix={};
+							}
+							this._mixin(mix, data[i]);
+							target[i]=mix;
+						}else{
+							target[i]=data[i];
+						}
+					}	
+
+				}
+			}
+		},
+
+		isDirty: function(item){
+			// summary
+			//	returns true if the item is marked as dirty.
+
+			item = this._correctReference(item);
+			return item && item[this.metaLabel] && item[this.metaLabel]["isDirty"];
+		},
+
+		_createReference: function(item){
+			// summary
+			// 	Create a small reference object that can be used to replace
+			//	child objects during a trim
+
+			var obj={};
+			obj[this.metaLabel]={
+				type:'reference'
+			};
+
+			obj[this.idAttribute]=item[this.idAttribute];
+			return obj;
+		},
+
+		_trimItem: function(item){
+			//summary:
+			// 	copy an item recursively stoppying at other items that have id's
+			//	and replace them with a refrence object;
+			var copy;
+			if (dojo.isArray(item)){
+				copy = [];
+				for (var i=0; i<item.length;i++){
+					if (dojo.isArray(item[i])){
+						copy.push(this._trimItem(item[i]))
+					}else if (dojo.isObject(item[i])){
+						if (item[i]["getFullYear"]){
+							copy.push(dojo.date.stamp.toISOString(item[i]));
+						}else if (item[i][this.idAttribute]){
+							copy.push(this._createReference(item[i]));
+						}else{
+							copy.push(this._trimItem(item[i]));	
+						}
+					} else {
+						copy.push(item[i]);	
+					}
+				}
+				return copy;
+			} 
+
+			if (dojo.isObject(item)){
+				copy = {};
+
+				for (var attr in item){
+					if (!item[attr]){ copy[attr]=undefined;continue;}
+					if (dojo.isArray(item[attr])){
+						copy[attr] = this._trimItem(item[attr]);
+					}else if (dojo.isObject(item[attr])){
+						if (item[attr]["getFullYear"]){
+							copy[attr] =  dojo.date.stamp.toISOString(item[attr]);
+						}else if(item[attr][this.idAttribute]){
+							copy[attr]=this._createReference(item[attr]);
+						} else {
+							copy[attr]=this._trimItem(item[attr]);
+						}
+					} else {
+						copy[attr]=item[attr];
+					}
+				}
+				return copy;
+			}
+		},
+
+		//Notifcation Support
+
+		onSet: function(){
+		},
+
+		onNew: function(){
+
+		},
+
+		onDelete: function(){
+
+		},	
+	
+		onSave: function(items){
+			// summary:
+			//	notification of the save event..not part of the notification api, 
+			//	but probably should be.
+			//
+		},
+
+		onRevert: function(){
+			// summary:
+			//	notification of the revert event..not part of the notification api, 
+			//	but probably should be.
+
+		}
+	}
+);
+
+//setup an alias to byId, is there a better way to do this?
 dojox.data.jsonPathStore.byId=dojox.data.jsonPathStore.fetchItemByIdentity;
+
 }

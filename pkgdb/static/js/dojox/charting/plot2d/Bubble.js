@@ -5,93 +5,148 @@
 */
 
 
-if(!dojo._hasResource["dojox.charting.plot2d.Bubble"]){
-dojo._hasResource["dojox.charting.plot2d.Bubble"]=true;
+if(!dojo._hasResource["dojox.charting.plot2d.Bubble"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.charting.plot2d.Bubble"] = true;
 dojo.provide("dojox.charting.plot2d.Bubble");
+
 dojo.require("dojox.charting.plot2d.Base");
 dojo.require("dojox.lang.functional");
+
 (function(){
-var df=dojox.lang.functional,du=dojox.lang.utils,dc=dojox.charting.plot2d.common,_4=df.lambda("item.purgeGroup()");
-dojo.declare("dojox.charting.plot2d.Bubble",dojox.charting.plot2d.Base,{defaultParams:{hAxis:"x",vAxis:"y"},optionalParams:{},constructor:function(_5,_6){
-this.opt=dojo.clone(this.defaultParams);
-du.updateWithObject(this.opt,_6);
-this.series=[];
-this.hAxis=this.opt.hAxis;
-this.vAxis=this.opt.vAxis;
-},calculateAxes:function(_7){
-this._calc(_7,dc.collectSimpleStats(this.series));
-return this;
-},render:function(_8,_9){
-this.dirty=this.isDirty();
-if(this.dirty){
-dojo.forEach(this.series,_4);
-this.cleanGroup();
-var s=this.group;
-df.forEachRev(this.series,function(_b){
-_b.cleanGroup(s);
-});
-}
-var t=this.chart.theme,_d,_e,_f,_10,_11,ht=this._hScaler.scaler.getTransformerFromModel(this._hScaler),vt=this._vScaler.scaler.getTransformerFromModel(this._vScaler),_14=this.events();
-for(var i=this.series.length-1;i>=0;--i){
-var run=this.series[i];
-if(!this.dirty&&!run.dirty){
-continue;
-}
-run.cleanGroup();
-if(!run.data.length){
-run.dirty=false;
-continue;
-}
-if(typeof run.data[0]=="number"){
-console.warn("dojox.charting.plot2d.Bubble: the data in the following series cannot be rendered as a bubble chart; ",run);
-continue;
-}
-var s=run.group,_17=dojo.map(run.data,function(v,i){
-return {x:ht(v.x)+_9.l,y:_8.height-_9.b-vt(v.y),radius:this._vScaler.bounds.scale*(v.size/2)};
-},this);
-if(run.fill){
-_f=run.fill;
-}else{
-if(run.stroke){
-_f=run.stroke;
-}else{
-_f=run.dyn.color=new dojo.Color(t.next("color"));
-}
-}
-run.dyn.fill=_f;
-_d=run.dyn.stroke=run.stroke?dc.makeStroke(run.stroke):dc.augmentStroke(t.series.stroke,_f);
-var _1a=null,_1b=null,_1c=null;
-if(this.opt.shadows&&_d){
-var sh=this.opt.shadows,_11=new dojo.Color([0,0,0,0.2]),_10=dojo.clone(_e?_e:_d);
-_10.color=_11;
-_10.width+=sh.dw?sh.dw:0;
-run.dyn.shadow=_10;
-shadowMarkers=dojo.map(_17,function(_1e){
-var sh=this.opt.shadows;
-return s.createCircle({cx:_1e.x+sh.dx,cy:_1e.y+sh.dy,r:_1e.radius}).setStroke(_10).setFill(_11);
-},this);
-}
-if(run.outline||t.series.outline){
-_e=dc.makeStroke(run.outline?run.outline:t.series.outline);
-_e.width=2*_e.width+_d.width;
-run.dyn.outline=_e;
-_1b=dojo.map(_17,function(_20){
-s.createCircle({cx:_20.x,cy:_20.y,r:_20.radius}).setStroke(_e);
-},this);
-}
-_1a=dojo.map(_17,function(_21){
-return s.createCircle({cx:_21.x,cy:_21.y,r:_21.radius}).setStroke(_d).setFill(_f);
-},this);
-if(_14){
-dojo.forEach(_1a,function(s,i){
-var o={element:"circle",index:i,run:run,plot:this,hAxis:this.hAxis||null,vAxis:this.vAxis||null,shape:s,outline:_1b&&_1b[i]||null,shadow:_1c&&_1c[i]||null,x:run.data[i].x,y:run.data[i].y,r:run.data[i].size/2,cx:_17[i].x,cy:_17[i].y,cr:_17[i].radius};
-this._connectEvents(s,o);
-},this);
-}
-run.dirty=false;
-}
-this.dirty=false;
-return this;
-}});
+	var df = dojox.lang.functional, du = dojox.lang.utils,
+		dc = dojox.charting.plot2d.common,
+		purgeGroup = df.lambda("item.purgeGroup()");
+
+	dojo.declare("dojox.charting.plot2d.Bubble", dojox.charting.plot2d.Base, {
+		defaultParams: {
+			hAxis: "x",		// use a horizontal axis named "x"
+			vAxis: "y"		// use a vertical axis named "y"
+		},
+		optionalParams: {},	// no optional parameters
+
+		constructor: function(chart, kwArgs){
+			this.opt = dojo.clone(this.defaultParams);
+			du.updateWithObject(this.opt, kwArgs);
+			this.series = [];
+			this.hAxis = this.opt.hAxis;
+			this.vAxis = this.opt.vAxis;
+		},
+		
+		calculateAxes: function(dim){
+			this._calc(dim, dc.collectSimpleStats(this.series));
+			return this;
+		},
+
+		//	override the render so that we are plotting only circles.
+		render: function(dim, offsets){
+			this.dirty = this.isDirty();
+			if(this.dirty){
+				dojo.forEach(this.series, purgeGroup);
+				this.cleanGroup();
+				var s = this.group;
+				df.forEachRev(this.series, function(item){ item.cleanGroup(s); });
+			}
+		
+			var t = this.chart.theme, stroke, outline, color, shadowStroke, shadowColor,
+				ht = this._hScaler.scaler.getTransformerFromModel(this._hScaler),
+				vt = this._vScaler.scaler.getTransformerFromModel(this._vScaler),
+				events = this.events();
+
+			for(var i = this.series.length - 1; i >= 0; --i){
+				var run = this.series[i];
+				if(!this.dirty && !run.dirty){ continue; }
+				run.cleanGroup();
+				if(!run.data.length){
+					run.dirty = false;
+					continue;
+				}
+
+				if(typeof run.data[0] == "number"){
+					console.warn("dojox.charting.plot2d.Bubble: the data in the following series cannot be rendered as a bubble chart; ", run);
+					continue;
+				}
+				
+				var s = run.group,
+					points = dojo.map(run.data, function(v, i){
+						return {
+							x: ht(v.x) + offsets.l,
+							y: dim.height - offsets.b - vt(v.y),
+							radius: this._vScaler.bounds.scale * (v.size / 2)
+						};
+					}, this);
+
+				if(run.fill){
+					color = run.fill;
+				}else if(run.stroke){
+					color = run.stroke;
+				}else{
+					color = run.dyn.color = new dojo.Color(t.next("color"));
+				}
+				run.dyn.fill = color;
+
+				stroke = run.dyn.stroke = run.stroke ? dc.makeStroke(run.stroke) : dc.augmentStroke(t.series.stroke, color);
+
+				var frontCircles = null, outlineCircles = null, shadowCircles = null;
+
+				// make shadows if needed
+				if(this.opt.shadows && stroke){
+					var sh = this.opt.shadows, shadowColor = new dojo.Color([0, 0, 0, 0.2]),
+						shadowStroke = dojo.clone(outline ? outline : stroke);
+					shadowStroke.color = shadowColor;
+					shadowStroke.width += sh.dw ? sh.dw : 0;
+					run.dyn.shadow = shadowStroke;
+					shadowMarkers = dojo.map(points, function(item){
+						var sh = this.opt.shadows;
+						return s.createCircle({
+							cx: item.x + sh.dx, cy: item.y + sh.dy, r: item.radius
+						}).setStroke(shadowStroke).setFill(shadowColor);
+					}, this);
+				}
+
+				// make outlines if needed
+				if(run.outline || t.series.outline){
+					outline = dc.makeStroke(run.outline ? run.outline : t.series.outline);
+					outline.width = 2 * outline.width + stroke.width;
+					run.dyn.outline = outline;
+					outlineCircles = dojo.map(points, function(item){
+						s.createCircle({ cx: item.x, cy: item.y, r: item.radius }).setStroke(outline);
+					}, this);
+				}
+
+				//	run through the data and add the circles.
+				frontCircles = dojo.map(points, function(item){
+					return s.createCircle({ cx: item.x, cy: item.y, r: item.radius }).setStroke(stroke).setFill(color);
+				}, this);
+				
+				if(events){
+					dojo.forEach(frontCircles, function(s, i){
+						var o = {
+							element: "circle",
+							index:   i,
+							run:     run,
+							plot:    this,
+							hAxis:   this.hAxis || null,
+							vAxis:   this.vAxis || null,
+							shape:   s,
+							outline: outlineCircles && outlineCircles[i] || null,
+							shadow:  shadowCircles && shadowCircles[i] || null,
+							x:       run.data[i].x,
+							y:       run.data[i].y,
+							r:       run.data[i].size / 2,
+							cx:      points[i].x,
+							cy:      points[i].y,
+							cr:      points[i].radius
+						};
+						this._connectEvents(s, o);
+					}, this);
+				}
+				
+				run.dirty = false;
+			}
+			this.dirty = false;
+			return this;
+		}
+	});
 })();
+
 }

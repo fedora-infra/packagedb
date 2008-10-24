@@ -5,152 +5,226 @@
 */
 
 
-if(!dojo._hasResource["dojox.io.windowName"]){
-dojo._hasResource["dojox.io.windowName"]=true;
+if(!dojo._hasResource["dojox.io.windowName"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.io.windowName"] = true;
 dojo.provide("dojox.io.windowName");
-dojox.io.windowName={send:function(_1,_2){
-_2.url+=(_2.url.match(/\?/)?"&":"?")+"windowname="+(_2.authElement?"auth":true);
-var _3=_2.authElement;
-var _4=function(_5){
-try{
-var _6=_7.ioArgs.frame.contentWindow.document;
-_6.write(" ");
-_6.close();
+// Implements the window.name transport  
+
+dojox.io.windowName = {
+	send: function(/*String*/ method, /*dojo.__IoArgs*/ args){
+		// summary:
+		//		Provides secure cross-domain request capability.
+		// 		Sends a request using an iframe (POST or GET) and reads the response through the 
+		// 		frame's window.name.
+		//
+		//	method:
+		//		The method to use to send the request, GET or POST
+		//
+		//	args:
+		//		See dojo.xhr
+		//
+		//	args.authElement: DOMNode?
+		//		By providing an authElement, this indicates that windowName should use the 
+		// 		authorized window.name protocol, relying on
+		//		the loaded XD resource to return to the provided return URL on completion
+		//		of authorization/authentication. The provided authElement will be used to place
+		//		the iframe in, so the user can interact with the server resource for authentication
+		//		and/or authorization to access the resource.
+		//
+		//	args.onAuthLoad: Function?
+		//		When using authorized access to resources, this function will be called when the
+		// 		authorization page has been loaded. (When authorization is actually completed,
+		// 		the deferred callback function is called with the result). The primary use for this
+		// 		is to make the authElement visible to the user once the resource has loaded
+		// 		(this can be preferable to showing the iframe while the resource is loading
+		// 		since it may not require authorization, it may simply return the resource). 
+		//  
+		//	description:
+		//		In order to provide a windowname transport accessible resources/web services, a server
+		// 		should check for the presence of a parameter window.name=true and if a request includes
+		// 		such a parameter, it should respond to the request with an HTML 
+		// 		document that sets it's window.name to the string that is to be 
+		// 		delivered to the client. For example, if a client makes a window.name request like:
+		// 	|	http://othersite.com/greeting?windowname=true
+		// 		And server wants to respond to the client with "Hello", it should return an html page:
+		// |	<html><script type="text/javascript">
+		// |	window.name="Hello";
+		// |	</script></html>
+		// 		One can provide XML or JSON data by simply quoting the data as a string, and parsing the data
+		// 		on the client.
+		//		If you use the authorization window.name protocol, the requester should include an
+		// 		authElement element in the args, and a request will be created like:
+		// 	|	http://othersite.com/greeting?windowname=auth
+		// 		And the server can respond like this:
+		// |	<html><script type="text/javascript">
+		// |	var loc = window.name;
+		// |	authorizationButton.onclick = function(){	
+		// |		window.name="Hello";
+		// |		location = loc;
+		// |	};
+		// |	</script></html>
+		
+		args.url += (args.url.match(/\?/) ? '&' : '?') + "windowname=" + (args.authElement ? "auth" : true); // indicate our desire for window.name communication
+		var authElement = args.authElement;
+		var cleanup = function(result){
+			try{
+				// we have to do this to stop the wait cursor in FF 
+				var innerDoc = dfd.ioArgs.frame.contentWindow.document;
+				innerDoc.write(" ");
+				innerDoc.close();
+			}catch(e){}
+			(authElement || dojo.body()).removeChild(dfd.ioArgs.outerFrame); // clean up
+			return result;
+		}
+		var dfd = dojo._ioSetArgs(args,cleanup,cleanup,cleanup);
+		if(args.timeout){
+			setTimeout(function(){
+					if(dfd.fired == -1){
+						dfd.callback(new Error("Timeout"));
+					}
+				},
+				args.timeout
+			);
+		}
+		var self = dojox.io.windowName;
+		if(dojo.body()){
+			// the DOM is ready
+			self._send(dfd, method, authElement, args.onAuthLoad);
+		}else{
+			// we will wait for the DOM to be ready to proceed
+			dojo.addOnLoad(function(){
+				self._send(dfd, method, authElement, args.onAuthLoad);
+			});
+		}
+		return dfd;
+	},
+	_send: function(dfd, method, authTarget, onAuthLoad){
+
+		var ioArgs = dfd.ioArgs;
+		var frameNum = dojox.io.windowName._frameNum++;
+		var sameDomainUrl = (dojo.config["dojoCallbackUrl"]||dojo.moduleUrl("dojo", "resources/blank.html")) + "#" + frameNum;
+		var frameName = new dojo._Url(window.location, sameDomainUrl);
+		var doc = dojo.doc;
+		var frameContainer = authTarget || dojo.body();
+		function styleFrame(frame){
+			frame.style.width="100%";
+			frame.style.height="100%";
+			frame.style.border="0px";
+		}
+		if(dojo.isMoz && ![].reduce){
+			// FF2 allows unsafe sibling frame modification,
+			// the fix for this is to create nested frames with getters and setters to protect access
+			var outerFrame = doc.createElement("iframe");
+			styleFrame(outerFrame);
+			if(!authTarget){
+				outerFrame.style.display='none';
+			}
+			frameContainer.appendChild(outerFrame);
+			
+			var firstWindow = outerFrame.contentWindow;
+			doc = firstWindow.document;
+			doc.write("<html><body margin='0px'><iframe style='width:100%;height:100%;border:0px' name='protectedFrame'></iframe></body></html>");
+			doc.close();
+			var secondWindow = firstWindow[0]; 
+			firstWindow.__defineGetter__(0,function(){});
+			firstWindow.__defineGetter__("protectedFrame",function(){});
+			doc = secondWindow.document;
+			doc.write("<html><body margin='0px'></body></html>");
+			doc.close();
+			frameContainer = doc.body;
+		}
+
+		var frame = ioArgs.frame = frame = doc.createElement(dojo.isIE ? '<iframe name="' + frameName + '" onload="dojox.io.windowName['+frameNum+']()">' : 'iframe');
+		styleFrame(frame);
+		ioArgs.outerFrame = outerFrame = outerFrame || frame;
+		if(!authTarget){
+			outerFrame.style.display='none';
+		}
+		var state = 0;
+		function getData(){
+			var data = frame.contentWindow.name;
+			if(typeof data == 'string'){
+				if(data != frameName){
+					state = 2; // we are done now
+					dfd.ioArgs.hash = frame.contentWindow.location.hash;
+					dfd.callback(data);
+				}
+			}
+		}
+		dojox.io.windowName[frameNum] = frame.onload = function(){
+			try{
+				if(!dojo.isMoz && frame.contentWindow.location =='about:blank'){
+					// opera and safari will do an onload for about:blank first, we can ignore this first onload
+					return;
+				}
+			}catch(e){
+				// if we are in the target domain, frame.contentWindow.location will throw an ignorable error 
+			}
+			if(!state){
+				// we have loaded the target resource, now time to navigate back to our domain so we can read the frame name
+				state=1;
+				if(authTarget){
+					// call the callback so it can make it visible
+					if(onAuthLoad){
+						onAuthLoad();
+					}
+				}else{
+					// we are doing a synchronous capture, go directly to our same domain URL and retrieve the resource
+					frame.contentWindow.location = sameDomainUrl;
+				}
+			}
+			// back to our domain, we should be able to access the frame name now
+			try{
+				if(state<2){
+					getData();
+				}
+			}
+			catch(e){
+			}
+			
+		};
+		frame.name = frameName;
+		if(method.match(/GET/i)){
+			// if it is a GET we can just the iframe our src url
+			dojo._ioAddQueryToUrl(ioArgs);
+			frame.src = ioArgs.url;
+			frameContainer.appendChild(frame);
+			if(frame.contentWindow){
+				frame.contentWindow.location.replace(ioArgs.url);
+			}
+		}else if(method.match(/POST/i)){
+			// if it is a POST we will build a form to post it
+			frameContainer.appendChild(frame);
+			var form = dojo.doc.createElement("form");
+			dojo.body().appendChild(form);
+			var query = dojo.queryToObject(ioArgs.query);
+			for(var i in query){
+				var values = query[i];
+				values = values instanceof Array ? values : [values];
+				for(j = 0; j < values.length; j++){
+					// create hidden inputs for all the parameters
+					var input = doc.createElement("input");
+					input.type = 'hidden';
+					input.name = i;
+					input.value = values[j];				
+					form.appendChild(input);	
+				}
+			}
+			form.method = 'POST';
+			form.action = ioArgs.url;
+			form.target = frameName;// connect the form to the iframe
+			
+			form.submit();
+			form.parentNode.removeChild(form);
+		}else{
+			throw new Error("Method " + method + " not supported with the windowName transport");
+		}
+		if(frame.contentWindow){
+			frame.contentWindow.name = frameName; // IE likes it afterwards
+		}
+	},
+	_frameNum: 0 
+	
 }
-catch(e){
-}
-(_3||dojo.body()).removeChild(_7.ioArgs.outerFrame);
-return _5;
-};
-var _7=dojo._ioSetArgs(_2,_4,_4,_4);
-if(_2.timeout){
-setTimeout(function(){
-if(_7.fired==-1){
-_7.callback(new Error("Timeout"));
-}
-},_2.timeout);
-}
-var _8=dojox.io.windowName;
-if(dojo.body()){
-_8._send(_7,_1,_3,_2.onAuthLoad);
-}else{
-dojo.addOnLoad(function(){
-_8._send(_7,_1,_3,_2.onAuthLoad);
-});
-}
-return _7;
-},_send:function(_9,_a,_b,_c){
-var _d=_9.ioArgs;
-var _e=dojox.io.windowName._frameNum++;
-var _f=(dojo.config["dojoCallbackUrl"]||dojo.moduleUrl("dojo","resources/blank.html"))+"#"+_e;
-var _10=new dojo._Url(window.location,_f);
-var doc=dojo.doc;
-var _12=_b||dojo.body();
-function styleFrame(_13){
-_13.style.width="100%";
-_13.style.height="100%";
-_13.style.border="0px";
-};
-if(dojo.isMoz&&![].reduce){
-var _14=doc.createElement("iframe");
-styleFrame(_14);
-if(!_b){
-_14.style.display="none";
-}
-_12.appendChild(_14);
-var _15=_14.contentWindow;
-doc=_15.document;
-doc.write("<html><body margin='0px'><iframe style='width:100%;height:100%;border:0px' name='protectedFrame'></iframe></body></html>");
-doc.close();
-var _16=_15[0];
-_15.__defineGetter__(0,function(){
-});
-_15.__defineGetter__("protectedFrame",function(){
-});
-doc=_16.document;
-doc.write("<html><body margin='0px'></body></html>");
-doc.close();
-_12=doc.body;
-}
-var _17=_d.frame=_17=doc.createElement(dojo.isIE?"<iframe name=\""+_10+"\" onload=\"dojox.io.windowName["+_e+"]()\">":"iframe");
-styleFrame(_17);
-_d.outerFrame=_14=_14||_17;
-if(!_b){
-_14.style.display="none";
-}
-var _18=0;
-function getData(){
-var _19=_17.contentWindow.name;
-if(typeof _19=="string"){
-if(_19!=_10){
-_18=2;
-_9.ioArgs.hash=_17.contentWindow.location.hash;
-_9.callback(_19);
-}
-}
-};
-dojox.io.windowName[_e]=_17.onload=function(){
-try{
-if(!dojo.isMoz&&_17.contentWindow.location=="about:blank"){
-return;
-}
-}
-catch(e){
-}
-if(!_18){
-_18=1;
-if(_b){
-if(_c){
-_c();
-}
-}else{
-_17.contentWindow.location=_f;
-}
-}
-try{
-if(_18<2){
-getData();
-}
-}
-catch(e){
-}
-};
-_17.name=_10;
-if(_a.match(/GET/i)){
-dojo._ioAddQueryToUrl(_d);
-_17.src=_d.url;
-_12.appendChild(_17);
-if(_17.contentWindow){
-_17.contentWindow.location.replace(_d.url);
-}
-}else{
-if(_a.match(/POST/i)){
-_12.appendChild(_17);
-var _1a=dojo.doc.createElement("form");
-dojo.body().appendChild(_1a);
-var _1b=dojo.queryToObject(_d.query);
-for(var i in _1b){
-var _1d=_1b[i];
-_1d=_1d instanceof Array?_1d:[_1d];
-for(j=0;j<_1d.length;j++){
-var _1e=doc.createElement("input");
-_1e.type="hidden";
-_1e.name=i;
-_1e.value=_1d[j];
-_1a.appendChild(_1e);
-}
-}
-_1a.method="POST";
-_1a.action=_d.url;
-_1a.target=_10;
-_1a.submit();
-_1a.parentNode.removeChild(_1a);
-}else{
-throw new Error("Method "+_a+" not supported with the windowName transport");
-}
-}
-if(_17.contentWindow){
-_17.contentWindow.name=_10;
-}
-},_frameNum:0};
+
 }

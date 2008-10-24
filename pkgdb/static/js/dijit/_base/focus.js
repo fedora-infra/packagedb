@@ -5,240 +5,383 @@
 */
 
 
-if(!dojo._hasResource["dijit._base.focus"]){
-dojo._hasResource["dijit._base.focus"]=true;
+if(!dojo._hasResource["dijit._base.focus"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dijit._base.focus"] = true;
 dojo.provide("dijit._base.focus");
-dojo.mixin(dijit,{_curFocus:null,_prevFocus:null,isCollapsed:function(){
-var _1=dojo.doc;
-if(_1.selection){
-var s=_1.selection;
-if(s.type=="Text"){
-return !s.createRange().htmlText.length;
-}else{
-return !s.createRange().length;
-}
-}else{
-var _3=dojo.global;
-var _4=_3.getSelection();
-if(dojo.isString(_4)){
-return !_4;
-}else{
-return _4.isCollapsed||!_4.toString();
-}
-}
-},getBookmark:function(){
-var _5,_6=dojo.doc.selection;
-if(_6){
-var _7=_6.createRange();
-if(_6.type.toUpperCase()=="CONTROL"){
-if(_7.length){
-_5=[];
-var i=0,_9=_7.length;
-while(i<_9){
-_5.push(_7.item(i++));
-}
-}else{
-_5=null;
-}
-}else{
-_5=_7.getBookmark();
-}
-}else{
-if(window.getSelection){
-_6=dojo.global.getSelection();
-if(_6){
-_7=_6.getRangeAt(0);
-_5=_7.cloneRange();
-}
-}else{
-console.warn("No idea how to store the current selection for this browser!");
-}
-}
-return _5;
-},moveToBookmark:function(_a){
-var _b=dojo.doc;
-if(_b.selection){
-var _c;
-if(dojo.isArray(_a)){
-_c=_b.body.createControlRange();
-dojo.forEach(_a,function(n){
-_c.addElement(n);
+
+// summary:
+//		These functions are used to query or set the focus and selection.
+//
+//		Also, they trace when widgets become actived/deactivated,
+//		so that the widget can fire _onFocus/_onBlur events.
+//		"Active" here means something similar to "focused", but
+//		"focus" isn't quite the right word because we keep track of
+//		a whole stack of "active" widgets.  Example:  Combobutton --> Menu -->
+//		MenuItem.   The onBlur event for Combobutton doesn't fire due to focusing
+//		on the Menu or a MenuItem, since they are considered part of the
+//		Combobutton widget.  It only happens when focus is shifted
+//		somewhere completely different.
+
+dojo.mixin(dijit,
+{
+	// _curFocus: DomNode
+	//		Currently focused item on screen
+	_curFocus: null,
+
+	// _prevFocus: DomNode
+	//		Previously focused item on screen
+	_prevFocus: null,
+
+	isCollapsed: function(){
+		// summary: tests whether the current selection is empty
+		var _document = dojo.doc;
+		if(_document.selection){ // IE
+			var s=_document.selection;
+			if(s.type=='Text'){
+				return !s.createRange().htmlText.length; // Boolean
+			}else{ //Control range
+				return !s.createRange().length; // Boolean
+			}
+		}else{
+			var _window = dojo.global;
+			var selection = _window.getSelection();
+			if(dojo.isString(selection)){ // Safari
+				return !selection; // Boolean
+			}else{ // Mozilla/W3
+				return selection.isCollapsed || !selection.toString(); // Boolean
+			}
+		}
+	},
+
+	getBookmark: function(){
+		// summary: Retrieves a bookmark that can be used with moveToBookmark to return to the same range
+		var bookmark, selection = dojo.doc.selection;
+		if(selection){ // IE
+			var range = selection.createRange();
+			if(selection.type.toUpperCase()=='CONTROL'){
+				if(range.length){
+					bookmark=[];
+					var i=0,len=range.length;
+					while(i<len){
+						bookmark.push(range.item(i++));
+					}
+				}else{
+					bookmark=null;
+				}
+			}else{
+				bookmark = range.getBookmark();
+			}
+		}else{
+			if(window.getSelection){
+				selection = dojo.global.getSelection();
+				if(selection){
+					range = selection.getRangeAt(0);
+					bookmark = range.cloneRange();
+				}
+			}else{
+				console.warn("No idea how to store the current selection for this browser!");
+			}
+		}
+		return bookmark; // Array
+	},
+
+	moveToBookmark: function(/*Object*/bookmark){
+		// summary: Moves current selection to a bookmark
+		// bookmark: This should be a returned object from dojo.html.selection.getBookmark()
+		var _document = dojo.doc;
+		if(_document.selection){ // IE
+			var range;
+			if(dojo.isArray(bookmark)){
+				range = _document.body.createControlRange();
+				//range.addElement does not have call/apply method, so can not call it directly
+				//range is not available in "range.addElement(item)", so can't use that either
+				dojo.forEach(bookmark, function(n){
+					range.addElement(n);
+				});
+			}else{
+				range = _document.selection.createRange();
+				range.moveToBookmark(bookmark);
+			}
+			range.select();
+		}else{ //Moz/W3C
+			var selection = dojo.global.getSelection && dojo.global.getSelection();
+			if(selection && selection.removeAllRanges){
+				selection.removeAllRanges();
+				selection.addRange(bookmark);
+			}else{
+				console.warn("No idea how to restore selection for this browser!");
+			}
+		}
+	},
+
+	getFocus: function(/*Widget?*/menu, /*Window?*/openedForWindow){
+		// summary:
+		//	Returns the current focus and selection.
+		//	Called when a popup appears (either a top level menu or a dialog),
+		//	or when a toolbar/menubar receives focus
+		//
+		// menu:
+		//	The menu that's being opened
+		//
+		// openedForWindow:
+		//	iframe in which menu was opened
+		//
+		// returns:
+		//	A handle to restore focus/selection
+
+		return {
+			// Node to return focus to
+			node: menu && dojo.isDescendant(dijit._curFocus, menu.domNode) ? dijit._prevFocus : dijit._curFocus,
+
+			// Previously selected text
+			bookmark:
+				!dojo.withGlobal(openedForWindow||dojo.global, dijit.isCollapsed) ?
+				dojo.withGlobal(openedForWindow||dojo.global, dijit.getBookmark) :
+				null,
+
+			openedForWindow: openedForWindow
+		}; // Object
+	},
+
+	focus: function(/*Object || DomNode */ handle){
+		// summary:
+		//		Sets the focused node and the selection according to argument.
+		//		To set focus to an iframe's content, pass in the iframe itself.
+		// handle:
+		//		object returned by get(), or a DomNode
+
+		if(!handle){ return; }
+
+		var node = "node" in handle ? handle.node : handle,		// because handle is either DomNode or a composite object
+			bookmark = handle.bookmark,
+			openedForWindow = handle.openedForWindow;
+
+		// Set the focus
+		// Note that for iframe's we need to use the <iframe> to follow the parentNode chain,
+		// but we need to set focus to iframe.contentWindow
+		if(node){
+			var focusNode = (node.tagName.toLowerCase()=="iframe") ? node.contentWindow : node;
+			if(focusNode && focusNode.focus){
+				try{
+					// Gecko throws sometimes if setting focus is impossible,
+					// node not displayed or something like that
+					focusNode.focus();
+				}catch(e){/*quiet*/}
+			}			
+			dijit._onFocusNode(node);
+		}
+
+		// set the selection
+		// do not need to restore if current selection is not empty
+		// (use keyboard to select a menu item)
+		if(bookmark && dojo.withGlobal(openedForWindow||dojo.global, dijit.isCollapsed)){
+			if(openedForWindow){
+				openedForWindow.focus();
+			}
+			try{
+				dojo.withGlobal(openedForWindow||dojo.global, dijit.moveToBookmark, null, [bookmark]);
+			}catch(e){
+				/*squelch IE internal error, see http://trac.dojotoolkit.org/ticket/1984 */
+			}
+		}
+	},
+
+	// _activeStack: Array
+	//		List of currently active widgets (focused widget and it's ancestors)
+	_activeStack: [],
+
+	registerWin: function(/*Window?*/targetWindow){
+		// summary:
+		//		Registers listeners on the specified window (either the main
+		//		window or an iframe) to detect when the user has clicked somewhere.
+		//		Anyone that creates an iframe should call this function.
+
+		if(!targetWindow){
+			targetWindow = window;
+		}
+
+		dojo.connect(targetWindow.document, "onmousedown", function(evt){
+			dijit._justMouseDowned = true;
+			setTimeout(function(){ dijit._justMouseDowned = false; }, 0);
+			dijit._onTouchNode(evt.target||evt.srcElement);
+		});
+		//dojo.connect(targetWindow, "onscroll", ???);
+
+		// Listen for blur and focus events on targetWindow's body
+		var doc = targetWindow.document;
+		if(doc){
+			if(dojo.isIE){
+				doc.attachEvent('onactivate', function(evt){
+					if(evt.srcElement.tagName.toLowerCase() != "#document"){
+						dijit._onFocusNode(evt.srcElement);
+					}
+				});
+				doc.attachEvent('ondeactivate', function(evt){
+					dijit._onBlurNode(evt.srcElement);
+				});
+			}else{
+				doc.addEventListener('focus', function(evt){
+					dijit._onFocusNode(evt.target);
+				}, true);
+				doc.addEventListener('blur', function(evt){
+					dijit._onBlurNode(evt.target);
+				}, true);
+			}
+		}
+		doc = null;	// prevent memory leak (apparent circular reference via closure)
+	},
+
+	_onBlurNode: function(/*DomNode*/ node){
+		// summary:
+		// 		Called when focus leaves a node.
+		//		Usually ignored, _unless_ it *isn't* follwed by touching another node,
+		//		which indicates that we tabbed off the last field on the page,
+		//		in which case every widget is marked inactive
+		dijit._prevFocus = dijit._curFocus;
+		dijit._curFocus = null;
+
+		if(dijit._justMouseDowned){
+			// the mouse down caused a new widget to be marked as active; this blur event
+			// is coming late, so ignore it.
+			return;
+		}
+
+		// if the blur event isn't followed by a focus event then mark all widgets as inactive.
+		if(dijit._clearActiveWidgetsTimer){
+			clearTimeout(dijit._clearActiveWidgetsTimer);
+		}
+		dijit._clearActiveWidgetsTimer = setTimeout(function(){
+			delete dijit._clearActiveWidgetsTimer;
+			dijit._setStack([]);
+			dijit._prevFocus = null;
+		}, 100);
+	},
+
+	_onTouchNode: function(/*DomNode*/ node){
+		// summary:
+		//		Callback when node is focused or mouse-downed
+
+		// ignore the recent blurNode event
+		if(dijit._clearActiveWidgetsTimer){
+			clearTimeout(dijit._clearActiveWidgetsTimer);
+			delete dijit._clearActiveWidgetsTimer;
+		}
+
+		// compute stack of active widgets (ex: ComboButton --> Menu --> MenuItem)
+		var newStack=[];
+		try{
+			while(node){
+				if(node.dijitPopupParent){
+					node=dijit.byId(node.dijitPopupParent).domNode;
+				}else if(node.tagName && node.tagName.toLowerCase()=="body"){
+					// is this the root of the document or just the root of an iframe?
+					if(node===dojo.body()){
+						// node is the root of the main document
+						break;
+					}
+					// otherwise, find the iframe this node refers to (can't access it via parentNode,
+					// need to do this trick instead). window.frameElement is supported in IE/FF/Webkit
+					node=dijit.getDocumentWindow(node.ownerDocument).frameElement;
+				}else{
+					var id = node.getAttribute && node.getAttribute("widgetId");
+					if(id){
+						newStack.unshift(id);
+					}
+					node=node.parentNode;
+				}
+			}
+		}catch(e){ /* squelch */ }
+
+		dijit._setStack(newStack);
+	},
+
+	_onFocusNode: function(/*DomNode*/ node){
+		// summary
+		//		Callback when node is focused
+
+		if(!node){
+			return;
+		}
+
+		if(node.nodeName && node.nodeName.toLowerCase() == "body"){
+			// Ignore focus events on main document <body>.  This is specifically here
+			// so that clicking the up/down arrows of a spinner (which don't get focus)
+			// won't cause that widget to blur.  (IIRC, IE issue)
+			return;
+		}
+
+		if(node.nodeType == 9){
+			// We focused on (the body of) the document itself, either the main document
+			// or an iframe
+			var iframe = dijit.getDocumentWindow(node).frameElement;
+			if(!iframe){
+				// Ignore focus events on main document.  This is specifically here
+				// so that clicking the up/down arrows of a spinner (which don't get focus)
+				// won't cause that widget to blur.
+				return;
+			}
+
+			node = iframe;
+		}
+
+		dijit._onTouchNode(node);
+
+		if(node==dijit._curFocus){ return; }
+		if(dijit._curFocus){
+			dijit._prevFocus = dijit._curFocus;
+		}
+		dijit._curFocus = node;
+		dojo.publish("focusNode", [node]);
+	},
+
+	_setStack: function(newStack){
+		// summary
+		//	The stack of active widgets has changed.  Send out appropriate events and record new stack
+
+		var oldStack = dijit._activeStack;
+		dijit._activeStack = newStack;
+
+		// compare old stack to new stack to see how many elements they have in common
+		for(var nCommon=0; nCommon<Math.min(oldStack.length, newStack.length); nCommon++){
+			if(oldStack[nCommon] != newStack[nCommon]){
+				break;
+			}
+		}
+
+		// for all elements that have gone out of focus, send blur event
+		for(var i=oldStack.length-1; i>=nCommon; i--){
+			var widget = dijit.byId(oldStack[i]);
+			if(widget){
+				widget._focused = false;
+				widget._hasBeenBlurred = true;
+				if(widget._onBlur){
+					widget._onBlur();
+				}
+				if (widget._setStateClass){
+					widget._setStateClass();
+				}
+				dojo.publish("widgetBlur", [widget]);
+			}
+		}
+
+		// for all element that have come into focus, send focus event
+		for(i=nCommon; i<newStack.length; i++){
+			widget = dijit.byId(newStack[i]);
+			if(widget){
+				widget._focused = true;
+				if(widget._onFocus){
+					widget._onFocus();
+				}
+				if (widget._setStateClass){
+					widget._setStateClass();
+				}
+				dojo.publish("widgetFocus", [widget]);
+			}
+		}
+	}
 });
-}else{
-_c=_b.selection.createRange();
-_c.moveToBookmark(_a);
-}
-_c.select();
-}else{
-var _e=dojo.global.getSelection&&dojo.global.getSelection();
-if(_e&&_e.removeAllRanges){
-_e.removeAllRanges();
-_e.addRange(_a);
-}else{
-console.warn("No idea how to restore selection for this browser!");
-}
-}
-},getFocus:function(_f,_10){
-return {node:_f&&dojo.isDescendant(dijit._curFocus,_f.domNode)?dijit._prevFocus:dijit._curFocus,bookmark:!dojo.withGlobal(_10||dojo.global,dijit.isCollapsed)?dojo.withGlobal(_10||dojo.global,dijit.getBookmark):null,openedForWindow:_10};
-},focus:function(_11){
-if(!_11){
-return;
-}
-var _12="node" in _11?_11.node:_11,_13=_11.bookmark,_14=_11.openedForWindow;
-if(_12){
-var _15=(_12.tagName.toLowerCase()=="iframe")?_12.contentWindow:_12;
-if(_15&&_15.focus){
-try{
-_15.focus();
-}
-catch(e){
-}
-}
-dijit._onFocusNode(_12);
-}
-if(_13&&dojo.withGlobal(_14||dojo.global,dijit.isCollapsed)){
-if(_14){
-_14.focus();
-}
-try{
-dojo.withGlobal(_14||dojo.global,dijit.moveToBookmark,null,[_13]);
-}
-catch(e){
-}
-}
-},_activeStack:[],registerWin:function(_16){
-if(!_16){
-_16=window;
-}
-dojo.connect(_16.document,"onmousedown",function(evt){
-dijit._justMouseDowned=true;
-setTimeout(function(){
-dijit._justMouseDowned=false;
-},0);
-dijit._onTouchNode(evt.target||evt.srcElement);
-});
-var doc=_16.document;
-if(doc){
-if(dojo.isIE){
-doc.attachEvent("onactivate",function(evt){
-if(evt.srcElement.tagName.toLowerCase()!="#document"){
-dijit._onFocusNode(evt.srcElement);
-}
-});
-doc.attachEvent("ondeactivate",function(evt){
-dijit._onBlurNode(evt.srcElement);
-});
-}else{
-doc.addEventListener("focus",function(evt){
-dijit._onFocusNode(evt.target);
-},true);
-doc.addEventListener("blur",function(evt){
-dijit._onBlurNode(evt.target);
-},true);
-}
-}
-doc=null;
-},_onBlurNode:function(_1d){
-dijit._prevFocus=dijit._curFocus;
-dijit._curFocus=null;
-if(dijit._justMouseDowned){
-return;
-}
-if(dijit._clearActiveWidgetsTimer){
-clearTimeout(dijit._clearActiveWidgetsTimer);
-}
-dijit._clearActiveWidgetsTimer=setTimeout(function(){
-delete dijit._clearActiveWidgetsTimer;
-dijit._setStack([]);
-dijit._prevFocus=null;
-},100);
-},_onTouchNode:function(_1e){
-if(dijit._clearActiveWidgetsTimer){
-clearTimeout(dijit._clearActiveWidgetsTimer);
-delete dijit._clearActiveWidgetsTimer;
-}
-var _1f=[];
-try{
-while(_1e){
-if(_1e.dijitPopupParent){
-_1e=dijit.byId(_1e.dijitPopupParent).domNode;
-}else{
-if(_1e.tagName&&_1e.tagName.toLowerCase()=="body"){
-if(_1e===dojo.body()){
-break;
-}
-_1e=dijit.getDocumentWindow(_1e.ownerDocument).frameElement;
-}else{
-var id=_1e.getAttribute&&_1e.getAttribute("widgetId");
-if(id){
-_1f.unshift(id);
-}
-_1e=_1e.parentNode;
-}
-}
-}
-}
-catch(e){
-}
-dijit._setStack(_1f);
-},_onFocusNode:function(_21){
-if(!_21){
-return;
-}
-if(_21.nodeName&&_21.nodeName.toLowerCase()=="body"){
-return;
-}
-if(_21.nodeType==9){
-var _22=dijit.getDocumentWindow(_21).frameElement;
-if(!_22){
-return;
-}
-_21=_22;
-}
-dijit._onTouchNode(_21);
-if(_21==dijit._curFocus){
-return;
-}
-if(dijit._curFocus){
-dijit._prevFocus=dijit._curFocus;
-}
-dijit._curFocus=_21;
-dojo.publish("focusNode",[_21]);
-},_setStack:function(_23){
-var _24=dijit._activeStack;
-dijit._activeStack=_23;
-for(var _25=0;_25<Math.min(_24.length,_23.length);_25++){
-if(_24[_25]!=_23[_25]){
-break;
-}
-}
-for(var i=_24.length-1;i>=_25;i--){
-var _27=dijit.byId(_24[i]);
-if(_27){
-_27._focused=false;
-_27._hasBeenBlurred=true;
-if(_27._onBlur){
-_27._onBlur();
-}
-if(_27._setStateClass){
-_27._setStateClass();
-}
-dojo.publish("widgetBlur",[_27]);
-}
-}
-for(i=_25;i<_23.length;i++){
-_27=dijit.byId(_23[i]);
-if(_27){
-_27._focused=true;
-if(_27._onFocus){
-_27._onFocus();
-}
-if(_27._setStateClass){
-_27._setStateClass();
-}
-dojo.publish("widgetFocus",[_27]);
-}
-}
-}});
+
+// register top window and all the iframes it contains
 dojo.addOnLoad(dijit.registerWin);
+
 }

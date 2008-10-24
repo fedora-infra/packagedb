@@ -5,55 +5,57 @@
 */
 
 
-if(!dojo._hasResource["dojox.dtl.filter.dates"]){
-dojo._hasResource["dojox.dtl.filter.dates"]=true;
+if(!dojo._hasResource["dojox.dtl.filter.dates"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.dtl.filter.dates"] = true;
 dojo.provide("dojox.dtl.filter.dates");
+
 dojo.require("dojox.dtl.utils.date");
+
 (function(){
-var _1=dojox.dtl.filter.dates;
-dojo.mixin(_1,{_toDate:function(_2){
-if(_2 instanceof Date){
-return _2;
-}
-_2=new Date(_2);
-if(_2.getTime()==new Date(0).getTime()){
-return "";
-}
-return _2;
-},date:function(_3,_4){
-_3=_1._toDate(_3);
-if(!_3){
-return "";
-}
-_4=_4||"N j, Y";
-return dojox.dtl.utils.date.format(_3,_4);
-},time:function(_5,_6){
-_5=_1._toDate(_5);
-if(!_5){
-return "";
-}
-_6=_6||"P";
-return dojox.dtl.utils.date.format(_5,_6);
-},timesince:function(_7,_8){
-_7=_1._toDate(_7);
-if(!_7){
-return "";
-}
-var _9=dojox.dtl.utils.date.timesince;
-if(_8){
-return _9(_8,_7);
-}
-return _9(_7);
-},timeuntil:function(_a,_b){
-_a=_1._toDate(_a);
-if(!_a){
-return "";
-}
-var _c=dojox.dtl.utils.date.timesince;
-if(_b){
-return _c(_b,_a);
-}
-return _c(new Date(),_a);
-}});
+	var ddfd = dojox.dtl.filter.dates;
+
+	dojo.mixin(ddfd, {
+		_toDate: function(value){
+			if(value instanceof Date){
+				return value;
+			}
+			value = new Date(value);
+			if(value.getTime() == new Date(0).getTime()){
+				return "";
+			}
+			return value;
+		},
+		date: function(value, arg){
+			// summary: Formats a date according to the given format
+			value = ddfd._toDate(value);
+			if(!value) return "";
+			arg = arg || "N j, Y";
+			return dojox.dtl.utils.date.format(value, arg);
+		},
+		time: function(value, arg){
+			// summary: Formats a time according to the given format
+			value = ddfd._toDate(value);
+			if(!value) return "";
+			arg = arg || "P";
+			return dojox.dtl.utils.date.format(value, arg);
+		},
+		timesince: function(value, arg){
+			// summary: Formats a date as the time since that date (i.e. "4 days, 6 hours")
+			value = ddfd._toDate(value);
+			if(!value) return "";
+			var timesince = dojox.dtl.utils.date.timesince;
+			if(arg) return timesince(arg, value);
+			return timesince(value);
+		},
+		timeuntil: function(value, arg){
+			// summary: Formats a date as the time until that date (i.e. "4 days, 6 hours")
+			value = ddfd._toDate(value);
+			if(!value) return "";
+			var timesince = dojox.dtl.utils.date.timesince;
+			if(arg) return timesince(arg, value);
+			return timesince(new Date(), value);
+		}
+	});
 })();
+
 }

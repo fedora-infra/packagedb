@@ -2,25 +2,31 @@
 .gridContainer * {
 	zoom:1;
 }
+
 .oafDndHandle {
 	cursor: move;
 }
+
 .gridContainer {
 	display:block;	
 	position: relative;
 	background:#FFF;	
 	margin:0px;	
 	padding:10px;
+/*	height:1%; /* Bug focus with IE6/7) */
 }
 	
+/* MOW: dnd might change to make this easier? */
 .gridContainer .dojoDndAvatarHeader	{
 	display:none;
 }
+
 .gridContainerTable {
 	width:100%;	
 	border:1px solid #F60;
 	height: 100%;
 }
+
 .gridContainerPopup {
 	position: absolute;
 	top:40%;
@@ -32,18 +38,24 @@
 	text-align: center;
 	padding: 10px;
 }
+
 .gridContainerTable tbody, .gridContainerTable tr {
 	height: 100%;
 }
+
+/* default underlay for the container */
 .gridContainerZone {
 	vertical-align: top;	
 	padding:12px;	
 	background-color: #FDFDFD;	 
 	height: 100%;
 }
+
 .gridContainerZone .serviceWidgetTitleText h2 {
 	position: relative;
 }
+
+/* the "splitters" */
 .gridContainerGrip {
 	cursor:default;
 	position:absolute;	
@@ -53,11 +65,13 @@
 	background-image: url(images/pixel.gif);
 	background-color: #ededed;
 }
+
 .tundra .gridContainerGrip {
 	border-left:1px solid #a7a7a7;
 	border-right:1px solid #a7a7a7;
 }
-	
+
+/* splitter selected state */	
 .gridContainerGripShow, .gridContainerGrip:focus {
 	cursor:e-resize;	
 	position:absolute;	
@@ -67,6 +81,7 @@
 	background-color: #a7a7a7;	
 	background-image: url(images/grip_bg.gif);
 }
+
 .tundra .gridContainerGripShow, .tundra .gridContainerGrid:focus {
 	border-left:1px solid #aeaeae;
 	border-right:1px solid #aeaeae;

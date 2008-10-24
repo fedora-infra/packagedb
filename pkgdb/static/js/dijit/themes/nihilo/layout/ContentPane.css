@@ -1,7 +1,10 @@
+/* ContentPane */
 
 .nihilo .dijitContentPane {
     padding: 0px;
 }
+
+/* nested layouts */
 .nihilo .dijitTabContainerTop-dijitContentPane,
 .nihilo .dijitTabContainerLeft-dijitContentPane,
 .nihilo .dijitTabContainerRight-dijitContentPane,
@@ -11,6 +14,7 @@
     background-color: #fff;
     padding: 5px;
 }
+
 .nihilo .dijitSplitContainer-dijitContentPane,
 .nihilo .dijitBorderContainer-dijitContentPane {
     border: 1px #ccc solid;

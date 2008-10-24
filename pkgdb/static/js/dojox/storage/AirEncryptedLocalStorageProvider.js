@@ -5,166 +5,224 @@
 */
 
 
-if(!dojo._hasResource["dojox.storage.AirEncryptedLocalStorageProvider"]){
-dojo._hasResource["dojox.storage.AirEncryptedLocalStorageProvider"]=true;
+if(!dojo._hasResource["dojox.storage.AirEncryptedLocalStorageProvider"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.storage.AirEncryptedLocalStorageProvider"] = true;
 dojo.provide("dojox.storage.AirEncryptedLocalStorageProvider");
 dojo.require("dojox.storage.manager");
 dojo.require("dojox.storage.Provider");
-if(dojo.isAIR){
-(function(){
-if(!_1){
-var _1={};
-}
-_1.ByteArray=window.runtime.flash.utils.ByteArray;
-_1.EncryptedLocalStore=window.runtime.flash.data.EncryptedLocalStore,dojo.declare("dojox.storage.AirEncryptedLocalStorageProvider",[dojox.storage.Provider],{initialize:function(){
-dojox.storage.manager.loaded();
-},isAvailable:function(){
-return true;
-},_getItem:function(_2){
-var _3=_1.EncryptedLocalStore.getItem("__dojo_"+_2);
-return _3?_3.readUTFBytes(_3.length):"";
-},_setItem:function(_4,_5){
-var _6=new _1.ByteArray();
-_6.writeUTFBytes(_5);
-_1.EncryptedLocalStore.setItem("__dojo_"+_4,_6);
-},_removeItem:function(_7){
-_1.EncryptedLocalStore.removeItem("__dojo_"+_7);
-},put:function(_8,_9,_a,_b){
-if(this.isValidKey(_8)==false){
-throw new Error("Invalid key given: "+_8);
-}
-_b=_b||this.DEFAULT_NAMESPACE;
-if(this.isValidKey(_b)==false){
-throw new Error("Invalid namespace given: "+_b);
-}
-try{
-var _c=this._getItem("namespaces")||"|";
-if(_c.indexOf("|"+_b+"|")==-1){
-this._setItem("namespaces",_c+_b+"|");
-}
-var _d=this._getItem(_b+"_keys")||"|";
-if(_d.indexOf("|"+_8+"|")==-1){
-this._setItem(_b+"_keys",_d+_8+"|");
-}
-this._setItem("_"+_b+"_"+_8,_9);
-}
-catch(e){
 
-_a(this.FAILED,_8,e.toString(),_b);
-return;
-}
-if(_a){
-_a(this.SUCCESS,_8,null,_b);
-}
-},get:function(_e,_f){
-if(this.isValidKey(_e)==false){
-throw new Error("Invalid key given: "+_e);
-}
-_f=_f||this.DEFAULT_NAMESPACE;
-return this._getItem("_"+_f+"_"+_e);
-},getNamespaces:function(){
-var _10=[this.DEFAULT_NAMESPACE];
-var _11=(this._getItem("namespaces")||"|").split("|");
-for(var i=0;i<_11.length;i++){
-if(_11[i].length&&_11[i]!=this.DEFAULT_NAMESPACE){
-_10.push(_11[i]);
-}
-}
-return _10;
-},getKeys:function(_13){
-_13=_13||this.DEFAULT_NAMESPACE;
-if(this.isValidKey(_13)==false){
-throw new Error("Invalid namespace given: "+_13);
-}
-var _14=[];
-var _15=(this._getItem(_13+"_keys")||"|").split("|");
-for(var i=0;i<_15.length;i++){
-if(_15[i].length){
-_14.push(_15[i]);
-}
-}
-return _14;
-},clear:function(_17){
-if(this.isValidKey(_17)==false){
-throw new Error("Invalid namespace given: "+_17);
-}
-var _18=this._getItem("namespaces")||"|";
-if(_18.indexOf("|"+_17+"|")!=-1){
-this._setItem("namespaces",_18.replace("|"+_17+"|","|"));
-}
-var _19=(this._getItem(_17+"_keys")||"|").split("|");
-for(var i=0;i<_19.length;i++){
-if(_19[i].length){
-this._removeItem(_17+"_"+_19[i]);
-}
-}
-this._removeItem(_17+"_keys");
-},remove:function(key,_1c){
-_1c=_1c||this.DEFAULT_NAMESPACE;
-var _1d=this._getItem(_1c+"_keys")||"|";
-if(_1d.indexOf("|"+key+"|")!=-1){
-this._setItem(_1c+"_keys",_1d.replace("|"+key+"|","|"));
-}
-this._removeItem("_"+_1c+"_"+key);
-},putMultiple:function(_1e,_1f,_20,_21){
-if(this.isValidKeyArray(_1e)===false||!_1f instanceof Array||_1e.length!=_1f.length){
-throw new Error("Invalid arguments: keys = ["+_1e+"], values = ["+_1f+"]");
-}
-if(_21==null||typeof _21=="undefined"){
-_21=this.DEFAULT_NAMESPACE;
-}
-if(this.isValidKey(_21)==false){
-throw new Error("Invalid namespace given: "+_21);
-}
-this._statusHandler=_20;
-try{
-for(var i=0;i<_1e.length;i++){
-this.put(_1e[i],_1f[i],null,_21);
-}
-}
-catch(e){
+if (dojo.isAIR) {
+	(function(){
+		
+		if (!air) {
+			var air = {};
+		}
+		air.ByteArray = window.runtime.flash.utils.ByteArray;
+		air.EncryptedLocalStore = window.runtime.flash.data.EncryptedLocalStore,
 
-if(_20){
-_20(this.FAILED,_1e,e.toString(),_21);
+		// summary: 
+		//		Storage provider that uses features in the Adobe AIR runtime to achieve
+		//		permanent storage
+		dojo.declare("dojox.storage.AirEncryptedLocalStorageProvider", [ dojox.storage.Provider ], {
+			initialize: function(){
+				// indicate that this storage provider is now loaded
+				dojox.storage.manager.loaded();
+			},
+	
+			isAvailable: function(){
+				return true;
+			},
+			
+			_getItem: function(key){
+				var storedValue = air.EncryptedLocalStore.getItem("__dojo_" + key);
+				return storedValue ? storedValue.readUTFBytes(storedValue.length) : "";
+			},
+			
+			_setItem: function(key, value){
+				var bytes = new air.ByteArray();
+				bytes.writeUTFBytes(value);
+				air.EncryptedLocalStore.setItem("__dojo_" + key, bytes);
+			},
+			
+			_removeItem: function(key){
+				air.EncryptedLocalStore.removeItem("__dojo_" + key);
+			},
+			
+			put: function(key, value, resultsHandler, namespace){
+				if(this.isValidKey(key) == false){
+					throw new Error("Invalid key given: " + key);
+				}
+				namespace = namespace||this.DEFAULT_NAMESPACE;
+				if(this.isValidKey(namespace) == false){
+					throw new Error("Invalid namespace given: " + namespace);
+				}
+				
+				// try to store the value	
+				try{
+					var namespaces = this._getItem("namespaces")||'|';
+					if(namespaces.indexOf('|'+namespace+'|')==-1){
+						this._setItem("namespaces", namespaces + namespace + '|');
+					}
+					var keys = this._getItem(namespace + "_keys")||'|';
+					if(keys.indexOf('|'+key+'|')==-1){
+						this._setItem(namespace + "_keys", keys + key + '|');
+					}
+					this._setItem('_' + namespace + '_' + key, value);
+				}catch(e){
+					// indicate we failed
+					
+					resultsHandler(this.FAILED, key, e.toString(), namespace);
+					return;
+				}
+				
+				if(resultsHandler){
+					resultsHandler(this.SUCCESS, key, null, namespace);
+				}
+			},
+			
+			get: function(key, namespace){
+				if(this.isValidKey(key) == false){
+					throw new Error("Invalid key given: " + key);
+				}
+				namespace = namespace||this.DEFAULT_NAMESPACE;
+				return this._getItem('_' + namespace + '_' + key);
+			},
+			
+			getNamespaces: function(){
+				var results = [ this.DEFAULT_NAMESPACE ];
+				var namespaces = (this._getItem("namespaces")||'|').split('|');
+				for (var i=0;i<namespaces.length;i++){
+					if(namespaces[i].length && namespaces[i] != this.DEFAULT_NAMESPACE){
+						results.push(namespaces[i]);
+					}
+				}
+				return results;
+			},
+
+			getKeys: function(namespace){
+				namespace = namespace||this.DEFAULT_NAMESPACE;
+				if(this.isValidKey(namespace) == false){
+					throw new Error("Invalid namespace given: " + namespace);
+				}
+
+				var results = [];
+				var keys = (this._getItem(namespace + "_keys")||'|').split('|');
+				for (var i=0;i<keys.length;i++){
+					if (keys[i].length){
+						results.push(keys[i]);
+					}
+				}
+				return results;
+			},
+			
+			clear: function(namespace){
+				if(this.isValidKey(namespace) == false){
+					throw new Error("Invalid namespace given: " + namespace);
+				}
+				var namespaces = this._getItem("namespaces")||'|';
+				if(namespaces.indexOf('|'+namespace+'|')!=-1){
+					this._setItem("namespaces", namespaces.replace('|' + namespace + '|', '|'));
+				}
+				var keys = (this._getItem(namespace + "_keys")||'|').split('|');
+				for (var i=0;i<keys.length;i++){
+					if (keys[i].length){
+						this._removeItem(namespace + "_" + keys[i]);
+					}
+				}
+				this._removeItem(namespace + "_keys");
+			},
+			
+			remove: function(key, namespace){
+				namespace = namespace||this.DEFAULT_NAMESPACE;
+				
+				var keys = this._getItem(namespace + "_keys")||'|';
+				if(keys.indexOf('|'+key+'|')!=-1){
+					this._setItem(namespace + "_keys", keys.replace('|' + key + '|', '|'));
+				}
+				this._removeItem('_' + namespace + '_' + key);
+			},
+			
+			putMultiple: function(keys, values, resultsHandler, namespace) {
+ 				if(this.isValidKeyArray(keys) === false 
+						|| ! values instanceof Array 
+						|| keys.length != values.length){
+					throw new Error("Invalid arguments: keys = [" + keys + "], values = [" + values + "]");
+				}
+				
+				if(namespace == null || typeof namespace == "undefined"){
+					namespace = this.DEFAULT_NAMESPACE;		
+				}
+	
+				if(this.isValidKey(namespace) == false){
+					throw new Error("Invalid namespace given: " + namespace);
+				}
+	
+				this._statusHandler = resultsHandler;
+
+				// try to store the value	
+				try{
+					for(var i=0;i<keys.length;i++) {
+						this.put(keys[i], values[i], null, namespace);
+					}
+				}catch(e){
+					// indicate we failed
+					
+					if(resultsHandler){
+						resultsHandler(this.FAILED, keys, e.toString(), namespace);
+					}
+					return;
+				}
+				
+				if(resultsHandler){
+					resultsHandler(this.SUCCESS, keys, null);
+				}
+			},
+
+			getMultiple: function(keys, namespace){
+				if(this.isValidKeyArray(keys) === false){
+					throw new Error("Invalid key array given: " + keys);
+				}
+				
+				if(namespace == null || typeof namespace == "undefined"){
+					namespace = this.DEFAULT_NAMESPACE;		
+				}
+				
+				if(this.isValidKey(namespace) == false){
+					throw new Error("Invalid namespace given: " + namespace);
+				}
+		
+				var results = [];
+				for(var i=0;i<keys.length;i++){
+					results[i] = this.get(keys[i], namespace);
+				}
+				return results;
+			},
+			
+			removeMultiple: function(keys, namespace){
+				namespace = namespace||this.DEFAULT_NAMESPACE;
+				for(var i=0;i<keys.length;i++){
+					this.remove(keys[i], namespace);
+				}
+			}, 				
+			
+			isPermanent: function(){ return true; },
+
+			getMaximumSize: function(){ return this.SIZE_NO_LIMIT; },
+
+			hasSettingsUI: function(){ return false; },
+			
+			showSettingsUI: function(){
+				throw new Error(this.declaredClass + " does not support a storage settings user-interface");
+			},
+			
+			hideSettingsUI: function(){
+				throw new Error(this.declaredClass + " does not support a storage settings user-interface");
+			}
+		});
+
+		dojox.storage.manager.register("dojox.storage.AirEncryptedLocalStorageProvider", new dojox.storage.AirEncryptedLocalStorageProvider());
+		dojox.storage.manager.initialize();
+	})();
 }
-return;
-}
-if(_20){
-_20(this.SUCCESS,_1e,null);
-}
-},getMultiple:function(_23,_24){
-if(this.isValidKeyArray(_23)===false){
-throw new Error("Invalid key array given: "+_23);
-}
-if(_24==null||typeof _24=="undefined"){
-_24=this.DEFAULT_NAMESPACE;
-}
-if(this.isValidKey(_24)==false){
-throw new Error("Invalid namespace given: "+_24);
-}
-var _25=[];
-for(var i=0;i<_23.length;i++){
-_25[i]=this.get(_23[i],_24);
-}
-return _25;
-},removeMultiple:function(_27,_28){
-_28=_28||this.DEFAULT_NAMESPACE;
-for(var i=0;i<_27.length;i++){
-this.remove(_27[i],_28);
-}
-},isPermanent:function(){
-return true;
-},getMaximumSize:function(){
-return this.SIZE_NO_LIMIT;
-},hasSettingsUI:function(){
-return false;
-},showSettingsUI:function(){
-throw new Error(this.declaredClass+" does not support a storage settings user-interface");
-},hideSettingsUI:function(){
-throw new Error(this.declaredClass+" does not support a storage settings user-interface");
-}});
-dojox.storage.manager.register("dojox.storage.AirEncryptedLocalStorageProvider",new dojox.storage.AirEncryptedLocalStorageProvider());
-dojox.storage.manager.initialize();
-})();
-}
+
 }

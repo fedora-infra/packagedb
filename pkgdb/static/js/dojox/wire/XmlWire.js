@@ -5,129 +5,247 @@
 */
 
 
-if(!dojo._hasResource["dojox.wire.XmlWire"]){
-dojo._hasResource["dojox.wire.XmlWire"]=true;
+if(!dojo._hasResource["dojox.wire.XmlWire"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.wire.XmlWire"] = true;
 dojo.provide("dojox.wire.XmlWire");
+
 dojo.require("dojox.data.dom");
 dojo.require("dojox.wire.Wire");
-dojo.declare("dojox.wire.XmlWire",dojox.wire.Wire,{_wireClass:"dojox.wire.XmlWire",constructor:function(_1){
-},_getValue:function(_2){
-if(!_2||!this.path){
-return _2;
-}
-var _3=_2;
-var _4=this.path;
-if(_4.charAt(0)=="/"){
-var i=_4.indexOf("/",1);
-_4=_4.substring(i+1);
-}
-var _6=_4.split("/");
-var _7=_6.length-1;
-for(var i=0;i<_7;i++){
-_3=this._getChildNode(_3,_6[i]);
-if(!_3){
-return undefined;
-}
-}
-var _8=this._getNodeValue(_3,_6[_7]);
-return _8;
-},_setValue:function(_9,_a){
-if(!this.path){
-return _9;
-}
-var _b=_9;
-var _c=this._getDocument(_b);
-var _d=this.path;
-if(_d.charAt(0)=="/"){
-var i=_d.indexOf("/",1);
-if(!_b){
-var _f=_d.substring(1,i);
-_b=_c.createElement(_f);
-_9=_b;
-}
-_d=_d.substring(i+1);
-}else{
-if(!_b){
-return undefined;
-}
-}
-var _10=_d.split("/");
-var _11=_10.length-1;
-for(var i=0;i<_11;i++){
-var _12=this._getChildNode(_b,_10[i]);
-if(!_12){
-_12=_c.createElement(_10[i]);
-_b.appendChild(_12);
-}
-_b=_12;
-}
-this._setNodeValue(_b,_10[_11],_a);
-return _9;
-},_getNodeValue:function(_13,exp){
-var _15=undefined;
-if(exp.charAt(0)=="@"){
-var _16=exp.substring(1);
-_15=_13.getAttribute(_16);
-}else{
-if(exp=="text()"){
-var _17=_13.firstChild;
-if(_17){
-_15=_17.nodeValue;
-}
-}else{
-_15=[];
-for(var i=0;i<_13.childNodes.length;i++){
-var _19=_13.childNodes[i];
-if(_19.nodeType===1&&_19.nodeName==exp){
-_15.push(_19);
-}
-}
-}
-}
-return _15;
-},_setNodeValue:function(_1a,exp,_1c){
-if(exp.charAt(0)=="@"){
-var _1d=exp.substring(1);
-if(_1c){
-_1a.setAttribute(_1d,_1c);
-}else{
-_1a.removeAttribute(_1d);
-}
-}else{
-if(exp=="text()"){
-while(_1a.firstChild){
-_1a.removeChild(_1a.firstChild);
-}
-if(_1c){
-var _1e=this._getDocument(_1a).createTextNode(_1c);
-_1a.appendChild(_1e);
-}
-}
-}
-},_getChildNode:function(_1f,_20){
-var _21=1;
-var i1=_20.indexOf("[");
-if(i1>=0){
-var i2=_20.indexOf("]");
-_21=_20.substring(i1+1,i2);
-_20=_20.substring(0,i1);
-}
-var _24=1;
-for(var i=0;i<_1f.childNodes.length;i++){
-var _26=_1f.childNodes[i];
-if(_26.nodeType===1&&_26.nodeName==_20){
-if(_24==_21){
-return _26;
-}
-_24++;
-}
-}
-return null;
-},_getDocument:function(_27){
-if(_27){
-return (_27.nodeType==9?_27:_27.ownerDocument);
-}else{
-return dojox.data.dom.createDocument();
-}
-}});
+
+dojo.declare("dojox.wire.XmlWire", dojox.wire.Wire, {
+	//	summary:
+	//		A Wire for XML nodes or values (element, attribute and text)
+	//	description:
+	//		This class accesses XML nodes or value with a simplified XPath
+	//		specified to 'path' property.
+	//		The root object for this class must be an DOM document or element
+	//		node.
+	//		"@name" accesses to an attribute value of an element and "text()"
+	//		accesses to a text value of an element.
+	//		The hierarchy of the elements from the root node can be specified
+	//		with slash-separated list, such as "a/b/@c", which specifies
+	//		the value of an attribute named "c" of an element named "b" as
+	//		a child of another element named "a" of a child of the root node.
+	
+	_wireClass: "dojox.wire.XmlWire",
+	
+	constructor: function(/*Object*/args){
+		//	summary:
+		//		Initialize properties
+		//	description:
+		//		'args' is just mixed in with no further processing.
+		//	args:
+		//		Arguments to initialize properties
+		//		path:
+		//			A simplified XPath to an attribute, a text or elements
+	},
+	_getValue: function(/*Node*/object){
+		//	summary:
+		//		Return an attribute value, a text value or an array of elements
+		//	description:
+		//		This method first uses a root node passed in 'object' argument
+		//		and 'path' property to identify an attribute, a text or
+		//		elements.
+		//		If 'path' starts with a slash (absolute), the first path
+		//		segment is ignored assuming it point to the root node.
+		//		(That is, "/a/b/@c" and "b/@c" against a root node access
+		//		the same attribute value, assuming the root node is an element
+		//		with a tag name, "a".)
+		//	object:
+		//		A root node
+		//	returns:
+		//		A value found, otherwise 'undefined'
+		if(!object || !this.path){
+			return object; //Node
+		}
+
+		var node = object;
+		var path = this.path;
+		if(path.charAt(0) == '/'){ // absolute
+			// skip the first expression (supposed to select the top node)
+			var i = path.indexOf('/', 1);
+			path = path.substring(i + 1);
+		}
+		var list = path.split('/');
+		var last = list.length - 1;
+		for(var i = 0; i < last; i++){
+			node = this._getChildNode(node, list[i]);
+			if(!node){
+				return undefined; //undefined
+			}
+		}
+		var value = this._getNodeValue(node, list[last]);
+		return value; //String||Array
+	},
+
+	_setValue: function(/*Node*/object, /*String*/value){
+		//	summary:
+		//		Set an attribute value or a child text value to an element
+		//	description:
+		//		This method first uses a root node passed in 'object' argument
+		//		and 'path' property to identify an attribute, a text or
+		//		elements.
+		//		If an intermediate element does not exist, it creates
+		//		an element of the tag name in the 'path' segment as a child
+		//		node of the current node.
+		//		Finally, 'value' argument is set to an attribute or a text
+		//		(a child node) of the leaf element.
+		//	object:
+		//		A root node
+		//	value:
+		//		A value to set
+		if(!this.path){
+			return object; //Node
+		}
+
+		var node = object;
+		var doc = this._getDocument(node);
+		var path = this.path;
+		if(path.charAt(0) == '/'){ // absolute
+			var i = path.indexOf('/', 1);
+			if(!node){
+				var name = path.substring(1, i);
+				node = doc.createElement(name);
+				object = node; // to be returned as a new object
+			}
+			// skip the first expression (supposed to select the top node)
+			path = path.substring(i + 1);
+		}else{
+			if(!node){
+				return undefined; //undefined
+			}
+		}
+
+		var list = path.split('/');
+		var last = list.length - 1;
+		for(var i = 0; i < last; i++){
+			var child = this._getChildNode(node, list[i]);
+			if(!child){
+				child = doc.createElement(list[i]);
+				node.appendChild(child);
+			}
+			node = child;
+		}
+		this._setNodeValue(node, list[last], value);
+		return object; //Node
+	},
+
+	_getNodeValue: function(/*Node*/node, /*String*/exp){
+		//	summary:
+		//		Return an attribute value, a text value or an array of elements
+		//	description:
+		//		If 'exp' starts with '@', an attribute value of the specified
+		//		attribute is returned.
+		//		If 'exp' is "text()", a child text value is returned.
+		//		Otherwise, an array of child elements, the tag name of which
+		//		match 'exp', is returned.
+		//	node:
+		//		A node
+		//	exp:
+		//		An expression for attribute, text or elements
+		//	returns:
+		//		A value found, otherwise 'undefined'
+		var value = undefined;
+		if(exp.charAt(0) == '@'){
+			var attribute = exp.substring(1);
+			value = node.getAttribute(attribute);
+		}else if(exp == "text()"){
+			var text = node.firstChild;
+			if(text){
+				value = text.nodeValue;
+			}
+		}else{ // assume elements
+			value = [];
+			for(var i = 0; i < node.childNodes.length; i++){
+				var child = node.childNodes[i];
+				if(child.nodeType === 1 /* ELEMENT_NODE */ && child.nodeName == exp){
+					value.push(child);
+				}
+			}
+		}
+		return value; //String||Array
+	},
+
+	_setNodeValue: function(/*Node*/node, /*String*/exp, /*String*/value){
+		//	summary:
+		//		Set an attribute value or a child text value to an element
+		//	description:
+		//		If 'exp' starts with '@', 'value' is set to the specified
+		//		attribute.
+		//		If 'exp' is "text()", 'value' is set to a child text.
+		//	node:
+		//		A node
+		//	exp:
+		//		An expression for attribute or text
+		//	value:
+		//		A value to set
+		if(exp.charAt(0) == '@'){
+			var attribute = exp.substring(1);
+			if(value){
+				node.setAttribute(attribute, value);
+			}else{
+				node.removeAttribute(attribute);
+			}
+		}else if(exp == "text()"){
+			while(node.firstChild){
+				node.removeChild(node.firstChild);
+			}
+			if(value){
+				var text = this._getDocument(node).createTextNode(value);
+				node.appendChild(text);
+			}
+		}
+		// else not supported
+	},
+
+	_getChildNode: function(/*Node*/node, /*String*/name){
+		//	summary:
+		//		Return a child node
+		//	description:
+		//		A child element of the tag name specified with 'name' is
+		//		returned.
+		//		If 'name' ends with an array index, it is used to pick up
+		//		the corresponding element from multiple child elements.
+		//	node:
+		//		A parent node
+		//	name:
+		//		A tag name	
+		//	returns:
+		//		A child node
+		var index = 1;
+		var i1 = name.indexOf('[');
+		if(i1 >= 0){
+			var i2 = name.indexOf(']');
+			index = name.substring(i1 + 1, i2);
+			name = name.substring(0, i1);
+		}
+		var count = 1;
+		for(var i = 0; i < node.childNodes.length; i++){
+			var child = node.childNodes[i];
+			if(child.nodeType === 1 /* ELEMENT_NODE */ && child.nodeName == name){
+				if(count == index){
+					return child; //Node
+				}
+				count++;
+			}
+		}
+		return null; //null
+	},
+
+	_getDocument: function(/*Node*/node){
+		//	summary:
+		//		Return a DOM document
+		//	description:
+		//		If 'node' is specified, a DOM document of the node is returned.
+		//		Otherwise, a DOM document is created.
+		//	returns:
+		//		A DOM document
+		if(node){
+			return (node.nodeType == 9 /* DOCUMENT_NODE */ ? node : node.ownerDocument); //Document
+		}else{
+			return dojox.data.dom.createDocument(); //Document
+		}
+	}
+});
+
 }

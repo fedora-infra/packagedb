@@ -5,18 +5,27 @@
 */
 
 
-if(!dojo._hasResource["dojox.charting.plot3d.Base"]){
-dojo._hasResource["dojox.charting.plot3d.Base"]=true;
+if(!dojo._hasResource["dojox.charting.plot3d.Base"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.charting.plot3d.Base"] = true;
 dojo.provide("dojox.charting.plot3d.Base");
+
 dojo.require("dojox.charting.Chart3D");
-dojo.declare("dojox.charting.plot3d.Base",null,{constructor:function(_1,_2,_3){
-this.width=_1;
-this.height=_2;
-},setData:function(_4){
-this.data=_4?_4:[];
-return this;
-},getDepth:function(){
-return this.depth;
-},generate:function(_5,_6){
-}});
+
+dojo.declare("dojox.charting.plot3d.Base", null, {
+	constructor: function(width, height, kwArgs){
+		this.width  = width;
+		this.height = height;
+	},
+	setData: function(data){
+		this.data = data ? data : [];
+		return this;
+	},
+	getDepth: function(){
+		return this.depth;
+	},
+	generate: function(chart, creator){
+	}
+});
+
+
 }
