@@ -1,5 +1,6 @@
 <?python
 TODO='Not yet implemented'
+import simplejson
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
@@ -11,6 +12,10 @@ TODO='Not yet implemented'
   <body py:with="pkgUrlName=tg.quote_plus(packageListings[0].package.name)">
     <script type="text/javascript" src="${tg.url('/static/javascript/framework.js')}"></script>
     <script type="text/javascript" src="${tg.url('/static/javascript/pkgpage.js')}"></script>
+    <script type="text/javascript">
+      pkgpage = {acl_names: ${simplejson.dumps(aclNames)},
+        acl_status: ${simplejson.dumps(aclStatus)}};
+    </script>
 
     <h2 py:content="packageListings[0].package.name">Package</h2>
     ${pkgheader(packageListings[0].package.name, 'pkgdb')}
