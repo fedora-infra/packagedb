@@ -733,6 +733,8 @@ class PackageDispatcher(controllers.Controller):
     def add_package(self, package, owner, summary):
         '''Add a new package to the database.
         '''
+        # Replace newlines with spaces in the summary
+        summary = summary.replace('\n', ' ')
         # Check that the tg.identity is allowed to set an owner
         if not identity.in_any_group('cvsadmin'):
             return dict(status=False, message='User must be in cvsadmin')
@@ -979,7 +981,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Change the summary
         if 'summary' in changes:
-            pkg.summary = changes['summary']
+            pkg.summary = changes['summary'].replace('\n', ' ')
             log_msg = '%s set package %s summary to %s' % (
                     identity.current.user_name, package, changes['summary'])
             log = PackageLog(identity.current.user.id,
