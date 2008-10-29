@@ -40,7 +40,7 @@ Mapping of package related database tables to python classes.
 #   to fill the database tables.
 
 from sqlalchemy import Table
-from sqlalchemy.orm import relation
+from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -264,9 +264,6 @@ class PackageListing(SABase):
 
         return clone_branch
 
-#
-# Mappers
-#
 def collection_alias(pkg_listing):
     '''Return the collection_alias that a package listing belongs to.
 
@@ -279,17 +276,23 @@ def collection_alias(pkg_listing):
     '''
     return pkg_listing.collection.simple_name()
 
-mapper(Package, PackageTable, properties = {
+#
+# Mappers
+#
+mapper(Package, PackageTable, properties={
     # listings is here for compatibility.  Will be removed in 0.4.x
-    'listings': relation(PackageListing),
-    'listings2': relation(PackageListing, backref='package',
-        collection_class = mapped_collection(collection_alias))
+    'listings': relation(PackageListing, lazy=False),
+    'listings2': relation(PackageListing, lazy=False,
+        backref=backref('package', lazy=False),
+        collection_class=mapped_collection(collection_alias))
     })
-mapper(PackageListing, PackageListingTable, properties = {
-    'people' : relation(PersonPackageListing),
-    'people2' : relation(PersonPackageListing, backref='packagelisting',
+mapper(PackageListing, PackageListingTable, properties={
+    'people': relation(PersonPackageListing, lazy=False),
+    'people2': relation(PersonPackageListing, lazy=False,
+        backref=backref('packagelisting', lazy=False),
         collection_class = attribute_mapped_collection('userid')),
-    'groups' : relation(GroupPackageListing),
-    'groups2' : relation(GroupPackageListing, backref='packagelisting',
+    'groups': relation(GroupPackageListing, lazy=False),
+    'groups2': relation(GroupPackageListing, lazy=False,
+        backref=backref('packagelisting', lazy=False),
         collection_class = attribute_mapped_collection('groupid')),
     })

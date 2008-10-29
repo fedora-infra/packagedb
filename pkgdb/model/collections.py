@@ -24,7 +24,7 @@ Mapping of collection related database tables to python classes
 from sqlalchemy import Table, Column, ForeignKey, Integer
 from sqlalchemy import select, literal_column, not_
 from sqlalchemy.exceptions import InvalidRequestError
-from sqlalchemy.orm import polymorphic_union, relation
+from sqlalchemy.orm import polymorphic_union, relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
 
@@ -182,7 +182,7 @@ class CollectionPackage(SABase):
 collectionMapper = mapper(Collection, CollectionTable,
         select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
         polymorphic_identity='c',
-        properties = {
+        properties={
             # listings is deprecated.  It will go away in 0.4.x
             'listings': relation(PackageListing),
             # listings2 is slower than listings.  It has a front-end cost to
@@ -190,7 +190,8 @@ collectionMapper = mapper(Collection, CollectionTable,
             # to search for multiple packages, this will likely be faster.
             # Have to look at how it's being used in production and decide
             # what to do.
-            'listings2': relation(PackageListing, backref='collection',
+            'listings2': relation(PackageListing,
+                backref=backref('collection', lazy=False),
                 collection_class=attribute_mapped_collection('packagename')),
     })
 mapper(Branch, BranchTable, inherits=collectionMapper,

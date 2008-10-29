@@ -144,80 +144,82 @@ class PackageAclStatus(BaseStatus):
 #
 
 mapper(StatusTranslation, StatusTranslationTable)
-mapper(CollectionStatus, CollectionStatusTable, properties = {
-    'collections': relation(Collection, backref='status'),
-    'collectionPackages': relation(CollectionPackage, backref='status'),
-    'translations': relation(StatusTranslation,
-        order_by = StatusTranslationTable.c.language,
-        primaryjoin = StatusTranslationTable.c.statuscodeid \
+mapper(CollectionStatus, CollectionStatusTable, properties={
+    'collections': relation(Collection, backref=backref('status', lazy=False)),
+    'collectionPackages': relation(CollectionPackage,
+        backref=backref('status', lazy=False)),
+    'translations': relation(StatusTranslation, lazy=False,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == CollectionStatusTable.c.statuscodeid,
-        foreign_keys = [StatusTranslationTable.c.statuscodeid]),
-    'locale': relation(StatusTranslation,
-        primaryjoin = StatusTranslationTable.c.statuscodeid \
+        foreign_keys=[StatusTranslationTable.c.statuscodeid]),
+    'locale': relation(StatusTranslation, lazy=False,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == CollectionStatusTable.c.statuscodeid,
-        foreign_keys = [StatusTranslationTable.c.statuscodeid],
-        collection_class = attribute_mapped_collection('language'),
-        backref = backref('cstatuscode',
-            foreign_keys = [CollectionStatusTable.c.statuscodeid],
-            primaryjoin = StatusTranslationTable.c.statuscodeid \
+        foreign_keys=[StatusTranslationTable.c.statuscodeid],
+        collection_class=attribute_mapped_collection('language'),
+        backref=backref('cstatuscode',
+            foreign_keys=[CollectionStatusTable.c.statuscodeid],
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == CollectionStatusTable.c.statuscodeid)),
     })
 
-mapper(PackageListingStatus, PackageListingStatusTable, properties = {
-    'listings': relation(PackageListing, backref='status'),
-    'translations': relation(StatusTranslation,
-        order_by = StatusTranslationTable.c.language,
-        primaryjoin = StatusTranslationTable.c.statuscodeid \
+mapper(PackageListingStatus, PackageListingStatusTable, properties={
+    'listings': relation(PackageListing, backref=backref('status', lazy=False)),
+    'translations': relation(StatusTranslation, lazy=False,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageListingStatusTable.c.statuscodeid,
-        foreign_keys = [StatusTranslationTable.c.statuscodeid]),
-    'locale': relation(StatusTranslation,
-        order_by = StatusTranslationTable.c.language,
-        primaryjoin =StatusTranslationTable.c.statuscodeid \
+        foreign_keys=[StatusTranslationTable.c.statuscodeid]),
+    'locale': relation(StatusTranslation, lazy=False,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageListingStatusTable.c.statuscodeid,
-        foreign_keys = [StatusTranslationTable.c.statuscodeid],
-        collection_class = attribute_mapped_collection('language'),
-        backref = backref('plstatuscode',
-            foreign_keys = [PackageListingStatusTable.c.statuscodeid],
-            primaryjoin = StatusTranslationTable.c.statuscodeid \
+        foreign_keys=[StatusTranslationTable.c.statuscodeid],
+        collection_class=attribute_mapped_collection('language'),
+        backref=backref('plstatuscode',
+            foreign_keys=[PackageListingStatusTable.c.statuscodeid],
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == PackageListingStatusTable.c.statuscodeid))
     })
 
-mapper(PackageStatus, PackageStatusTable, properties = {
-    'packages': relation(Package, backref = 'status'),
-    'translations': relation(StatusTranslation,
-        order_by = StatusTranslationTable.c.language,
-        primaryjoin = StatusTranslationTable.c.statuscodeid \
+mapper(PackageStatus, PackageStatusTable, properties={
+    'packages': relation(Package, backref=backref('status', lazy=False)),
+    'translations': relation(StatusTranslation, lazy=False,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageStatusTable.c.statuscodeid,
-        foreign_keys = [StatusTranslationTable.c.statuscodeid]),
-    'locale': relation(StatusTranslation,
-        order_by = StatusTranslationTable.c.language,
-        primaryjoin = StatusTranslationTable.c.statuscodeid \
+        foreign_keys=[StatusTranslationTable.c.statuscodeid]),
+    'locale': relation(StatusTranslation, lazy=False,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageStatusTable.c.statuscodeid,
-        foreign_keys = [StatusTranslationTable.c.statuscodeid],
-        collection_class = attribute_mapped_collection('language'),
-        backref = backref('pstatuscode',
-            foreign_keys = [PackageStatusTable.c.statuscodeid],
-            primaryjoin = StatusTranslationTable.c.statuscodeid \
+        foreign_keys=[StatusTranslationTable.c.statuscodeid],
+        collection_class=attribute_mapped_collection('language'),
+        backref=backref('pstatuscode',
+            foreign_keys=[PackageStatusTable.c.statuscodeid],
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == PackageStatusTable.c.statuscodeid))
     })
 
-mapper(PackageAclStatus, PackageAclStatusTable, properties = {
+mapper(PackageAclStatus, PackageAclStatusTable, properties={
     'pacls': relation(PersonPackageListingAcl,
-        backref = 'status'),
-    'gacls': relation(GroupPackageListingAcl, backref = 'status'),
-    'translations': relation(StatusTranslation,
-        order_by = StatusTranslationTable.c.language,
-        primaryjoin = StatusTranslationTable.c.statuscodeid \
+        backref=backref('status', lazy=False)),
+    'gacls': relation(GroupPackageListingAcl,
+        backref=backref('status', lazy=False)),
+    'translations': relation(StatusTranslation, lazy=False,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageAclStatusTable.c.statuscodeid,
-        foreign_keys = [StatusTranslationTable.c.statuscodeid]),
-    'locale': relation(StatusTranslation,
-        order_by = StatusTranslationTable.c.language,
-        primaryjoin = StatusTranslationTable.c.statuscodeid \
+        foreign_keys=[StatusTranslationTable.c.statuscodeid]),
+    'locale': relation(StatusTranslation, lazy=False,
+        order_by=StatusTranslationTable.c.language,
+        primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageAclStatusTable.c.statuscodeid,
-        foreign_keys = [StatusTranslationTable.c.statuscodeid],
-        collection_class = attribute_mapped_collection('language'),
-        backref = backref('pastatuscode',
-            foreign_keys = [PackageAclStatusTable.c.statuscodeid],
-            primaryjoin = StatusTranslationTable.c.statuscodeid \
+        foreign_keys=[StatusTranslationTable.c.statuscodeid],
+        collection_class=attribute_mapped_collection('language'),
+        backref=backref('pastatuscode',
+            foreign_keys=[PackageAclStatusTable.c.statuscodeid],
+            primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == PackageAclStatusTable.c.statuscodeid))
     })

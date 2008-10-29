@@ -23,7 +23,7 @@ Mapping of database tables for logs to python classes.
 
 from sqlalchemy import Table
 from sqlalchemy import select, literal_column, not_
-from sqlalchemy.orm import polymorphic_union, relation
+from sqlalchemy.orm import polymorphic_union, relation, backref
 from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
@@ -181,36 +181,36 @@ logJoin = polymorphic_union (
 # Mappers
 #
 
-logMapper = mapper(Log, LogTable, select_table = logJoin,
-        polymorphic_on = logJoin.c.kind, polymorphic_identity = 'log'
+logMapper = mapper(Log, LogTable, select_table=logJoin,
+        polymorphic_on=logJoin.c.kind, polymorphic_identity='log'
         )
 
 mapper(PersonPackageListingAclLog, PersonPackageListingAclLogTable,
-        inherits = logMapper, polymorphic_identity = 'personpkglistacllog',
-        inherit_condition = LogTable.c.id == \
+        inherits=logMapper, polymorphic_identity='personpkglistacllog',
+        inherit_condition=LogTable.c.id == \
                 PersonPackageListingAclLogTable.c.logid,
-        properties = {
-            'acl': relation(PersonPackageListingAcl, backref = 'logs')
+        properties={
+            'acl': relation(PersonPackageListingAcl, backref='logs', lazy=False)
             })
 
 mapper(GroupPackageListingAclLog, GroupPackageListingAclLogTable,
-        inherits = logMapper, polymorphic_identity = 'grouppkglistacllog',
-        inherit_condition = LogTable.c.id == \
+        inherits=logMapper, polymorphic_identity='grouppkglistacllog',
+        inherit_condition=LogTable.c.id == \
                 GroupPackageListingAclLogTable.c.logid,
-        properties = {
-            'acl': relation(GroupPackageListingAcl, backref = 'logs')
+        properties={
+            'acl': relation(GroupPackageListingAcl, backref='logs', lazy=False)
             })
 
 mapper(PackageLog, PackageLogTable,
-        inherits = logMapper, polymorphic_identity = 'pkglog',
-        inherit_condition = LogTable.c.id == PackageLogTable.c.logid,
-        properties = {
-            'package': relation(Package, backref = 'logs')
+        inherits=logMapper, polymorphic_identity='pkglog',
+        inherit_condition=LogTable.c.id == PackageLogTable.c.logid,
+        properties={
+            'package': relation(Package, backref='logs', lazy=False)
             })
 
 mapper(PackageListingLog, PackageListingLogTable,
-        inherits = logMapper, polymorphic_identity = 'pkglistlog',
-        inherit_condition = LogTable.c.id == PackageListingLogTable.c.logid,
-        properties = {
-            'listing': relation(PackageListing, backref = 'logs')
+        inherits=logMapper, polymorphic_identity='pkglistlog',
+        inherit_condition=LogTable.c.id == PackageListingLogTable.c.logid,
+        properties={
+            'listing': relation(PackageListing, backref='logs', lazy=False)
             })
