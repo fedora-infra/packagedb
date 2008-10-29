@@ -54,6 +54,9 @@ class UserCache(dict):
     def __init__(self, fas):
         super(UserCache, self).__init__()
         self.fas = fas
+        # Force a refresh on startup so we don't have a delay the first time
+        # someone retrieves a page.
+        self.force_refresh()
 
     def force_refresh(self):
         '''Refetch the userid mapping from fas.
