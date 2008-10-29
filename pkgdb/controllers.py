@@ -104,7 +104,8 @@ class Root(controllers.RootController):
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
 
-    fas = AccountSystem(baseURL, username=username, password=password)
+    fas = AccountSystem(baseURL, username=username, password=password,
+            cache_session=False)
     fas.cache = UserCache(fas)
 
     collections = Collections(fas, app_title)
