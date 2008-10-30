@@ -132,7 +132,7 @@ class GroupPackageListingAcl(SABase):
 
 mapper(PersonPackageListing, PersonPackageListingTable, properties={
     'acls': relation(PersonPackageListingAcl, lazy=False),
-    'acls2': relation(PersonPackageListingAcl, lazy=False
+    'acls2': relation(PersonPackageListingAcl, lazy=False,
         backref=backref('personpackagelisting', lazy=False),
         collection_class=attribute_mapped_collection('acl'))
     })
