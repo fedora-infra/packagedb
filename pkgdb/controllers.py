@@ -84,9 +84,9 @@ class GroupCache(dict):
                     # exception on bad id.  Instead it returns an empty record
                     raise KeyError(_('Unable to find group id %(id)s') %
                             {'id': group})
+            self[group_data.name] = group_data
+            self[group_data.id] = group_data
 
-        self[group_data.name] = group_data
-        self[group_data.id] = group_data
         return super(GroupCache, self).__getitem__(group)
 
 class UserCache(dict):
@@ -131,6 +131,7 @@ class UserCache(dict):
                 # If the key is just whitespace, raise KeyError immediately,
                 # don't try to refresh the cache
                 raise KeyError(user_id)
+            log.debug('refresh forced for %s' % user_id)
             self.force_refresh()
         return super(UserCache, self).__getitem__(user_id)
 
