@@ -30,6 +30,7 @@ Controller for showing Package Collections.
 #   about the monkey patches.
 
 from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate
 from cherrypy import request
 
@@ -91,8 +92,8 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             # pylint: disable-msg=E1101
-            collection_entry = Collection.query.filter_by(id=collection_id
-                    ).one()
+            collection_entry = Collection.query.options(lazyload('listings2')
+                    ).filter_by(id=collection_id).one()
         except InvalidRequestError:
             # Either the id doesn't exist or somehow it references more than
             # one value
@@ -129,8 +130,9 @@ class Collections(controllers.Controller):
 
         # Retrieve the packagelist for this collection
         # pylint:disable-msg=E1101
-        packages = Package.query.join('listings2').filter_by(
-                collectionid = collection_id)
+        packages = Package.query.options(lazyload('listings2.people2'),
+                lazyload('listings2.groups2')).join('listings2'
+                        ).filter_by(collectionid = collection_id)
         # pylint:enable-msg=E1101
 
         return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
