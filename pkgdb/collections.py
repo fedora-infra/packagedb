@@ -129,7 +129,7 @@ class Collections(controllers.Controller):
 
         # Retrieve the packagelist for this collection
         # pylint:disable-msg=E1101
-        packages = Package.query.join(PackageListing).filter_by(
+        packages = Package.query.join('listings2').filter_by(
                 collectionid = collection_id)
         # pylint:enable-msg=E1101
 
