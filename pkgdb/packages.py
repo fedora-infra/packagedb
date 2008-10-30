@@ -237,7 +237,7 @@ class Packages(controllers.Controller):
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
-                fas_group = self.fas.group_by_id(group.groupid)
+                fas_group = self.fas.group_cache[group.groupid]
                 group.name = fas_group.get('name', 'Unknown (GroupID %i)' %
                         group.groupid)
                 # Setup acls to be accessible via aclName
