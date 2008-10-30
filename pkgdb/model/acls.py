@@ -131,15 +131,15 @@ class GroupPackageListingAcl(SABase):
 #
 
 mapper(PersonPackageListing, PersonPackageListingTable, properties={
-    'acls': relation(PersonPackageListingAcl, lazy=False),
+    'acls': relation(PersonPackageListingAcl),
     'acls2': relation(PersonPackageListingAcl, lazy=False,
-        backref=backref('personpackagelisting', lazy=False),
+        backref=backref('personpackagelisting'),
         collection_class=attribute_mapped_collection('acl'))
     })
 mapper(GroupPackageListing, GroupPackageListingTable, properties={
-    'acls': relation(GroupPackageListingAcl, lazy=False),
+    'acls': relation(GroupPackageListingAcl),
     'acls2': relation(GroupPackageListingAcl, lazy=False,
-        backref=backref('grouppackagelisting', lazy=False),
+        backref=backref('grouppackagelisting'),
         collection_class=attribute_mapped_collection('acl'))
     })
 mapper(PersonPackageListingAcl, PersonPackageListingAclTable)

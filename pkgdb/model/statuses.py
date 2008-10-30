@@ -147,8 +147,8 @@ mapper(StatusTranslation, StatusTranslationTable)
 mapper(CollectionStatus, CollectionStatusTable, properties={
     'collections': relation(Collection, backref=backref('status', lazy=False)),
     'collectionPackages': relation(CollectionPackage,
-        backref=backref('status', lazy=False)),
-    'translations': relation(StatusTranslation, lazy=False,
+        backref=backref('status')),
+    'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == CollectionStatusTable.c.statuscodeid,
@@ -166,7 +166,7 @@ mapper(CollectionStatus, CollectionStatusTable, properties={
 
 mapper(PackageListingStatus, PackageListingStatusTable, properties={
     'listings': relation(PackageListing, backref=backref('status', lazy=False)),
-    'translations': relation(StatusTranslation, lazy=False,
+    'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageListingStatusTable.c.statuscodeid,
@@ -185,7 +185,7 @@ mapper(PackageListingStatus, PackageListingStatusTable, properties={
 
 mapper(PackageStatus, PackageStatusTable, properties={
     'packages': relation(Package, backref=backref('status', lazy=False)),
-    'translations': relation(StatusTranslation, lazy=False,
+    'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageStatusTable.c.statuscodeid,
@@ -207,7 +207,7 @@ mapper(PackageAclStatus, PackageAclStatusTable, properties={
         backref=backref('status', lazy=False)),
     'gacls': relation(GroupPackageListingAcl,
         backref=backref('status', lazy=False)),
-    'translations': relation(StatusTranslation, lazy=False,
+    'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageAclStatusTable.c.statuscodeid,
