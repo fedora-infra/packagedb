@@ -2,6 +2,7 @@ include pkgdb.sql
 include start-pkgdb.in
 exclude start-pkgdb
 include server-scripts/*.in
+include server-scripts/*.cfg
 exclude server-scripts/pkgdb-sync-repo
 include AUTHORS README COPYING ChangeLog NEWS
 include *.cfg.sample

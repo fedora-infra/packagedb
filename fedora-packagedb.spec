@@ -69,6 +69,7 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-sync-bugzilla
 %{_bindir}/pkgdb-sync-repo
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
+%config(noreplace) %{_sysconfdir}/pkgdb-sync-bugzilla.cfg
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
 %files clients
