@@ -20,6 +20,7 @@
 dojo.require('fedora.dojo.BaseClient');
 dojo.require('fedora.dojo.ThrobberGroup');
 dojo.require('fedora.dojo.Throbber');
+dojo.require('fedora.dojo.ancestor');
 
 function get_pkgdb_info(event) {
     /* Example of a non-auth'ed page */
@@ -27,8 +28,10 @@ function get_pkgdb_info(event) {
     var params = {collectionName: 'Fedora', collectionVersion: 'devel'};
     var action = pkgdb.start_request('packages/name/'+ event.target.id, {req_params: params});
 
+    throbber.set_position(event.target);
     coords = dojo.coords(event.target);
-    dojo.attr(throbber.domNode, {style: 'position: absolute; left: ' + (coords.x - coords.l) + '; top: ' + (coords.y - coords.h) + ';'});
+    console.warn(coords);
+    dojo.query('div').filter(fedora.dojo.ancestor).forEach(function(node) {console.warn(node.id);});
     dojo.query('body').adopt(throbber.domNode);
     throbber.start()
     action.addErrback(function(error, args) {

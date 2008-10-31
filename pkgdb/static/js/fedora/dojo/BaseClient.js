@@ -17,12 +17,59 @@
  * Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
  */
 
-dojo.provide('fedora.dojo.BaseClient');
+// Should go in a Throbber file
 dojo.provide('fedora.dojo.Throbber');
 dojo.provide('fedora.dojo.ThrobberGroup');
 
+// Should go in a Base or Core file
+dojo.provide('fedora.dojo.AppError');
+dojo.provide('fedora.dojo.MalformedPageError');
+dojo.provide('fedora.dojo.ancestor');
+
+// Should go in Base or Core or a BaseClient file
+dojo.provide('fedora.dojo.BaseClient');
+
+/*****************
+ * Exceptions
+ */
+
 /*
- * A simple throbber that shows that an item is busy.
+ * This exception is used when the BaseClient needs to tell client code that
+ * the server returned an exception.
+ */
+dojo.declare('fedora.dojo.AppError', [Error], {
+    constructor: function(message, extras) {
+        this.name = 'AppError';
+        this.message = message;
+        this.extras = extras || null;
+    }
+});
+
+/*
+ * This exception is returned when a page doesn't have the structure that we
+ * want.  This could be an error on the server returning a page with incorrect
+ * classes or incorrectly nested html elements.  Or it could be an error where
+ * previous dynamic javascript has rewritten the page in an incompatible way.
+ */
+dojo.declare('fedora.dojo.MalFormedPageError', [Error], {
+    constructor: function(message, extras) {
+        this.name = 'MalformedPageError';
+        this.message = message;
+        this.extras = extras || null;
+    }
+});
+
+/*
+ * Filter function to return nodes that are the ancestor of a known node.
+ */
+fedora.dojo.ancestor = function (child, item, index, arr) {
+    return dojo.isDescendant(child, item);
+}
+
+/*
+ * Throbber.  Shows that a UI element is busy doing something.  This uses a 
+ * ThrobberGroup to manage changing the images for efficiency and individual
+ * Throbber widgets for the actual display.
  */
 dojo.declare('fedora.dojo.ThrobberGroup', null, {
     statics: {nextid: 0},
@@ -41,7 +88,8 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
         /* Connect an event to the throbbers so that we know when to make the
          * image cycling active
          */
-        this.watch_throbber = dojo.subscribe('FedoraDojoThrobber', this, this._throb);
+        this.watch_throbber = dojo.subscribe('FedoraDojoThrobber', this,
+            this._throb);
 
         /* Create the list of images */
         for (i = 0; i < num_images; i++) {
@@ -91,7 +139,11 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
         }
 
         /* Update all the active throbbers */
-        throbbers = dojo.query('.active.FedoraDojoThrobberImg').forEach(dojo.hitch(this, function(node) {node.innerHTML='<img src="' + this.images[image_num] + '"/>'}));
+        throbbers = dojo.query('.active.FedoraDojoThrobber' + this.id + 'Img')
+            .forEach(dojo.hitch(this, function(node) {
+                    node.innerHTML = '<img src="' + this.images[image_num] +
+                        '"/>'})
+            );
 
         /* Only set a timeout to cycle the images again if there are active
          * throbbers on the page
@@ -100,7 +152,8 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
             setTimeout(dojo.hitch(this, '_throb', image_num), this.timeout);
         } else {
             /* Otherwise watch for a new throbber */
-            this.watch_throbber = dojo.subscribe('FedoraDojoThrobber', this, this._throb);
+            this.watch_throbber = dojo.subscribe('FedoraDojoThrobber', this,
+                    this._throb);
         }
     },
     create_throbber: function() {
@@ -109,21 +162,40 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
     },
     destroy_all_throbbers: function() {
         /* Remove all throbbers on the page */
-        dojo.query('.FedoraDojoThrobberImg')
+        dojo.query('.FedoraDojoThrobber' + this.id + 'Img')
             .orphan().forEach(function(node) {node.empty();})
     }
 });
 
 dojo.declare('fedora.dojo.Throbber', null, {
     statics: {nextid: 0},
-    constructor: function(group) {
-        // FIXME: Give Each throbber its own position
-        // FIXME: Check that the throbbers have different ids
-        // FIXME: Add the throbber_group id into the throbber
+    constructor: function(group, kw) {
         this.id = this.statics.nextid++;
         this.group = group;
+        kw= kw || {};
         this.domNode = dojo.doc.createElement('span');
-        dojo.attr(this.domNode, {id: this.id, 'class': 'active FedoraDojoThrobberImg'});
+        dojo.attr(this.domNode, {id: this.id,
+            class: 'FedoraDojoThrobber' + this.group.id + 'Img'
+        });
+        if (kw['position']) {
+            this.set_position(kw['position']);
+        }
+    },
+    set_position: function(position) {
+        var coords, img;
+        if (dojo.isArray(position)) {
+            this.position = position;
+        } else {
+            coords = dojo.coords(position);
+            img = new Image();
+            img.src = this.group.images[0];
+
+            this.position = [coords.l - (img.width/4),
+                coords.t - (img.height/4)];
+        }
+        dojo.attr(this.domNode, {style: 'position: absolute; left: ' +
+                this.position[0] + 'px; top: ' + this.position[1] + 'px;'
+        });
     },
     start: function() {
         /* Turn the throbber on */
@@ -141,7 +213,6 @@ dojo.declare('fedora.dojo.Throbber', null, {
         dojo.query('#' + this.id).empty().orphan();
     },
 });
-
 
 /*
  * This is the initial port of the python BaseClient to Dojo.  Be careful in
@@ -176,8 +247,7 @@ dojo.declare('fedora.dojo.BaseClient', null, {
          * :kwarg debug: If True, log debug information Default: false
          */
         if (!base_url) {
-            throw {'name': 'TypeError',
-                'message': 'You must give a base_url to DojoClient()'};
+            throw new TypeError('You must give a base_url to DojoClient()');
         }
         if (base_url.charAt(base_url.length - 1) != '/') {
             base_url = base_url + '/';
