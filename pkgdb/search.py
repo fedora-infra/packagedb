@@ -34,6 +34,7 @@ Controller to search for packages and eventually users.
 #   know that we have a filter() method on the returned type.
 
 from sqlalchemy.sql import func, and_, select
+from sqlalchemy.orm import lazyload
 
 from turbogears import controllers, expose, validate, paginate, redirect, \
         config
@@ -112,48 +113,57 @@ class Search(controllers.Controller):
             query = query.split()  # -> list
             for searchword in query:
                 if searchon == 'description':
-                    descriptions += PackageListing.query.filter(and_(
-                        PackageListing.packageid==Package.id,
-                            func.lower(Package.description).like(
-                                '%'+searchword+'%')))
+                    descriptions += PackageListing.query.options(
+                            lazyload('people2'), lazyload('groups2'),
+                            lazyload('status')).filter(
+                                    and_(PackageListing.packageid==Package.id,
+                                        func.lower(Package.description).like(
+                                            '%'+searchword+'%')))
                 elif searchon in ['name', 'both']:
-                    exact += PackageListing.query.filter(and_(
-                            PackageListing.packageid==Package.id,
-                                func.lower(Package.name).like(
-                                    searchword)))
-                    names += PackageListing.query.filter(and_(
-                        PackageListing.packageid==Package.id,
-                            func.lower(Package.name).like(
-                                '%'+searchword+'%')))
+                    exact += PackageListing.query.options(lazyload('people2'),
+                            lazyload('groups2'), lazyload('status')).filter(
+                                    and_(PackageListing.packageid==Package.id,
+                                        func.lower(Package.name).like(
+                                            searchword)))
+                    names += PackageListing.query.options(lazyload('people2'),
+                            lazyload('groups2'), lazyload('status')).filter(
+                                    and_(PackageListing.packageid==Package.id,
+                                        func.lower(Package.name).like(
+                                            '%'+searchword+'%')))
                     if searchon == 'both':
-                        descriptions += PackageListing.query.filter(and_(
-                            PackageListing.packageid==Package.id,
-                                func.lower(Package.description).like(
-                                    '%'+searchword+'%')))
+                        descriptions += PackageListing.query.options(
+                                lazyload('people2'), lazyload('groups2'),
+                                lazyload('status')).filter(and_(
+                                    PackageListing.packageid==Package.id,
+                                    func.lower(Package.description).like(
+                                        '%'+searchword+'%')))
 
         else:      # AND operator
             if searchon in ['name', 'both']: 
-                exact = PackageListing.query.filter(and_(
-                    PackageListing.packageid==Package.id,
-                             func.lower(Package.name).like(query))).all()
+                exact = PackageListing.query.options(lazyload('people2'),
+                        lazyload('groups2'), lazyload('status')).filter(and_(
+                            PackageListing.packageid==Package.id,
+                            func.lower(Package.name).like(query))).all()
                 # query the DB for every searchword and build a Query object
                 # to filter succesively
                 query = query.split()
-                names = PackageListing.query.filter(and_(
+                names = PackageListing.query.options(lazyload('people2'),
+                        lazyload('groups2'), lazyload('status')).filter(and_(
                             PackageListing.packageid==Package.id,
-                                func.lower(Package.name).like(
-
-                                    '%' + query[0] + '%')))
+                            func.lower(Package.name).like(
+                                '%' + query[0] + '%')))
                 for searchword in query:
                     # pylint: disable-msg=E1103
                     names = names.filter(func.lower(Package.name).like(
                                             '%' + searchword + '%'))
                 names = names.all()
                 if searchon == 'both':
-                    descriptions = PackageListing.query.filter(and_(
-                        PackageListing.packageid==Package.id,
-                        func.lower(Package.description).like(
-                            '%' + query[0] + '%')))
+                    descriptions = PackageListing.query.options(
+                            lazyload('people2'), lazyload('groups2'),
+                            lazyload('status')).filter(and_(
+                                PackageListing.packageid==Package.id,
+                                func.lower(Package.description).like(
+                                    '%' + query[0] + '%')))
                     for searchword in query:
                         # pylint: disable-msg=E1103
                         descriptions = descriptions.filter(
@@ -163,10 +173,12 @@ class Search(controllers.Controller):
 
             elif searchon == 'description':
                 query = query.split()
-                descriptions = PackageListing.query.filter(and_(
-                    PackageListing.packageid==Package.id,
-                        func.lower(Package.description).like(
-                           '%' + query[0] + '%')))
+                descriptions = PackageListing.query.options(
+                        lazyload('people2'), lazyload('groups2'),
+                        lazyload('status')).filter(and_(
+                            PackageListing.packageid==Package.id,
+                            func.lower(Package.description).like(
+                                '%' + query[0] + '%')))
                 for searchword in query:
                     # pylint: disable-msg=E1103
                     descriptions = descriptions.filter(
@@ -187,7 +199,8 @@ class Search(controllers.Controller):
 
         collections = {} # build a dict of all the available releases
                          # branchnames as keys and string ids as values
-        for coll in Collection.query.all(): # pylint: disable-msg=E1101
+        for coll in Collection.query.options(lazyload('listings2'),
+                lazyload('status')).all():
             collections[coll.branchname] = str(coll.id)
             if coll.id == release:
                 release = '%s %s' % (coll.name, coll.version)
