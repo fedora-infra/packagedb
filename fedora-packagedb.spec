@@ -74,7 +74,7 @@ rm -rf %{buildroot}
 
 %files clients
 %defattr(-,root,root,-)
-%{_sysconfdir}/pkgdb-client.cfg
+%config(noreplace) %{_sysconfdir}/pkgdb-client.cfg
 %{_bindir}/pkgdb-client
 
 %changelog
