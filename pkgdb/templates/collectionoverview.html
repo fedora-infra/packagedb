@@ -12,8 +12,10 @@
         Collection
         </th><th class="ColumnHead" id="versionhead" title="Collection Version - Version of the Collection">
         Version
-        </th><th class="ColumnHead" id="packagehead" title="Number of Packages - How many packages are in the cvs repository for this colleciton version.  May not be built for this distribution">
+        </th><th py:if="not tg.identity.anonymous and 'cvsadmin' in tg.identity.groups" class="ColumnHead" id="packagehead" title="Number of Packages - How many packages are in the cvs repository for this colleciton version.  May not be built for this distribution">
         Number of Packages
+        </th><th class="ColumnHead" id="actionhead" title="Actions">
+        Actions
       </th></tr>
       <tr py:for="collection in collections">
         <td class="collection">
@@ -26,6 +28,9 @@
         </td>
         <td py:content="collection.numpkgs" class="package">
             Number of Packages
+        </td>
+        <td py:if="not tg.identity.anonymous and 'cvsadmin' in tg.identity.groups">
+          <a py:if="hasattr(collection, 'branchname') and collection.branchname and collecion.koji_name" href="${tg.url('/admin/mass_branch/' + collection.branchname)}">Branch all packages</a>
         </td>
       </tr>
     </table>
