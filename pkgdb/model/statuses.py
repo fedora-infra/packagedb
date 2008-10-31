@@ -153,7 +153,7 @@ mapper(CollectionStatus, CollectionStatusTable, properties={
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == CollectionStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid]),
-    'locale': relation(StatusTranslation, lazy=False,
+    'locale': relation(StatusTranslation,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == CollectionStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
@@ -171,7 +171,7 @@ mapper(PackageListingStatus, PackageListingStatusTable, properties={
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageListingStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid]),
-    'locale': relation(StatusTranslation, lazy=False,
+    'locale': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageListingStatusTable.c.statuscodeid,
@@ -190,7 +190,7 @@ mapper(PackageStatus, PackageStatusTable, properties={
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid]),
-    'locale': relation(StatusTranslation, lazy=False,
+    'locale': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageStatusTable.c.statuscodeid,
@@ -212,7 +212,7 @@ mapper(PackageAclStatus, PackageAclStatusTable, properties={
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageAclStatusTable.c.statuscodeid,
         foreign_keys=[StatusTranslationTable.c.statuscodeid]),
-    'locale': relation(StatusTranslation, lazy=False,
+    'locale': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
                 == PackageAclStatusTable.c.statuscodeid,

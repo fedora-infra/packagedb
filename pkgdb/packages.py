@@ -29,7 +29,7 @@ Controller for displaying Package Information.
 # :E1101: SQLAlchemy monkey patches the database fields into the mapper
 #   classes so we have to disable these checks.
 
-
+from sqlalchemy.orm import eagerload
 from turbogears import controllers, expose, config, redirect, identity 
 
 from pkgdb import model
@@ -114,7 +114,8 @@ class Packages(controllers.Controller):
         acl_names = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # pylint: disable-msg=E1101
         # Possible statuses for acls:
-        acl_status = model.PackageAclStatus.query.all()
+        acl_status = model.PackageAclStatus.query.options(
+                eagerload('locale')).all()
         # pylint: enable-msg=E1101
         acl_status_translations = ['']
         for status in acl_status:
@@ -126,8 +127,12 @@ class Packages(controllers.Controller):
 
         # pylint: disable-msg=E1101
         # Fetch information about all the packageListings for this package
-        pkg_listings = model.PackageListing.query.filter(
-                model.PackageListingTable.c.packageid==package.id)
+        pkg_listings = model.PackageListing.query.options(
+                eagerload('people2.acls2.status.locale'),
+                eagerload('groups2.acls2.status.locale'),
+                eagerload('status.locale'),
+                eagerload('collection.status.locale'),
+                ).filter(model.PackageListingTable.c.packageid==package.id)
         # pylint: enable-msg=E1101
         if collection:
             # User asked to limit it to specific collections

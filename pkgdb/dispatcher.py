@@ -32,6 +32,7 @@ from datetime import datetime
 
 from sqlalchemy import and_
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
+from sqlalchemy.orm import eagerload
 
 from turbogears import controllers, expose, identity, config, flash
 from turbogears.database import session
@@ -113,7 +114,7 @@ class PackageDispatcher(controllers.Controller):
 
         # pylint: disable-msg=E1101
         # Possible statuses for acls:
-        acl_status = session.query(PackageAclStatus)
+        acl_status = PackageAclStatus.query.options(eagerload('locale'))
         # pylint: enable-msg=E1101
         self.acl_status_translations = ['']
         # Create a mapping from status name => statuscode
@@ -166,7 +167,8 @@ class PackageDispatcher(controllers.Controller):
 
             # pylint: disable-msg=E1101
             # Get the co-maintainers
-            acl_users = PersonPackageListingAcl.query.filter(and_(
+            acl_users = PersonPackageListingAcl.query.options(
+                    eagerload('status.locale')).filter(and_(
                     PersonPackageListingAcl.c.personpackagelistingid ==
                     PersonPackageListing.c.id,
                     PersonPackageListing.c.packagelistingid == pkg_listing.id,
@@ -597,7 +599,8 @@ class PackageDispatcher(controllers.Controller):
         # Determine if the group already has an acl
         try:
             # pylint: disable-msg=E1101
-            acl = GroupPackageListingAcl.query.filter(and_(
+            acl = GroupPackageListingAcl.query.options(
+                    eagerload('status.locale')).filter(and_(
                     GroupPackageListingAcl.c.grouppackagelistingid \
                             == GroupPackageListing.c.id,
                     GroupPackageListing.c.groupid == group_id,
@@ -667,7 +670,8 @@ class PackageDispatcher(controllers.Controller):
         # Determine if the user already has an acl
         try:
             # pylint: disable-msg=E1101
-            acl = PersonPackageListingAcl.query.filter(and_(
+            acl = PersonPackageListingAcl.query.options(
+                    eagerload('status.locale')).filter(and_(
                     PersonPackageListingAcl.c.personpackagelistingid == \
                             PersonPackageListing.c.id,
                     PersonPackageListing.c.userid == \
