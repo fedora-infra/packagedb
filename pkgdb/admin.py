@@ -29,10 +29,10 @@ Controller for handling admin commands.  These are the dispatcher type methods.
 #   classes so we have to disable these checks.
 
 
-from turbogears import controllers, expose, config, redirect, identity 
+from turbogears import controllers, expose, config, identity, url
 import koji
 
-from pkgdb import model
+from pkgdb import model, _
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
@@ -56,6 +56,7 @@ class Admin(controllers.Controller):
         pass
 
     @expose(allow_json=True)
+    @json_or_redirect(url('collection'))
     # Check that we have a tg.identity, otherwise you can't set any acls.
     @identity.require(identity.in_group('cvsadmin'))
     def mass_branch(self, branch):
@@ -78,9 +79,9 @@ class Admin(controllers.Controller):
             variable.
         '''
         koji_url = config.get('koji.huburl', 'https://koji.fedoraproject.org/kojihub')
-        pkgdb_cert = config.get('cert.user', '/etc/pki/pkgdb.cert')
-        user_ca = config.get('cert.user_ca', '/etc/pki/fedora-server-ca.cert')
-        server_ca = config.get('cert.server_ca', '/etc/pki/fedora-server-ca.cert')
+        pkgdb_cert = config.get('cert.user', '/etc/pki/pkgdb/pkgdb.pem')
+        user_ca = config.get('cert.user_ca', '/etc/pki/pkgdb/fedora-server-ca.cert')
+        server_ca = config.get('cert.server_ca', '/etc/pki/pkgdb/fedora-upload-ca.cert')
 
         try:
             to_branch = Branch.query.filter_by(branchname=branch).one()
@@ -129,6 +130,9 @@ class Admin(controllers.Controller):
                     {'count': len(unbranched), 'branch': branch})
             return dict(exc='CannotClone', branch_count=num_branched,
                     unbranched=unbranched)
+
+        flash(_('Succesfully branched all %(num)s packages') %
+                {'num': num_branched})
         return dict(branch_count=num_branched)
 
     def create_collection(self):
