@@ -10,6 +10,14 @@ bugzilla.url='https://bugzilla.redhat.com/'
 # display.
 #bugzilla.queryurl='https://bzprx.vip.phx.redhat.com'
 
+# Koji configuration
+koji.huburl='https://koji.fedoraproject.org/kojihub'
+
+# Certificates
+cert.user='/etc/pki/pkgdb/pkgdb.pem'
+cert.user_ca='/etc/pki/pkgdb/fedora-server-ca.cert'
+cert.server_ca='/etc/pki/pkgdb/fedora-upload-ca.cert'
+
 email.recipients=('packager-list@localhost',)
 email.sender=('PackageDB', 'pkgdb@localhost')
 
