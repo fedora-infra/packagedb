@@ -70,11 +70,6 @@ Example: pkgdb-client -u toshio -o testowner -d 'Purely a test package' -b devel
             action='store',
             default=getpass.getuser(),
             help='Set username to connect to the Package Database')
-## This is insecure, do not give the user an option.
-#    parser.add_option('-p', '--password',
-#            dest='password',
-#            action='store',
-#            help='Set password to connect to the Password Database *** Warning: more secure to enter this interactively')
     parser.add_option('-o', '--owner',
             dest='owner',
             action='store',
@@ -117,13 +112,22 @@ Example: pkgdb-client -u toshio -o testowner -d 'Purely a test package' -b devel
             type='string',
             dest='groups',
             help='Remove commit access for GROUP on this branch.  May be specified multiple times.')
+    parser.add_option('--mass-branch',
+            action='store',
+            type='boolean',
+            dest='mass_branch',
+            help='Mass branch from "devel" to --branch')
     (opts, args) = parser.parse_args()
 
-    # Must specify a  package name
-    if len(args) < 1:
+    # Must specify a package name except for mass_branch
+    if len(args) < 1 and not opts.mass_branch:
         raise ArgumentsError, 'No package name'
     else:
         opts.packages = args
+
+    # Mass branching must specify exactly one branch
+    if opts.mass_branch and len(opts.branchList) != 1:
+        raise ArgumentsError('--mass-branch must be used with precisely one --branch argument')
 
     # We only know how to handle a few groups right now.
     if opts.groups:
@@ -146,54 +150,65 @@ if __name__ == '__main__':
     pkgdb = PackageDB(PACKAGEDBURL, username=options.username,
             password=password, debug=True)
     failedPackages = {}
-    for package in options.packages:
-        # Reformat groups to be added
-        group_dict = {}
-        if options.groups:
-            for group in options.groups:
-                group_dict[group] = True
-        for retry in range(0, RETRIES+1):
-            try:
-                if options.masterBranch:
-                    if group_dict or options.comaintList or options.ccList \
-                            or options.description or option.owner:
-                        # Make changes to the master branch before cloning
-                        try:
-                            pkg_info = pkgdb.get_package_info(pkg, master)
-                        except AppError, e:
-                            print '%(pkg)s has no %(branch)s branch; cannot' \
-                                    ' clone from it.  Error: %(msg)s' % {
-                                            'pkg': pkg, 'branch': master,
-                                            'msg': arg}
-
-                        pkgdb.add_edit_package(package, options.owner,
-                                options.description, [options.masterbranch],
-                                options.ccList, options.comaintList, group_dict)
-                    pkgdb.clone_branch(package, options.branchList,
-                            options.masterBranch)
-                else:
-                    pkgdb.add_edit_package(package, owner=options.owner,
-                            description=options.description,
-                            branches=options.branchList,
-                            cc_list=options.ccList,
-                            comaintainers=options.comaintList,
-                            groups=group_dict)
-            except AuthError, e:
-                if sys.stdin.isatty():
-                    if retry >= RETRIES:
-                        failedPackages[package] = e
-                        break
-                    pkgdb.password = getpass.getpass('PackageDB Password: ')
-                else:
-                    if retry > 0:
-                        failedPackages[package] = e
-                        break
-                    pkgdb.password = sys.stdin.readline().rstrip()
-            except Exception, e:
-                failedPackages[package] = e
-                break
+    if options.mass_branch:
+        try:
+            pkgdb.mass_branch(options.branchList[0])
+        except AppError, e:
+            if e.extras:
+                for pkg in e.extras:
+                    failedPackages[pkg] = e.message
             else:
-                break
+                raise
+    else:
+        for package in options.packages:
+            # Reformat groups to be added
+            group_dict = {}
+            if options.groups:
+                for group in options.groups:
+                    group_dict[group] = True
+            for retry in range(0, RETRIES+1):
+                try:
+                    if options.masterBranch:
+                        if group_dict or options.comaintList \
+                                or options.ccList or options.description \
+                                or option.owner:
+                            # Make changes to the master branch before cloning
+                            try:
+                                pkg_info = pkgdb.get_package_info(pkg, master)
+                            except AppError, e:
+                                print '%(pkg)s has no %(branch)s branch;' \
+                                    ' cannot clone from it.  Error: %(msg)s' \
+                                    % {'pkg': pkg, 'branch': master, 'msg': arg}
+
+                            pkgdb.add_edit_package(package, options.owner,
+                                    options.description, [options.masterbranch],
+                                    options.ccList, options.comaintList,
+                                    group_dict)
+                        pkgdb.clone_branch(package, options.branchList,
+                                options.masterBranch)
+                    else:
+                        pkgdb.add_edit_package(package, owner=options.owner,
+                                description=options.description,
+                                branches=options.branchList,
+                                cc_list=options.ccList,
+                                comaintainers=options.comaintList,
+                                groups=group_dict)
+                except AuthError, e:
+                    if sys.stdin.isatty():
+                        if retry >= RETRIES:
+                            failedPackages[package] = e
+                            break
+                        pkgdb.password = getpass.getpass('PackageDB Password: ')
+                    else:
+                        if retry > 0:
+                            failedPackages[package] = e
+                            break
+                        pkgdb.password = sys.stdin.readline().rstrip()
+                except Exception, e:
+                    failedPackages[package] = e
+                    break
+                else:
+                    break
 
     if failedPackages:
         print 'Packages which had errors:'
