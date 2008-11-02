@@ -22,6 +22,8 @@ Utilities for all classes to use
 '''
 from pkgdb.model.statuses import StatusTranslation
 
+STATUS = {}
+
 def refresh_status():
     '''Cache the status types for use in all methods.
     '''
@@ -29,7 +31,7 @@ def refresh_status():
     statuses = {}
     for status in StatusTranslation.query.all():
         statuses[status.statusname] = status
-    STATUS = refresh_status
+    STATUS = statuses
 
 __all__ = [STATUS, refresh_status]
 
