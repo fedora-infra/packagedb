@@ -34,6 +34,7 @@ import simplejson
 import urllib2
 import codecs
 import smtplib
+import bugzilla
 from configobj import ConfigObj, flatten_errors
 from email.Message import Message
 from fedora.client.fas2 import AccountSystem
@@ -85,7 +86,7 @@ class Bugzilla(object):
         self.username = username
         self.password = password
 
-        self.server = xmlrpclib.Server(bzServer)
+        self.server = bugzilla.Bugzilla(url=self.bzXmlRpcServer, user=self.username,password=self.password)
 
         # Connect to the fedora account system
         self.fas = AccountSystem(base_url=FASURL, username=FASUSER,
@@ -127,8 +128,7 @@ class Bugzilla(object):
         except KeyError:
             product = {}
             try:
-                components = self.server.bugzilla.getProdCompDetails(collection,
-                                self.username, self.password)
+                components = self.server.getcomponentsdetail(collection)
             except xmlrpclib.Fault, e:
                 # Output something useful in args
                 e.args = (e.faultCode, e.faultString)
@@ -210,8 +210,7 @@ class Bugzilla(object):
                             product[pkgKey]['initialcclist'])
                 else:
                     try:
-                        self.server.bugzilla.editComponent(data, self.username,
-                                self.password)
+                        self.server.editcomponent(data)
                     except xmlrpclib.Fault, e:
                         # Output something useful in args
                         e.args = (data, e.faultCode, e.faultString)
@@ -239,8 +238,7 @@ class Bugzilla(object):
                         data, self.username)
             else:
                 try:
-                    self.server.bugzilla.addComponent(data, self.username,
-                            self.password)
+                    self.server.addcomponent(data)
                 except xmlrpclib.Fault, e:
                     # Output something useful in args
                     e.args = (data, e.faultCode, e.faultString)
