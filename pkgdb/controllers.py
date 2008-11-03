@@ -37,7 +37,6 @@ from pkgdb.packages import Packages
 from pkgdb.users import Users
 from pkgdb.stats import Stats
 from pkgdb.search import Search
-from pkgdb.admin import Admin
 
 log = logging.getLogger("pkgdb.controllers")
 
@@ -159,7 +158,6 @@ class Root(controllers.RootController):
     users = Users(fas, app_title)
     stats = Stats(fas, app_title)
     search = Search(fas, app_title)
-    admin = Admin(fas)
     lists = ListQueries(fas, app_title)
     # For backwards compatibility:
     acls = lists

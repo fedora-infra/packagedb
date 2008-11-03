@@ -138,7 +138,7 @@ class Packages(controllers.Controller):
             # User asked to limit it to specific collections
             pkg_listings = pkg_listings.filter(
                     model.PackageListingTable.c.collectionid.in_(
-                    *[c.id for c in collection]))
+                    [c.id for c in collection]))
             if not pkg_listings.count():
                 error = dict(status=False,
                         title=self.app_title + ' -- Not in Collection',

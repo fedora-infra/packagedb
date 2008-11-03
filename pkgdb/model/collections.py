@@ -105,7 +105,7 @@ class Collection(SABase):
         '''
         try:
             # :E1101: If Collection is actually a branch, it will have a
-            # branchname attribute given it bySQLAlchemy
+            # branchname attribute given it by SQLAlchemy
             # pylint: disable-msg=E1101
             simple_name = self.branchname
         except AttributeError:

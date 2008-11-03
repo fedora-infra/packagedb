@@ -44,6 +44,8 @@ from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy.sql import and_
 
 from turbogears.database import metadata, mapper, get_engine
 # Not the way we want to do this.  We need to genericize the logs
@@ -51,8 +53,8 @@ from turbogears import identity
 
 from fedora.tg.json import SABase
 
-from pkgdb.model.acls import PersonPackageListing, GroupPackageListing, \
-        GroupPackageListingAcl
+from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
+        GroupPackageListing, GroupPackageListingAcl
 
 get_engine()
 
@@ -120,22 +122,20 @@ class Package(SABase):
         This creates a new PackageListing for this Package.  The PackageListing
         has default values set for group acls.
         '''
-        from pkgdb.utils import STATUS
-
         # pylint: disable-msg=E1101
+        from pkgdb.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
-
         pkg_listing = PackageListing(owner, status.statuscodeid,
                 packageid=self.id, collectionid=collection.id,
                 qacontact=qacontact)
         for group in DEFAULT_GROUPS:
             new_group = GroupPackageListing(GROUP_MAP[group])
-            pkg_listing.groups.append(new_group)
+            pkg_listing.groups2[GROUP_MAP[group]] = new_group
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
-                    acl_status = self.approvedStatus
+                    acl_status = STATUS['Approved'].statuscodeid
                 else:
-                    acl_status = self.deniedStatus
+                    acl_status = STATUS['Denied'].statuscodeid
                 group_acl = GroupPackageListingAcl(acl, acl_status)
                 # :W0201: grouppackagelisting is added to the model by
                 #   SQLAlchemy so it doesn't appear in __init__
@@ -150,6 +150,8 @@ class Package(SABase):
                 {'user': identity.current.user_name, 'branch': collection,
                     'pkg': self.name})
         log.listing = pkg_listing
+
+        return pkg_listing
 
     def __init__(self, userid, action, description=None, changetime=None,
             packagelistingid=None):
@@ -190,23 +192,23 @@ class PackageListing(SABase):
         :rtype: PackageListing
         '''
         from pkgdb.utils import STATUS
+        from pkgdb.model.collections import Branch
+        from pkgdb.model.logs import GroupPackageListingAclLog, \
+                PersonPackageListingAclLog
         # Retrieve the PackageListing for the to clone branch
         try:
             clone_branch = PackageListing.query.join('package'
                     ).join('collection').filter(
-                        and_(Package.name==self.package.name, Branch.branchname==branch)
-                        ).one()
+                        and_(Package.name==self.package.name,
+                            Branch.branchname==branch)).one()
         except InvalidRequestError:
             ### Create a new package listing for this release ###
 
             # Retrieve the collection to make the branch for
             clone_collection = Branch.query.filter_by(branchname=branch).one()
-
             # Create the new PackageListing
-            clone_branch = self.package.create_listing(
-                clone_collection, self.owner,
-                STATUS['Approved'].statuscodeid,
-                qacontact=self.qacontact)
+            clone_branch = self.package.create_listing(clone_collection,
+                    self.owner, STATUS['Approved'], qacontact=self.qacontact)
 
         log_params = {'user': identity.current.user_name,
                 'pkg': self.package.name, 'branch': branch}
@@ -236,7 +238,7 @@ class PackageListing(SABase):
                         acl.statuscode, log_msg)
                 log.acl = clone_group.acls2[acl_name]
 
-        for person_name, person in self.people2:
+        for person_name, person in self.people2.iteritems():
             log_params['person'] = person_name
             if person_name not in clone_branch.people2:
                 # Associate the person with the packagelisting
@@ -252,7 +254,6 @@ class PackageListing(SABase):
                     if clone_person.acls2[acl_name].statuscode \
                             != acl.statuscode:
                         clone_person.acls2[acl_name].statuscode = acl.statuscode
-
                 # Create a log message for this acl
                 log_params['acl'] = acl.acl
                 log_params['status'] = acl.status.locale['C'].statusname

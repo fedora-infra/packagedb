@@ -31,10 +31,14 @@ Controller for showing Package Collections.
 
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import lazyload, eagerload
-from turbogears import controllers, expose, paginate
+from turbogears import controllers, expose, paginate, config, identity, flash
 from cherrypy import request
 
-from pkgdb.model.collections import CollectionPackage, Collection
+import koji
+from fedora.tg.util import json_or_redirect
+
+from pkgdb import _
+from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
 
 class Collections(controllers.Controller):
@@ -57,8 +61,10 @@ class Collections(controllers.Controller):
         '''List the Collections we know about.
         '''
         # pylint: disable-msg=E1101
-        collections = CollectionPackage.query.order_by(
-                (CollectionPackage.name, CollectionPackage.version))
+        collections = Collection.query.options(lazyload('listings'),
+                lazyload('status')).add_entity(CollectionPackage
+                        ).filter(Collection.id==CollectionPackage.id).order_by(
+                                (Collection.name, Collection.version))
         # pylint: enable-msg=E1101
 
         return dict(title=self.app_title + ' -- Collection Overview',
@@ -138,3 +144,109 @@ class Collections(controllers.Controller):
 
         return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
             collection['version']), collection=collection, packages=packages)
+
+    #
+    # Read-write methods
+    #
+
+    @expose(allow_json=True)
+    @json_or_redirect('/collections')
+    # Check that we have a tg.identity, otherwise you can't set any acls.
+    @identity.require(identity.in_group('cvsadmin'))
+    def mass_branch_test(self, branch):
+        flash('testing mass branch %s' % branch)
+        return dict(exc='CannotClone', branch_count=0,
+                unbranched=['kernel', 'firefox'])
+
+    @expose(allow_json=True)
+    @json_or_redirect('/collections')
+    # Check that we have a tg.identity, otherwise you can't set any acls.
+    @identity.require(identity.in_group('cvsadmin'))
+    def mass_branch(self, branch):
+        '''Mass branch all packages listed as non-blocked in koji to the pkgdb.
+
+        Note: At some point, this will need to do the reverse: we'll maintain
+        the list of dead packages in the pkgdb and sync that information to
+        koji.
+
+        Note: It is safe to call this method repeatedly.  If all packages have
+        been branched already, new invokations will have no effect.
+
+        :arg branch: Name of the branch to branch all packages for
+        :returns: number of packages branched
+        :raises InvalidBranch: If the branch does not exist in the pkgdb or
+            koji
+        :raises ServiceError: If we cannot log into koji
+        :raises CannotClone: If some branches could not be cloned.  This will
+            also return the names of the uncloned packages in the `unbranched`
+            variable.
+        '''
+        koji_url = config.get('koji.huburl', 'https://koji.fedoraproject.org/kojihub')
+        pkgdb_cert = config.get('cert.user', '/etc/pki/pkgdb/pkgdb.pem')
+        user_ca = config.get('cert.user_ca', '/etc/pki/pkgdb/fedora-server-ca.cert')
+        server_ca = config.get('cert.server_ca', '/etc/pki/pkgdb/fedora-upload-ca.cert')
+
+        try:
+            to_branch = Branch.query.filter_by(branchname=branch).one()
+        except InvalidRequestError, e:
+            session.rollback()
+            flash(_('Unable to locate a branch for %(branch)s') % {'branch':
+                branch})
+            return dict(exc='InvalidBranch')
+
+        koji_name = to_branch.koji_name
+        if not koji_name:
+            session.rollback()
+            flash(_('Unable to mass branch for %(branch)s because it is not managed by koji') % {'branch': branch})
+            return dict(exc='InvalidBranch')
+
+        koji_session = koji.ClientSession(koji_url)
+        if not koji_session.ssl_login(cert=pkgdb_cert, ca=user_ca, serverca=server_ca):
+            session.rollback()
+            flash(_('Unable to log into koji'))
+            return dict(exc='ServiceError')
+
+        devel_branch = Collection.by_simple_name('devel')
+
+        pkglist = session.listPackages(tagID=koji_name, inherited=True)
+        pkgs = (pkg for pkg in pkglist if not pkg['blocked'])
+
+        unbranched = []
+        num_branched = 0
+        for pkg in pkgs:
+            if pkg.package_name not in to_branch.listings2:
+                if pkg.package_name in devel_branch.listings2:
+                    # clone the package from the devel branch
+                    try:
+                        devel_branch.listings2[pkg.package_name].clone(branch)
+                    except InvalidRequestError, e:
+                        pass
+                        # Error will be taked care of further down
+                    else:
+                        # Success, get us to the next package
+                        num_branched = num_branched + 1
+                        continue
+                # If we get down to here we had an error cloning this package
+                unbranched.append(pkg.package_name)
+
+        try:
+            session.flush()
+        except SQLError, e:
+            session.rollback()
+            flash(_('Unable to save branched packages for %(branch)s') %
+                    {'branch': branch})
+            return dict(exc='DatabaseError')
+
+        if unbranched:
+            # Uh oh, there were packages which weren't branched.  Tell the
+            # user
+            flash(_('%(count)s/5(num)s packages were unbranched for %(branch)s'
+                ) % {'count': len(unbranched), 'num': len(pkgs),
+                    'branch': branch})
+            return dict(exc='CannotClone', branch_count=num_branched,
+                    unbranched=unbranched)
+
+        flash(_('Succesfully branched all %(num)s packages') %
+                {'num': num_branched})
+        return dict(branch_count=num_branched)
+

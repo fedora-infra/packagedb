@@ -32,7 +32,7 @@ from datetime import datetime
 
 from sqlalchemy import and_
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
-from sqlalchemy.orm import eagerload
+from sqlalchemy.orm import eagerload, lazyload
 
 from turbogears import controllers, expose, identity, config, flash
 from turbogears.database import session
@@ -43,7 +43,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
         GroupPackageListing, GroupPackageListingAcl, PersonPackageListing, \
         PersonPackageListingAcl, PackageListing, PackageListingLog, Package, \
         Collection, PersonPackageListingAclLog, GroupPackageListingAclLog, \
-        PackageLog
+        PackageLog, Branch
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
@@ -172,7 +172,7 @@ class PackageDispatcher(controllers.Controller):
                     PersonPackageListingAcl.c.personpackagelistingid ==
                     PersonPackageListing.c.id,
                     PersonPackageListing.c.packagelistingid == pkg_listing.id,
-                    PersonPackageListingAcl.c.acl.in_(*acls)))
+                    PersonPackageListingAcl.c.acl.in_(acls)))
             # pylint: enable-msg=E1101
 
             for acl in acl_users:
@@ -1309,15 +1309,16 @@ class PackageDispatcher(controllers.Controller):
         :returns: The cloned branch
         :rtype: PackageListing
         '''
-        error_args  = {'package': package, 'master': master, 'branch': branch}
+        error_args  = {'package': pkg, 'master': master, 'branch': branch}
 
         # Retrieve the packagelisting for the master branch
         try:
             master_branch = PackageListing.query.join('package'
-                    ).join('collection').filter(
-                        and_(Package.name==package, Branch.branchname==master)
+                    ).join('collection').options(lazyload('status')).filter(
+                        and_(Package.name==pkg, Branch.branchname==master)
                         ).one()
         except InvalidRequestError:
+            session.rollback()
             flash(_('"%(package)s" does not exist on branch "%(master)s"') %
                     error_args)
             return dict(exc='InvalidBranch')
@@ -1325,20 +1326,25 @@ class PackageDispatcher(controllers.Controller):
         try:
             clone_branch = master_branch.clone(branch)
         except InvalidRequestError, e:
-                # Not a valid collection
-                flash(_('"%(branch)s" is not a valid branch name' %
-                    {'branch': branch}))
-                return dict(exc='InvalidBranch')
+            # Not a valid collection
+            session.rollback()
+            flash(_('"%(branch)s" is not a valid branch name' %
+                {'branch': branch}))
+            return dict(exc='InvalidBranch')
         except Exception, e:
+            session.rollback()
+            error_args['msg'] = str(e)
             flash(_('Unable to clone "%(package)s %(master)s" to'
-                ' "%(package)s %(branch)s"') % error_args)
+                ' "%(package)s %(branch)s": %(msg)s') % error_args)
             return dict(exc='CannotClone')
 
         try:
             session.flush()
         except SQLError, e:
+            session.rollback()
+            error_args['error'] = str(e)
             flash(_('Unable to save clone of %(package)s %(master)s for'
-                ' %(branch)s to the database ') % error_args)
+                ' %(branch)s to the database: %(error)s') % error_args)
             return dict(exc='DatabaseError')
 
         if email_log:
@@ -1351,4 +1357,3 @@ class PackageDispatcher(controllers.Controller):
                 identity.current.user, [clone_branch])
 
         return dict(pkglisting=clone_branch)
-

@@ -33,6 +33,6 @@ def refresh_status():
         statuses[status.statusname] = status
     STATUS = statuses
 
-__all__ = [STATUS, refresh_status]
-
 refresh_status()
+
+__all__ = [STATUS, refresh_status]
