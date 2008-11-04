@@ -48,8 +48,6 @@ from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.sql import and_
 
 from turbogears.database import metadata, mapper, get_engine
-# Not the way we want to do this.  We need to genericize the logs
-from turbogears import identity
 
 from fedora.tg.json import SABase
 
@@ -110,13 +108,17 @@ class Package(SABase):
                 self.reviewurl, self.shouldopen)
 
     def create_listing(self, collection, owner, status,
-            qacontact=None):
+            qacontact=None, author_name=None, author_id=None):
         '''Create a new PackageListing branch on this Package.
 
         :arg collection: Collection that the new PackageListing lives on
         :arg owner: The owner of the PackageListing
         :arg status: Status to set the PackageListing to
         :kwarg qacontact: QAContact for this PackageListing in bugzilla.
+        :kwarg author_name: Author of the change.  Note: will remove when
+            logging is made generic
+        :kwarg author_id: Author of the change.  Note: will remove when
+            logging is made generic
         :returns: The new PackageListing object.
 
         This creates a new PackageListing for this Package.  The PackageListing
@@ -144,10 +146,10 @@ class Package(SABase):
                 # pylint: enable-msg=W0201
 
         # Create a log message
-        log = PackageListingLog(identity.current.user.id,
+        log = PackageListingLog(author_id,
                 STATUS['Added'].statuscodeid,
                 '%(user)s added a %(branch)s to %(pkg)s' %
-                {'user': identity.current.user_name, 'branch': collection,
+                {'user': author_name, 'branch': collection,
                     'pkg': self.name})
         log.listing = pkg_listing
 
@@ -181,10 +183,14 @@ class PackageListing(SABase):
                 ' qacontact=%r)' % (self.owner, self.statuscode,
                         self.packageid, self.collectionid, self.qacontact)
 
-    def clone(self, branch):
+    def clone(self, branch, author_name, author_id):
         '''Clone the permissions on this PackageListing to another `Branch`.
 
         :arg branch: `branchname` to make a new clone for
+        :arg author_name: Author of the change.  Note, will remove when logs
+            are made generic
+        :arg author_id: Author of the change.  Note, will remove when logs
+            are made generic
         :raises sqlalchemy.exceptions.InvalidRequestError: when a request
             does something that violates the SQL integrity of the database
             somehow.
@@ -208,9 +214,10 @@ class PackageListing(SABase):
             clone_collection = Branch.query.filter_by(branchname=branch).one()
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
-                    self.owner, STATUS['Approved'], qacontact=self.qacontact)
+                    self.owner, STATUS['Approved'], qacontact=self.qacontact,
+                    author_id=author_id, author_name=author_name)
 
-        log_params = {'user': identity.current.user_name,
+        log_params = {'user': author_name,
                 'pkg': self.package.name, 'branch': branch}
         # Iterate through the acls in the master_branch
         for group_name, group in self.groups2.iteritems():
@@ -234,7 +241,7 @@ class PackageListing(SABase):
                 log_params['status'] = acl.status.locale['C'].statusname
                 log_msg = '%(user)s set %(acl)s status for %(group)s to' \
                         ' %(status)s on (%(pkg)s %(branch)s)' % log_params
-                log = GroupPackageListingAclLog(identity.current.user.id,
+                log = GroupPackageListingAclLog(author_id,
                         acl.statuscode, log_msg)
                 log.acl = clone_group.acls2[acl_name]
 
@@ -259,7 +266,7 @@ class PackageListing(SABase):
                 log_params['status'] = acl.status.locale['C'].statusname
                 log_msg = '%(user)s set %(acl)s status for %(person)s to' \
                         ' %(status)s on (%(pkg)s %(branch)s)' % log_params
-                log = PersonPackageListingAclLog(identity.current.user.id,
+                log = PersonPackageListingAclLog(author_id,
                         acl.statuscode, log_msg)
                 log.acl = clone_person.acls2[acl_name]
 

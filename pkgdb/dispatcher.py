@@ -1324,7 +1324,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(exc='InvalidBranch')
 
         try:
-            clone_branch = master_branch.clone(branch)
+            clone_branch = master_branch.clone(branch, identity.current.user_name, identity.current.user.id)
         except InvalidRequestError, e:
             # Not a valid collection
             session.rollback()

@@ -29,9 +29,14 @@ Controller for showing Package Collections.
 #   noted, E1101 is disabled due to a static checker not having information
 #   about the monkey patches.
 
+import threading
+import os
+import sys
+
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import lazyload, eagerload
 from turbogears import controllers, expose, paginate, config, identity, flash
+from turbogears.database import session
 from cherrypy import request
 
 import koji
@@ -40,6 +45,8 @@ from fedora.tg.util import json_or_redirect
 from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
+
+MASS_BRANCH_SET = 500
 
 class Collections(controllers.Controller):
     '''Controller that deals with Collections.
@@ -149,14 +156,110 @@ class Collections(controllers.Controller):
     # Read-write methods
     #
 
-    @expose(allow_json=True)
-    @json_or_redirect('/collections')
-    # Check that we have a tg.identity, otherwise you can't set any acls.
-    @identity.require(identity.in_group('cvsadmin'))
-    def mass_branch_test(self, branch):
-        flash('testing mass branch %s' % branch)
-        return dict(exc='CannotClone', branch_count=0,
-                unbranched=['kernel', 'firefox'])
+    def _mass_branch_worker(self, to_branch, devel_branch, pkgs, author_name,
+            author_id):
+        '''Main worker for mass branching.
+
+        :arg to_branch: Branch to put new PackageListings on
+        :arg devel_branch: Branch for devel, where we're branching from
+        :arg pkgs: List of packages to branch
+        :arg author_name: username of person making the branch
+        :arg author_id: userid of person making the branch
+        :returns: List of packages which had failures while trying to branch
+
+        This method forks and invokes the branching in a child.  That prevents
+        ballooning of memory when all the packages are processed in the main
+        server process (note: separate threads don't seem to help.)
+        '''
+        in_pipe, out_pipe = os.pipe()
+        pid = os.fork()
+        if pid:
+            # Controller
+            os.close(out_pipe)
+            in_pipe = os.fdopen(in_pipe, 'r')
+            raw_unbranched = in_pipe.read()
+            retcode = os.waitpid(pid, 0)
+        else:
+            # Child
+            os.close(in_pipe)
+            out_pipe = os.fdopen(out_pipe, 'w')
+            unbranched = []
+            for pkg in pkgs:
+                if pkg['package_name'] in devel_branch.listings2:
+                    # clone the package from the devel branch
+                    try:
+                        devel_branch.listings2[pkg['package_name']
+                                ].clone(to_branch.branchname, author_name,
+                                        author_id)
+                    except InvalidRequestError:
+                        # Exceptions will be handled later.
+                        pass
+                    else:
+                        # Success, get us to the next package
+                        continue
+
+                # If we get to here we had an error cloning this package
+                unbranched.append(pkg['package_name'])
+
+            # Commit the changes
+            try:
+                session.flush()
+            except SQLError, e:
+                # If we have an error committing we lose this whole block
+                session.rollback()
+                unbranched = pkgs
+
+            # Child prints a \n separated list of unbranched packages
+            out_pipe.write('\n'.join(unbranched))
+            sys.exit(0)
+            ### End of forked child ###
+
+        # Back to the Controller
+        if raw_unbranched:
+            return raw_unbranched.strip().split('\n')
+        else:
+            return []
+
+    def _mass_branch(self, to_branch, devel_branch, pkgs, author_name,
+            author_id):
+        '''Performs a mass branching.  Intended to run in the background.
+
+        :arg to_branch: Branch to put new PackageListings on
+        :arg devel_branch: Branch for devel, where we're branching from
+        :arg pkgs: List of packages to branch
+        :arg author_name: username of person making the branch
+        :arg author_id: userid of person making the branch
+
+        This method branches all the packages given to it from devel_branch to
+        to_branch.  It subdivides the package list and branches each set in a
+        forked process.  This is done to keep memory usage reasonable.  After
+        it finishes, it emails the user who started the process the results of
+        the branching.
+        '''
+        unbranched = []
+        pkg_idx = 0
+        # Split this up and fork so we don't blow out all our memory
+        for pkg_idx in range(MASS_BRANCH_SET, len(pkgs), MASS_BRANCH_SET):
+            unbranched.extend(self._mass_branch_worker(to_branch, devel_branch,
+                pkgs[pkg_idx - MASS_BRANCH_SET:pkg_idx], author_name,
+                author_id))
+        unbranched.extend(self._mass_branch_worker(to_branch, devel_branch,
+            pkgs[pkg_idx:], author_name, author_id))
+
+
+        if unbranched:
+            # Uh oh, there were packages which weren't branched.  Tell the
+            # user
+            msg = _('%(count)s/%(num)s packages were unbranched for' \
+                    ' %(branch)s\n') % {'count': len(unbranched),
+                            'num': len(pkgs), 'branch': to_branch.branchname}
+            msg = msg + '\n'.join(unbranched)
+        else:
+            num_branched = len(pkgs) - len(unbranched)
+            msg = _('Succesfully branched all %(num)s packages') % \
+                    {'num': num_branched}
+        print msg, author_name
+        #send_log(msg, author_name)
 
     @expose(allow_json=True)
     @json_or_redirect('/collections')
@@ -181,11 +284,16 @@ class Collections(controllers.Controller):
             also return the names of the uncloned packages in the `unbranched`
             variable.
         '''
-        koji_url = config.get('koji.huburl', 'https://koji.fedoraproject.org/kojihub')
+        # Retrieve configuration values
+        koji_url = config.get('koji.huburl',
+                'https://koji.fedoraproject.org/kojihub')
         pkgdb_cert = config.get('cert.user', '/etc/pki/pkgdb/pkgdb.pem')
-        user_ca = config.get('cert.user_ca', '/etc/pki/pkgdb/fedora-server-ca.cert')
-        server_ca = config.get('cert.server_ca', '/etc/pki/pkgdb/fedora-upload-ca.cert')
+        user_ca = config.get('cert.user_ca',
+                '/etc/pki/pkgdb/fedora-server-ca.cert')
+        server_ca = config.get('cert.server_ca',
+                '/etc/pki/pkgdb/fedora-upload-ca.cert')
 
+        # Retrieve the collection to make the new branches on
         try:
             to_branch = Branch.query.filter_by(branchname=branch).one()
         except InvalidRequestError, e:
@@ -194,6 +302,7 @@ class Collections(controllers.Controller):
                 branch})
             return dict(exc='InvalidBranch')
 
+        # Retrieve the a koji session to get the lisst of packages from
         koji_name = to_branch.koji_name
         if not koji_name:
             session.rollback()
@@ -206,47 +315,27 @@ class Collections(controllers.Controller):
             flash(_('Unable to log into koji'))
             return dict(exc='ServiceError')
 
-        devel_branch = Collection.by_simple_name('devel')
+        # Retrieve the devel branch for comparison
+        devel_branch = Branch.query.filter_by(branchname='devel').one()
 
-        pkglist = session.listPackages(tagID=koji_name, inherited=True)
-        pkgs = (pkg for pkg in pkglist if not pkg['blocked'])
+        # Retrieve the package from koji
+        pkglist = koji_session.listPackages(tagID=koji_name, inherited=True)
+        # Filter out packages that already branched
+        pkgs = (pkg for pkg in pkglist if pkg['package_name'] not in
+                to_branch.listings2)
+        # Filter out packages blocked in koji
+        pkgs = [pkg for pkg in pkgs if not pkg['blocked']]
+        # Sort them so that printed statuses show where we are
+        pkgs.sort(lambda x, y: cmp(x['package_name'], y['package_name']))
 
-        unbranched = []
-        num_branched = 0
-        for pkg in pkgs:
-            if pkg.package_name not in to_branch.listings2:
-                if pkg.package_name in devel_branch.listings2:
-                    # clone the package from the devel branch
-                    try:
-                        devel_branch.listings2[pkg.package_name].clone(branch)
-                    except InvalidRequestError, e:
-                        pass
-                        # Error will be taked care of further down
-                    else:
-                        # Success, get us to the next package
-                        num_branched = num_branched + 1
-                        continue
-                # If we get down to here we had an error cloning this package
-                unbranched.append(pkg.package_name)
-
-        try:
-            session.flush()
-        except SQLError, e:
-            session.rollback()
-            flash(_('Unable to save branched packages for %(branch)s') %
-                    {'branch': branch})
-            return dict(exc='DatabaseError')
-
-        if unbranched:
-            # Uh oh, there were packages which weren't branched.  Tell the
-            # user
-            flash(_('%(count)s/5(num)s packages were unbranched for %(branch)s'
-                ) % {'count': len(unbranched), 'num': len(pkgs),
-                    'branch': branch})
-            return dict(exc='CannotClone', branch_count=num_branched,
-                    unbranched=unbranched)
-
-        flash(_('Succesfully branched all %(num)s packages') %
-                {'num': num_branched})
-        return dict(branch_count=num_branched)
-
+        # Perform the work of branching in a background thread.  This is
+        # because branching takes so long the client's connection to the
+        # server is likely to time out.
+        brancher = threading.Thread(target=self._mass_branch,
+                args=[to_branch, devel_branch, pkgs,
+                    identity.current.user_name, identity.current.user.id])
+        brancher.start()
+        ### FIXME: Create a status page for this that we update the database
+        # to see.
+        flash(_('Mass branch started.  You will be emailed the results.'))
+        return {}
