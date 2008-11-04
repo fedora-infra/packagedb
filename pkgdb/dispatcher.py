@@ -70,13 +70,13 @@ class PackageDispatcher(controllers.Controller):
 
     # Create a list of groups that can possibly commit to packages
     groups = {101197: 'cvsadmin',
-            107427: 'uberpackager',
+            107427: 'provenpackager',
             'cvsadmin': 101197,
-            'uberpackager': 107427}
-    groupnames = ('cvsadmin', 'uberpackager')
+            'provenpackager': 107427}
+    groupnames = ('cvsadmin', 'provenpackager')
 
     # Groups that a person must be in to own or comaintain a package
-    owner_memberships = ('cvsadmin', 'packager', 'uberpackager')
+    owner_memberships = ('cvsadmin', 'packager', 'provenpackager')
 
     # pylint: disable-msg=E1101
     # Status codes
@@ -781,7 +781,7 @@ class PackageDispatcher(controllers.Controller):
 
         changed_acls = ()
 
-        for group in ('uberpackager',):
+        for group in ('provenpackager',):
             # Create the group => packagelisting association
             group_pkg_listing = GroupPackageListing(self.groups[group])
             group_pkg_listing.packagelisting = pkg_listing
@@ -790,7 +790,7 @@ class PackageDispatcher(controllers.Controller):
             group_checkout_acl = GroupPackageListingAcl('checkout',
                     self.approvedStatus.statuscodeid)
             # Not everyone has commit and build by default
-            if group == 'uberpackager':
+            if group == 'provenpackager':
                 statuscode = self.approvedStatus.statuscodeid
             else:
                 statuscode = self.deniedStatus.statuscodeid
@@ -900,7 +900,7 @@ class PackageDispatcher(controllers.Controller):
     @identity.require(identity.not_anonymous())
     def toggle_shouldopen(self, pkg_name):
         '''Toggle whether the acls for the package should be opened to the
-        uberpackager group.
+        provenpackager group.
 
         Arguments:
         :pkg_name: Name of the package to toggle the shouldopen flag for.
@@ -1053,7 +1053,7 @@ class PackageDispatcher(controllers.Controller):
                                 self.approvedStatus.statuscodeid)
                         pkg_listing.package = pkg
                         pkg_listing.collection = collection
-                        for group in ('uberpackager',):
+                        for group in ('provenpackager',):
                             # Create the group => packagelisting association
                             group_pkg_listing = GroupPackageListing(
                                     self.groups[group])
@@ -1064,7 +1064,7 @@ class PackageDispatcher(controllers.Controller):
                                     'checkout',
                                     self.approvedStatus.statuscodeid)
                             # Not everyone has commit and build by default
-                            if group == 'uberpackager':
+                            if group == 'provenpackager':
                                 statuscode = self.approvedStatus.statuscodeid
                             else:
                                 statuscode = self.deniedStatus.statuscodeid

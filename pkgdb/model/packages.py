@@ -57,10 +57,10 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
 get_engine()
 
 GROUP_MAP = {101197: 'cvsadmin',
-    107427: 'uberpackager',
+    107427: 'provenpackager',
     'cvsadmin': 101197,
-    'uberpackager': 107427}
-DEFAULT_GROUPS = {'uberpackager': {'commit': True, 'build': True,
+    'provenpackager': 107427}
+DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
     'checkout': True}}
 
 #
