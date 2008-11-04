@@ -152,23 +152,6 @@ def group_list_to_dict(groups):
         group_dict[group] = True
     return group_dict
 
-def mass_branch(pkgdb, options):
-    '''Branch all unblocked packages in Fedora devel for the specified branch/
-
-    :arg pkgdb: PackageDB Client
-    :arg options: Options from the commandline
-    '''
-    failedPackages = {}
-    try:
-        pkgdb.mass_branch(options.branchList[0])
-    except AppError, e:
-        if e.extras:
-            for pkg in e.extras['unbranched']:
-                failedPackages[pkg] = e.message
-        else:
-            raise
-    return failedPackages
-
 def clone_branch(pkgdb, options):
     '''Clone a package's permissions from one branch to another.
 
@@ -245,7 +228,15 @@ if __name__ == '__main__':
     for retry in range(1, RETRIES + 1):
         try:
             if options.mass_branch:
-                failedPackages.update(mass_branch(pkgdb, options))
+                try:
+                    response = pkgdb.mass_branch(options.branchList[0])
+                except AppError, e:
+                    print e.message
+                    sys.exit(1)
+                else:
+                    # Mass branch has been started
+                    print response.tg_flash
+                    sys.exit(0)
             elif options.masterBranch:
                 failedPackages.update(clone_branch(pkgdb, options))
             else:
