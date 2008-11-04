@@ -283,17 +283,15 @@ def collection_alias(pkg_listing):
 mapper(Package, PackageTable, properties={
     # listings is here for compatibility.  Will be removed in 0.4.x
     'listings': relation(PackageListing),
-    'listings2': relation(PackageListing, lazy=False,
-        backref=backref('package', lazy=False),
+    'listings2': relation(PackageListing,
+        backref=backref('package'),
         collection_class=mapped_collection(collection_alias))
     })
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
-    'people2': relation(PersonPackageListing, lazy=False,
-        backref=backref('packagelisting'),
+    'people2': relation(PersonPackageListing, backref=backref('packagelisting'),
         collection_class = attribute_mapped_collection('userid')),
     'groups': relation(GroupPackageListing),
-    'groups2': relation(GroupPackageListing, lazy=False,
-        backref=backref('packagelisting'),
+    'groups2': relation(GroupPackageListing, backref=backref('packagelisting'),
         collection_class = attribute_mapped_collection('groupid')),
     })

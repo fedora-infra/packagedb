@@ -191,7 +191,7 @@ collectionMapper = mapper(Collection, CollectionTable,
             # Have to look at how it's being used in production and decide
             # what to do.
             'listings2': relation(PackageListing,
-                backref=backref('collection', lazy=False),
+                backref=backref('collection'),
                 collection_class=attribute_mapped_collection('packagename')),
     })
 mapper(Branch, BranchTable, inherits=collectionMapper,

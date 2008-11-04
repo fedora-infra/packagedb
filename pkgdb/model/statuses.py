@@ -145,7 +145,7 @@ class PackageAclStatus(BaseStatus):
 
 mapper(StatusTranslation, StatusTranslationTable)
 mapper(CollectionStatus, CollectionStatusTable, properties={
-    'collections': relation(Collection, backref=backref('status', lazy=False)),
+    'collections': relation(Collection, backref=backref('status')),
     'collectionPackages': relation(CollectionPackage,
         backref=backref('status')),
     'translations': relation(StatusTranslation,
@@ -165,7 +165,7 @@ mapper(CollectionStatus, CollectionStatusTable, properties={
     })
 
 mapper(PackageListingStatus, PackageListingStatusTable, properties={
-    'listings': relation(PackageListing, backref=backref('status', lazy=False)),
+    'listings': relation(PackageListing, backref=backref('status')),
     'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
@@ -184,7 +184,7 @@ mapper(PackageListingStatus, PackageListingStatusTable, properties={
     })
 
 mapper(PackageStatus, PackageStatusTable, properties={
-    'packages': relation(Package, backref=backref('status', lazy=False)),
+    'packages': relation(Package, backref=backref('status')),
     'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \
@@ -204,9 +204,9 @@ mapper(PackageStatus, PackageStatusTable, properties={
 
 mapper(PackageAclStatus, PackageAclStatusTable, properties={
     'pacls': relation(PersonPackageListingAcl,
-        backref=backref('status', lazy=False)),
+        backref=backref('status')),
     'gacls': relation(GroupPackageListingAcl,
-        backref=backref('status', lazy=False)),
+        backref=backref('status')),
     'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \

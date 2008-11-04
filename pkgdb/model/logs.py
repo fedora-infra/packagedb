@@ -190,7 +190,7 @@ mapper(PersonPackageListingAclLog, PersonPackageListingAclLogTable,
         inherit_condition=LogTable.c.id == \
                 PersonPackageListingAclLogTable.c.logid,
         properties={
-            'acl': relation(PersonPackageListingAcl, backref='logs', lazy=False)
+            'acl': relation(PersonPackageListingAcl, backref='logs')
             })
 
 mapper(GroupPackageListingAclLog, GroupPackageListingAclLogTable,
@@ -198,19 +198,19 @@ mapper(GroupPackageListingAclLog, GroupPackageListingAclLogTable,
         inherit_condition=LogTable.c.id == \
                 GroupPackageListingAclLogTable.c.logid,
         properties={
-            'acl': relation(GroupPackageListingAcl, backref='logs', lazy=False)
+            'acl': relation(GroupPackageListingAcl, backref='logs')
             })
 
 mapper(PackageLog, PackageLogTable,
         inherits=logMapper, polymorphic_identity='pkglog',
         inherit_condition=LogTable.c.id == PackageLogTable.c.logid,
         properties={
-            'package': relation(Package, backref='logs', lazy=False)
+            'package': relation(Package, backref='logs')
             })
 
 mapper(PackageListingLog, PackageListingLogTable,
         inherits=logMapper, polymorphic_identity='pkglistlog',
         inherit_condition=LogTable.c.id == PackageListingLogTable.c.logid,
         properties={
-            'listing': relation(PackageListing, backref='logs', lazy=False)
+            'listing': relation(PackageListing, backref='logs')
             })
