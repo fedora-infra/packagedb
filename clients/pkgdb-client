@@ -25,32 +25,42 @@ __version__ = '0.3'
 
 import sys
 import os
+import glob
 import optparse
 import getpass
 
 from fedora.client import AuthError, AppError, PackageDB
 from configobj import ConfigObj, flatten_errors
 from validate import Validator
-vldtr = Validator()
-# configspec to validate types and set defaults
-configspec = '''
-[global]
-    pkgdb.url = string(default = 'https://admin.fedoraproject.org/pkgdb')
-    pkgdb.retries = integer(default = 5)
-    pkgdb.knowngroups = list(default = list())
-'''.splitlines()
 
-cfg = ConfigObj('/etc/pkgdb-client.cfg', configspec = configspec)
-res = cfg.validate(vldtr, preserve_errors=True)
+def parse_config():
+    vldtr = Validator()
+    # configspec to validate types and set defaults
+    configspec = '''
+    [global]
+        pkgdb.url = string(default = 'https://admin.fedoraproject.org/pkgdb')
+        pkgdb.retries = integer(default = 5)
+        pkgdb.knowngroups = list(default = list())
+    '''.splitlines()
 
-for entry in flatten_errors(cfg, res):
-    section_list, key, error = entry
-    if error == False:
-        restore_default(key)
+    cfg = ConfigObj('/etc/pkgdb-client.cfg', configspec=configspec)
+    user = ConfigObj(glob.glob('~/.pkgdb-client.cfg'), configspec=configspec)
+    cfg.merge(user)
 
-PACKAGEDBURL = cfg['global']['pkgdb.url']
-RETRIES = cfg['global']['pkgdb.retries']
-KNOWNGROUPS = cfg['global']['pkgdb.knowngroups']
+    res = cfg.validate(vldtr, preserve_errors=True)
+
+    for entry in flatten_errors(cfg, res):
+        section_list, key, error = entry
+        section_list.append(key)
+        section_string = ','.join(section_list)
+        if error == False:
+            error = 'Missing value or section.'
+        print ','.join(section_list), '=', error
+        sys.exit(1)
+
+    cfg['global']['pkgdb.url'] = os.environ.get('PACKAGEDBURL') or \
+            cfg['global']['pkgdb.url'])
+    return cfg['global']
 
 class ArgumentsError(Exception):
     pass
@@ -58,7 +68,7 @@ class ArgumentsError(Exception):
 def store_groups(option, opt, group, parser, enable):
     parser.values.ensure_value(option.dest, {})[group] = enable
 
-def parse_commands():
+def parse_commands(config):
     parser = optparse.OptionParser(version = __version__,
             usage='''pkgdb-client [options] packagename
 
@@ -137,7 +147,7 @@ Example: pkgdb-client -u toshio -o testowner -d 'Purely a test package' -b devel
     # We only know how to handle a few groups right now.
     if opts.groups:
         for group in opts.groups:
-            if group not in KNOWNGROUPS:
+            if group not in config['pkgdb.knowngroups']:
                 raise ArgumentsError('Do not know how to handle group %s at this time' % group)
 
     return opts
@@ -215,17 +225,18 @@ def add_edit_package(pkgdb, options):
     return failedPackages
 
 if __name__ == '__main__':
+    config = parse_config()
     try:
-        options = parse_commands()
+        options = parse_commands(config)
     except ArgumentsError, e:
         print e
         sys.exit(1)
 
-    pkgdb = PackageDB(PACKAGEDBURL, username=options.username,
+    pkgdb = PackageDB(config['pkgdb.url'], username=options.username,
             debug=options.debug)
     failedPackages = {}
 
-    for retry in range(1, RETRIES + 1):
+    for retry in range(1, config['pkgdb.retries'] + 1):
         try:
             if options.mass_branch:
                 try:
@@ -243,14 +254,14 @@ if __name__ == '__main__':
                 failedPackages.update(add_edit_package(pkgdb, options))
         except AuthError, e:
             if sys.stdin.isatty():
-                if retry >= RETRIES:
+                if retry >= config['pkgdb.retries']:
                     break
                 pkgdb.password = getpass.getpass('PackageDB Password: ')
             else:
                 # Don't retry if we're reading the password from stdin
                 break
         else:
-            # RETRIES are only to try auth several times.
+            # config['pkgdb.retries'] are only to try auth several times.
             break
 
     if failedPackages:
