@@ -1,0 +1,272 @@
+#!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
+#
+# Copyright © 2008  Red Hat, Inc. All rights reserved.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.  You should have
+# received a copy of the GNU General Public License along with this program;
+# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
+# incorporated in the source code or documentation are not subject to the GNU
+# General Public License and may only be used or replicated with the express
+# permission of Red Hat, Inc.
+#
+# Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+# Author(s): Mike Watters <valholla@fedoraproject.org>
+#
+
+__version__ = '0.3'
+
+
+import sys
+import os
+import glob
+import optparse
+import getpass
+
+from fedora.client import AuthError, AppError, PackageDB
+from configobj import ConfigObj, flatten_errors
+from validate import Validator
+
+def parse_config():
+    vldtr = Validator()
+    # configspec to validate types and set defaults
+    configspec = '''
+    [global]
+        pkgdb.url = string(default = 'https://admin.fedoraproject.org/pkgdb')
+        pkgdb.retries = integer(default = 5)
+        pkgdb.knowngroups = list(default = list())
+    '''.splitlines()
+
+    cfg = ConfigObj('/etc/pkgdb-client.cfg', configspec=configspec)
+    user = ConfigObj(glob.glob('~/.pkgdb-client.cfg'), configspec=configspec)
+    cfg.merge(user)
+
+    res = cfg.validate(vldtr, preserve_errors=True)
+
+    for entry in flatten_errors(cfg, res):
+        section_list, key, error = entry
+        section_list.append(key)
+        section_string = ','.join(section_list)
+        if error == False:
+            error = 'Missing value or section.'
+        print ','.join(section_list), '=', error
+        sys.exit(1)
+
+    cfg['global']['pkgdb.url'] = os.environ.get('PACKAGEDBURL') or \
+            cfg['global']['pkgdb.url'])
+    return cfg['global']
+
+class ArgumentsError(Exception):
+    pass
+
+def store_groups(option, opt, group, parser, enable):
+    parser.values.ensure_value(option.dest, {})[group] = enable
+
+def parse_commands(config):
+    parser = optparse.OptionParser(version = __version__,
+            usage='''pkgdb-client [options] packagename
+
+Example: pkgdb-client -u toshio -o testowner -d 'Purely a test package' -b devel -b F-7 -b EL-5 -c toshio -c kevin -m wtogami fedoratest
+
+''')
+    parser.add_option('-u', '--username',
+            dest='username',
+            action='store',
+            default=getpass.getuser(),
+            help='Set username to connect to the Package Database')
+    parser.add_option('--debug',
+            action='store_true',
+            dest='debug',
+            default=False,
+            help='Turn on some debugging statements')
+    parser.add_option('--mass-branch',
+            action='store_true',
+            dest='mass_branch',
+            default=False,
+            help='Mass branch from "devel" to --branch')
+    parser.add_option('--master',
+            dest='masterBranch',
+            action='store',
+            help='Take permissions from this branch and apply to branches specified with -b')
+    parser.add_option('-b', '--branch',
+            dest='branchList',
+            action='append',
+            help='Branch of package to create and make changes to.  May specify multiple times')
+    parser.add_option('-o', '--owner',
+            dest='owner',
+            action='store',
+            help='Primary owner of the package on the branch')
+    parser.add_option('-d', '--description',
+            dest='description',
+            action='store',
+            help='Short description of a package')
+    parser.add_option('-c', '--cc-member',
+            dest='ccList',
+            action='append',
+            help='Person to cc on bugs and commits for this branch.  May be specified multiple times')
+    parser.add_option('-m', '--maintainer',
+            dest='comaintList',
+            action='append',
+            help='Comaintainers for this branch.  May be specified multiple times')
+    parser.add_option('--remove-user',
+            dest='removeUserList',
+            action='append',
+            help='Remove a user from the package acls [Not Yet Implemented]')
+    parser.add_option('-a', '--add-group',
+            action='callback',
+            callback=store_groups,
+            callback_args=(True,),
+            type='string',
+            dest='groups',
+            help='Allow GROUP to commit to this branch.  May be specified multiple times.')
+    parser.add_option('-r', '--remove-group',
+            action='callback',
+            callback=store_groups,
+            callback_args=(False,),
+            type='string',
+            dest='groups',
+            help='Remove commit access for GROUP on this branch.  May be specified multiple times.')
+    (opts, args) = parser.parse_args()
+
+    # Must specify a package name except for mass_branch
+    if len(args) < 1 and not opts.mass_branch:
+        raise ArgumentsError, 'No package name'
+    else:
+        opts.packages = args
+
+    # Mass branching must specify exactly one branch
+    if opts.mass_branch and len(opts.branchList) != 1:
+        raise ArgumentsError('--mass-branch must be used with precisely one --branch argument')
+
+    # We only know how to handle a few groups right now.
+    if opts.groups:
+        for group in opts.groups:
+            if group not in config['pkgdb.knowngroups']:
+                raise ArgumentsError('Do not know how to handle group %s at this time' % group)
+
+    return opts
+
+def group_list_to_dict(groups):
+    '''Reformat groups to be added.
+
+    The pkgdb takes a mapping of group names to True or False.
+    '''
+    group_dict = {}
+    for group in groups:
+        group_dict[group] = True
+    return group_dict
+
+def clone_branch(pkgdb, options):
+    '''Clone a package's permissions from one branch to another.
+
+    Update the package if necessary.
+    '''
+    failedPackages = {}
+    for package in options.packages:
+        # Make sure the master branch exists
+        try:
+            pkg_info = pkgdb.get_package_info(package, options.masterBranch)
+        except AppError, e:
+            failedPackages[package] = '%(pkg)s has no %(branch)s branch;' \
+                    ' cannot clone from it.  Error: %(msg)s' \
+                    % {'pkg': package, 'branch': options.masterBranch,
+                            'msg': e.message}
+            continue
+
+        # Make changes to the master branch before cloning
+        if options.groups or options.comaintList or options.ccList \
+                or options.description or options.owner:
+            group_dict = group_list_to_dict(options.groups)
+            try:
+                pkgdb.add_edit_package(package, options.owner,
+                        options.description, [options.masterBranch],
+                        options.ccList, options.comaintList,
+                        group_dict)
+            except AppError, e:
+                failedPackages[package] = 'Could not save changes to master' \
+                        ' branch.  Error: %(msg)s' % {'msg': e.message}
+                continue
+
+        # Clone each branch from the master branch
+        failedBranch = []
+        for branch in options.branchList:
+            try:
+                pkgdb.clone_branch(package, branch, options.masterBranch)
+            except AppError, e:
+                failedBranch.append('[%(branch)s: %(msg)s]' % {'branch': branch,
+                    'msg': e.message})
+        if failedBranch:
+            failedPackages[package] = 'Failed to clone branches:' \
+                    + ' '.join(failedBranch)
+
+    return failedPackages
+
+def add_edit_package(pkgdb, options):
+    '''Add or edit a package.
+    '''
+    failedPackages = {}
+    for package in options.packages:
+        try:
+            pkgdb.add_edit_package(package, owner=options.owner,
+                    description=options.description,
+                    branches=options.branchList,
+                    cc_list=options.ccList,
+                    comaintainers=options.comaintList,
+                    groups=group_dict)
+        except AppError, e:
+            failedPackages[package] = e.message
+            continue
+    return failedPackages
+
+if __name__ == '__main__':
+    config = parse_config()
+    try:
+        options = parse_commands(config)
+    except ArgumentsError, e:
+        print e
+        sys.exit(1)
+
+    pkgdb = PackageDB(config['pkgdb.url'], username=options.username,
+            debug=options.debug)
+    failedPackages = {}
+
+    for retry in range(1, config['pkgdb.retries'] + 1):
+        try:
+            if options.mass_branch:
+                try:
+                    response = pkgdb.mass_branch(options.branchList[0])
+                except AppError, e:
+                    print e.message
+                    sys.exit(1)
+                else:
+                    # Mass branch has been started
+                    print response.tg_flash
+                    sys.exit(0)
+            elif options.masterBranch:
+                failedPackages.update(clone_branch(pkgdb, options))
+            else:
+                failedPackages.update(add_edit_package(pkgdb, options))
+        except AuthError, e:
+            if sys.stdin.isatty():
+                if retry >= config['pkgdb.retries']:
+                    break
+                pkgdb.password = getpass.getpass('PackageDB Password: ')
+            else:
+                # Don't retry if we're reading the password from stdin
+                break
+        else:
+            # config['pkgdb.retries'] are only to try auth several times.
+            break
+
+    if failedPackages:
+        print 'Packages which had errors:'
+        for pkg in failedPackages:
+            print '%s: %s' % (pkg, failedPackages[pkg])
+        sys.exit(1)
+    sys.exit(0)

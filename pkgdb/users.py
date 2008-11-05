@@ -31,6 +31,7 @@ Controller to show information about packages by user.
 #   have to disable this check wherever we use the mapper classes.
 
 import sqlalchemy
+from sqlalchemy.orm import lazyload
 
 from turbogears import controllers, expose, paginate, config, \
         redirect, identity
@@ -145,11 +146,11 @@ class Users(controllers.Controller):
         page_title = self.app_title + ' -- ' + fasname + ' -- Packages'
 
         # pylint: disable-msg=E1101
-        query = Package.query.join('listings').distinct()
+        query = Package.query.join('listings2').distinct().options(lazyload('listings2.groups2'), lazyload('listings2.groups2.acls2'),lazyload('listings2.people2'), lazyload('listings2.people2.acls2'), lazyload('listings2'))
 
         if not eol:
             # We don't want EOL releases, filter those out of each clause
-            query = query.join(['listings', 'collection']).filter(
+            query = query.join(['listings2', 'collection']).filter(
                         Collection.c.statuscode != self.EOLStatusId)
 
         queries = []
@@ -170,8 +171,8 @@ class Users(controllers.Controller):
 
         if acls:
             # Return any package on which the user has an Approved acl.
-            queries.append(query.join(['listings', 'people']).join(
-                    ['listings', 'people', 'acls']).filter(sqlalchemy.and_(
+            queries.append(query.join(['listings2', 'people2']).join(
+                    ['listings2', 'people2', 'acls2']).filter(sqlalchemy.and_(
                     Package.c.statuscode.in_((self.approvedStatusId,
                     self.awaitingReviewStatusId, self.underReviewStatusId)),
                     PersonPackageListing.c.userid == fasid,
@@ -195,7 +196,7 @@ class Users(controllers.Controller):
         else:
             my_pkgs = queries[0]
 
-        my_pkgs = my_pkgs.order_by(Package.name)
+        my_pkgs = my_pkgs.options(lazyload('listings2.people2'), lazyload('listings2.people2.acls2'), lazyload('listings2.groups2'), lazyload('listings2.groups2.acls2'), lazyload('listings2')).order_by(Package.name)
         # pylint: enable-msg=E1101
         pkg_list = []
         for pkg in my_pkgs:

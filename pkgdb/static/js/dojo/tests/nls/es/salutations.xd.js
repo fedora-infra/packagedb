@@ -1,0 +1,5 @@
+dojo._xdResourceLoaded(function(dojo, dijit, dojox){
+return {depends: [["provide", "dojo.tests.nls.es.salutations"]],
+defineResource: function(dojo, dijit, dojox){dojo.provide("dojo.tests.nls.es.salutations");dojo._xdLoadFlattenedBundle("dojo.tests", "salutations", "es", ({"es":"Español","hello":"Hola","hello_dojo":"¡${hello}, ${dojo}!","yi":"Yiddish","en-us-texas":"English (Texas)","de":"German","pl":"Polish","fa":"Farsi","pt":"Portugese","zh-tw":"Chinese (Traditional)","sw":"Kiswahili","ar":"Arabic","en-us-new_york-brooklyn":"English (Brooklynese)","ru":"Russian","fr":"French","th":"Thai","it":"Italian","he":"Hebrew","cs":"Czech","hi":"Hindi","en-us-hawaii":"English (US-Hawaii)","file_not_found":"The file you requested, ${0}, is not found.","en-au":"English (Australia)","el":"Greek","ko":"Korean","tr":"Turkish","en":"English","ja":"Japanese","zh-cn":"Chinese (Simplified)","dojo":"Dojo"})
+);
+}};});

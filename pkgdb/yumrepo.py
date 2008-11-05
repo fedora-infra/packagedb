@@ -131,8 +131,8 @@ class RepoInfo(object):
     # to change it.
 
     # pylint: disable-msg=E1101
-    approvedStatus = model.StatusTranslation.query.filter_by(statusname='Approved',
-            language='C').one().statuscodeid
+    approvedStatus = model.StatusTranslation.query.filter_by(
+            statusname='Approved', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
     def __init__(self):

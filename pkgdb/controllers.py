@@ -23,14 +23,13 @@ indirectly from here.
 '''
 
 from turbogears import controllers, expose, config, flash
-from turbogears.i18n.tg_gettext import gettext as _
 from turbogears import identity, redirect
 from cherrypy import request, response
 import logging
 
 from fedora.tg.util import request_format
 
-from pkgdb import release
+from pkgdb import release, _
 
 from pkgdb.listqueries import ListQueries
 from pkgdb.collections import Collections
@@ -42,10 +41,53 @@ from pkgdb.search import Search
 log = logging.getLogger("pkgdb.controllers")
 
 # The Fedora Account System Module
-try:
-    from fedora.client.fas2 import AccountSystem
-except ImportError:
-    from fedora.accounts.fas2 import AccountSystem
+from fedora.client.fas2 import AccountSystem, AppError
+
+class GroupCache(dict):
+    '''Naive cache for group information.
+
+    This cache can go out of date so use with caution.
+
+    Since there's only a few groups that we retrieve information for, we
+    cache individual groups on demand.
+    '''
+    def __init__(self, fas):
+        super(GroupCache, self).__init__()
+        self.fas = fas
+
+    def __getitem__(self, group):
+        '''Retrieve a group for a groupid or group name.
+
+        First read from the cache.  If not in the cache, refresh from the
+        server and try again.
+
+        If the group does not exist then, KeyError will be raised.
+        '''
+        if isinstance(group, basestring):
+            group = group.strip()
+        if not group:
+            # If the key is just whitespace, raise KeyError immediately,
+            # don't try to refresh the cache
+            raise KeyError(user_id)
+
+        if group not in self:
+            log.debug('GroupCache queries FAS')
+            if isinstance(group, basestring):
+                try:
+                    group_data = self.fas.group_by_name(group)
+                except AppError, e:
+                    raise KeyError(e.message)
+            else:
+                group_data = self.fas.group_by_id(group)
+                if not group_data:
+                    # Unfortunately, this method doesn't yet raise an
+                    # exception on bad id.  Instead it returns an empty record
+                    raise KeyError(_('Unable to find group id %(id)s') %
+                            {'id': group})
+            self[group_data.name] = group_data
+            self[group_data.id] = group_data
+
+        return super(GroupCache, self).__getitem__(group)
 
 class UserCache(dict):
     '''Naive cache for user information.
@@ -55,6 +97,9 @@ class UserCache(dict):
     def __init__(self, fas):
         super(UserCache, self).__init__()
         self.fas = fas
+        # Force a refresh on startup so we don't have a delay the first time
+        # someone retrieves a page.
+        self.force_refresh()
 
     def force_refresh(self):
         '''Refetch the userid mapping from fas.
@@ -86,6 +131,7 @@ class UserCache(dict):
                 # If the key is just whitespace, raise KeyError immediately,
                 # don't try to refresh the cache
                 raise KeyError(user_id)
+            log.debug('refresh forced for %s' % user_id)
             self.force_refresh()
         return super(UserCache, self).__getitem__(user_id)
 
@@ -102,8 +148,10 @@ class Root(controllers.RootController):
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
 
-    fas = AccountSystem(baseURL, username=username, password=password)
+    fas = AccountSystem(baseURL, username=username, password=password,
+            cache_session=False)
     fas.cache = UserCache(fas)
+    fas.group_cache = GroupCache(fas)
 
     collections = Collections(fas, app_title)
     packages = Packages(fas, app_title)

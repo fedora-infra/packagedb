@@ -1,3 +1,280 @@
+== 0.3.9 ==
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r493
+Update for 0.3.9 release.
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r492
+Parse a per-user config file in addition to the global config.
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r491
+Rename uberpackager to provenpackager
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r490
+Update the client to display a message from the server when mass_branching
+occurs.
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r489
+Restructure mass branch to do its work in the background and in a child
+process.  This allows the client to exit without getting a timeout (because
+the process takes so long) and allows the server to mass branch without
+memory usage ballooning.
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r488
+Revert all the lazy loading.  We are going to go back to lazy loading by
+default and specify explicit eager loading on appropriate queries.  This is
+because we end up with memory and processing problems when chains of
+eagerloaded queries occur.  Lazy is the conservative default and eagerloading
+can be added on demand.
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r487
+Notes on how the internal code will be reorganized.
+
+2008-11-03  Toshio Kuratomi <toshio@fedoraproject.org> - r486
+Fix for reasking of password every time.
+
+2008-11-02  Toshio Kuratomi <toshio@fedoraproject.org> - r485
+* Reorganize pkgdb-client so re-authentication works for all cases
+* Change how the password is retrieved so we can get it from stdin.
+* Add a debug commandline flag.
+* Move mass_branch() method to collection.py; remove admin controller.
+* Update deprecated varargs to sqlalchemy.in_()
+* Explicitly call session.rollback() when errors occur in clone_branch().
+* Numerous fixes so clone_bracnch() works.
+
+2008-11-02  Toshio Kuratomi <toshio@fedoraproject.org> - r484
+Changes to enable a mass branch button.
+
+2008-11-01  Toshio Kuratomi <toshio@fedoraproject.org> - r483
+Update for new pkgdb dump.
+
+2008-11-01  Toshio Kuratomi <toshio@fedoraproject.org> - r482
+Fix status handling.
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r481
+Add a mass branch link
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r480
+Use json_or_redirect decorator on mass_branch()
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r479
+Add koji related variables.
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r478
+Mass branch added to an admin.py file.
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r477
+* Display the disabled shouldopen if the user lacks permissions.
+* Make the description a <pre> as packages put text-formatted data in there.
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r476
+Add mass-branch option.
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r475
+Mark client config file as %config
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r474
+Use lazyload to fix performance regression in search speed
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r473
+Add Exceptions, fedora.dojo.ancestor() filter function, and Throbber updates.
+Update throbber test.
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r472
+Include the js directory with the dojo-based javascript.
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r471
+More db optimizations. 
+
+2008-10-31  Toshio Kuratomi <toshio@fedoraproject.org> - r470
+Convert template to use listings2
+
+2008-10-30  Toshio Kuratomi <toshio@fedoraproject.org> - r469
+Lazyload the mapped classes in the collections interface as we don't use the
+relations in the data.
+
+2008-10-30  Toshio Kuratomi <toshio@fedoraproject.org> - r468
+Ad config file for pkgdb-bugzilla-sync.
+
+2008-10-29  Toshio Kuratomi <toshio@fedoraproject.org> - r467
+Don't eager load compat interfaces as it makes the temporary join table too
+big.
+
+2008-10-29  Toshio Kuratomi <toshio@fedoraproject.org> - r466
+Fix collections join.
+
+2008-10-29  Toshio Kuratomi <toshio@fedoraproject.org> - r465
+Fix bug in saving new cache entries.
+
+2008-10-29  Toshio Kuratomi <toshio@fedoraproject.org> - r464
+Missing comma SyntaxError
+
+2008-10-29  Toshio Kuratomi <toshio@fedoraproject.org> - r463
+* Add a GroupCache as well as the UserCache
+* Port all methods to use the cache where possible.  Only three places that
+  don't use the cache because they need to know what groups a user belongs to.
+
+2008-10-29  Toshio Kuratomi <toshio@fedoraproject.org> - r462
+Optimize mappers by setting many relations to eager load.
+
+2008-10-29  Toshio Kuratomi <toshio@fedoraproject.org> - r461
+Do not attempt to cache the fas user's credentials on the filesystem.
+
+2008-10-29  Toshio Kuratomi <toshio@fedoraproject.org> - r460
+Download the cache on startup instead of the first time it's requested.
+
+2008-10-26  Toshio Kuratomi <toshio@fedoraproject.org> - r459
+Change newlines to spaces in summary field.
+
+2008-10-26  Toshio Kuratomi <toshio@fedoraproject.org> - r458
+Normalize the variables we send from python into javascript.  Now they're all
+namespaced into either `tg` for turbogears variables or a per page namespace.
+
+2008-10-24  Toshio Kuratomi <toshio@fedoraproject.org> - r457
+Include xdomain versionsof dojoaswell.
+
+2008-10-24  Toshio Kuratomi <toshio@fedoraproject.org> - r456
+Rebuilddojofromsource.
+
+2008-10-23  Toshio Kuratomi <toshio@fedoraproject.org> - r455
+Add baseurl to the variables we hand from python to javascript.  Make the
+variables names follow convention.
+
+2008-10-23  Toshio Kuratomi <toshio@fedoraproject.org> - r454
+Link usernames to the list of packages owned by the user instead of the empty
+info page.
+
+2008-10-22  Toshio Kuratomi <toshio@fedoraproject.org> - r453
+Remove jquery dependency.  Also remove unneeded tooltip code.
+
+2008-10-22  Toshio Kuratomi <toshio@fedoraproject.org> - r452
+dojo.BaseClient update:
+* Move the attribute definitions into the constructor.
+* Remove session_name as it's not applicable to an in-browser javascript client.
+* Have the exception handler return extras data as well.
+
+2008-10-22  Toshio Kuratomi <toshio@fedoraproject.org> - r451
+Throbber fixes
+
+2008-10-22  Toshio Kuratomi <toshio@fedoraproject.org> - r450
+Add an inactive image.
+
+2008-10-22  Toshio Kuratomi <toshio@fedoraproject.org> - r449
+Fix typo in code.
+
+2008-10-21  Toshio Kuratomi <toshio@fedoraproject.org> - r448
+Add documentation about changes we'll make to the database model.
+
+2008-10-21  Toshio Kuratomi <toshio@fedoraproject.org> - r447
+Add documentation of fedora.dojo.BaseClient.
+
+2008-10-21  Toshio Kuratomi <toshio@fedoraproject.org> - r446
+First round of a mass_branch-in-server method.
+
+2008-10-21  Toshio Kuratomi <toshio@fedoraproject.org> - r445
+images to make the throbber work.
+
+2008-10-21  Toshio Kuratomi <toshio@fedoraproject.org> - r444
+Add a clone_branch method to the dispatcher API.
+
+2008-10-21  Toshio Kuratomi <toshio@fedoraproject.org> - r443
+utils file with a STATUS mapping.  Can begin migrating all in class statuses
+to use this instead.
+
+2008-10-21  Toshio Kuratomi <toshio@fedoraproject.org> - r442
+Add some more intrusive cleanups including PEP8ifying the API.
+
+2008-10-21  Toshio Kuratomi <toshio@fedoraproject.org> - r441
+Add dojo, a static dojotest page, a BaseClient based on dojo, and a throbber
+also based on dojo.
+
+2008-10-16  Toshio Kuratomi <toshio@fedoraproject.org> - r440
+Better docstring for Collection keying function.
+
+2008-10-16  Toshio Kuratomi <toshio@fedoraproject.org> - r439
+Replace usage of translations with locale.
+
+2008-10-16  Toshio Kuratomi <toshio@fedoraproject.org> - r438
+Add slimming of the data returned to the requirements.
+
+2008-10-16  Toshio Kuratomi <toshio@fedoraproject.org> - r437
+First cut at a pavement.py file.  currently this is only expected to work for
+pylint and docs.
+
+2008-10-16  Toshio Kuratomi <toshio@fedoraproject.org> - r436
+Documentation on how we're going to be developing the API.
+
+2008-10-15  Toshio Kuratomi <toshio@fedoraproject.org> - r435
+Asecond shot at fixing the approveacl detection.
+
+2008-10-15  Toshio Kuratomi <toshio@fedoraproject.org> - r434
+Fix approveacls detection -- was checking statuscode improperly.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r433
+More pylint cleanups.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r432
+Update translations => locale for model change.
+Fix a few pylint warnings
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r431
+Fix pylint warning and reformat comments as a definition list.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r430
+Update bugs to work with python-bugzilla-0.4.
+Comments for each pylint disablings.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r429
+Pylint fixups
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r428
+Add comment for why we're disabling certain pylint checks.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r427
+Adjust collections for new model.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r426
+Rename translations2 attributes to locale.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r425
+Simplify a query with SQLAlchemy-0.4 methods.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r424
+Move logs to their own file.
+
+2008-10-14  Toshio Kuratomi <toshio@fedoraproject.org> - r423
+Move status model to its own file and make translations into a dict.
+
+2008-10-13  Toshio Kuratomi <toshio@fedoraproject.org> - r422
+Add dictionary listings for acls, people, and groups.
+
+2008-10-13  Toshio Kuratomi <toshio@fedoraproject.org> - r421
+Fix typo.
+
+2008-10-13  Toshio Kuratomi <toshio@fedoraproject.org> - r420
+Comment was in wrong file.
+
+2008-10-13  Toshio Kuratomi <toshio@fedoraproject.org> - r419
+* Separate the db model for acls, collections, and packages into their own
+  files.
+* Make dictionary mappings for packagelistings in collections and
+  packagelistings in packages.
+
+2008-10-11  Toshio Kuratomi <toshio@fedoraproject.org> - r418
+* Fix client config file -- list type is just comma separated values
+* Make pkgdb-client executable and rename.
+
+2008-10-11  Toshio Kuratomi <toshio@fedoraproject.org> - r417
+Fix group definition to allow people just in packager to own packages.
+
+2008-10-09  Toshio Kuratomi <toshio@fedoraproject.org> - r416
+* Install the client
+
+2008-10-09  Toshio Kuratomi <toshio@fedoraproject.org> - r415
+fix a traceback when a group doesn't have a commit acl at all.
+
+2008-10-09  Toshio Kuratomi <toshio@fedoraproject.org> - r414
+Update for 0.3.8 release.
+
 == packagedb 0.3.8 ==
 
 2008-10-09  Toshio Kuratomi <toshio@fedoraproject.org> - r413

@@ -2,16 +2,15 @@ include pkgdb.sql
 include start-pkgdb.in
 exclude start-pkgdb
 include server-scripts/*.in
+include server-scripts/*.cfg
 exclude server-scripts/pkgdb-sync-repo
 include AUTHORS README COPYING ChangeLog NEWS
 include *.cfg.sample
 include pkgdb/templates/*.html
 include pkgdb/templates/plain/*.txt
 include pkgdb/config/*.cfg
-include pkgdb/static/javascript/*
-include pkgdb/static/css/*
-include pkgdb/static/images/*
-include pkgdb/static/images/spinner/*
+recursive-include pkgdb/static/ *
+recursive-exclude pkgdb/static/js/dojox/ *
 include fedora-packagedb.spec
 include yum.repos.d/*
 include clients/*

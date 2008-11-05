@@ -22,13 +22,28 @@
 '''
 Controller for displaying Package Bug Information.
 '''
+#
+# PyLint Explanations
+#
+
+# :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
+#   noted, E1101 is disabled due to a static checker not having information
+#   about the monkey patches.
 
 from urllib import quote
 
-from turbogears import controllers, expose, paginate, config, redirect
+from turbogears import controllers, expose, config, redirect
 
 from sqlalchemy.exceptions import InvalidRequestError
+
 import bugzilla
+try:
+    # python-bugzilla 0.4
+    from bugzilla.base import Bug
+except ImportError:
+    # python-bugzilla 0.3
+    # :E0611: This is only found if we are using python-bugzilla 0.3
+    from bugzilla import Bug # pylint: disable-msg=E0611
 
 from pkgdb.model import StatusTranslation, Package
 from pkgdb.letter_paginator import Letters
@@ -59,10 +74,9 @@ class BugList(list):
         have to call bugzilla via one name on the internal network but someone
         clicking on the link in a web page needs to use a different address.)
 
-        Arguments:
-        :bug: A bug record returned from the python-bugzilla interface.
+        :arg bug: A bug record returned from the python-bugzilla interface.
         '''
-        if not isinstance(bug, bugzilla.Bug):
+        if not isinstance(bug, Bug):
             raise TypeError('Can only store bugzilla.Bug type')
         if self.query_url != self.public_url:
             bug.url = bug.url.replace(self.query_url, self.public_url)
@@ -134,7 +148,8 @@ class Bugs(controllers.Controller):
         query = {'product': 'Fedora',
                 'component': package_name,
                 'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
-        raw_bugs = self.bz_server.query(query)
+        # :E1101: python-bugzilla monkey patches this in
+        raw_bugs = self.bz_server.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
         for bug in raw_bugs:
             bugs.append(bug)
@@ -142,6 +157,7 @@ class Bugs(controllers.Controller):
         if not bugs:
             # Check that the package exists
             try:
+                # pylint: disable-msg=E1101
                 Package.query.filter_by(name=package_name).one()
             except InvalidRequestError:
                 error = dict(status = False,

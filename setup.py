@@ -154,6 +154,10 @@ class InstallApp(_install_lib, object):
                 and os.path.exists('pkgdb.cfg.sample'):
             conf_src = 'pkgdb.cfg.sample'
         self.copy_file(conf_src, os.path.join(confdir, 'pkgdb.cfg'))
+        self.copy_file('server-scripts/pkgdb-sync-bugzilla.cfg',
+                os.path.join(confdir, 'pkgdb-sync-bugzilla.cfg'))
+        self.copy_file('clients/pkgdb-client.cfg',
+                os.path.join(confdir, 'pkgdb-client.cfg'))
 
 setup(
     name=NAME,
@@ -173,11 +177,12 @@ setup(
     install_requires = [
         "TurboGears[future] >= 1.0",
         "TurboMail",
-        "python_fedora >= 0.3",
+        "python_fedora >= 0.3.7",
         "SQLAlchemy >= 0.4alpha",
     ],
     scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo",
-        "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status"],
+        "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status",
+        "clients/pkgdb-client"],
     zip_safe=False,
     packages=find_packages(),
     package_data = find_package_data(where='pkgdb',
@@ -188,7 +193,7 @@ setup(
     keywords = [
         # Use keywords if you'll be adding your package to the
         # Python Cheeseshop
-        
+
         # if this has widgets, uncomment the next line
         # 'turbogears.widgets',
         
