@@ -157,8 +157,9 @@ def group_list_to_dict(groups):
     The pkgdb takes a mapping of group names to True or False.
     '''
     group_dict = {}
-    for group in groups:
-        group_dict[group] = True
+    if groups:
+        for group in groups:
+            group_dict[group] = True
     return group_dict
 
 def clone_branch(pkgdb, options):
@@ -211,6 +212,7 @@ def add_edit_package(pkgdb, options):
     '''
     failedPackages = {}
     for package in options.packages:
+        group_dict = group_list_to_dict(options.groups)
         try:
             pkgdb.add_edit_package(package, owner=options.owner,
                     description=options.description,
