@@ -155,11 +155,6 @@ class Package(SABase):
 
         return pkg_listing
 
-    def __init__(self, userid, action, description=None, changetime=None,
-            packagelistingid=None):
-        # pylint: enable-msg=E1101
-        return pkg_listing
-
 class PackageListing(SABase):
     '''This associates a package with a particular collection.
 
