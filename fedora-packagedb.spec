@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.9
+Version:        0.3.9.1
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -78,6 +78,9 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Wed Nov 5  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.9.1-1
+- New upstream that fixes emailing of mass branch status.
+
 * Tue Nov 4  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.9-1
 - New upstream with new branching code, restructured pkgdb-client,
   uberpackager renamed to provenpackager, and major speedups.

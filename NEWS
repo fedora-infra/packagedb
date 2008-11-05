@@ -3,8 +3,14 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 13 Oct 2008
-:Version: 0.3.9
+:Date: 5 Nov 2008
+:Version: 0.3.9.1
+
+-------
+0.3.9.1
+-------
+
+* Fix emailing mass branch status to the author of the change.
 
 -----
 0.3.9

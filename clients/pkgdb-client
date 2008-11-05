@@ -25,7 +25,6 @@ __version__ = '0.3'
 
 import sys
 import os
-import glob
 import optparse
 import getpass
 
@@ -44,9 +43,9 @@ def parse_config():
     '''.splitlines()
 
     cfg = ConfigObj('/etc/pkgdb-client.cfg', configspec=configspec)
-    user = ConfigObj(glob.glob('~/.pkgdb-client.cfg'), configspec=configspec)
+    user = ConfigObj(os.path.expanduser('~/.fedora/pkgdb-client.cfg'),
+            configspec=configspec)
     cfg.merge(user)
-
     res = cfg.validate(vldtr, preserve_errors=True)
 
     for entry in flatten_errors(cfg, res):
@@ -59,7 +58,7 @@ def parse_config():
         sys.exit(1)
 
     cfg['global']['pkgdb.url'] = os.environ.get('PACKAGEDBURL') or \
-            cfg['global']['pkgdb.url'])
+            cfg['global']['pkgdb.url']
     return cfg['global']
 
 class ArgumentsError(Exception):
