@@ -1,3 +1,23 @@
+== 0.3.9.1 ==
+
+2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r499
+Merge changes from jstanley to make bugzilla sync use python-bugzilla.
+
+2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r498
+Update for 0.3.9.1
+
+2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r497
+Email a log of the branching status to the person who invoked it.
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r496
+Fix missing comma in config file.
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r495
+Use os.path.expanduser() to expand the user config file.
+
+2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r494
+Update ChangeLog for new release.
+
 == 0.3.9 ==
 
 2008-11-04  Toshio Kuratomi <toshio@fedoraproject.org> - r493
