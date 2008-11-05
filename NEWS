@@ -4,7 +4,14 @@ NEWS
 
 :Authors: Toshio Kuratomi
 :Date: 5 Nov 2008
-:Version: 0.3.9.1
+:Version: 0.3.9.2
+
+-------
+0.3.9.2
+-------
+
+* Couple bugfixes for pkgdb-client and cut and paste artifact that crept into
+  PackageListing.
 
 -------
 0.3.9.1
