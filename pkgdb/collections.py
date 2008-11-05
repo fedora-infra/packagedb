@@ -45,6 +45,7 @@ from fedora.tg.util import json_or_redirect
 from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
+from pkgdb.notifier import EventLogger
 
 MASS_BRANCH_SET = 500
 
@@ -258,8 +259,15 @@ class Collections(controllers.Controller):
             num_branched = len(pkgs) - len(unbranched)
             msg = _('Succesfully branched all %(num)s packages') % \
                     {'num': num_branched}
-        print msg, author_name
-        #send_log(msg, author_name)
+
+        # Send an email to the user to tell them how things turned out
+        eventlogger = EventLogger()
+        print author_id
+        print self.fas.cache[author_id]
+        print self.fas.cache[author_id]['email']
+        eventlogger.send_msg(msg, _('Mass branching status for %(branch)s') %
+                {'branch': to_branch.branchname},
+                (self.fas.cache[author_id]['email'],))
 
     @expose(allow_json=True)
     @json_or_redirect('/collections')
