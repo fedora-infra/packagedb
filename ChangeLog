@@ -1,4 +1,19 @@
+== 0.3.9.2 ==
+
+2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r503
+* Update for 0.3.9.2
+
+2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r502
+* Fix group handling when no groups are given.
+* Create groups_dict when adding a new package as well.
+
+2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r501
+Remove duplicate __init__ that was moved to logs.py.
+
 == 0.3.9.1 ==
+
+2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r500
+Commit ChangeLog for the 0.3.9.1 release.
 
 2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r499
 Merge changes from jstanley to make bugzilla sync use python-bugzilla.
