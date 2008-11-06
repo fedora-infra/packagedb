@@ -1,0 +1,19 @@
+/*
+	Copyright (c) 2004-2008, The Dojo Foundation All Rights Reserved.
+	Available via Academic Free License >= 2.1 OR the modified BSD license.
+	see: http://dojotoolkit.org/license for details
+*/
+
+
+dojo._xdResourceLoaded(function(dojo, dijit, dojox){
+return {depends: [["provide", "dojox.grid.Grid"],
+["require", "dojox.grid.compat.Grid"]],
+defineResource: function(dojo, dijit, dojox){if(!dojo._hasResource["dojox.grid.Grid"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
+dojo._hasResource["dojox.grid.Grid"] = true;
+dojo.provide("dojox.grid.Grid");
+dojo.require("dojox.grid.compat.Grid");
+dojo.deprecated("dojox.grid.Grid");
+
+}
+
+}};});

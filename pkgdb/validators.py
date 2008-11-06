@@ -42,6 +42,8 @@ from sqlalchemy.exceptions import InvalidRequestError
 
 from pkgdb.model import Collection
 
+# :W0622: We have to redefine _ due to a FormEncode limitation
+# pylint: disable-msg=W0622
 def _(string):
     ''' *HACK*:  TurboGears/FormEncode requires that we use a dummy _ function.
 
@@ -49,6 +51,7 @@ def _(string):
     http://docs.turbogears.org/1.0/Internationalization#id13
     '''
     return string
+# pylint: enable-msg=W0622
 
 class BooleanValue(validators.FancyValidator):
     '''Convert a value into a boolean True or False.

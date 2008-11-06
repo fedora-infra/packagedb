@@ -277,7 +277,7 @@ class ListQueries(controllers.Controller):
         # Save them into a python data structure
         for record in group_acls.execute():
             if not record[2] in groups:
-                groups[record[2]] = self.fas.group_by_id(record[2])['name']
+                groups[record[2]] = self.fas.group_cache[record[2]].name
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     groups[record[2]], group=True)
@@ -300,13 +300,9 @@ class ListQueries(controllers.Controller):
             order_by=(PackageListing.owner,)
             )
 
-        # Cache the userId/username pairs so we don't have to call the fas for
-        # every package.
-        user_list = self.fas.user_id()
-
         # Save them into a python data structure
         for record in owner_acls.execute():
-            username = user_list[record[2]]
+            username = self.fas.cache[record[2]].username
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -335,7 +331,7 @@ class ListQueries(controllers.Controller):
             )
         # Save them into a python data structure
         for record in person_acls.execute():
-            username = user_list[record[2]]
+            username = self.fas.cache[record[2]].username
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -384,10 +380,6 @@ class ListQueries(controllers.Controller):
                 ),
             order_by=(Collection.name,), distinct=True)
 
-        # Cache the userId/username pairs so we don't have to call the
-        # fas for every package.
-        user_list = self.fas.user_id()
-
         # List of packages that need more processing to decide who the owner
         # should be.
         undupe_owners = []
@@ -410,12 +402,12 @@ class ListQueries(controllers.Controller):
 
             # Save the package information in the data structure to return
             if not package.owner:
-                package.owner = user_list[pkg[2]]
-            elif user_list[pkg[2]] != package.owner:
+                package.owner = self.fas.cache[pkg[2]].username
+            elif self.fas.cache[pkg[2]].username != package.owner:
                 # There are multiple owners for this package.
                 undupe_owners.append(package_name)
             if pkg[3]:
-                package.qacontact = user_list[pkg[3]]
+                package.qacontact = self.fas.cache[pkg[3]].username
             package.summary = pkg[4]
 
         if undupe_owners:
@@ -477,7 +469,9 @@ class ListQueries(controllers.Controller):
                             else:
                                 # Prefer devel above all others
                                 bugzilla_acls[collection][pkg].owner = \
-                                    user_list[by_pkg[pkg][collection]['devel']]
+                                    self.fas.cache[
+                                            by_pkg[pkg][collection]['devel']
+                                            ].username
                                 continue
 
                     # For any collection except Fedora or Fedora if the devel
@@ -488,12 +482,12 @@ class ListQueries(controllers.Controller):
                     if not releases:
                         # Every release was an orphan
                         bugzilla_acls[collection][pkg].owner = \
-                                user_list[ORPHAN_ID]
+                                self.fas.cache[ORPHAN_ID].username
                     else:
                         releases.sort()
                         bugzilla_acls[collection][pkg].owner = \
-                                user_list[by_pkg[pkg][collection][ \
-                                    unicode(releases[-1])]]
+                                self.fas.cache[by_pkg[pkg][collection][ \
+                                    unicode(releases[-1])]].username
 
         # Retrieve the user acls
 
@@ -521,7 +515,7 @@ class ListQueries(controllers.Controller):
 
         # Save them into a python data structure
         for record in person_acls.execute():
-            username = user_list[record[2]]
+            username = self.fas.cache[record[2]].username
             self._add_to_bugzilla_acl_list(bugzilla_acls, record[0], record[1],
                     username, group=False)
 

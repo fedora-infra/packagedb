@@ -14,8 +14,6 @@
     <meta content="text/html; charset=UTF-8" http-equiv="content-type"
       py:replace="''" />
     <title>${title}</title>
-    <script type="text/javascript"
-      src="${tg.url('/static/javascript/jquery-1.2.1.js')}" />
     <link py:for="js in tg_js_head" py:strip="">${XML(js)}</link>
     <link py:for="css in tg_css" py:strip="">${XML(css)}</link>
 
@@ -30,9 +28,22 @@
     <script src="${tg.tg_js}/MochiKit.js" type="text/javascript"></script>
     <script src="${tg.url('/static/javascript/mochikit1.4.js')}" type="text/javascript"></script>
     <script type="text/javascript" py:if="not tg.identity.anonymous">
-      tgUserDisplayName = "${tg.identity.user.human_name}";
-      tgUserUserName = "${tg.identity.user.username}";
-      tgUserUserId = "${tg.identity.user.id}";
+      tg = {userid: "${tg.identity.user.id}",
+        username: "${tg.identity.user.username}",
+        display_name: "${tg.identity.user.human_name}",
+        anonymous: false
+      };
+
+      // Backwards Compatibility
+      tgUserDisplayName = tg.display_name;
+      tgUserUserName = tg.username;
+      tgUserUserId = tg.userid;
+    </script>
+    <script type="text/javascript">
+      if (typeof(tg) == 'undefined') {
+        tg = {anonymous: true};
+      }
+      tg.baseurl = "${tg.url('/')}".slice(0, -1);
     </script>
     <script type="text/javascript">
         <!--

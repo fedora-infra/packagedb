@@ -1,5 +1,6 @@
 <?python
 TODO='Not yet implemented'
+import simplejson
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
@@ -11,6 +12,10 @@ TODO='Not yet implemented'
   <body py:with="pkgUrlName=tg.quote_plus(packageListings[0].package.name)">
     <script type="text/javascript" src="${tg.url('/static/javascript/framework.js')}"></script>
     <script type="text/javascript" src="${tg.url('/static/javascript/pkgpage.js')}"></script>
+    <script type="text/javascript">
+      pkgpage = {acl_names: ${simplejson.dumps(aclNames)},
+        acl_status: ${simplejson.dumps(aclStatus)}};
+    </script>
 
     <h2 py:content="packageListings[0].package.name">Package</h2>
     ${pkgheader(packageListings[0].package.name, 'pkgdb')}
@@ -19,31 +24,31 @@ TODO='Not yet implemented'
       <tr><th>
           Status
         </th>
-        <td py:content="packageListings[0].package.status.translations[0].statusname">
+        <td py:content="packageListings[0].package.status.locale['C'].statusname">
       </td></tr>
       <tr><th>
           Creation Date
           </th><td py:content="TODO">
           Fill in the Creation Date
       </td></tr>
-      <!-- This isn't quite ready.  We need to look at whether the user is
-      - A package owner on any of the branches or has approveacls (or possibly
-      - commit) on any of the branches and replace True with that check.
-      - -->
-      <tr py:if="not tg.identity.anonymous and ('cvsadmin' in tg.identity.groups or can_set_shouldopen)"><th>
-		    Open package during mass ACL open?
+      <tr><th>
+        Open package during mass ACL open?
       </th><td>
         <form action="${tg.url('/packages/dispatcher/')}" method="POST">
           <div py:attrs="{'name': str(packageListings[0].package.name)}"
             class="requestContainer shouldopen">
-            <input type="checkbox" name="shouldopen" class="shouldOpenBox"
+            <input py:if="not tg.identity.anonymous and ('cvsadmin' in tg.identity.groups or can_set_shouldopen)"
+                type="checkbox" name="shouldopen" class="shouldOpenBox"
               py:attrs="{'checked': tg.checker(packageListings[0].package.shouldopen)}" />
+            <input py:if="tg.identity.anonymous or not ('cvsadmin' in tg.identity.groups or can_set_shouldopen)"
+                type="checkbox" name="shouldopen" class="shouldOpenBox"
+              py:attrs="{'checked': tg.checker(packageListings[0].package.shouldopen), 'disabled': 'true'}" />
           </div>
         </form>
       </td></tr>
     </table>
     <p py:content="packageListings[0].package.summary">Summary</p>
-    <p py:content="packageListings[0].package.description">Description</p>
+    <pre py:content="packageListings[0].package.description">Description</pre>
     <p>Contents:
     <ul py:for="pkg in packageListings">
       <li><a py:attrs="{'href' : ''.join(
@@ -54,7 +59,7 @@ TODO='Not yet implemented'
     </p>
     <form action="${tg.url('/packages/dispatcher/')}" method="POST">
         <div py:def="pkgl">
-            
+
             <!--! here beggins the py:def pkgl declaration -->    
 
         <?python
@@ -79,7 +84,7 @@ TODO='Not yet implemented'
                                 interested = True
                                 break
                         if (person.aclOrder.get('approveacls') and
-                                person.aclOrder['approveacls'].status.translations[0].statusname == 'Approved'):
+                                person.aclOrder['approveacls'].status.locale['C'].statusname == 'Approved'):
                             # Person has approveacls acl.
                             aclChanger = True
                         break
@@ -101,10 +106,10 @@ TODO='Not yet implemented'
         </th></tr>
         <tr id="${''.join((pkg.collection.name, pkg.collection.version)).replace(' ','')}">
           <td>
-            <a py:if="pkg.status.translations[0].statusname=='Approved'"  class="cvs"
+            <a py:if="pkg.status.locale['C'].statusname=='Approved'"  class="cvs"
               href="${'http://cvs.fedoraproject.org/viewcvs/rpms/%s/%s/%s.spec?view=markup'
-	      % (pkgUrlName, pkg.collection.branchname, pkgUrlName)}">
-	      <span class="invisible">Spec File</span></a>
+          % (pkgUrlName, pkg.collection.branchname, pkgUrlName)}">
+              <span class="invisible">Spec File</span></a>
             <a href="${tg.url('/collections/id/' + str(pkg.collection.id))}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
           </td><td>
@@ -113,7 +118,7 @@ TODO='Not yet implemented'
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner orphaned">
                 <span class="ownerName">${pkg.ownername}</span>
-                <span py:if="'packager' in tg.identity.groups and pkg.collection.status.translations[0].statusname!='EOL'">
+                <span py:if="'packager' in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
                   <input type="button" name="unorphan"
                     class="ownerButton unorphanButton"
                     value="Take Ownership"/>
@@ -122,7 +127,7 @@ TODO='Not yet implemented'
               <div py:otherwise=""
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner owned">
-                <span class="ownerName"><a href="${tg.url('/users/info/' + pkg.owneruser)}">${pkg.ownername}</a></span>
+                <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owneruser)}">${pkg.ownername}</a></span>
                 <span py:if="not tg.identity.anonymous and (tg.identity.user.id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
@@ -131,7 +136,7 @@ TODO='Not yet implemented'
               </div>
             </div>
             </td><td py:content="pkg.qacontactname">
-            </td><td py:content="pkg.status.translations[0].statusname">
+            </td><td py:content="pkg.status.locale['C'].statusname">
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
           <table class="acls" width="100%">
@@ -151,7 +156,7 @@ TODO='Not yet implemented'
                 class="aclrow">
                 <td class="acluser"
                   py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
-                  <a href="${tg.url('/users/info/' + person.user)}">${person.name}</a>
+                  <a href="${tg.url('/users/packages/' + person.user)}">${person.name}</a>
                 </td>
                 <td py:for="acl in aclNames" class="aclcell">
                   <!-- If the logged in user is this row, add a checkbox to set it -->
@@ -172,14 +177,14 @@ TODO='Not yet implemented'
                       <select class="aclStatusList" py:attrs="{'name' : acl}">
                         <option py:for="status in aclStatus" py:content="status"
                           py:attrs="{'value': status, 'name': status,
-                          'selected': tg.selector(person.aclOrder.get(acl) and person.aclOrder[acl].status.translations[0].statusname==status)}"
+                          'selected': tg.selector(person.aclOrder.get(acl) and person.aclOrder[acl].status.locale['C'].statusname==status)}"
                         />
                       </select>
                     </div>
                     <span py:otherwise="" py:choose="" class="aclStatus"
                       py:attrs="{'name' : str(pkg.id) + ':' + acl}">
                       <span py:when="person.aclOrder.get(acl)"
-                      py:replace="person.aclOrder[acl].status.translations[0].statusname" />
+                      py:replace="person.aclOrder[acl].status.locale['C'].statusname" />
                     </span>
                   </div>
                 </td>
@@ -189,7 +194,8 @@ TODO='Not yet implemented'
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.groups" colspan="4"><td colspan="4">
           <table class="groupacls" width="100%">
-            <tr py:for="group in pkg.groups" class="aclgrouprow">
+            <tr py:for="group in pkg.groups" class="aclgrouprow"
+              py:if="group.aclOrder['commit'] and group.aclOrder['commit'].status.locale['C'].statusname in ('Approved', 'Denied')">
               <td py:content="group.name" class="aclgroup"
                 py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
                 Name
@@ -204,7 +210,7 @@ TODO='Not yet implemented'
                   class="requestContainer groupAclStatus">
                   group members can commit?
                   <input type="checkbox" class="groupAclStatusBox"
-                    py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved')}"/>
+                    py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
                 </div>
                 <div py:if="not aclChanger"
                   py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
@@ -213,7 +219,7 @@ TODO='Not yet implemented'
                   group members can commit?
                   <input type="checkbox" class="groupAclStatusLabelBox"
                     disabled="true"
-                    py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.translations[0].statusname=='Approved')}"/>
+                    py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
                 </div>
               </td>
             </tr>

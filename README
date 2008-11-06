@@ -100,8 +100,8 @@ Note:: If you don't have sudo, you can use su - instead::
 
 Get some test data and import it into the database.  You want to grab the most
 recent dump from http://fedorahosted.org/releases/p/a/packagedb like this::
-  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20080808.dump.bz2
-  bzcat pkgdb-20080808.dump.bz2 | sudo -u postgres psql
+  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20081031.dump.bz2
+  bzcat pkgdb-20081031.dump.bz2 | sudo -u postgres psql
 
 Your postgres server is now all set.
 

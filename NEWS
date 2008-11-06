@@ -3,12 +3,43 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 22 Aug 2008
-:Version: 0.3.8
+:Date: 5 Nov 2008
+:Version: 0.3.9.2
+
+-------
+0.3.9.2
+-------
+
+* Couple bugfixes for pkgdb-client and cut and paste artifact that crept into
+  PackageListing.
+
+-------
+0.3.9.1
+-------
+
+* Fix emailing mass branch status to the author of the change.
+
+-----
+0.3.9
+-----
+
+* Utilize SQLAlchemy-0.4 features to make working with the database model
+  easier.  Note that this means that some properties of the model will be
+  deprecated for the 0.4.x version of the packagedb.
+* Now works with python-bugzilla 0.4
+* Rename uberpackager to provenpackager
+* Speedups!  /package/name/PKGNAME is finally fast.
+* mass_branch functionality
+* clone_branch rewrite: faster and fixed bug
 
 -----
 0.3.8
 -----
+
+Enhancements
+============
+
+* Transition from packager to uberpackager group for access.
 
 Bug Fixes
 =========

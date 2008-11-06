@@ -20,28 +20,37 @@
 '''
 Module to be used for letter pagination and search.
 '''
+#
+# PyLint Explanations
+#
+
+# :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
+#   noted, E1101 is disabled due to a static checker not having information
+#   about the monkey patches.
 
 from sqlalchemy.sql import or_
+from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate, config
-from pkgdb import model
+from pkgdb.model import Package, StatusTranslation
 
 from cherrypy import request
 
 class Letters(controllers.Controller):
     '''Display package lists with letter pagination, search and links
     '''
-    
+
     def __init__(self, app_title=None):
+        # pylint: disable-msg=E1101
         self.app_title = app_title
-        self.removedStatus = model.StatusTranslation.query.filter_by(
+        self.removedStatus = StatusTranslation.query.filter_by(
                     statusname='Removed', language='C').first().statuscodeid
-        
+
     @expose(template='pkgdb.templates.pkgbugoverview')
     @paginate('packages', default_order='name', limit=100,
                 allow_limit_override=True, max_pages=13)
     def default(self, searchwords=''):
         '''Return a list of all packages in the database.
-    
+
            Arguments:
            :searchwords: optional - string to restrict the list, can use % or * 
            as wildcards
@@ -49,20 +58,27 @@ class Letters(controllers.Controller):
         if searchwords != '':
             searchwords = searchwords.replace('*','%')
             if searchwords.isdigit() and int(searchwords) < 10: # 0-9
-                packages = model.Package.query.filter(or_(
-                               model.Package.name.between('0','9'),
-                                   model.Package.name.like('9%')))
+                # pylint: disable-msg=E1101
+                packages = Package.query.options(
+                        lazyload('listings2'), lazyload('status')).filter(or_(
+                               Package.name.between('0','9'),
+                                   Package.name.like('9%')))
             else: 
                 # sanitize for ilike:
                 searchwords = searchwords.replace('&','').replace('_','') 
-                packages = model.Package.query.filter(model.Package.name.ilike(
-                    searchwords)).order_by(model.Package.name.asc())
+                # pylint: disable-msg=E1101
+                packages = Package.query.options(
+                        lazyload('listings2'), lazyload('status')).filter(
+                        Package.name.ilike(searchwords)
+                        ).order_by(Package.name.asc())
         else:
-            packages = model.Package.query
+            # pylint: disable-msg=E1101
+            packages = Package.query.options(lazyload('listings2'),
+                    lazyload('status'))
         searchwords = searchwords.replace('%','*')
         # minus removed packages
         packages = packages.filter(
-                        model.Package.c.statuscode!=self.removedStatus)
+                        Package.c.statuscode!=self.removedStatus)
         # set the links for bugs or package info
         if request.path.startswith('/pkgdb/packages/index/'):
             mode = ''
