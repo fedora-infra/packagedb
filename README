@@ -107,11 +107,11 @@ Your postgres server is now all set.
 
 Start the Server
 ~~~~~~~~~~~~~~~~
-First copy the fas.cfg.sample file to fas.cfg.  Next, edit fas.cfg to configure
-the server to see your database.  You'll need to set fas.username to a
-username (your Fedora Account System username will work), fas.password (if you
-use your username, your password will work), and sqlalchemy.dburi.  The dburi
-line will be something like this::
+First copy the pkgdb.cfg.sample file to pkgdb.cfg.  Next, edit pkgdb.cfg to
+configure the server to see your database.  You'll need to set fas.username to
+a username (your Fedora Account System username will work), fas.password (if
+you use your username, your password will work), and sqlalchemy.dburi.  The
+dburi line will be something like this::
 
   sqlalchemy.dburi="postgres://pkgdbadmin:testpassword@localhost/pkgdb"
 
