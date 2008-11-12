@@ -50,8 +50,8 @@ function get_pkgdb_info(event) {
 };
 
 dojo.addOnLoad(function() {
-    pkgdb = new fedora.dojo.BaseClient('https://localhost/pkgdb/', {useragent: 'My User Agent/1.0', username:'', password:''});
-    throbber_group = new fedora.dojo.ThrobberGroup('https://localhost/pkgdb/static/images/throbber/', 12);
+    pkgdb = new fedora.dojo.BaseClient('/pkgdb/', {useragent: 'My User Agent/1.0', username:'', password:''});
+    throbber_group = new fedora.dojo.ThrobberGroup('/pkgdb/static/images/throbber/', 12);
 
     dojo.query(".package")
         .connect("onclick", get_pkgdb_info);
