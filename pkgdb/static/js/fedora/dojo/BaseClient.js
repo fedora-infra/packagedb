@@ -23,10 +23,14 @@ dojo.provide('fedora.dojo.ThrobberGroup');
 
 // Should go in a Base or Core file
 dojo.provide('fedora.dojo.AppError');
+dojo.provide('fedora.dojo.AuthError');
 dojo.provide('fedora.dojo.MalformedPageError');
 dojo.provide('fedora.dojo.ancestor');
 
 // Should go in Base or Core or a BaseClient file
+dojo.require('dijit.Dialog');
+dojo.require('dijit.form.Button');
+dojo.require('dijit.form.TextBox');
 dojo.provide('fedora.dojo.BaseClient');
 
 /*****************
@@ -40,6 +44,18 @@ dojo.provide('fedora.dojo.BaseClient');
 dojo.declare('fedora.dojo.AppError', [Error], {
     constructor: function(message, extras) {
         this.name = 'AppError';
+        this.message = message;
+        this.extras = extras || null;
+    }
+});
+
+/*
+ * This exception is used when the BaseClient needs to tell client code that
+ * authentication failed.
+ */
+dojo.declare('fedora.dojo.AuthError', [Error], {
+    constructor: function(message, extras) {
+        this.name = 'AuthError';
         this.message = message;
         this.extras = extras || null;
     }
@@ -258,6 +274,8 @@ dojo.declare('fedora.dojo.BaseClient', null, {
         this.debug = kw['debug'] || this.debug;
         this.username = kw['username'] || this.username;
         this.password = kw['password'] || this.password;
+        this._auth_dialog = null;
+        this._auth_queue = [];
     },
     /*
      * Make an HTTP request to a server method.
@@ -286,6 +304,18 @@ dojo.declare('fedora.dojo.BaseClient', null, {
      * :rtype: Dojo.Deferred
      */
     start_request: function(method, kw) {
+        /* Detect whether we're currently waiting for a new username/password
+         * from the user
+         */
+            /* Wait for the new user/pass and then retry */
+        /*
+        if (this._auth_topic) {
+            action = new dojo.Deferred();
+            dojo.subscribe(this._auth_event, dojo.partial(this._rerequest,
+                        dojo.hitch(this.start_request, method,kw)), this);
+
+        }
+        */
         kw = kw || {};
         method = method.replace(/^\/+/,'');
         var timeout = kw['timeout'] || 60000;
@@ -313,10 +343,8 @@ dojo.declare('fedora.dojo.BaseClient', null, {
                     delete data['exc'];
                     message = data['tg_flash'];
                     delete data['tg_flash'];
-                    throw {name: data['exc'],
-                        message: data['tg_flash'],
-                        extras: data
-                    };
+                    throw new fedora.dojo.AppError(data['exc'],
+                        data['tg_flash'], data);
                 }
                 return data;
             },
@@ -326,18 +354,76 @@ dojo.declare('fedora.dojo.BaseClient', null, {
              * consuming code doesn't have to look at error.status just to
              * check for username/password.
              */
-            error: function (error, args) {
+            error: dojo.hitch(this, function (error, args) {
+                console.warn('in error handler');
                 if (error.status == 403) {
+                    /* Error authenticating get retried */
                     error.name = 'AuthError';
                     error.message = 'Unable to log into server.  Invalid' +
                             ' authentication tokens.  Send new username and' +
                             ' password: ' + error.message;
+                    if (this.auth_handler) {
+                        return this.auth_handler(error, args);
+                    }
+                    return action;
                 }
                 return error;
-            },
+            }),
             timeout: timeout,
         });
 
+        return action;
+    },
+    /* Sample handler for attempting to reauthenticate the user.
+     *
+     * You can override this method if you want to do something different.
+     */
+    auth_handler: function(error, args) {
+        console.warn('in auth_handler');
+        var i;
+        /* Popup a dialog to take username & password */
+        if (!this._auth_dialog) {
+            this._auth_dialog = new dijit.Dialog({
+                title: 'Fedora Login',
+                href: dojo.moduleUrl('fedora', 'dojo/templates/LoginBox.html'),
+                execute: dojo.hitch(this, function(data) {
+                    this.password = data['password'];
+                    this.username = data['username'];
+                    this._auth_dialog.destroyRecursive();
+                    this._auth_dialog = null;
+                    for (i = 0; i < this._auth_queue.length; i++) {
+                        this._auth_queue[i].callback(this._auth_queue[i]);
+                        this._auth_queue.splice(i--, 1);
+                    }
+                })
+            });
+            dojo.connect(this._auth_dialog, 'onCancel', dojo.hitch(this,
+                function() {
+                    var i, err;
+                    this._auth_dialog.destroyRecursive();
+                    this._auth_dialog = null;
+                    for (i = 0; i < this._auth_queue.length; i++) {
+                        err = new fedora.dojo.AuthError('Unable to log into' +
+                            ' server.  Invalid authentication tokens.  Send' +
+                            ' new username and password: ' + error.message);
+                        this._auth_queue[i].errback(err);
+                        this._auth_queue.splice(i--, 1);
+                    }
+                }
+            ));
+            this._auth_dialog.show();
+        }
+        action = new dojo.Deferred();
+        action.addCallbacks(dojo.hitch(this, function(data) {
+                params = args.args.content || {};
+                params.user_name = this.username;
+                params.password = this.password;
+                params.login = 'Login';
+                return dojo.xhrPost(args.args);
+            }),
+            function(error) { return error}
+        );
+        this._auth_queue.push(action);
         return action;
     },
     /* Logout from the server.
