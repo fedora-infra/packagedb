@@ -261,9 +261,6 @@ class Collections(controllers.Controller):
 
         # Send an email to the user to tell them how things turned out
         eventlogger = EventLogger()
-        print author_id
-        print fas.cache[author_id]
-        print fas.cache[author_id]['email']
         eventlogger.send_msg(msg, _('Mass branching status for %(branch)s') %
                 {'branch': to_branch.branchname},
                 (fas.cache[author_id]['email'],))
