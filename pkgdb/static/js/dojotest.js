@@ -18,9 +18,9 @@
  */
 
 dojo.require('fedora.dojo.BaseClient');
-dojo.require('fedora.dojo.ThrobberGroup');
 dojo.require('fedora.dojo.Throbber');
-dojo.require('fedora.dojo.ancestor');
+dojo.require('fedora.dojo.ThrobberGroup');
+dojo.require('fedora.dojo.common');
 
 function get_pkgdb_info(event) {
     /* Example of a non-auth'ed page */

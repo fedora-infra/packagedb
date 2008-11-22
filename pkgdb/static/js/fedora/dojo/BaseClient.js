@@ -17,219 +17,8 @@
  * Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
  */
 
-// Should go in a Throbber file
-dojo.provide('fedora.dojo.Throbber');
-dojo.provide('fedora.dojo.ThrobberGroup');
-
-// Should go in a Base or Core file
-dojo.provide('fedora.dojo.AppError');
-dojo.provide('fedora.dojo.AuthError');
-dojo.provide('fedora.dojo.MalformedPageError');
-dojo.provide('fedora.dojo.ancestor');
-
-// Should go in Base or Core or a BaseClient file
-dojo.require('dijit.Dialog');
-dojo.require('dijit.form.Button');
-dojo.require('dijit.form.TextBox');
+dojo.require('fedora.dojo.LoginBox');
 dojo.provide('fedora.dojo.BaseClient');
-
-/*****************
- * Exceptions
- */
-
-/*
- * This exception is used when the BaseClient needs to tell client code that
- * the server returned an exception.
- */
-dojo.declare('fedora.dojo.AppError', [Error], {
-    constructor: function(message, extras) {
-        this.name = 'AppError';
-        this.message = message;
-        this.extras = extras || null;
-    }
-});
-
-/*
- * This exception is used when the BaseClient needs to tell client code that
- * authentication failed.
- */
-dojo.declare('fedora.dojo.AuthError', [Error], {
-    constructor: function(message, extras) {
-        this.name = 'AuthError';
-        this.message = message;
-        this.extras = extras || null;
-    }
-});
-
-/*
- * This exception is returned when a page doesn't have the structure that we
- * want.  This could be an error on the server returning a page with incorrect
- * classes or incorrectly nested html elements.  Or it could be an error where
- * previous dynamic javascript has rewritten the page in an incompatible way.
- */
-dojo.declare('fedora.dojo.MalFormedPageError', [Error], {
-    constructor: function(message, extras) {
-        this.name = 'MalformedPageError';
-        this.message = message;
-        this.extras = extras || null;
-    }
-});
-
-/*
- * Filter function to return nodes that are the ancestor of a known node.
- */
-fedora.dojo.ancestor = function (child, item, index, arr) {
-    return dojo.isDescendant(child, item);
-}
-
-/*
- * Throbber.  Shows that a UI element is busy doing something.  This uses a 
- * ThrobberGroup to manage changing the images for efficiency and individual
- * Throbber widgets for the actual display.
- */
-dojo.declare('fedora.dojo.ThrobberGroup', null, {
-    statics: {nextid: 0},
-    constructor: function(base_url, num_images, kw) {
-        kw = kw || {};
-        this.base_url = base_url;
-        this.id = this.statics.nextid++;
-        /* Throb every tenth of a second by default */
-        this.timeout = kw['timeout'] || 100;
-        this.inactive_image = kw['inactive_image'] || null;
-        this.images = [];
-        var extension = kw['extension'] || '.png';
-        var i;
-        var precache = new dojo.Deferred();
-
-        /* Connect an event to the throbbers so that we know when to make the
-         * image cycling active
-         */
-        this.watch_throbber = dojo.subscribe('FedoraDojoThrobber', this,
-            this._throb);
-
-        /* Create the list of images */
-        for (i = 0; i < num_images; i++) {
-            this.images[i] = this.base_url + i + extension;
-        }
-
-        if (!this.inactive_image) {
-            this.inactive_image = this.images[0];
-        }
-        /* Precache the images asynchronously */
-        precache.addCallback(this._precache());
-    },
-    _precache: function(data) {
-        /* Precache the  images for the throbber */
-        for (i = 0; i < this.images.length; i++) {
-            new Image().src = this.images[i];
-        }
-        new Image().src = this.inactive_image;
-        return data;
-    },
-    _throb: function(seq_num) {
-        /* Change the image for all the throbbers in the group 
-         *
-         * :arg seq_num: Index of the currently displayed image
-         */
-        if (typeof(seq_num) == 'undefined') {
-            seq_num = -1;
-        }
-        if (this.watch_throbber) {
-            /* Stop looking for new throbbers until all throbbers are stopped
-             */
-            dojo.unsubscribe(this.watch_throbber);
-            this.watch_throbber = null;
-        }
-
-        var image_num = seq_num + 1;
-        var throbbers;
-
-        /* Only one image, no need to run this method */
-        if (this.images.length <= 1) {
-            return;
-        }
-
-        /* Select the next image in the cycle */
-        if (image_num >= this.images.length) {
-            image_num = 0;
-        }
-
-        /* Update all the active throbbers */
-        throbbers = dojo.query('.active.FedoraDojoThrobber' + this.id + 'Img')
-            .forEach(dojo.hitch(this, function(node) {
-                    node.innerHTML = '<img src="' + this.images[image_num] +
-                        '"/>'})
-            );
-
-        /* Only set a timeout to cycle the images again if there are active
-         * throbbers on the page
-         */
-        if (throbbers.length) {
-            setTimeout(dojo.hitch(this, '_throb', image_num), this.timeout);
-        } else {
-            /* Otherwise watch for a new throbber */
-            this.watch_throbber = dojo.subscribe('FedoraDojoThrobber', this,
-                    this._throb);
-        }
-    },
-    create_throbber: function() {
-        /* Create a new throbber inside this throbber group */
-        return new fedora.dojo.Throbber(this);
-    },
-    destroy_all_throbbers: function() {
-        /* Remove all throbbers on the page */
-        dojo.query('.FedoraDojoThrobber' + this.id + 'Img')
-            .orphan().forEach(function(node) {node.empty();})
-    }
-});
-
-dojo.declare('fedora.dojo.Throbber', null, {
-    statics: {nextid: 0},
-    constructor: function(group, kw) {
-        this.id = this.statics.nextid++;
-        this.group = group;
-        kw= kw || {};
-        this.domNode = dojo.doc.createElement('span');
-        dojo.attr(this.domNode, {id: this.id,
-            class: 'FedoraDojoThrobber' + this.group.id + 'Img'
-        });
-        if (kw['position']) {
-            this.set_position(kw['position']);
-        }
-    },
-    set_position: function(position) {
-        var coords, img;
-        if (dojo.isArray(position)) {
-            this.position = position;
-        } else {
-            coords = dojo.coords(position);
-            img = new Image();
-            img.src = this.group.images[0];
-
-            this.position = [coords.l - (img.width/4),
-                coords.t - (img.height/4)];
-        }
-        dojo.attr(this.domNode, {style: 'position: absolute; left: ' +
-                this.position[0] + 'px; top: ' + this.position[1] + 'px;'
-        });
-    },
-    start: function() {
-        /* Turn the throbber on */
-        dojo.query('#' + this.id).addClass('active');
-        dojo.publish('FedoraDojoThrobber');
-    },
-    stop: function() {
-        /* Turn the throbber off */
-        dojo.query('#' + this.id).removeClass('active')
-            .forEach(dojo.hitch(this, function(node) {node.innerHTML=
-                    '<img src="' + this.group.inactive_image + '"/>'}));
-    },
-    destroy: function() {
-        /* Remove the throbber from the DOM */
-        dojo.query('#' + this.id).empty().orphan();
-    },
-});
-
 /*
  * This is the initial port of the python BaseClient to Dojo.  Be careful in
  * using this as not all concepts have been translated to Dojo verbatim. In
@@ -355,7 +144,7 @@ dojo.declare('fedora.dojo.BaseClient', null, {
              * check for username/password.
              */
             error: dojo.hitch(this, function (error, args) {
-                console.warn('in error handler');
+                console.debug('in error handler');
                 if (error.status == 403) {
                     /* Error authenticating get retried */
                     error.name = 'AuthError';
@@ -379,16 +168,20 @@ dojo.declare('fedora.dojo.BaseClient', null, {
      * You can override this method if you want to do something different.
      */
     auth_handler: function(error, args) {
-        console.warn('in auth_handler');
+        console.debug('in auth_handler');
         var i;
         /* Popup a dialog to take username & password */
         if (!this._auth_dialog) {
-            this._auth_dialog = new dijit.Dialog({
+            this._auth_dialog = new fedora.dojo.LoginBox({
                 title: 'Fedora Login',
-                href: dojo.moduleUrl('fedora', 'dojo/templates/LoginBox.html'),
-                execute: dojo.hitch(this, function(data) {
-                    this.password = data['password'];
-                    this.username = data['username'];
+                content: '<p>You need to enter your Fedora username and passsword</p>',
+            });
+            dojo.connect(this._auth_dialog, 'onExecute',
+                dojo.hitch(this, function(event) {
+                    console.debug('in execute handler');
+                    event.preventDefault();
+                    this.password = event.target['password'].value;
+                    this.username = event.target['username'].value;
                     this._auth_dialog.destroyRecursive();
                     this._auth_dialog = null;
                     for (i = 0; i < this._auth_queue.length; i++) {
@@ -396,9 +189,11 @@ dojo.declare('fedora.dojo.BaseClient', null, {
                         this._auth_queue.splice(i--, 1);
                     }
                 })
-            });
+            );
+
             dojo.connect(this._auth_dialog, 'onCancel', dojo.hitch(this,
                 function() {
+                    console.debug('in on_cancel');
                     var i, err;
                     this._auth_dialog.destroyRecursive();
                     this._auth_dialog = null;
@@ -415,6 +210,7 @@ dojo.declare('fedora.dojo.BaseClient', null, {
         }
         action = new dojo.Deferred();
         action.addCallbacks(dojo.hitch(this, function(data) {
+                console.debug('In re-xhrPost');
                 params = args.args.content || {};
                 params.user_name = this.username;
                 params.password = this.password;
