@@ -38,8 +38,8 @@ class Request():
         pass
 
 class Admin(controllers.Controller):
-    def __init__(self, fas):
-        self.fas = fas
+    def __init__(self):
+        pass
 
     def index(self):
         '''List the possible actions to perform.'''

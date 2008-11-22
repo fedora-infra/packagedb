@@ -45,13 +45,11 @@ from pkgdb.model import Collection, PackageListing, Package
 class Search(controllers.Controller):
     '''Controller for searching the pkgdb.
     '''
-    def __init__(self, fas, app_title):
+    def __init__(self, app_title):
         '''Create a Search Controller.
 
-        :fas: Fedora Account System object.
         :app_title: Title of the web app.
         '''
-        self.fas = fas
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.advancedsearch', allow_json=True)

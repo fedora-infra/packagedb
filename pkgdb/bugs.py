@@ -117,7 +117,6 @@ class Bugs(controllers.Controller):
     def __init__(self, app_title=None):
         '''Create a Packages Controller.
 
-        :fas: Fedora Account System object.
         :app_title: Title of the web app.
         '''
 
