@@ -21,6 +21,7 @@
 Utilities for all classes to use
 '''
 from turbogears import config
+import logging
 
 # The Fedora Account System Module
 from fedora.client.fas2 import AccountSystem
@@ -28,6 +29,8 @@ from fedora.client.fas2 import AccountSystem
 from pkgdb.model.statuses import StatusTranslation
 
 STATUS = {}
+fas = None
+LOG = None
 
 class GroupCache(dict):
     '''Naive cache for group information.
@@ -57,7 +60,7 @@ class GroupCache(dict):
             raise KeyError(user_id)
 
         if group not in self:
-            log.debug('GroupCache queries FAS')
+            LOG.debug('GroupCache queries FAS')
             if isinstance(group, basestring):
                 try:
                     group_data = self.fas.group_by_name(group)
@@ -90,7 +93,7 @@ class UserCache(dict):
     def force_refresh(self):
         '''Refetch the userid mapping from fas.
         '''
-        log.debug('UserCache refresh forced')
+        LOG.debug('UserCache refresh forced')
         people = self.fas.people_by_id()
         self.clear()
         self.update(people)
@@ -117,7 +120,7 @@ class UserCache(dict):
                 # If the key is just whitespace, raise KeyError immediately,
                 # don't try to refresh the cache
                 raise KeyError(user_id)
-            log.debug('refresh forced for %s' % user_id)
+            LOG.debug('refresh forced for %s' % user_id)
             self.force_refresh()
         return super(UserCache, self).__getitem__(user_id)
 
@@ -130,15 +133,27 @@ def refresh_status():
         statuses[status.statusname] = status
     STATUS = statuses
 
-# Things to do on startup
-refresh_status()
-baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
-username = config.get('fas.username', 'admin')
-password = config.get('fas.password', 'admin')
+def curl_nss_fix():
+    import pycurl
+    c = pycurl.Curl()
+    c.setopt(pycurl.URL, 'https://admin.fedoraproject.org/')
+    c.setopt(pycurl.WRITEDATA, open('/dev/null', 'w'))
+    c.perform()
 
-fas = AccountSystem(baseURL, username=username, password=password,
-        cache_session=False)
-fas.cache = UserCache(fas)
-fas.group_cache = GroupCache(fas)
+def startup():
+    # Things to do on startup
+    curl_nss_fix()
+    refresh_status()
+    global fas, LOG
+    LOG = logging.getLogger('pkgdb.controllers')
 
-__all__ = [STATUS, refresh_status, fas]
+    baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
+    username = config.get('fas.username', 'admin')
+    password = config.get('fas.password', 'admin')
+
+    fas = AccountSystem(baseURL, username=username, password=password,
+            cache_session=False)
+    fas.cache = UserCache(fas)
+    fas.group_cache = GroupCache(fas)
+
+__all__ = [STATUS, LOG, fas, refresh_status, startup]

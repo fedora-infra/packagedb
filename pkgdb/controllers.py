@@ -25,7 +25,6 @@ indirectly from here.
 from turbogears import controllers, expose, config, flash
 from turbogears import identity, redirect
 from cherrypy import request, response
-import logging
 
 from fedora.tg.util import request_format
 
@@ -37,9 +36,6 @@ from pkgdb.packages import Packages
 from pkgdb.users import Users
 from pkgdb.stats import Stats
 from pkgdb.search import Search
-from pkgdb import utils
-
-log = logging.getLogger("pkgdb.controllers")
 
 class Root(controllers.RootController):
     '''Toplevel controller for the PackageDB
