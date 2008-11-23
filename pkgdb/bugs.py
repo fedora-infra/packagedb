@@ -31,12 +31,11 @@ Controller for displaying Package Bug Information.
 #   about the monkey patches.
 
 from urllib import quote
-
 from turbogears import controllers, expose, config, redirect
-
 from sqlalchemy.exceptions import InvalidRequestError
-
+from cherrypy import request
 import bugzilla
+
 try:
     # python-bugzilla 0.4
     from bugzilla.base import Bug
@@ -47,10 +46,7 @@ except ImportError:
 
 from pkgdb.model import StatusTranslation, Package
 from pkgdb.letter_paginator import Letters
-from cherrypy import request
-
-import logging
-log = logging.getLogger('pkgdb.controllers')
+from pkgdb.utils import to_unicode, LOG
 
 class BugList(list):
     '''Transform and store values in the bugzilla.Bug data structure
@@ -80,11 +76,9 @@ class BugList(list):
             raise TypeError('Can only store bugzilla.Bug type')
         if self.query_url != self.public_url:
             bug.url = bug.url.replace(self.query_url, self.public_url)
-        bug.bug_status = unicode(bug.bug_status, 'utf-8')
-        try:
-            bug.short_desc = unicode(bug.short_desc, 'utf-8')
-        except TypeError:
-            bug.short_desc = unicode(bug.short_desc.data, 'utf-8')
+
+        bug.bug_status = to_unicode(bug.bug_status, errors='replace')
+        bug.short_desc = to_unicode(bug.short_desc, errors='replace')
         return {'url': bug.url, 'bug_status': bug.bug_status,
                 'short_desc': bug.short_desc, 'bug_id': bug.bug_id}
 
@@ -141,7 +135,7 @@ class Bugs(controllers.Controller):
                         + quote(package_name) \
                         + '?' + '&'.join([quote(q) + '=' + quote(v) for (q, v)
                             in kwargs.items()])
-            log.warning('Invalid URL: redirecting: %s' % url)
+            LOG.warning('Invalid URL: redirecting: %s' % url)
             raise redirect(url)
 
         query = {'product': 'Fedora',

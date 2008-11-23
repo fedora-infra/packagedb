@@ -32,6 +32,24 @@ STATUS = {}
 fas = None
 LOG = None
 
+def to_unicode(obj, encoding='utf-8', errors='strict'):
+    '''
+
+    :arg obj: object to attempt to convert to unicode.  Note: If this is not
+        a str or unicode object then the conversion might not be what
+        you want (as it converts the __str__ of the obj).
+    :kwarg encoding: encoding of the byte string to convert from.
+    :kwarg errors:
+        :strict: raisean error if it won't convert
+        :replace: replace non-converting chars with a certain char for the
+            encoding.  (For instance, ascii substitutes a ?).
+        :ignore: silently drop the bad characters
+
+    '''
+    if not isinstance(obj, unicode):
+        obj = unicode(obj, encoding, errors)
+    return obj
+
 class GroupCache(dict):
     '''Naive cache for group information.
 
@@ -156,4 +174,4 @@ def startup():
     fas.cache = UserCache(fas)
     fas.group_cache = GroupCache(fas)
 
-__all__ = [STATUS, LOG, fas, refresh_status, startup]
+__all__ = [STATUS, LOG, fas, refresh_status, startup, to_unicode]
