@@ -140,7 +140,9 @@ class Bugs(controllers.Controller):
 
         query = {'product': 'Fedora',
                 'component': package_name,
-                'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
+                'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED',
+                    'ON_DEV', 'ON_QA', 'VERIFIED', 'FAILS_QA',
+                    'RELEASE_PENDING', 'POST'] }
         # :E1101: python-bugzilla monkey patches this in
         raw_bugs = self.bz_server.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
