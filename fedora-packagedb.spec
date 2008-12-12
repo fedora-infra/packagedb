@@ -19,6 +19,7 @@ Requires: python-psycopg2
 Requires: python-genshi
 Requires: python-fedora >= 0.3.7
 Requires: python-bugzilla
+Requires: koji
 
 BuildRequires: python-devel
 BuildRequires: python-genshi
