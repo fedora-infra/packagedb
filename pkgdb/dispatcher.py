@@ -38,6 +38,7 @@ from turbogears import controllers, expose, identity, config, flash
 from turbogears.database import session
 
 import simplejson
+import bugzilla
 
 from pkgdb.model import StatusTranslation, PackageAclStatus, \
         GroupPackageListing, GroupPackageListingAcl, PersonPackageListing, \
@@ -393,6 +394,11 @@ class PackageDispatcher(controllers.Controller):
         Arguments:
         :pkg_listing_id: The packagelisting to change ownership for.
         '''
+        bzServer = config.get('bugzilla.queryurl',config.get('bugzilla.url',
+            'https://bugzilla.redhat.com'))
+        bzUser = config.get('bugzilla.user')
+        bzPass = config.get('bugzilla.password')
+        bzUrl = bzServer + '/xmlrpc.cgi'
         # Check that the pkg exists
         try:
             # pylint: disable-msg=E1101
@@ -412,10 +418,26 @@ class PackageDispatcher(controllers.Controller):
             pkg.owner = identity.current.user.id
             pkg.statuscode = self.approvedStatus.statuscodeid
             owner_name = '%s' % identity.current.user_name
+            dir(identity.current)
+            bzMail = '%s' % identity.current.user.email
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, owner_name)
             status = self.ownedStatus
+            bzQuery = {}
+            bzQuery['product'] = pkg.collection.name
+            bzQuery['component'] = pkg.package.name
+            bzQuery['bug_status'] = 'NEW,ASSIGNED,ON_DEV,ON_QA,MODIFIED,POST,FAILS_QA,PASSES_QA,RELEASE_PENDING'.split(',')
+            bzQuery['version'] = pkg.collection.version
+            if bzQuery['version'] == 'devel':
+                bzQuery['version'] = 'rawhide'
+            bz = bugzilla.Bugzilla(url=bzUrl, user=bzUser, password=bzPass)
+            queryResults=bz.query(bzQuery)
+            for bug in queryResults:
+                bug.setassignee(assigned_to=bzMail, comment='''
+This package has changed ownership in the Fedora Package Database. Reassigning
+to the new owner of this component.
+                ''')
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = ORPHAN_ID

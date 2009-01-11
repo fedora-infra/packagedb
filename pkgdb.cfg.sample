@@ -9,6 +9,8 @@ bugzilla.url='https://bugzilla.redhat.com/'
 # Data returned with this URL will be rewritten to the public URL before
 # display.
 #bugzilla.queryurl='https://bzprx.vip.phx.redhat.com'
+bugzilla.user = 'user@somewhere.com'
+bugzilla.password = 'password'
 
 # Koji configuration
 koji.huburl='https://koji.fedoraproject.org/kojihub'
