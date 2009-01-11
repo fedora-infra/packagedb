@@ -75,7 +75,7 @@ class GroupCache(dict):
         if not group:
             # If the key is just whitespace, raise KeyError immediately,
             # don't try to refresh the cache
-            raise KeyError(user_id)
+            raise KeyError(group)
 
         if group not in self:
             LOG.debug('GroupCache queries FAS')
