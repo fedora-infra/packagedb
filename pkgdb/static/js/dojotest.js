@@ -18,9 +18,9 @@
  */
 
 dojo.require('fedora.dojo.BaseClient');
-dojo.require('fedora.dojo.ThrobberGroup');
 dojo.require('fedora.dojo.Throbber');
-dojo.require('fedora.dojo.ancestor');
+dojo.require('fedora.dojo.ThrobberGroup');
+dojo.require('fedora.dojo.common');
 
 function get_pkgdb_info(event) {
     /* Example of a non-auth'ed page */
@@ -50,8 +50,8 @@ function get_pkgdb_info(event) {
 };
 
 dojo.addOnLoad(function() {
-    pkgdb = new fedora.dojo.BaseClient('https://localhost/pkgdb/', {useragent: 'My User Agent/1.0', username:'', password:''});
-    throbber_group = new fedora.dojo.ThrobberGroup('https://localhost/pkgdb/static/images/throbber/', 12);
+    pkgdb = new fedora.dojo.BaseClient('/pkgdb/', {useragent: 'My User Agent/1.0', username:'', password:''});
+    throbber_group = new fedora.dojo.ThrobberGroup('/pkgdb/static/images/throbber/', 12);
 
     dojo.query(".package")
         .connect("onclick", get_pkgdb_info);

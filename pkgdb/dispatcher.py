@@ -48,6 +48,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
+from pkgdb.utils import fas
 
 ORPHAN_ID = 9900
 MAXSYSTEMUID = 9999
@@ -99,8 +100,7 @@ class PackageDispatcher(controllers.Controller):
             statusname='Owned').one()
     # pylint: enable-msg=E1101
 
-    def __init__(self, fas = None):
-        self.fas = fas
+    def __init__(self):
         controllers.Controller.__init__(self)
         # We want to expose a list of public methods to the outside world so
         # they know what RPC's they can make
@@ -160,7 +160,7 @@ class PackageDispatcher(controllers.Controller):
         for pkg_listing in listings:
             if pkg_listing.owner != ORPHAN_ID:
                 try:
-                    owner = self.fas.cache[pkg_listing.owner]
+                    owner = fas.cache[pkg_listing.owner]
                 except KeyError:
                     owner = {}
                 else:
@@ -179,7 +179,7 @@ class PackageDispatcher(controllers.Controller):
             for acl in acl_users:
                 if acl.status.locale['C'].statusname == 'Approved':
                     try:
-                        person = self.fas.cache[acl.personpackagelisting.userid]
+                        person = fas.cache[acl.personpackagelisting.userid]
                     except KeyError:
                         person = {}
                     else:
@@ -515,7 +515,7 @@ to the new owner of this component.
         # Make sure the person we're setting the acl for exists
         # This can't come from cache ATM because it is used to call
         # _acl_can_be_held_by_user() which needs approved_group data.
-        user = self.fas.person_by_id(personid)
+        user = fas.person_by_id(personid)
         if not user:
             return dict(status=False,
                 message='No such user for ID %(id)s, for package %(pkg)s in' \
@@ -776,7 +776,7 @@ to the new owner of this component.
         # This can't be taken from the cache at the moment because it is used
         # to call _acl_can_be_held_by_user() which needs the approved_group
         # information
-        person = self.fas.person_by_username(owner)
+        person = fas.person_by_username(owner)
         if not person:
             return dict(status=False,
                     message='Specified owner ID %s does not have a Fedora' \
@@ -1021,7 +1021,7 @@ to the new owner of this component.
         if 'owner' in changes:
             # This can't come from the cache ATM as it is used in a call to
             # _acl_can_be_held_by_user() which needs group information.
-            person = self.fas.person_by_username(changes['owner'])
+            person = fas.person_by_username(changes['owner'])
             if not person:
                 return dict(status=False,
                         message='Specified owner %s does not have a Fedora'
@@ -1169,7 +1169,7 @@ to the new owner of this component.
             for username in cc_list:
                 # Lookup the list members in fas
                 try:
-                    person = self.fas.cache[username]
+                    person = fas.cache[username]
                 except KeyError:
                     return dict(status=False,
                             message='New cclist member %s is not in FAS' %
@@ -1206,7 +1206,7 @@ to the new owner of this component.
                 # Note: this can't come from the cache ATM as it is used in a
                 # call to _acl_can_be_held_by_user() which needs group
                 # information.
-                person = self.fas.person_by_username(username)
+                person = fas.person_by_username(username)
                 if not person:
                     return dict(status=False,
                             message='New comaintainer %s does not have a' \

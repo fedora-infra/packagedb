@@ -66,6 +66,7 @@ autoreload.package="pkgdb"
 # Set to True if you'd like to abort execution if a controller gets an
 # unexpected parameter. False by default
 tg.strict_parameters = True
+tg.ignore_parameters = ["_csrf_token"]
 
 # LOGGING
 # Logging configuration generally follows the style of the standard

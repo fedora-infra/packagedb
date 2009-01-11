@@ -1,0 +1,28 @@
+<div class="dijitDialog" tabindex="-1" waiRole="dialog" waiState="labelledby-${id}_title">
+	<div dojoAttachPoint="titleBar" class="dijitDialogTitleBar">
+	<span dojoAttachPoint="titleNode" class="dijitDialogTitle" id="${id}_title"></span>
+	<span dojoAttachPoint="closeButtonNode" class="dijitDialogCloseIcon" dojoAttachEvent="onclick: onCancel" title="${buttonCancel}">
+		<span dojoAttachPoint="closeText" class="closeText" title="${buttonCancel}">x</span>
+	</span>
+  </div>
+  <div dojoAttachPoint="containerNode" class="dijitDialogPaneContent"></div>
+  <form class="dijitDialogPaneContent" dojoAttachEvent="onsubmit: onExecute">
+    <table>
+      <tr>
+        <td class="label"><label for="username">User Name: </label></td>
+        <td class="field"><input dojoType="dijit.form.TextBox" type="text" id="username" name="username" /></td>
+      </tr>
+      <tr>
+        <td class="label"><label for="password">Password:</label></td>
+        <td class="field"><input dojoType="dijit.form.TextBox" type="password" name="password" id="password" /></td>
+      </tr>
+      <tr>
+        <td colspan="2" class="buttons">
+          <button dojoType="dijit.form.Button" type="submit">Login</button>
+          <button dojoType="dijit.form.Button" type="button" dojoAttachEvent="onclick: onCancel">Cancel</button>
+        </td>
+      </tr>
+    </table>
+  </form>
+  <p>You'll need a <a href="https://admin.fedoraproject.org/accounts/">Fedora Account</a> in order to login.</p>
+</div>

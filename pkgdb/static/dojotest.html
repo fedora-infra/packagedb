@@ -4,11 +4,16 @@
   </head>
   <script type="text/javascript" src="/pkgdb/static/js/dojo/dojo.js"
     djConfig="parseOnLoad:false, isDebug:true"></script>
+  <script type="text/javascript" src="/pkgdb/static/js/dijit/dijit.js"></script>
   <script type="text/javascript" src="/pkgdb/static/js/dojotest.js"></script>
   <style>
     .package { color:#00f; font-weight:underline;}
   </style>
-  <body>
+  <style>
+    @import url("js/dijit/themes/tundra/tundra.css");
+  </style>
+
+  <body class="tundra">
     <h1 id="title">Dojo BaseClient Test</h1>
     <div id="one">
     <p>This is a small sample page to show that we can create a simple

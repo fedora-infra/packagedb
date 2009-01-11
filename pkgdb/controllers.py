@@ -25,7 +25,6 @@ indirectly from here.
 from turbogears import controllers, expose, config, flash
 from turbogears import identity, redirect
 from cherrypy import request, response
-import logging
 
 from fedora.tg.util import request_format
 
@@ -38,103 +37,6 @@ from pkgdb.users import Users
 from pkgdb.stats import Stats
 from pkgdb.search import Search
 
-log = logging.getLogger("pkgdb.controllers")
-
-# The Fedora Account System Module
-from fedora.client.fas2 import AccountSystem, AppError
-
-class GroupCache(dict):
-    '''Naive cache for group information.
-
-    This cache can go out of date so use with caution.
-
-    Since there's only a few groups that we retrieve information for, we
-    cache individual groups on demand.
-    '''
-    def __init__(self, fas):
-        super(GroupCache, self).__init__()
-        self.fas = fas
-
-    def __getitem__(self, group):
-        '''Retrieve a group for a groupid or group name.
-
-        First read from the cache.  If not in the cache, refresh from the
-        server and try again.
-
-        If the group does not exist then, KeyError will be raised.
-        '''
-        if isinstance(group, basestring):
-            group = group.strip()
-        if not group:
-            # If the key is just whitespace, raise KeyError immediately,
-            # don't try to refresh the cache
-            raise KeyError(user_id)
-
-        if group not in self:
-            log.debug('GroupCache queries FAS')
-            if isinstance(group, basestring):
-                try:
-                    group_data = self.fas.group_by_name(group)
-                except AppError, e:
-                    raise KeyError(e.message)
-            else:
-                group_data = self.fas.group_by_id(group)
-                if not group_data:
-                    # Unfortunately, this method doesn't yet raise an
-                    # exception on bad id.  Instead it returns an empty record
-                    raise KeyError(_('Unable to find group id %(id)s') %
-                            {'id': group})
-            self[group_data.name] = group_data
-            self[group_data.id] = group_data
-
-        return super(GroupCache, self).__getitem__(group)
-
-class UserCache(dict):
-    '''Naive cache for user information.
-
-    This cache can go out of date so use with caution.
-    '''
-    def __init__(self, fas):
-        super(UserCache, self).__init__()
-        self.fas = fas
-        # Force a refresh on startup so we don't have a delay the first time
-        # someone retrieves a page.
-        self.force_refresh()
-
-    def force_refresh(self):
-        '''Refetch the userid mapping from fas.
-        '''
-        log.debug('UserCache refresh forced')
-        people = self.fas.people_by_id()
-        self.clear()
-        self.update(people)
-        # Note: no collisions because userid is an int and username is a string.
-        for user_id in people:
-            self[people[user_id]['username']] = people[user_id]
-
-    def __getitem__(self, user_id):
-        '''Retrieve a user for a userid or username.
-
-        First read from the cache.  If not in the cache, refresh from the
-        server and try again.
-
-        If the user does not exist then, KeyError will be raised.
-        '''
-        try:
-            user_id = user_id.strip()
-        except AttributeError: # pylint: disable-msg=W0704
-            # If this is a string, strip leading and trailing whitespace.
-            # If it's a number there's no difficulty.
-            pass
-        if user_id not in self:
-            if not user_id:
-                # If the key is just whitespace, raise KeyError immediately,
-                # don't try to refresh the cache
-                raise KeyError(user_id)
-            log.debug('refresh forced for %s' % user_id)
-            self.force_refresh()
-        return super(UserCache, self).__getitem__(user_id)
-
 class Root(controllers.RootController):
     '''Toplevel controller for the PackageDB
 
@@ -144,21 +46,12 @@ class Root(controllers.RootController):
     # pylint: disable-msg=W0232
     app_title = 'Fedora Package Database'
 
-    baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
-    username = config.get('fas.username', 'admin')
-    password = config.get('fas.password', 'admin')
-
-    fas = AccountSystem(baseURL, username=username, password=password,
-            cache_session=False)
-    fas.cache = UserCache(fas)
-    fas.group_cache = GroupCache(fas)
-
-    collections = Collections(fas, app_title)
-    packages = Packages(fas, app_title)
-    users = Users(fas, app_title)
-    stats = Stats(fas, app_title)
-    search = Search(fas, app_title)
-    lists = ListQueries(fas, app_title)
+    collections = Collections(app_title)
+    packages = Packages(app_title)
+    users = Users(app_title)
+    stats = Stats(app_title)
+    search = Search(app_title)
+    lists = ListQueries(app_title)
     # For backwards compatibility:
     acls = lists
 
