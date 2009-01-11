@@ -151,16 +151,8 @@ def refresh_status():
         statuses[status.statusname] = status
     STATUS = statuses
 
-def curl_nss_fix():
-    import pycurl
-    c = pycurl.Curl()
-    c.setopt(pycurl.URL, 'https://admin.fedoraproject.org/')
-    c.setopt(pycurl.WRITEDATA, open('/dev/null', 'w'))
-    c.perform()
-
 def startup():
     # Things to do on startup
-    curl_nss_fix()
     refresh_status()
     global fas, LOG
     LOG = logging.getLogger('pkgdb.controllers')
