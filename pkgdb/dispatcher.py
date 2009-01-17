@@ -234,7 +234,23 @@ class PackageDispatcher(controllers.Controller):
         :user: The user to check.  Either a user, group tuple from FAS or None.
                If None, the current identity will be used.
         '''
-        # Anyone can hold watchbugzilla or watchcommits
+        # watchbugzilla and owner needs a valid bugzilla address
+        if acl in ('watchbugzilla', 'owner'):
+            try:
+                bugzilla.getuser(user['bugzilla_email'])
+            except xmlrpclib.Fault, e:
+                if e.faultCode == 51:
+                    # No such user
+                    raise AclNotAllowedError('Email address %(email)s is not a'
+                            ' valid bugzilla email address.  Either make a'
+                            ' bugzilla account with that email address or'
+                            ' change your email address in the Fedora Account'
+                            ' System https://admin.fedoraproject.org/accounts/'
+                            ' to a valid bugzilla email address and try again.'
+                            % user['bugzilla_email'])
+                raise
+
+        # Anyone can hold watchcommits and watchbugzilla
         if acl in ('watchbugzilla', 'watchcommits'):
             return True
 
