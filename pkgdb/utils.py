@@ -22,6 +22,7 @@ Utilities for all classes to use
 '''
 from turbogears import config
 import logging
+from bugzilla import Bugzilla
 
 # The Fedora Account System Module
 from fedora.client.fas2 import AccountSystem
@@ -31,6 +32,7 @@ from pkgdb.model.statuses import StatusTranslation
 STATUS = {}
 fas = None
 LOG = None
+bugzilla = None
 
 def to_unicode(obj, encoding='utf-8', errors='strict'):
     '''
@@ -40,7 +42,7 @@ def to_unicode(obj, encoding='utf-8', errors='strict'):
         you want (as it converts the __str__ of the obj).
     :kwarg encoding: encoding of the byte string to convert from.
     :kwarg errors:
-        :strict: raisean error if it won't convert
+        :strict: raise an error if it won't convert
         :replace: replace non-converting chars with a certain char for the
             encoding.  (For instance, ascii substitutes a ?).
         :ignore: silently drop the bad characters
@@ -154,16 +156,25 @@ def refresh_status():
 def startup():
     # Things to do on startup
     refresh_status()
-    global fas, LOG
+    global fas, LOG, bugzilla
     LOG = logging.getLogger('pkgdb.controllers')
 
-    baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
+    # Get a connection to the Account System server
+    fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
 
-    fas = AccountSystem(baseURL, username=username, password=password,
+    fas = AccountSystem(fas_url, username=username, password=password,
             cache_session=False)
     fas.cache = UserCache(fas)
     fas.group_cache = GroupCache(fas)
 
-__all__ = [STATUS, LOG, fas, refresh_status, startup, to_unicode]
+    # Get a connection to bugzilla
+    bz_server = config.get('bugzilla.queryurl', config.get('bugzilla.url',
+        'https://bugzilla.redhat.com'))
+    bz_url = bz_server + '/xmlrpc.cgi'
+    bz_user = config.get('bugzilla.user')
+    bz_pass = config.get('bugzilla.password')
+    bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass)
+
+__all__ = [STATUS, LOG, fas, bugzilla, refresh_status, startup, to_unicode]
