@@ -1,4 +1,4 @@
-.. _contents:
+.. contents::
 
 ==============================
 Fedora PackageDB Documentation
