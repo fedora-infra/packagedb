@@ -74,11 +74,9 @@ import simplejson
                             aclChanger = True
                         break
             if not aclChanger:
-                for group in tg.identity.groups:
-                    if group == 'cvsadmin':
-                        # Person is an admin and thus can make changes
-                        aclChanger = True
-                        break
+                if 'cvsadmin' in tg.identity.groups:
+                    # Person is an admin and thus can make changes
+                    aclChanger = True
         ?>
         <tr><th>
             Collection
@@ -189,7 +187,7 @@ import simplejson
               checkbox to edit this
               -->
               <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
-                <div py:if="aclChanger"
+                <div py:if="'cvsadmin' in tg.identity.groups"
                   py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid) +
                   ':commit'}"
                   class="requestContainer groupAclStatus">
@@ -197,7 +195,7 @@ import simplejson
                   <input type="checkbox" class="groupAclStatusBox"
                     py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
                 </div>
-                <div py:if="not aclChanger"
+                <div py:if="not 'cvsadmin' in tg.identity.groups"
                   py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
                   + ':commit'}"
                   class="groupAclStatus requestContainer">
