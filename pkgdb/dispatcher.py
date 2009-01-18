@@ -610,9 +610,9 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing with id: %s does not exist' \
                     % pkg_listing_id)
 
-        # Check whether the user is allowed to set this acl
-        approved = self._user_can_set_acls(identity, pkg)
-        if not approved:
+        # Only cvsadmins can change whether the provenpackager group can
+        # commit.
+        if not identity.in_group('cvsadmin'):
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs for %s (%s %s)'
                     % (identity.current.user_name, pkg.package.name,
