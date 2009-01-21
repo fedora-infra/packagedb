@@ -29,6 +29,7 @@ Controller to process requests to change package information.
 #   check whenever we use a db mapped class.
 
 from datetime import datetime
+import xmlrpclib
 
 from sqlalchemy import and_
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
@@ -234,20 +235,27 @@ class PackageDispatcher(controllers.Controller):
         :user: The user to check.  Either a user, group tuple from FAS or None.
                If None, the current identity will be used.
         '''
+        if not user:
+            user = identity.current.user
         # watchbugzilla and owner needs a valid bugzilla address
         if acl in ('watchbugzilla', 'owner'):
+            if not 'bugzilla_email' in user:
+                # identity doesn't come with bugzilla_email, get it from the
+                # cache
+                user.bugzilla_email = fas.cache[user.username]['bugzilla_email']
             try:
-                bugzilla.getuser(user['bugzilla_email'])
+                bugzilla.getuser(user.bugzilla_email)
             except xmlrpclib.Fault, e:
                 if e.faultCode == 51:
                     # No such user
-                    raise AclNotAllowedError('Email address %(email)s is not a'
-                            ' valid bugzilla email address.  Either make a'
-                            ' bugzilla account with that email address or'
-                            ' change your email address in the Fedora Account'
-                            ' System https://admin.fedoraproject.org/accounts/'
-                            ' to a valid bugzilla email address and try again.'
-                            % user['bugzilla_email'])
+                    raise AclNotAllowedError('Email address %(bugzilla_email)s'
+                            ' is not a valid bugzilla email address.  Either'
+                            ' make a bugzilla account with that email address'
+                            ' or change your email address in the Fedora'
+                            ' Account System'
+                            ' https://admin.fedo=raproject.org/accounts/ to a'
+                            ' valid bugzilla email address and try again.'
+                            % user)
                 raise
 
         # Anyone can hold watchcommits and watchbugzilla
