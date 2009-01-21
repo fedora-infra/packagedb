@@ -28,6 +28,8 @@ elif os.path.exists(os.path.join(os.path.dirname(__file__), "setup.py")):
 else:
     update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),modulename="pkgdb.config")
 
+from pkgdb.utils import startup
+startup()
 from pkgdb.controllers import Root
 
 start_server(Root())

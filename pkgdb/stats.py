@@ -29,6 +29,7 @@ from turbogears import controllers, expose, identity
 
 from pkgdb.model import PackageListing, PersonPackageListing, \
         PersonPackageListingAcl
+from pkgdb.utils import fas
 
 ORPHAN_ID = 9900
 DEVEL = 8 # collection id
@@ -38,13 +39,11 @@ class Stats(controllers.Controller):
     Things like: total packages, total orphaned packages, most packages owned 
     '''
 
-    def __init__(self, fas, app_title):
+    def __init__(self, app_title):
         '''Create a Stats Controller.
 
-        :fas: Fedora Account System object.
         :app_title: Title of the web app.
         '''
-        self.fas = fas
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.stats')
@@ -75,8 +74,7 @@ class Stats(controllers.Controller):
                                         desc('numpkgs')).limit(20)
         top_owners_names = []
         for listing in top_owners_select.execute():
-            top_owners_names.append(
-                    self.fas.cache[int(listing.owner)]['username'])
+            top_owners_names.append(fas.cache[int(listing.owner)]['username'])
 
         # most packages owned or comaintained in DEVEL collection
         maintain_select = select(
@@ -90,8 +88,7 @@ class Stats(controllers.Controller):
             desc('numpkgs')).limit(20)
         maintain_names = []
         for listing in maintain_select.execute():
-            maintain_names.append(self.fas.cache[
-                int(listing.userid)]['username'])
+            maintain_names.append(fas.cache[int(listing.userid)]['username'])
 
         # total number of packages in pkgdb
         total = PackageListing.query.count()

@@ -46,6 +46,7 @@ from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.notifier import EventLogger
+from pkgdb.utils import fas
 
 MASS_BRANCH_SET = 500
 
@@ -55,13 +56,11 @@ class Collections(controllers.Controller):
     These are methods that expose Collections to the users.  Collections are
     usually a specific release of a distribution.  For instance, Fedora 8.
     '''
-    def __init__(self, fas, app_title):
+    def __init__(self, app_title):
         '''Create a Packages Controller.
 
-        :arg fas: Fedora Account System object.
         :arg app_title: Title of the web app.
         '''
-        self.fas = fas
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.collectionoverview', allow_json=True)
@@ -124,7 +123,7 @@ class Collections(controllers.Controller):
 
         # Get ownership information from the fas
         try:
-            user = self.fas.cache[collection_entry.owner]
+            user = fas.cache[collection_entry.owner]
         except KeyError:
             user = {}
             user['username'] = 'User ID %i' % collection_entry.owner
@@ -262,12 +261,9 @@ class Collections(controllers.Controller):
 
         # Send an email to the user to tell them how things turned out
         eventlogger = EventLogger()
-        print author_id
-        print self.fas.cache[author_id]
-        print self.fas.cache[author_id]['email']
         eventlogger.send_msg(msg, _('Mass branching status for %(branch)s') %
                 {'branch': to_branch.branchname},
-                (self.fas.cache[author_id]['email'],))
+                (fas.cache[author_id]['email'],))
 
     @expose(allow_json=True)
     @json_or_redirect('/collections')

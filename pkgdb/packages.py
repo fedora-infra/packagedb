@@ -36,6 +36,7 @@ from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
+from pkgdb.utils import fas
 
 from cherrypy import request
 
@@ -43,17 +44,15 @@ class Packages(controllers.Controller):
     '''Display information related to individual packages.
     '''
 
-    def __init__(self, fas=None, app_title=None):
+    def __init__(self, app_title=None):
         '''Create a Packages Controller.
 
-        :kwarg fas: Fedora Account System object.
         :kwarg app_title: Title of the web app.
         '''
-        self.fas = fas
         self.app_title = app_title
         self.bugs = Bugs(app_title)
         self.index = Letters(app_title)
-        self.dispatcher = PackageDispatcher(fas)
+        self.dispatcher = PackageDispatcher()
         # pylint: disable-msg=E1101
         self.removed_status = model.StatusTranslation.query.filter_by(
                 statusname='Removed', language='C').one().statuscodeid
@@ -205,7 +204,7 @@ class Packages(controllers.Controller):
                     pkg.collection.status.locale['C'].statusname
             # Get real ownership information from the fas
             try:
-                user = self.fas.cache[pkg.owner]
+                user = fas.cache[pkg.owner]
             except KeyError:
                 user = {'username': 'UserID %i' % pkg.owner,
                         'id': pkg.owner}
@@ -215,7 +214,7 @@ class Packages(controllers.Controller):
 
             if pkg.qacontact:
                 try:
-                    user = self.fas.cache[pkg.qacontact]
+                    user = fas.cache[pkg.qacontact]
                 except KeyError:
                     user = {'username': 'UserId %i' % pkg.qacontact}
                 pkg.qacontactname = '%(username)s' % user
@@ -225,7 +224,7 @@ class Packages(controllers.Controller):
             for person in pkg.people:
                 # Retrieve info from the FAS about the people watching the pkg
                 try:
-                    fas_person = self.fas.cache[person.userid]
+                    fas_person = fas.cache[person.userid]
                 except KeyError:
                     fas_person = {'username': 'UserID %i' % person.userid}
                 person.name = '%(username)s' % fas_person
@@ -242,7 +241,7 @@ class Packages(controllers.Controller):
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
-                fas_group = self.fas.group_cache[group.groupid]
+                fas_group = fas.group_cache[group.groupid]
                 group.name = fas_group.get('name', 'Unknown (GroupID %i)' %
                         group.groupid)
                 # Setup acls to be accessible via aclName
