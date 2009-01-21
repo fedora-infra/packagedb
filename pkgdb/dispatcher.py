@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -29,6 +29,7 @@ Controller to process requests to change package information.
 #   check whenever we use a db mapped class.
 
 from datetime import datetime
+import xmlrpclib
 
 from sqlalchemy import and_
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
@@ -47,6 +48,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
+from pkgdb.utils import fas, bugzilla
 
 ORPHAN_ID = 9900
 MAXSYSTEMUID = 9999
@@ -98,8 +100,7 @@ class PackageDispatcher(controllers.Controller):
             statusname='Owned').one()
     # pylint: enable-msg=E1101
 
-    def __init__(self, fas = None):
-        self.fas = fas
+    def __init__(self):
         controllers.Controller.__init__(self)
         # We want to expose a list of public methods to the outside world so
         # they know what RPC's they can make
@@ -159,7 +160,7 @@ class PackageDispatcher(controllers.Controller):
         for pkg_listing in listings:
             if pkg_listing.owner != ORPHAN_ID:
                 try:
-                    owner = self.fas.cache[pkg_listing.owner]
+                    owner = fas.cache[pkg_listing.owner]
                 except KeyError:
                     owner = {}
                 else:
@@ -178,7 +179,7 @@ class PackageDispatcher(controllers.Controller):
             for acl in acl_users:
                 if acl.status.locale['C'].statusname == 'Approved':
                     try:
-                        person = self.fas.cache[acl.personpackagelisting.userid]
+                        person = fas.cache[acl.personpackagelisting.userid]
                     except KeyError:
                         person = {}
                     else:
@@ -234,7 +235,30 @@ class PackageDispatcher(controllers.Controller):
         :user: The user to check.  Either a user, group tuple from FAS or None.
                If None, the current identity will be used.
         '''
-        # Anyone can hold watchbugzilla or watchcommits
+        if not user:
+            user = identity.current.user
+        # watchbugzilla and owner needs a valid bugzilla address
+        if acl in ('watchbugzilla', 'owner'):
+            if not 'bugzilla_email' in user:
+                # identity doesn't come with bugzilla_email, get it from the
+                # cache
+                user.bugzilla_email = fas.cache[user.username]['bugzilla_email']
+            try:
+                bugzilla.getuser(user.bugzilla_email)
+            except xmlrpclib.Fault, e:
+                if e.faultCode == 51:
+                    # No such user
+                    raise AclNotAllowedError('Email address %(bugzilla_email)s'
+                            ' is not a valid bugzilla email address.  Either'
+                            ' make a bugzilla account with that email address'
+                            ' or change your email address in the Fedora'
+                            ' Account System'
+                            ' https://admin.fedo=raproject.org/accounts/ to a'
+                            ' valid bugzilla email address and try again.'
+                            % user)
+                raise
+
+        # Anyone can hold watchcommits and watchbugzilla
         if acl in ('watchbugzilla', 'watchcommits'):
             return True
 
@@ -412,10 +436,26 @@ class PackageDispatcher(controllers.Controller):
             pkg.owner = identity.current.user.id
             pkg.statuscode = self.approvedStatus.statuscodeid
             owner_name = '%s' % identity.current.user_name
+            bzMail = '%s' % identity.current.user.email
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, owner_name)
             status = self.ownedStatus
+            bzQuery = {}
+            bzQuery['product'] = pkg.collection.name
+            bzQuery['component'] = pkg.package.name
+            bzQuery['bug_status'] = ['NEW', 'ASSIGNED', 'ON_DEV', 'ON_QA',
+                    'MODIFIED', 'POST', 'FAILS_QA', 'PASSES_QA',
+                    'RELEASE_PENDING']
+            bzQuery['version'] = pkg.collection.version
+            if bzQuery['version'] == 'devel':
+                bzQuery['version'] = 'rawhide'
+            queryResults = bugzilla.query(bzQuery)
+            for bug in queryResults:
+                bug.setassignee(assigned_to=bzMail, comment='This package'
+                        ' has changed ownership in the Fedora Package'
+                        ' Database.  Reassigning to the new owner of this'
+                        ' component.')
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = ORPHAN_ID
@@ -493,7 +533,7 @@ class PackageDispatcher(controllers.Controller):
         # Make sure the person we're setting the acl for exists
         # This can't come from cache ATM because it is used to call
         # _acl_can_be_held_by_user() which needs approved_group data.
-        user = self.fas.person_by_id(personid)
+        user = fas.person_by_id(personid)
         if not user:
             return dict(status=False,
                 message='No such user for ID %(id)s, for package %(pkg)s in' \
@@ -578,9 +618,9 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing with id: %s does not exist' \
                     % pkg_listing_id)
 
-        # Check whether the user is allowed to set this acl
-        approved = self._user_can_set_acls(identity, pkg)
-        if not approved:
+        # Only cvsadmins can change whether the provenpackager group can
+        # commit.
+        if not identity.in_group('cvsadmin'):
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs for %s (%s %s)'
                     % (identity.current.user_name, pkg.package.name,
@@ -754,7 +794,7 @@ class PackageDispatcher(controllers.Controller):
         # This can't be taken from the cache at the moment because it is used
         # to call _acl_can_be_held_by_user() which needs the approved_group
         # information
-        person = self.fas.person_by_username(owner)
+        person = fas.person_by_username(owner)
         if not person:
             return dict(status=False,
                     message='Specified owner ID %s does not have a Fedora' \
@@ -999,7 +1039,7 @@ class PackageDispatcher(controllers.Controller):
         if 'owner' in changes:
             # This can't come from the cache ATM as it is used in a call to
             # _acl_can_be_held_by_user() which needs group information.
-            person = self.fas.person_by_username(changes['owner'])
+            person = fas.person_by_username(changes['owner'])
             if not person:
                 return dict(status=False,
                         message='Specified owner %s does not have a Fedora'
@@ -1147,7 +1187,7 @@ class PackageDispatcher(controllers.Controller):
             for username in cc_list:
                 # Lookup the list members in fas
                 try:
-                    person = self.fas.cache[username]
+                    person = fas.cache[username]
                 except KeyError:
                     return dict(status=False,
                             message='New cclist member %s is not in FAS' %
@@ -1184,7 +1224,7 @@ class PackageDispatcher(controllers.Controller):
                 # Note: this can't come from the cache ATM as it is used in a
                 # call to _acl_can_be_held_by_user() which needs group
                 # information.
-                person = self.fas.person_by_username(username)
+                person = fas.person_by_username(username)
                 if not person:
                     return dict(status=False,
                             message='New comaintainer %s does not have a' \

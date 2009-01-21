@@ -9,6 +9,8 @@ bugzilla.url='https://bugzilla.redhat.com/'
 # Data returned with this URL will be rewritten to the public URL before
 # display.
 #bugzilla.queryurl='https://bzprx.vip.phx.redhat.com'
+bugzilla.user = 'user@somewhere.com'
+bugzilla.password = 'password'
 
 # Koji configuration
 koji.huburl='https://koji.fedoraproject.org/kojihub'
@@ -64,6 +66,7 @@ autoreload.package="pkgdb"
 # Set to True if you'd like to abort execution if a controller gets an
 # unexpected parameter. False by default
 tg.strict_parameters = True
+tg.ignore_parameters = ["_csrf_token"]
 
 # LOGGING
 # Logging configuration generally follows the style of the standard

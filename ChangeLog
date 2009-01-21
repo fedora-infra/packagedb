@@ -1,3 +1,57 @@
+== 0.3.10 ==
+
+2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r182
+Add Jon Stanley to the AUTHORS file.
+
+2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r181
+Update NEWS for 0.3.10 release.
+
+2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r180
+Bump version for new release.
+
+2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r179
+Update Copyright date.
+
+2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r178
+Merge README from trunk
+
+2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r177
+Fixes for the bugzilla checking code.
+
+2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r176
+Change in the class name for Bugs
+
+2009-01-17  Toshio Kuratomi <toshio@fedoraproject.org> - r175
+Update pkgpage template so the provenpackager checkbox is insensitive unless
+you are a cvsadmin.
+
+2009-01-17  Toshio Kuratomi <toshio@fedoraproject.org> - r174
+Policy change: only cvsadmins can change whether provenpackager is allowed
+to modify a package.
+
+2009-01-17  Toshio Kuratomi <toshio@fedoraproject.org> - r173
+Add postgresql-contrib.
+
+2009-01-17  Toshio Kuratomi <toshio@fedoraproject.org> - r172
+When adding people to watchbugzilla or owner, make sure their email address
+is a valid bugzilla address.
+
+2009-01-17  Toshio Kuratomi <toshio@fedoraproject.org> - r171
+Move bugzilla initialization into utils so we can use it from multiple
+places.
+
+2009-01-17  Toshio Kuratomi <toshio@fedoraproject.org> - r170
+Remove generated html file.
+
+2009-01-17  Toshio Kuratomi <toshio@fedoraproject.org> - r169
+Fix typo.
+
+2009-01-11  pkgdb <pkgdb@dhcp-115.rmrf.net> - r168
+merge to 0.3.x branch
+
+2009-01-11  pkgdb <pkgdb@dhcp-115.rmrf.net> - r167
+Added reassigning bugs on taking ownership
+
 == 0.3.9.2 ==
 
 2008-11-05  Toshio Kuratomi <toshio@fedoraproject.org> - r503
@@ -591,7 +645,25 @@ More generic adding of acls to new packages
 2008-07-14  Casey Dahlin <cdahlin@redhat.com> - r331
 Add uberpackager to new packages
 
+2008-07-08  Toshio Kuratomi <badger@Clingman> - r155
+* pkgdb/templates/advancedsearch.html: Fix a url to use tg.url.
+
+2008-07-08  Toshio Kuratomi <badger@Clingman> - r154
+* pkgdb/static/javascript/pkgpage.js: Fix for page when shouldopen box is not
+  present in the page.
+
+2008-07-06  Ricky Zhou <ricky@Max> - r153
+Fix traceback from missing self.approvedStatus.
+
 === packagedb-0.3.5 ===
+
+2008-06-22  Ricky Zhou <ricky@Max> - r152
+Fix URL in javascript.
+
+2008-06-22  Nigel Jones <dev@nigelj.com> - r151
+Merge from -devel for 0.3.5 release.
+ - Main changes is the search and some json alterations.
+
 2008-06-21  Toshio Kuratomi <badger@Clingman> - r334
 * pkgdb/templates/layout.html: Fix search URL.
 
@@ -607,6 +679,21 @@ Add uberpackager to new packages
 
 2008-06-16  Ionuț Arțăriși <mapleoin@lavabit.com> - r330
 * merged with mapleoin-devel for package search functionality
+
+2008-06-10  Toshio Kuratomi <badger@Clingman> - r150
+* pkgdb/model.py: add shouldopen to __init__().
+* pkgdb/packages.py: tabs => spaces.
+
+=== packagedb-0.3.4.1 ===
+
+2008-06-10  Toshio Kuratomi <badger@Clingman> - r149
+* Bump version for bugfix release.
+
+2008-06-10  Toshio Kuratomi <badger@Clingman> - r148
+* pkgdb/acls.py: Bugfix for acls from -devel.
+
+2008-06-09  Toshio Kuratomi <badger@Clingman> - r147
+*Merge latest fixes from -devel branch.
 
 === packagedb-0.3.4 ===
 2008-06-10  Toshio Kuratomi <badger@Clingman> - r329
@@ -812,6 +899,9 @@ merged with mapleoin-devel for Stats
   SQLAlchemy.
 
 === packagedb-0.3.3.1 ===
+
+2008-05-20  Toshio Kuratomi <badger@Clingman> - r145
+* ChangeLog: Update for new release.
 
 2008-05-20  Toshio Kuratomi <badger@Clingman> - r144
 * fedora-packagedb.spec, pkgdb/release.py: Bump release for new version.

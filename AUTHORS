@@ -6,8 +6,10 @@
 * Toshio Kuratomi <tkuratom@redhat.com> is the primary author of the Fedora
   PackageDB with plenty of help from other members of the Fedora
   Infrastructure Group.
+* Jon Stanley <jstanley@fedoraproject.org> worked on the interaction with
+  bugzilla
+* Mike Watters <valholla75@gmail.com> converted scripts to use config files
 * Ricky Zhou <ricky@fedoraproject.org> made the whole thing fit in with the
   rest of the Fedora websites.
-* Mike Watters <valholla75@gmail.com> converted scripts to use config files
 * Fedora Infrastructure Group <fedora-infrastructure-list@redhat.com>
   #fedora-admin on irc.freenode.net

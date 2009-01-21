@@ -223,5 +223,10 @@ setup(
         # through the Cheeseshop, uncomment the next line
         # 'Framework :: TurboGears :: Widgets',
     ],
-    test_suite = 'nose.collector',
+    test_suite='nose.collector',
+    entry_points = {
+        'console_scripts': [
+            'start-pkgdb = pkgdb.commands:start',
+        ],
+    },
     )

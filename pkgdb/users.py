@@ -38,6 +38,7 @@ from turbogears import controllers, expose, paginate, config, \
 
 from pkgdb.model import Collection, Package, PackageListing, \
         StatusTranslation, PersonPackageListing, PersonPackageListingAcl
+from pkgdb.utils import fas
 
 from fedora.tg.util import request_format
 
@@ -66,13 +67,11 @@ class Users(controllers.Controller):
             ('watchcommits', 'watchcommits'),
             ('watchbugzilla', 'watchbugzilla'))
 
-    def __init__(self, fas, app_title):
+    def __init__(self, app_title):
         '''Create a User Controller.
 
-        :fas: Fedora Account System object.
         :app_title: Title of the web app.
         '''
-        self.fas = fas
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.useroverview')
@@ -130,7 +129,7 @@ class Users(controllers.Controller):
                 fasname = identity.current.user_name
         else:
             try:
-                fasid = self.fas.cache[fasname]['id']
+                fasid = fas.cache[fasname]['id']
             except KeyError:
                 error = dict(title=self.app_title + ' -- Invalid Username',
                         status = False, pkgs = [],
@@ -228,7 +227,7 @@ class Users(controllers.Controller):
                 fasname = identity.current.user_name
         else:
             try:
-                user = self.fas.cache[fasname]
+                user = fas.cache[fasname]
             except KeyError:
                 error = dict(status = False,
                         title = self.app_title + ' -- Invalid Username',
