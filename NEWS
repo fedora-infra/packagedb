@@ -3,8 +3,17 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 5 Nov 2008
-:Version: 0.3.9.2
+:Date: 21 Jan 2009
+:Version: 0.3.10
+
+------
+0.3.10
+------
+
+* Code to check whether a user has a valid bugzilla account when they register
+  to own a package or be placed on the bugzilla cc list.
+* provenpackager is no longer settable by normal users (FESCo policy update)
+* When ownership changes, bugs are now reassigned
 
 -------
 0.3.9.2
