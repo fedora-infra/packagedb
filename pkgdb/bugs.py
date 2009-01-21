@@ -37,12 +37,16 @@ from cherrypy import request
 import bugzilla
 
 try:
-    # python-bugzilla 0.4
-    from bugzilla.base import Bug
+    # python-bugzilla 0.4 >= rc5
+    from bugzilla.base import _Bug as Bug
 except ImportError:
-    # python-bugzilla 0.3
-    # :E0611: This is only found if we are using python-bugzilla 0.3
-    from bugzilla import Bug # pylint: disable-msg=E0611
+    try:
+        # python-bugzilla 0.4 < rc5
+        from bugzilla.base import Bug
+    except ImportError:
+        # python-bugzilla 0.3
+        # :E0611: This is only found if we are using python-bugzilla 0.3
+        from bugzilla import Bug # pylint: disable-msg=E0611
 
 from pkgdb.model import StatusTranslation, Package
 from pkgdb.letter_paginator import Letters
