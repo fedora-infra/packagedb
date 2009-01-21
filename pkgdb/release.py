@@ -2,7 +2,7 @@
 Information about this pkgdb release
 '''
 
-VERSION = '0.3.9.2'
+VERSION = '0.3.10'
 NAME = 'fedora-packagedb'
 DESCRIPTION = 'The Fedora Package Database'
 LONG_DESCRIPTION = '''
@@ -13,7 +13,7 @@ information from other tools.
 '''
 AUTHOR = 'Toshio Kuratomi'
 EMAIL = 'toshio@fedoraproject.org'
-COPYRIGHT = '2007-2008 Red Hat, Inc.'
+COPYRIGHT = '2007-2009 Red Hat, Inc.'
 URL = 'https://fedorahosted.org/packagedb'
 DOWNLOAD_URL = 'https://fedorahosted.org/releases/p/a/packagedb/'
 LICENSE = 'GPLv2'
