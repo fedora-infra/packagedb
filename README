@@ -73,8 +73,18 @@ Get and Build the Source
 Setup the Database
 ~~~~~~~~~~~~~~~~~~
 Make sure postgres is set to allow connections over tcp/ip using password
-authentication.  edit /var/lib/pgsql/data/pg_hba.conf.  You might find a line
-like this::
+authentication.
+
+If you do not have /var/lib/pgsql/data/pg_hba.conf, it may be because this is
+a fresh install of postgres.  Initialize the service by entering the following
+command::
+  sudo service postgresql initdb
+
+This should create several files in the /var/lib/pgsql/data directory including
+the pg_hba.conf file.
+
+Edit the /var/lib/pgsql/data/pg_hba.conf as the user postgres.  You might find
+a line like this::
 
   host	all 	all	127.0.0.1/32	ident sameuser
 
@@ -82,13 +92,19 @@ Instead of that line, you need one that looks like this::
 
   host	all	all	127.0.0.1/32	md5
 
-Create the postgres users that can access the database.  Note that the pkgdb
-web interface will use the pkgdbadmin user.  Other scripts which only read from
-the database can use the pkgdbreadonly user to read information only::
+Create the postgres users that can access the database.  You will be prompted
+to enter a password for each database user twice for verification purposes.
+Note that the pkgdb web interface will use the pkgdbadmin user.  Other scripts
+which only read from the database can use the pkgdbreadonly user to read
+information only::
 
   sudo /etc/init.d/postgresql start
   sudo -u postgres createuser -SDRPE pkgdbadmin
+    Enter password for new role: <password>
+    Enter it again: <password>
   sudo -u postgres createuser -SDRPE pkgdbreadonly
+    Enter password for new role: <password>
+    Enter it again: <password>
 
 Note:: If you don't have sudo, you can use su - instead::
 
@@ -96,7 +112,11 @@ Note:: If you don't have sudo, you can use su - instead::
   /etc/init.d/postgresql start
   su - postgres
   createuser -SDRPE pkgdbadmin
+    Enter password for new role: <password>
+    Enter it again: <password>
   createuser -SDRPE pkgdbreadonly
+    Enter password for new role: <password>
+    Enter it again: <password>
 
 Get some test data and import it into the database.  You want to grab the most
 recent dump from http://fedorahosted.org/releases/p/a/packagedb like this::
@@ -115,6 +135,50 @@ dburi line will be something like this::
 
   sqlalchemy.dburi="postgres://pkgdbadmin:testpassword@localhost/pkgdb"
 
+Next you'll need a directory for the logs.  You have two options.  The first
+is to create a directory in /var/log and change the owner and group to yours
+as follows::
+  sudo mkdir /var/log/pkgdb
+  sudo chown <your username>:<your groupname> /var/log/pkgdb
+
+Or you can edit pkgdb.cfg and change all references to /var/log/pkgdb to a
+directory that you own.  For example: if you want to use ~/packagedb/logs,
+then change the following lines::
+  [[handlers]]
+  [[[cron_out]]]
+  args="('/var/log/pkgdb/cron.log', 'D', 7)"
+
+  args="('/home/<username>/packagedb/logs/cron.log', 'D', 7)"
+
+
+  [[[debug_out]]]
+  class='TimedRotatingFileHandler'
+  args="('/var/log/pkgdb/server.log', 'D', 7)"
+
+  args="('/home/<username>/packagedb/logs/server.log', 'D', 7)"
+
+
+  [[[access_out]]]
+  class='TimedRotatingFileHandler'
+  level='INFO'
+  args="('/var/log/pkgdb/access.log', 'D', 7)"
+
+  args="('/home/<username>/packagedb/logs/access.log', 'D', 7)"
+
+
+  [[[error_out]]]
+  class='TimedRotatingFileHandler'
+  args="('/var/log/pkgdb/server.log', 'D', 7)"
+
+  args="('/home/<username>/packagedb/logs/server.log', 'D', 7)"
+
+
 Then start the server::
 
   python start-pkgdb
+
+
+In your favorite web browser, navigate to::
+  http://localhost:8080/pkgdb/
+
+
