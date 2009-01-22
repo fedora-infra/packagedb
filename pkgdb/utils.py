@@ -153,6 +153,10 @@ def refresh_status():
         statuses[status.statusname] = status
     STATUS = statuses
 
+def shutdown():
+    global bugzilla
+    os.remove(bugzilla.cookiefile)
+
 def startup():
     # Things to do on startup
     refresh_status()
@@ -176,5 +180,11 @@ def startup():
     bz_user = config.get('bugzilla.user')
     bz_pass = config.get('bugzilla.password')
     bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass)
+    # Get a temporary file
+    import tempfile
+    cookiejar, cookiejar_name = tempfile.mkstemp(text=True)
+    cookiejar.close()
+    # Set that to be the cookie file
+    bugzilla.cookiefile = cookiejar_name
 
 __all__ = [STATUS, LOG, fas, bugzilla, refresh_status, startup, to_unicode]
