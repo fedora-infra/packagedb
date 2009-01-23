@@ -20,8 +20,12 @@
 '''
 Utilities for all classes to use
 '''
-from turbogears import config
+import os
+import tempfile
 import logging
+
+from turbogears import config
+
 from bugzilla import Bugzilla
 
 # The Fedora Account System Module
@@ -154,8 +158,7 @@ def refresh_status():
     STATUS = statuses
 
 def shutdown():
-    global bugzilla
-    os.remove(bugzilla.cookiefile)
+    pass
 
 def startup():
     # Things to do on startup
@@ -179,12 +182,7 @@ def startup():
     bz_url = bz_server + '/xmlrpc.cgi'
     bz_user = config.get('bugzilla.user')
     bz_pass = config.get('bugzilla.password')
-    bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass)
-    # Get a temporary file
-    import tempfile
-    cookiejar, cookiejar_name = tempfile.mkstemp(text=True)
-    cookiejar.close()
-    # Set that to be the cookie file
-    bugzilla.cookiefile = cookiejar_name
+    bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass,
+            cookiefile=None)
 
 __all__ = [STATUS, LOG, fas, bugzilla, refresh_status, startup, to_unicode]
