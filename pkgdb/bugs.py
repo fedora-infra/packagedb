@@ -34,7 +34,6 @@ from urllib import quote
 from turbogears import controllers, expose, config, redirect
 from sqlalchemy.exceptions import InvalidRequestError
 from cherrypy import request
-import bugzilla
 
 try:
     # python-bugzilla 0.4 >= rc5
@@ -50,7 +49,7 @@ except ImportError:
 
 from pkgdb.model import StatusTranslation, Package
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import to_unicode, LOG
+from pkgdb.utils import to_unicode, LOG, bugzilla
 
 class BugList(list):
     '''Transform and store values in the bugzilla.Bug data structure
@@ -118,7 +117,6 @@ class Bugs(controllers.Controller):
         :app_title: Title of the web app.
         '''
 
-        self.bz_server = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.app_title = app_title
         self.index = Letters(app_title)
 
@@ -148,7 +146,7 @@ class Bugs(controllers.Controller):
                     'ON_DEV', 'ON_QA', 'VERIFIED', 'FAILS_QA',
                     'RELEASE_PENDING', 'POST'] }
         # :E1101: python-bugzilla monkey patches this in
-        raw_bugs = self.bz_server.query(query) # pylint: disable-msg=E1101
+        raw_bugs = bugzilla.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
         for bug in raw_bugs:
             bugs.append(bug)
