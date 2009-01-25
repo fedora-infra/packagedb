@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -29,6 +29,7 @@ Controller to process requests to change package information.
 #   check whenever we use a db mapped class.
 
 from datetime import datetime
+import xmlrpclib
 
 from sqlalchemy import and_
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
@@ -234,20 +235,27 @@ class PackageDispatcher(controllers.Controller):
         :user: The user to check.  Either a user, group tuple from FAS or None.
                If None, the current identity will be used.
         '''
+        if not user:
+            user = identity.current.user
         # watchbugzilla and owner needs a valid bugzilla address
         if acl in ('watchbugzilla', 'owner'):
+            if not 'bugzilla_email' in user:
+                # identity doesn't come with bugzilla_email, get it from the
+                # cache
+                user.bugzilla_email = fas.cache[user.username]['bugzilla_email']
             try:
-                bugzilla.getuser(user['bugzilla_email'])
+                bugzilla.getuser(user.bugzilla_email)
             except xmlrpclib.Fault, e:
                 if e.faultCode == 51:
                     # No such user
-                    raise AclNotAllowedError('Email address %(email)s is not a'
-                            ' valid bugzilla email address.  Either make a'
-                            ' bugzilla account with that email address or'
-                            ' change your email address in the Fedora Account'
-                            ' System https://admin.fedoraproject.org/accounts/'
-                            ' to a valid bugzilla email address and try again.'
-                            % user['bugzilla_email'])
+                    raise AclNotAllowedError('Email address %(bugzilla_email)s'
+                            ' is not a valid bugzilla email address.  Either'
+                            ' make a bugzilla account with that email address'
+                            ' or change your email address in the Fedora'
+                            ' Account System'
+                            ' https://admin.fedo=raproject.org/accounts/ to a'
+                            ' valid bugzilla email address and try again.'
+                            % user)
                 raise
 
         # Anyone can hold watchcommits and watchbugzilla
@@ -610,9 +618,9 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing with id: %s does not exist' \
                     % pkg_listing_id)
 
-        # Check whether the user is allowed to set this acl
-        approved = self._user_can_set_acls(identity, pkg)
-        if not approved:
+        # Only cvsadmins can change whether the provenpackager group can
+        # commit.
+        if not identity.in_group('cvsadmin'):
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs for %s (%s %s)'
                     % (identity.current.user_name, pkg.package.name,
