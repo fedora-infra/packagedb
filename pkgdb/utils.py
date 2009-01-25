@@ -52,9 +52,11 @@ def to_unicode(obj, encoding='utf-8', errors='strict'):
         :ignore: silently drop the bad characters
 
     '''
-    if not isinstance(obj, unicode):
-        obj = unicode(obj, encoding, errors)
-    return obj
+    if isinstance(obj, unicode):
+        return obj
+    if isinstance(obj, str):
+        return unicode(obj, encoding, errors)
+    return unicode(obj)
 
 class GroupCache(dict):
     '''Naive cache for group information.
