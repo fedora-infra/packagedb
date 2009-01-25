@@ -60,7 +60,7 @@ Install Prerequisites
 ::
   yum -y install python-genshi TurboGears python-turbojson postgresql-server \
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
-    python-psycopg2 python-sqlalchemy python-feedparser
+    python-psycopg2 python-sqlalchemy python-feedparser koji
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -133,7 +133,9 @@ a username (your Fedora Account System username will work), fas.password (if
 you use your username, your password will work), and sqlalchemy.dburi.  The
 dburi line will be something like this::
 
-  sqlalchemy.dburi="postgres://pkgdbadmin:testpassword@localhost/pkgdb"
+  sqlalchemy.dburi="postgres://pkgdbadmin:bunbunbun@localhost/pkgdb"
+
+You'll need to change 'bunbunbun' to your password.
 
 Next you'll need a directory for the logs.  You have two options.  The first
 is to create a directory in /var/log and change the owner and group to yours
@@ -179,6 +181,6 @@ Then start the server::
 
 
 In your favorite web browser, navigate to::
-  http://localhost:8080/pkgdb/
+  http://localhost:8086/pkgdb/
 
 
