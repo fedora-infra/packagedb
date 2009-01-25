@@ -3,8 +3,15 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 21 Jan 2009
-:Version: 0.3.10
+:Date: 22 Jan 2009
+:Version: 0.3.10.1
+
+--------
+0.3.10.1
+--------
+
+* Fix for bugzilla code when the user does not have permission to save cookies
+  to a file.
 
 ------
 0.3.10

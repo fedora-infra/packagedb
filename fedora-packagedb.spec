@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.10
+Version:        0.3.10.1
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -79,7 +79,10 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
-* Wed Jan 21 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10
+* Wed Jan 22 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10.1-1
+- bugzilla checking fix.
+
+* Wed Jan 21 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10-1
 - Update for new provenpackager policy and bugzilla account checking.
 
 * Wed Nov 5  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.9.2-1
