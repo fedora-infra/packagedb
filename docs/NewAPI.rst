@@ -373,12 +373,12 @@ packageName               pkg_name
 package_name              pkg_name
 collection                collectn
 collectionName            collectn_name
-collectionVersion         collectn_version
+collectionVersion         collectn_ver
 cc_list                   cc_list
 qacontact                 qa_contact
 fasname                   username
-pkg_listing_id            pkg, collectn
-collection_id             collectn
+pkg_listing_id            pkg_listing_id
+collection_id             collectn_id
 ========================  ================
 
 -----------------
