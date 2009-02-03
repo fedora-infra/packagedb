@@ -69,7 +69,7 @@ class Search(controllers.Controller):
 
     @expose(template='pkgdb.templates.search', allow_json=True)
     @validate(validators={'release':Int()})
-    @paginate('packages,' limit=20, max_pages=13)
+    @paginate('packages', limit=20, max_pages=13)
     def package(self, searchon='both', release=0, operator='AND',
                         searchwords=''):
         '''Searches for packages
