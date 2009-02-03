@@ -181,12 +181,14 @@ function toggle_owner(ownerDiv, data) {
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
         ownerButton.setAttribute('value', 'Take Ownership');
         set_acl_approval_box(aclTable, false);
+        /** FIXME: Need to find the Status box and update it as well */
     } else {
         /* Show the new owner information */
         swapElementClass(ownerDiv, 'orphaned', 'owned');
         swapElementClass(ownerButton, 'unorphanButton', 'orphanButton');
         ownerButton.setAttribute('value', 'Release Ownership');
         set_acl_approval_box(aclTable, true, data['aclStatusFields']);
+        /** FIXME: Need to find the Status box and update it as well */
     }
     var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
     var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
@@ -430,13 +432,13 @@ function request_status_change(event) {
     var idParts = requestContainer.getAttribute('name').split(':');
 
     var req = loadJSONDoc(base + '/set_acl_status', {'pkgid': idParts[0],
-            'personid': personid, 'newAcl': idParts[1],
+            'personid': personid, 'new_acl': idParts[1],
             'statusname': aclStatus});
     req.addCallback(partial(check_acl_status, requestContainer));
     req.addErrback(partial(revert_acl_status, requestContainer));
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'newAcl':idParts[1],'statusname':aclStatus}));
+    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'new_acl':idParts[1],'statusname':aclStatus}));
 }
 
 /*
@@ -445,10 +447,8 @@ function request_status_change(event) {
  * This mostly involves setting event handlers to be called when the user
  * clicks on something.
  */
-jQuery(document).ready(function() {
+function init(event) {
     logDebug('In Init');
-    /* Restore $() to whatever other library wants it */
-    jQuery.noConflict();
 
     /* Global commits hash.  When a change from the user is anticipated, add
      * relevant information to this hash.  After the change is committed or
@@ -456,7 +456,6 @@ jQuery(document).ready(function() {
      */
     commits = {};
 
-    //jQuery('input').class('ownerButton')
     var ownerButtons = getElementsByTagAndClassName('input', 'ownerButton');
     for (var buttonNum in ownerButtons) {
         var request_owner_change = partial(make_request, '/toggle_owner',
@@ -494,4 +493,6 @@ jQuery(document).ready(function() {
     for (var addButtonNum in addMyselfButtons) {
         connect(addMyselfButtons[addButtonNum], 'onclick', request_acl_gui);
     }
-});
+}
+
+connect(window, 'onload', init);

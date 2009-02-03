@@ -1,0 +1,99 @@
+====
+NEWS
+====
+
+:Authors: Toshio Kuratomi
+:Date: 22 Jan 2009
+:Version: 0.3.10.1
+
+--------
+0.3.10.1
+--------
+
+* Fix for bugzilla code when the user does not have permission to save cookies
+  to a file.
+
+------
+0.3.10
+------
+
+* Code to check whether a user has a valid bugzilla account when they register
+  to own a package or be placed on the bugzilla cc list.
+* provenpackager is no longer settable by normal users (FESCo policy update)
+* When ownership changes, bugs are now reassigned
+
+-------
+0.3.9.2
+-------
+
+* Couple bugfixes for pkgdb-client and cut and paste artifact that crept into
+  PackageListing.
+
+-------
+0.3.9.1
+-------
+
+* Fix emailing mass branch status to the author of the change.
+
+-----
+0.3.9
+-----
+
+* Utilize SQLAlchemy-0.4 features to make working with the database model
+  easier.  Note that this means that some properties of the model will be
+  deprecated for the 0.4.x version of the packagedb.
+* Now works with python-bugzilla 0.4
+* Rename uberpackager to provenpackager
+* Speedups!  /package/name/PKGNAME is finally fast.
+* mass_branch functionality
+* clone_branch rewrite: faster and fixed bug
+
+-----
+0.3.8
+-----
+
+Enhancements
+============
+
+* Transition from packager to uberpackager group for access.
+
+Bug Fixes
+=========
+
+* Checkbox to open acls to uberpackager group was checked anytime the page
+  was reloaded.
+* Error when orphaning or taking ownership of a package.
+* Unable to approve acls on a package.
+* Bugzilla sync script porting by Mike Watters
+* pkgdb-client administrative script added
+
+-----
+0.3.7
+-----
+
+This update sees lots of UI improvements from Ionuț and bugfixes from Toshio.
+Some of these changes have already been deployed to the Fedora instance as
+hotfixes.
+
+Enhancements
+============
+
+* Orphan status is now recorded via the packagelisting's status field
+* Rename from "cvsextras" to "packager"
+* Letter pagination of the package pages
+* Switch to showing login errors via tg.flash
+* Remove the use of human_name for privacy concerns
+* pylint cleanup
+* Disambiguate the report bugs link
+* Modify json return for user package list to return which collections a
+  package is in
+* Now link to bugzilla from the bugs pages
+
+Bug fixes
+=========
+
+* yumrepo sync fixes for SA-0.4
+* bugfix to notify code when no one is on the watch* acls
+* Bugfix for javascript that drives the search boxes
+* uberpackager fix when creating a new branch for a preexisting component
+* Fix ordering of user package list

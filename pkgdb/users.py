@@ -31,12 +31,14 @@ Controller to show information about packages by user.
 #   have to disable this check wherever we use the mapper classes.
 
 import sqlalchemy
+from sqlalchemy.orm import lazyload
 
 from turbogears import controllers, expose, paginate, config, \
         redirect, identity
 
 from pkgdb.model import Collection, Package, PackageListing, \
         StatusTranslation, PersonPackageListing, PersonPackageListingAcl
+from pkgdb.utils import fas
 
 from fedora.tg.util import request_format
 
@@ -65,13 +67,11 @@ class Users(controllers.Controller):
             ('watchcommits', 'watchcommits'),
             ('watchbugzilla', 'watchbugzilla'))
 
-    def __init__(self, fas, app_title):
+    def __init__(self, app_title):
         '''Create a User Controller.
 
-        :fas: Fedora Account System object.
         :app_title: Title of the web app.
         '''
-        self.fas = fas
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.useroverview')
@@ -129,7 +129,7 @@ class Users(controllers.Controller):
                 fasname = identity.current.user_name
         else:
             try:
-                fasid = self.fas.cache[fasname]['id']
+                fasid = fas.cache[fasname]['id']
             except KeyError:
                 error = dict(title=self.app_title + ' -- Invalid Username',
                         status = False, pkgs = [],
@@ -145,11 +145,11 @@ class Users(controllers.Controller):
         page_title = self.app_title + ' -- ' + fasname + ' -- Packages'
 
         # pylint: disable-msg=E1101
-        query = Package.query.join('listings').distinct()
+        query = Package.query.join('listings2').distinct().options(lazyload('listings2.groups2'), lazyload('listings2.groups2.acls2'),lazyload('listings2.people2'), lazyload('listings2.people2.acls2'), lazyload('listings2'))
 
         if not eol:
             # We don't want EOL releases, filter those out of each clause
-            query = query.join(['listings', 'collection']).filter(
+            query = query.join(['listings2', 'collection']).filter(
                         Collection.c.statuscode != self.EOLStatusId)
 
         queries = []
@@ -170,8 +170,8 @@ class Users(controllers.Controller):
 
         if acls:
             # Return any package on which the user has an Approved acl.
-            queries.append(query.join(['listings', 'people']).join(
-                    ['listings', 'people', 'acls']).filter(sqlalchemy.and_(
+            queries.append(query.join(['listings2', 'people2']).join(
+                    ['listings2', 'people2', 'acls2']).filter(sqlalchemy.and_(
                     Package.c.statuscode.in_((self.approvedStatusId,
                     self.awaitingReviewStatusId, self.underReviewStatusId)),
                     PersonPackageListing.c.userid == fasid,
@@ -195,7 +195,7 @@ class Users(controllers.Controller):
         else:
             my_pkgs = queries[0]
 
-        my_pkgs = my_pkgs.order_by(Package.name)
+        my_pkgs = my_pkgs.options(lazyload('listings2.people2'), lazyload('listings2.people2.acls2'), lazyload('listings2.groups2'), lazyload('listings2.groups2.acls2'), lazyload('listings2')).order_by(Package.name)
         # pylint: enable-msg=E1101
         pkg_list = []
         for pkg in my_pkgs:
@@ -227,7 +227,7 @@ class Users(controllers.Controller):
                 fasname = identity.current.user_name
         else:
             try:
-                user = self.fas.cache[fasname]
+                user = fas.cache[fasname]
             except KeyError:
                 error = dict(status = False,
                         title = self.app_title + ' -- Invalid Username',

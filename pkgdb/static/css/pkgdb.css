@@ -71,31 +71,31 @@
 a.bodhi
 {
   padding-left: 20px;
-  background: url(../images/bodhi.png) 0 50% no-repeat;
+  background: url(https://fedoraproject.org/static/images/icons/fedora-infra-icon_bodhi.png) 0 50% no-repeat;
 }
 
 a.koji
 {
   padding-left: 20px;
-  background: url(../images/koji.png) 0 50% no-repeat;
+  background: url(http://fedoraproject.org/static/images/icons/fedora-infra-icon_koji.png) 0 50% no-repeat;
 }
 
 a.bugz
 {
   padding-left: 20px;
-  background: url(../images/bugz.png) 0 50% no-repeat;
+  background: url(http://fedoraproject.org/static/images/icons/fedora-infra-icon_bugzilla.png) 0 50% no-repeat;
 }
 
 a.pkgdb
 {
   padding-left: 20px;
-  background: url(../images/pkgdb.png) 0 50% no-repeat;
+  background: url(http://fedoraproject.org/static/images/icons/fedora-infra-icon_pkgdb.png) 0 50% no-repeat;
 }
 
 a.cvs
 {
   padding-left: 20px;
-  background: url(../images/emblem-cvs-controlled.png) 0 50% no-repeat;
+  background: url(http://fedoraproject.org/static/images/icons/fedora-infra-icon_source-control.png) 0 50% no-repeat;
 }
 
 .ToolTip
@@ -153,21 +153,23 @@ a.cvs
 /*
  * Package DB Specific styles
  */
-.pkglist-owned, .buglist
+.pkglist, .buglist
 {
   border: 1px solid #CCCCCC;
-  width: 100%;
   text-align: center;
 }
 
-.pkglist-orphan 
+.pkglist.orphan
 {
-    width: 100%;
-    border: 1px solid #CCCCCC;
-    text-align: center;
     background-color: #EFEFEF;
 }
-.pkglist-owned th, .pkglist-owned td, .pkglist-orphan th, .pkglist-orphan td, .buglist th, .buglist td
+
+.buglist
+{
+  width: 100%;
+}
+
+.pkglist th, .pkglist td, .buglist th, .buglist td
 {
   border: none!important;
 }

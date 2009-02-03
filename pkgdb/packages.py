@@ -29,14 +29,14 @@ Controller for displaying Package Information.
 # :E1101: SQLAlchemy monkey patches the database fields into the mapper
 #   classes so we have to disable these checks.
 
-
+from sqlalchemy.orm import eagerload
 from turbogears import controllers, expose, config, redirect, identity 
-from turbogears.validators import PlainText
 
 from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
+from pkgdb.utils import fas
 
 from cherrypy import request
 
@@ -44,17 +44,15 @@ class Packages(controllers.Controller):
     '''Display information related to individual packages.
     '''
 
-    def __init__(self, fas=None, app_title=None):
+    def __init__(self, app_title=None):
         '''Create a Packages Controller.
 
-        :fas: Fedora Account System object.
-        :app_title: Title of the web app.
+        :kwarg app_title: Title of the web app.
         '''
-        self.fas = fas
         self.app_title = app_title
         self.bugs = Bugs(app_title)
         self.index = Letters(app_title)
-        self.dispatcher = PackageDispatcher(fas)
+        self.dispatcher = PackageDispatcher()
         # pylint: disable-msg=E1101
         self.removed_status = model.StatusTranslation.query.filter_by(
                 statusname='Removed', language='C').one().statuscodeid
@@ -70,13 +68,12 @@ class Packages(controllers.Controller):
         When given optional arguments the information can be limited by what
         collections they are present in.
 
-        Arguments:
-        :packageName: Name of the package to lookup
-        :collectionName: If given, limit information to branches for this
-            distribution.
-        :collectionVersion: If given, limit information to this particular
-            version of a distribution.  Has no effect if collectionName is not
-            also specified.
+        :arg packageName: Name of the package to lookup
+        :kwarg collectionName: If given, limit information to branches for
+            this distribution.
+        :kwarg collectionVersion: If given, limit information to this
+            particular version of a distribution.  Has no effect if
+            collectionName is not also specified.
         '''
         # pylint: disable-msg=E1101
         # Return the information about a package.
@@ -116,7 +113,8 @@ class Packages(controllers.Controller):
         acl_names = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # pylint: disable-msg=E1101
         # Possible statuses for acls:
-        acl_status = model.PackageAclStatus.query.all()
+        acl_status = model.PackageAclStatus.query.options(
+                eagerload('locale')).all()
         # pylint: enable-msg=E1101
         acl_status_translations = ['']
         for status in acl_status:
@@ -124,18 +122,22 @@ class Packages(controllers.Controller):
             # not just C
             if acl_status_translations != 'Obsolete':
                 acl_status_translations.append(
-                        status.translations[0].statusname)
+                        status.locale['C'].statusname)
 
         # pylint: disable-msg=E1101
         # Fetch information about all the packageListings for this package
-        pkg_listings = model.PackageListing.query.filter(
-                model.PackageListingTable.c.packageid==package.id)
+        pkg_listings = model.PackageListing.query.options(
+                eagerload('people2.acls2.status.locale'),
+                eagerload('groups2.acls2.status.locale'),
+                eagerload('status.locale'),
+                eagerload('collection.status.locale'),
+                ).filter(model.PackageListingTable.c.packageid==package.id)
         # pylint: enable-msg=E1101
         if collection:
             # User asked to limit it to specific collections
             pkg_listings = pkg_listings.filter(
                     model.PackageListingTable.c.collectionid.in_(
-                    *[c.id for c in collection]))
+                    [c.id for c in collection]))
             if not pkg_listings.count():
                 error = dict(status=False,
                         title=self.app_title + ' -- Not in Collection',
@@ -179,8 +181,8 @@ class Packages(controllers.Controller):
                         for acls in acl_lists:
                             # ...check each acl
                             for acl in acls:
-                                if acl.acl == 'approveacls' and acl.status \
-                                        == self.approved_status:
+                                if acl.acl == 'approveacls' and \
+                                        acl.statuscode == self.approved_status:
                                     # If the user has approveacls we're done
                                     can_set_shouldopen = True
                                     raise StopIteration
@@ -197,12 +199,12 @@ class Packages(controllers.Controller):
                 'GroupPackageListing': ('aclOrder', 'name'),
                 }
 
-            status_map[pkg.statuscode] = pkg.status.translations[0].statusname
+            status_map[pkg.statuscode] = pkg.status.locale['C'].statusname
             status_map[pkg.collection.statuscode] = \
-                    pkg.collection.status.translations[0].statusname
+                    pkg.collection.status.locale['C'].statusname
             # Get real ownership information from the fas
             try:
-                user = self.fas.cache[pkg.owner]
+                user = fas.cache[pkg.owner]
             except KeyError:
                 user = {'username': 'UserID %i' % pkg.owner,
                         'id': pkg.owner}
@@ -212,7 +214,7 @@ class Packages(controllers.Controller):
 
             if pkg.qacontact:
                 try:
-                    user = self.fas.cache[pkg.qacontact]
+                    user = fas.cache[pkg.qacontact]
                 except KeyError:
                     user = {'username': 'UserId %i' % pkg.qacontact}
                 pkg.qacontactname = '%(username)s' % user
@@ -222,7 +224,7 @@ class Packages(controllers.Controller):
             for person in pkg.people:
                 # Retrieve info from the FAS about the people watching the pkg
                 try:
-                    fas_person = self.fas.cache[person.userid]
+                    fas_person = fas.cache[person.userid]
                 except KeyError:
                     fas_person = {'username': 'UserID %i' % person.userid}
                 person.name = '%(username)s' % fas_person
@@ -232,14 +234,14 @@ class Packages(controllers.Controller):
                 for acl in acl_names:
                     person.aclOrder[acl] = None
                 for acl in person.acls:
-                    statusname = acl.status.translations[0].statusname
+                    statusname = acl.status.locale['C'].statusname
                     status_map[acl.statuscode] = statusname
                     if statusname != 'Obsolete':
                         person.aclOrder[acl.acl] = acl
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
-                fas_group = self.fas.group_by_id(group.groupid)
+                fas_group = fas.group_cache[group.groupid]
                 group.name = fas_group.get('name', 'Unknown (GroupID %i)' %
                         group.groupid)
                 # Setup acls to be accessible via aclName
@@ -248,11 +250,11 @@ class Packages(controllers.Controller):
                     group.aclOrder[acl] = None
                 for acl in group.acls:
                     status_map[acl.statuscode] = \
-                            acl.status.translations[0].statusname
+                            acl.status.locale['C'].statusname
                     group.aclOrder[acl.acl] = acl
 
         status_map[pkg_listings[0].package.statuscode] = \
-                pkg_listings[0].package.status.translations[0].statusname
+                pkg_listings[0].package.status.locale['C'].statusname
 
         return dict(title='%s -- %s' % (self.app_title, package.name),
                 packageListings=pkg_listings, statusMap = status_map,
@@ -260,15 +262,14 @@ class Packages(controllers.Controller):
                 can_set_shouldopen=can_set_shouldopen)
 
     @expose(template='pkgdb.templates.pkgpage')
-    # id is an appropriate name for this method (C0103)
-    def id(self, packageId): # pylint: disable-msg=C0103
+    # :C0103: id is an appropriate name for this method
+    def id(self, package_id): # pylint: disable-msg=C0103
         '''Return the package with the given id
 
-        Arguments:
-        :packageId: The numeric id for the package to return information for
+        :arg package_id: Numeric id of the package to return information for
         '''
         try:
-            packageId = int(packageId)
+            package_id = int(package_id)
         except ValueError:
             return dict(tg_template='pkgdb.templates.errors', status=False,
                     title=self.app_title + ' -- Invalid Package Id',
@@ -278,15 +279,15 @@ class Packages(controllers.Controller):
                     )
 
         # pylint: disable-msg=E1101
-        pkg = model.Package.query.filter_by(id=packageId).first()
+        pkg = model.Package.query.filter_by(id=package_id).first()
         # pylint: enable-msg=E1101
         if not pkg:
             return dict(tg_template='pkgdb.templates.errors', status=False,
                     title=self.app_title + ' -- Unknown Package',
                     message='The packageId you were linked to, %s, does not' \
                     ' exist. If you received this error from a link on the' \
-                    ' fedoraproject.org website, please report it.' % packageId
-                    )
+                    ' fedoraproject.org website, please report it.' %
+                    package_id)
 
         raise redirect(config.get('base_url_filter.base_url') +
                 '/packages/name/' + pkg.name)

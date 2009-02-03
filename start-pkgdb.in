@@ -10,7 +10,7 @@ sys.path.append(PKGDBDIR)
 
 import pkg_resources
 
-from turbogears import config, update_config, start_server
+from turbogears import config, update_config, start_server, startup
 import cherrypy
 
 cherrypy.lowercase_api = True
@@ -27,6 +27,11 @@ elif os.path.exists(os.path.join(os.path.dirname(__file__), "setup.py")):
     update_config(configfile="pkgdb.cfg",modulename="pkgdb.config")
 else:
     update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),modulename="pkgdb.config")
+
+import pkgdb.utils
+
+pkgdb.utils.startup()
+startup.call_on_shutdown.append(pkgdb.utils.shutdown)
 
 from pkgdb.controllers import Root
 

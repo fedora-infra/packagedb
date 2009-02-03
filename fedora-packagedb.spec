@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.6
+Version:        0.3.10.1
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -17,8 +17,9 @@ Requires: python-TurboMail
 Requires: python-sqlalchemy >= 0.4
 Requires: python-psycopg2
 Requires: python-genshi
-Requires: python-fedora >= 0.2.99.7
+Requires: python-fedora >= 0.3.7
 Requires: python-bugzilla
+Requires: koji
 
 BuildRequires: python-devel
 BuildRequires: python-genshi
@@ -27,6 +28,16 @@ BuildRequires:  python-setuptools-devel
 
 %description
 The Fedora Packagedb tracks who owns a package in the Fedora Collection.
+
+%package clients
+Summary:        Keep track of ownership of packages in Fedora
+Group:          Development/Tools
+License:        GPLv2
+Requires: python-fedora >= 0.3.7
+Requires: python-configobj
+
+%description clients
+Command line script to communicate with the Fedora PackageDB
 
 %prep
 %setup -q
@@ -52,14 +63,47 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc README COPYING AUTHORS ChangeLog
+%doc README COPYING AUTHORS NEWS ChangeLog
 %{_datadir}/fedora-packagedb/
 %{_sbindir}/start-pkgdb
-%{_bindir}/*
+%{_bindir}/pkgdb-status
+%{_bindir}/pkgdb-sync-bugzilla
+%{_bindir}/pkgdb-sync-repo
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
+%config(noreplace) %{_sysconfdir}/pkgdb-sync-bugzilla.cfg
 %attr(-,apache,root) %{_localstatedir}/log/pkgdb
 
+%files clients
+%defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/pkgdb-client.cfg
+%{_bindir}/pkgdb-client
+
 %changelog
+* Wed Jan 22 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10.1-1
+- bugzilla checking fix.
+
+* Wed Jan 21 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10-1
+- Update for new provenpackager policy and bugzilla account checking.
+
+* Wed Nov 5  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.9.2-1
+- And a few more upstream fixes related to pkgdb-client.
+
+* Wed Nov 5  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.9.1-1
+- New upstream that fixes emailing of mass branch status.
+
+* Tue Nov 4  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.9-1
+- New upstream with new branching code, restructured pkgdb-client,
+  uberpackager renamed to provenpackager, and major speedups.
+
+* Thu Oct 9  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.8-2
+- Install the client
+
+* Thu Oct 9  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.8-1
+- New upstream with bugfixes and packager => uberpackager switch.
+
+* Sat Aug 9  2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.7-1
+- New upstream release. Many UI improvements and bugfixes.
+
 * Wed Jul 16 2008 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.6-1
 - New upstream release. notify list, some search optimization, improved
   filter box and pkglist look and feel.

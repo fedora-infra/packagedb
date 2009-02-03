@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -22,20 +22,34 @@
 '''
 Controller for displaying Package Bug Information.
 '''
+#
+# PyLint Explanations
+#
+
+# :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
+#   noted, E1101 is disabled due to a static checker not having information
+#   about the monkey patches.
 
 from urllib import quote
-
-from turbogears import controllers, expose, paginate, config, redirect
-
+from turbogears import controllers, expose, config, redirect
 from sqlalchemy.exceptions import InvalidRequestError
-import bugzilla
+from cherrypy import request
+
+try:
+    # python-bugzilla 0.4 >= rc5
+    from bugzilla.base import _Bug as Bug
+except ImportError:
+    try:
+        # python-bugzilla 0.4 < rc5
+        from bugzilla.base import Bug
+    except ImportError:
+        # python-bugzilla 0.3
+        # :E0611: This is only found if we are using python-bugzilla 0.3
+        from bugzilla import Bug # pylint: disable-msg=E0611
 
 from pkgdb.model import StatusTranslation, Package
 from pkgdb.letter_paginator import Letters
-from cherrypy import request
-
-import logging
-log = logging.getLogger('pkgdb.controllers')
+from pkgdb.utils import to_unicode, LOG, bugzilla
 
 class BugList(list):
     '''Transform and store values in the bugzilla.Bug data structure
@@ -59,20 +73,17 @@ class BugList(list):
         have to call bugzilla via one name on the internal network but someone
         clicking on the link in a web page needs to use a different address.)
 
-        Arguments:
-        :bug: A bug record returned from the python-bugzilla interface.
+        :arg bug: A bug record returned from the python-bugzilla interface.
         '''
-        if not isinstance(bug, bugzilla.Bug):
+        if not isinstance(bug, Bug):
             raise TypeError('Can only store bugzilla.Bug type')
         if self.query_url != self.public_url:
             bug.url = bug.url.replace(self.query_url, self.public_url)
-        bug.bug_status = unicode(bug.bug_status, 'utf-8')
-        try:
-            bug.short_short_desc = unicode(bug.short_short_desc, 'utf-8')
-        except TypeError:
-            bug.short_short_desc = unicode(bug.short_short_desc.data, 'utf-8')
+
+        bug.bug_status = to_unicode(bug.bug_status, errors='replace')
+        bug.short_desc = to_unicode(bug.short_desc, errors='replace')
         return {'url': bug.url, 'bug_status': bug.bug_status,
-                'short_short_desc': bug.short_short_desc, 'bug_id': bug.bug_id}
+                'short_desc': bug.short_desc, 'bug_id': bug.bug_id}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
@@ -103,11 +114,9 @@ class Bugs(controllers.Controller):
     def __init__(self, app_title=None):
         '''Create a Packages Controller.
 
-        :fas: Fedora Account System object.
         :app_title: Title of the web app.
         '''
 
-        self.bz_server = bugzilla.Bugzilla(url=self.bzQueryUrl + '/xmlrpc.cgi')
         self.app_title = app_title
         self.index = Letters(app_title)
 
@@ -128,13 +137,16 @@ class Bugs(controllers.Controller):
                         + quote(package_name) \
                         + '?' + '&'.join([quote(q) + '=' + quote(v) for (q, v)
                             in kwargs.items()])
-            log.warning('Invalid URL: redirecting: %s' % url)
+            LOG.warning('Invalid URL: redirecting: %s' % url)
             raise redirect(url)
 
         query = {'product': 'Fedora',
                 'component': package_name,
-                'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED'] }
-        raw_bugs = self.bz_server.query(query)
+                'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED',
+                    'ON_DEV', 'ON_QA', 'VERIFIED', 'FAILS_QA',
+                    'RELEASE_PENDING', 'POST'] }
+        # :E1101: python-bugzilla monkey patches this in
+        raw_bugs = bugzilla.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
         for bug in raw_bugs:
             bugs.append(bug)
@@ -142,6 +154,7 @@ class Bugs(controllers.Controller):
         if not bugs:
             # Check that the package exists
             try:
+                # pylint: disable-msg=E1101
                 Package.query.filter_by(name=package_name).one()
             except InvalidRequestError:
                 error = dict(status = False,

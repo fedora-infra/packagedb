@@ -131,8 +131,8 @@ class RepoInfo(object):
     # to change it.
 
     # pylint: disable-msg=E1101
-    approvedStatus = model.StatusTranslation.filter_by(statusname='Approved',
-            language='C').one().statuscodeid
+    approvedStatus = model.StatusTranslation.query.filter_by(
+            statusname='Approved', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
     def __init__(self):
@@ -203,10 +203,10 @@ class RepoInfo(object):
     def sync_package_descriptions(self):
         '''Add a new package to the database.
         '''
+        # pylint: disable-msg=E1101
         # Retrieve all the packages which are active
-        pkgs = model.Package.filter_by( # pylint: disable-msg=E1101
-                # pylint: disable-msg=E1101
-                model.Package.c.statuscode==self.approvedStatus)
+        pkgs = model.Package.query.filter_by(statuscode=self.approvedStatus)
+        # pylint: enable-msg=E1101
 
         # Since we update the information, we need to be sure we search from
         # most current information to least current information

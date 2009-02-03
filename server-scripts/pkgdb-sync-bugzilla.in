@@ -17,6 +17,7 @@
 # permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+#         Author(s): Mike Watters <valholla75@fedoraproject.org>
 #
 '''
 sync information from the packagedb into bugzilla
@@ -32,27 +33,43 @@ import xmlrpclib
 import simplejson
 import urllib2
 import codecs
-from email.Message import Message
 import smtplib
+import bugzilla
+from configobj import ConfigObj, flatten_errors
+from email.Message import Message
+from fedora.client.fas2 import AccountSystem
+from validate import Validator
 
-from fedora.accounts.fas2 import AccountSystem
+vldtr = Validator()
+# configspec to set default values and validate types
+configspec = '''
+[global]
+    bugzilla.url = string(default = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi')
+    bugzilla.username = string(default = '')
+    bugzilla.password = string(default = '')
+    fas.url = string(default = '')
+    fas.username = string(default = '')
+    fas.password = string(default = '')
+    notify.email = string(default = '')
+    debug = boolean(default = 'False')
+'''.splitlines()
+cfg = ConfigObj('/etc/pkgdb-sync-bugzilla.cfg', configspec = configspec)
+res = cfg.validate(vldtr, preserve_errors=True)
 
-# Set this to the production bugzilla account when we're ready to go live
-BZSERVER = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi'
-#BZSERVER = 'https://bugzilla.redhat.com/xmlrpc.cgi'
-#BZSERVER = 'https://bzprx.vip.phx.redhat.com/xmlrpc.cgi'
-BZUSER='<%= bzAdminUser %>'
-BZPASS='<%= bzAdminPassword %>'
+for entry in flatten_errors(cfg, res):
+    section_list, key, error = entry
+    if error == False:
+        restore_default(key)
 
-# Set this to the production fas account when we're ready to go live
-FASURL='https://admin.fedoraproject.org/accounts/'
-FASUSER='systems'
-FASPASS='<%= systemsUserPassword %>'
-
-PKGDBSERVER = 'https://admin.fedoraproject.org/pkgdb/acls/bugzilla/?tg_format=json'
-
-# Set this to False when we're ready to run it against the bz database
-DRY_RUN = True
+BZSERVER = cfg['global']['bugzilla.url']
+BZUSER = cfg['global']['bugzilla.username']
+BZPASS = cfg['global']['bugzilla.password']
+FASURL = cfg['global']['fas.url']
+FASUSER = cfg['global']['fas.username']
+FASPASS = cfg['global']['fas.password']
+NOTIFYEMAIL = cfg['global']['notify.email']
+PKGDBSERVER = cfg['global']['pkgdbserver.url']
+DRY_RUN = cfg['global']['debug']
 
 class DataChangedError(Exception):
     '''Raised when data we are manipulating changes while we're modifying it.'''
@@ -69,10 +86,11 @@ class Bugzilla(object):
         self.username = username
         self.password = password
 
-        self.server = xmlrpclib.Server(bzServer)
+        self.server = bugzilla.Bugzilla(url=self.bzXmlRpcServer, user=self.username,password=self.password)
 
         # Connect to the fedora account system
-        self.fas = AccountSystem(FASURL, FASUSER, FASPASS)
+        self.fas = AccountSystem(base_url=FASURL, username=FASUSER,
+                password=FASPASS)
 
     def _get_bugzilla_email(self, username):
         '''Return the bugzilla email address for a user.
@@ -100,7 +118,7 @@ class Bugzilla(object):
                     cclist['people']]
         # Add owner to the cclist so comaintainers taking over a bug don't
         # have to do this manually
-        owner = self._get_bugzilla_email(owner).lower()
+        owner = self._get_bugzilla_email(owner)
         if owner not in initialCCList:
             initialCCList.append(owner)
 
@@ -110,8 +128,7 @@ class Bugzilla(object):
         except KeyError:
             product = {}
             try:
-                components = self.server.bugzilla.getProdCompDetails(collection,
-                                self.username, self.password)
+                components = self.server.getcomponentsdetail(collection)
             except xmlrpclib.Fault, e:
                 # Output something useful in args
                 e.args = (e.faultCode, e.faultString)
@@ -133,7 +150,8 @@ class Bugzilla(object):
             # This allows us to check in a case insensitive manner for the
             # package.
             for record in components:
-                record['component'] = unicode(record['component'], 'utf-8')
+                if not isinstance(record['component'], unicode):
+                    record['component'] = unicode(record['component'], 'utf-8')
                 try:
                     record['description'] = unicode(record['description'], 'utf-8')
                 except TypeError:
@@ -173,7 +191,7 @@ class Bugzilla(object):
                     if ccMember not in initialCCList:
                         data['initialcclist'] = initialCCList
                         break
-                    
+
             if data:
                 ### FIXME: initialowner has been made mandatory for some
                 # reason.  Asking dkl why.
@@ -185,14 +203,14 @@ class Bugzilla(object):
                 if DRY_RUN:
                     print '[EDITCOMP] Changing via editComponent(%s, %s, "xxxxx")' % (
                             data, self.username)
-                    print '[EDITCOMP] Former values: %s|%s|%s' % (
+                    print '[EDITCOMP] Former values: %s|%s|%s|%s' % (
                             product[pkgKey]['initialowner'],
                             product[pkgKey]['description'],
-                            product[pkgKey]['initialqacontact'])
+                            product[pkgKey]['initialqacontact'],
+                            product[pkgKey]['initialcclist'])
                 else:
                     try:
-                        self.server.bugzilla.editComponent(data, self.username,
-                                self.password)
+                        self.server.editcomponent(data)
                     except xmlrpclib.Fault, e:
                         # Output something useful in args
                         e.args = (data, e.faultCode, e.faultString)
@@ -220,8 +238,7 @@ class Bugzilla(object):
                         data, self.username)
             else:
                 try:
-                    self.server.bugzilla.addComponent(data, self.username,
-                            self.password)
+                    self.server.addcomponent(data)
                 except xmlrpclib.Fault, e:
                     # Output something useful in args
                     e.args = (data, e.faultCode, e.faultString)
@@ -267,7 +284,7 @@ Sync package information from the package database to bugzilla.
     del bugzillaData
 
     for product in acls.keys():
-        if product not in ('Fedora', 'Fedora OLPC', 'Fedora EPEL'):
+        if product not in ('Fedora', 'Fedora EPEL'):
             continue
         for pkg in acls[product]:
             pkgInfo = acls[product][pkg]
@@ -296,7 +313,7 @@ Sync package information from the package database to bugzilla.
     if errors:
         #print '[DEBUG]', '\n'.join(errors)
         send_email('accounts@fedoraproject.org',
-                'a.badger@gmail.com',
+                NOTIFYEMAIL,
                 'Errors while syncing bugzilla with the PackageDB',
 '''
 The following errors were encountered while updating bugzilla with information

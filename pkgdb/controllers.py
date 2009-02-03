@@ -23,14 +23,12 @@ indirectly from here.
 '''
 
 from turbogears import controllers, expose, config, flash
-from turbogears.i18n.tg_gettext import gettext as _
 from turbogears import identity, redirect
 from cherrypy import request, response
-import logging
 
 from fedora.tg.util import request_format
 
-from pkgdb import release
+from pkgdb import release, _
 
 from pkgdb.listqueries import ListQueries
 from pkgdb.collections import Collections
@@ -38,56 +36,6 @@ from pkgdb.packages import Packages
 from pkgdb.users import Users
 from pkgdb.stats import Stats
 from pkgdb.search import Search
-
-log = logging.getLogger("pkgdb.controllers")
-
-# The Fedora Account System Module
-try:
-    from fedora.client.fas2 import AccountSystem
-except ImportError:
-    from fedora.accounts.fas2 import AccountSystem
-
-class UserCache(dict):
-    '''Naive cache for user information.
-
-    This cache can go out of date so use with caution.
-    '''
-    def __init__(self, fas):
-        super(UserCache, self).__init__()
-        self.fas = fas
-
-    def force_refresh(self):
-        '''Refetch the userid mapping from fas.
-        '''
-        log.debug('UserCache refresh forced')
-        people = self.fas.people_by_id()
-        self.clear()
-        self.update(people)
-        # Note: no collisions because userid is an int and username is a string.
-        for user_id in people:
-            self[people[user_id]['username']] = people[user_id]
-
-    def __getitem__(self, user_id):
-        '''Retrieve a user for a userid or username.
-
-        First read from the cache.  If not in the cache, refresh from the
-        server and try again.
-
-        If the user does not exist then, KeyError will be raised.
-        '''
-        try:
-            user_id = user_id.strip()
-        except AttributeError: # pylint: disable-msg=W0704
-            # If this is a string, strip leading and trailing whitespace.
-            # If it's a number there's no difficulty.
-            pass
-        if user_id not in self:
-            if not user_id:
-                # If the key is just whitespace, raise KeyError immediately,
-                # don't try to refresh the cache
-                raise KeyError(user_id)
-            self.force_refresh()
-        return super(UserCache, self).__getitem__(user_id)
 
 class Root(controllers.RootController):
     '''Toplevel controller for the PackageDB
@@ -98,19 +46,12 @@ class Root(controllers.RootController):
     # pylint: disable-msg=W0232
     app_title = 'Fedora Package Database'
 
-    baseURL = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
-    username = config.get('fas.username', 'admin')
-    password = config.get('fas.password', 'admin')
-
-    fas = AccountSystem(baseURL, username=username, password=password)
-    fas.cache = UserCache(fas)
-
-    collections = Collections(fas, app_title)
-    packages = Packages(fas, app_title)
-    users = Users(fas, app_title)
-    stats = Stats(fas, app_title)
-    search = Search(fas, app_title)
-    lists = ListQueries(fas, app_title)
+    collections = Collections(app_title)
+    packages = Packages(app_title)
+    users = Users(app_title)
+    stats = Stats(app_title)
+    search = Search(app_title)
+    lists = ListQueries(app_title)
     # For backwards compatibility:
     acls = lists
 
@@ -149,7 +90,7 @@ class Root(controllers.RootController):
             raise redirect(forward_url)
 
         forward_url = None
-        previous_url = request.path
+        previous_url = request.path_info
 
         if identity.was_login_attempted():
             msg = _("The credentials you supplied were not correct or "

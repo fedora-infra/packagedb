@@ -33,6 +33,7 @@ from pkgdb.model import PackageTable, CollectionTable
 ORPHAN_ID = 9900
 
 from pkgdb.validators import BooleanValue, CollectionNameVersion
+from pkgdb.utils import fas
 
 try:
     from fedora.tg.util import jsonify_validation_errors
@@ -149,8 +150,7 @@ class ListQueries(controllers.Controller):
             statusname='Under Development', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
-    def __init__(self, fas=None, app_title=None):
-        self.fas = fas
+    def __init__(self, app_title=None):
         self.app_title = app_title
 
     def _add_to_bugzilla_acl_list(self, package_acls, pkg_name,
@@ -277,7 +277,7 @@ class ListQueries(controllers.Controller):
         # Save them into a python data structure
         for record in group_acls.execute():
             if not record[2] in groups:
-                groups[record[2]] = self.fas.group_by_id(record[2])['name']
+                groups[record[2]] = fas.group_cache[record[2]].name
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     groups[record[2]], group=True)
@@ -300,13 +300,9 @@ class ListQueries(controllers.Controller):
             order_by=(PackageListing.owner,)
             )
 
-        # Cache the userId/username pairs so we don't have to call the fas for
-        # every package.
-        user_list = self.fas.user_id()
-
         # Save them into a python data structure
         for record in owner_acls.execute():
-            username = user_list[record[2]]
+            username = fas.cache[record[2]].username
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -335,7 +331,7 @@ class ListQueries(controllers.Controller):
             )
         # Save them into a python data structure
         for record in person_acls.execute():
-            username = user_list[record[2]]
+            username = fas.cache[record[2]].username
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -384,10 +380,6 @@ class ListQueries(controllers.Controller):
                 ),
             order_by=(Collection.name,), distinct=True)
 
-        # Cache the userId/username pairs so we don't have to call the
-        # fas for every package.
-        user_list = self.fas.user_id()
-
         # List of packages that need more processing to decide who the owner
         # should be.
         undupe_owners = []
@@ -410,12 +402,12 @@ class ListQueries(controllers.Controller):
 
             # Save the package information in the data structure to return
             if not package.owner:
-                package.owner = user_list[pkg[2]]
-            elif user_list[pkg[2]] != package.owner:
+                package.owner = fas.cache[pkg[2]].username
+            elif fas.cache[pkg[2]].username != package.owner:
                 # There are multiple owners for this package.
                 undupe_owners.append(package_name)
             if pkg[3]:
-                package.qacontact = user_list[pkg[3]]
+                package.qacontact = fas.cache[pkg[3]].username
             package.summary = pkg[4]
 
         if undupe_owners:
@@ -477,7 +469,9 @@ class ListQueries(controllers.Controller):
                             else:
                                 # Prefer devel above all others
                                 bugzilla_acls[collection][pkg].owner = \
-                                    user_list[by_pkg[pkg][collection]['devel']]
+                                    fas.cache[
+                                            by_pkg[pkg][collection]['devel']
+                                            ].username
                                 continue
 
                     # For any collection except Fedora or Fedora if the devel
@@ -488,12 +482,12 @@ class ListQueries(controllers.Controller):
                     if not releases:
                         # Every release was an orphan
                         bugzilla_acls[collection][pkg].owner = \
-                                user_list[ORPHAN_ID]
+                                fas.cache[ORPHAN_ID].username
                     else:
                         releases.sort()
                         bugzilla_acls[collection][pkg].owner = \
-                                user_list[by_pkg[pkg][collection][ \
-                                    unicode(releases[-1])]]
+                                fas.cache[by_pkg[pkg][collection][ \
+                                    unicode(releases[-1])]].username
 
         # Retrieve the user acls
 
@@ -521,7 +515,7 @@ class ListQueries(controllers.Controller):
 
         # Save them into a python data structure
         for record in person_acls.execute():
-            username = user_list[record[2]]
+            username = fas.cache[record[2]].username
             self._add_to_bugzilla_acl_list(bugzilla_acls, record[0], record[1],
                     username, group=False)
 
@@ -559,13 +553,12 @@ class ListQueries(controllers.Controller):
         # pylint: disable-msg=E1101
         # Retrieve Packages, owners, and people on watch* acls
         query = select((Package.name, PackageListing.owner,
-            PersonPackageListing.userid),
+            PersonPackageListing.userid, PersonPackageListingAcl.statuscode),
             from_obj=(PackageTable.join(PackageListing).outerjoin(
                 PersonPackageListing).outerjoin(PersonPackageListingAcl),
                 CollectionTable)
-            ).where(or_(and_(PersonPackageListingAcl.acl.in_(
+            ).where(or_(PersonPackageListingAcl.acl.in_(
                 ('watchbugzilla', 'watchcommits')),
-                PersonPackageListingAcl.statuscode==self.approvedStatus),
                 PersonPackageListingAcl.acl==None)
                 ).where(and_(Collection.id==PackageListing.collectionid,
                         Package.statuscode==self.approvedStatus,
@@ -593,13 +586,29 @@ class ListQueries(controllers.Controller):
         # turn the query into a python object
         for pkg in query.execute():
             additions = []
-            for userid in (pkg[1], pkg[2]):
+            '''
+            try:
+                # Save the owner
+                additions.append(fas.cache[pkg[1]]['username'])
+            except KeyError: # pylint: disable-msg=W0704
+                # We get here when we have a Null in the data (perhaps
+                # there was no one on the CC list.)  This is not an error.
+                pass
+
+            if pkg[2] and pkg[3] == self.approvedStatus:
+                # Save approved watchers
                 try:
-                    additions.append(self.fas.cache[userid]['username'])
+                    additions.append(fas.cache[pkg[2]]['username'])
                 except KeyError: # pylint: disable-msg=W0704
                     # We get here when we have a Null in the data (perhaps
                     # there was no one on the CC list.)  This is not an error.
                     pass
+            '''
+            additions.append(fas.cache[pkg[1]]['username'])
+            if pkg[2] and pkg[3] == self.approvedStatus:
+                # Save approved watchers
+                additions.append(fas.cache[pkg[2]]['username'])
+
             try:
                 pkgs[pkg[0]].update(additions)
             except KeyError:
