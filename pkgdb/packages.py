@@ -160,7 +160,7 @@ class Packages(controllers.Controller):
         else:
             # admins and owners of any branch can set shouldopen
             can_set_shouldopen = 'cvsadmin' in identity.current.groups or \
-                    identity.current.user.id in [x.owner for x in pkg_listings]
+                   identity.current.user_name in [x.owner for x in pkg_listings]
             if not can_set_shouldopen:
                 # Set up a bunch of generators to iterate through the acls
                 # on this package
@@ -176,7 +176,7 @@ class Packages(controllers.Controller):
                         # Retrieve all the lists of acls for the current user
                         # for each PackageListing
                         acl_lists = (p.acls for p in people \
-                                    if p.userid == identity.current.user.id)
+                                    if p.username == identity.current.user_name)
                         # For each list of acls...
                         for acls in acl_lists:
                             # ...check each acl
@@ -224,7 +224,7 @@ class Packages(controllers.Controller):
             for person in pkg.people:
                 # Retrieve info from the FAS about the people watching the pkg
                 try:
-                    fas_person = fas.cache[person.userid]
+                    fas_person = fas.cache[person.username]
                 except KeyError:
                     fas_person = {'username': 'UserID %i' % person.userid}
                 person.name = '%(username)s' % fas_person
