@@ -292,7 +292,7 @@ class ListQueries(controllers.Controller):
             and_(
                 PackageListing.packageid==Package.id,
                 PackageListing.collectionid==Collection.id,
-                PackageListing.owner!=ORPHAN_ID,
+                PackageListing.owner!='orphan',
                 Collection.id==Branch.collectionid,
                 PackageListing.statuscode != self.removedStatus,
                 Package.statuscode != self.removedStatus
@@ -312,7 +312,7 @@ class ListQueries(controllers.Controller):
         person_acls = select((
             # pylint: disable-msg=E1101
             Package.name,
-            Branch.branchname, PersonPackageListing.userid),
+            Branch.branchname, PersonPackageListing.username),
             and_(
                 PersonPackageListingAcl.acl=='commit',
                 PersonPackageListingAcl.statuscode \
@@ -327,7 +327,7 @@ class ListQueries(controllers.Controller):
                 PackageListing.statuscode != self.removedStatus,
                 Package.statuscode != self.removedStatus
                 ),
-            order_by=(PersonPackageListing.userid,)
+            order_by=(PersonPackageListing.username,)
             )
         # Save them into a python data structure
         for record in person_acls.execute():
@@ -461,7 +461,7 @@ class ListQueries(controllers.Controller):
                         # We can safely ignore orphan because we already know
                         # this is a dupe and thus a non-orphan exists.
                         if 'devel' in by_pkg[pkg][collection]:
-                            if by_pkg[pkg][collection]['devel'] == ORPHAN_ID \
+                            if by_pkg[pkg][collection]['devel'] == 'orphan'\
                                     and len(by_pkg[pkg][collection]) > 1:
                                 # If there are other owners, try to use them
                                 # instead of orphan
@@ -478,11 +478,10 @@ class ListQueries(controllers.Controller):
                     # version does not exist, treat releases as numbers and
                     # take the results from the latest number
                     releases = [int(r) for r in by_pkg[pkg][collection] \
-                            if by_pkg[pkg][collection][r] != ORPHAN_ID]
+                            if by_pkg[pkg][collection][r] != 'orphan']
                     if not releases:
                         # Every release was an orphan
-                        bugzilla_acls[collection][pkg].owner = \
-                                fas.cache[ORPHAN_ID].username
+                        bugzilla_acls[collection][pkg].owner = 'orphan'
                     else:
                         releases.sort()
                         bugzilla_acls[collection][pkg].owner = \
@@ -494,7 +493,7 @@ class ListQueries(controllers.Controller):
         person_acls = select((
             # pylint: disable-msg=E1101
             Package.name,
-            Collection.name, PersonPackageListing.userid),
+            Collection.name, PersonPackageListing.username),
             and_(
                 PersonPackageListingAcl.acl == 'watchbugzilla',
                 PersonPackageListingAcl.statuscode == \
@@ -510,7 +509,7 @@ class ListQueries(controllers.Controller):
                 Collection.statuscode.in_((self.activeStatus,
                     self.develStatus)),
                 ),
-            order_by=(PersonPackageListing.userid,), distinct=True
+            order_by=(PersonPackageListing.username,), distinct=True
             )
 
         # Save them into a python data structure
@@ -553,7 +552,7 @@ class ListQueries(controllers.Controller):
         # pylint: disable-msg=E1101
         # Retrieve Packages, owners, and people on watch* acls
         query = select((Package.name, PackageListing.owner,
-            PersonPackageListing.userid, PersonPackageListingAcl.statuscode),
+            PersonPackageListing.username, PersonPackageListingAcl.statuscode),
             from_obj=(PackageTable.join(PackageListing).outerjoin(
                 PersonPackageListing).outerjoin(PersonPackageListingAcl),
                 CollectionTable)

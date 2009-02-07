@@ -50,7 +50,6 @@ from pkgdb import _
 from pkgdb.notifier import EventLogger
 from pkgdb.utils import fas, bugzilla
 
-ORPHAN_ID = 9900
 MAXSYSTEMUID = 9999
 
 class AclNotAllowedError(Exception):
@@ -158,7 +157,7 @@ class PackageDispatcher(controllers.Controller):
                 recipients[email] = ''
         # Get the owners for this package
         for pkg_listing in listings:
-            if pkg_listing.owner != ORPHAN_ID:
+            if pkg_listing.owner != 'orphan':
                 try:
                     owner = fas.cache[pkg_listing.owner]
                 except KeyError:
@@ -213,12 +212,12 @@ class PackageDispatcher(controllers.Controller):
         if ident.in_group('cvsadmin'):
             return 'admin'
         # The owner can
-        if identity.current.user.id == pkg.owner:
+        if identity.current.user_name == pkg.owner:
             return 'owner'
         # Wasn't the owner.  See if they have been granted permission
         # explicitly
         for person in pkg.people:
-            if person.userid == identity.current.user.id:
+            if person.username == identity.current.user_name:
                 # Check each acl that this person has on the package.
                 for acl in person.acls:
                     if (acl.acl == 'approveacls' and acl.statuscode
@@ -425,7 +424,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message='No such package %s'
                     % pkg_listing_id)
         approved = self._user_can_set_acls(identity, pkg)
-        if pkg.owner == ORPHAN_ID:
+        if pkg.owner == 'orphan':
             # Check that the tg.identity is allowed to set themselves as owner
             try:
                 self._acl_can_be_held_by_user('owner')
@@ -433,7 +432,7 @@ class PackageDispatcher(controllers.Controller):
                 return dict(status=False, message=str(e))
 
             # Take ownership
-            pkg.owner = identity.current.user.id
+            pkg.owner = identity.current.username
             pkg.statuscode = self.approvedStatus.statuscodeid
             owner_name = '%s' % identity.current.user_name
             bzMail = '%s' % identity.current.user.email
@@ -458,7 +457,7 @@ class PackageDispatcher(controllers.Controller):
                         ' component.')
         elif approved in ('admin', 'owner'):
             # Release ownership
-            pkg.owner = ORPHAN_ID
+            pkg.owner = 'orphan'
             pkg.statuscode = self.orphanedStatus.statuscodeid
             pkg.statuschange = datetime.now(pkg.statuschange.tzinfo)
             owner_name = 'Orphaned Package (orphan)'
@@ -714,8 +713,8 @@ class PackageDispatcher(controllers.Controller):
                     eagerload('status.locale')).filter(and_(
                     PersonPackageListingAcl.c.personpackagelistingid == \
                             PersonPackageListing.c.id,
-                    PersonPackageListing.c.userid == \
-                            identity.current.user.id,
+                    PersonPackageListing.c.username == \
+                            identity.current.user_name,
                     PersonPackageListingAcl.c.acl == acl_name,
                     PersonPackageListing.c.packagelistingid == pkg_listing_id)
                 ).one()
@@ -1162,7 +1161,7 @@ class PackageDispatcher(controllers.Controller):
         if 'owner' in changes:
             # Already retrieved owner into person
             for pkg_listing in listings:
-                pkg_listing.owner = person['id']
+                pkg_listing.owner = person['username']
                 log_msg = '%s changed owner of %s in %s %s to %s' % (
                         identity.current.user_name,
                         pkg_listing.package.name,
