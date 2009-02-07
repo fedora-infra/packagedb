@@ -22,11 +22,6 @@
 /*
  * Override a few things from the Fedora Stylesheet
  */
-#sidebar
-{
-  width: 25ex;
-}
-
 #content
 {
   margin-left: 25ex!important;
