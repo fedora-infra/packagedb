@@ -15,7 +15,7 @@
       <dd py:if="full_desc" py:content="pkg.description" />
       <dd py:if="release" py:choose="releasewhere">
         <div py:when="'orphaned'" py:strip="True">
-          <span py:for="collection in sorted((plist.collection.name, plist.collection.version, plist.collection.branchname) for plist in sorted(pkg.listings2.values()) if plist.owner==9900)" py:strip="True">
+          <span py:for="collection in sorted((plist.collection.name, plist.collection.version, plist.collection.branchname) for plist in sorted(pkg.listings2.values()) if plist.owner=='orphan')" py:strip="True">
           [<a py:content="collection[2]"
             href="${tg.url('/packages/%s/%s#%s%s' %
             (mode, pkg.name, collection[0], collection[1]))}">
