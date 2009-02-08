@@ -90,7 +90,7 @@ class Root(controllers.RootController):
             raise redirect(forward_url)
 
         forward_url = None
-        previous_url = request.path_info
+        previous_url = request.path
 
         if identity.was_login_attempted():
             msg = _("The credentials you supplied were not correct or "
