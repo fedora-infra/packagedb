@@ -102,7 +102,7 @@ for relation in [Collection, PackageListing]:
 for relation in [PersonPackageListing, Log]:
     print 'transforming ' + relation.__name__
     transform(relation, 'username')
- build a dictionary with the few distinct string group_id > group_name pairs
+# build a dictionary with the few distinct string group_id > group_name pairs
 group_ids = select(
         [GroupPackageListing.groupname]).distinct().execute().fetchall()
 groups = {}
