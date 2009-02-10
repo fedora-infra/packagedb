@@ -256,7 +256,7 @@ class ListQueries(controllers.Controller):
             # pylint: disable-msg=E1101
             Package.name,
             Branch.branchname,
-            GroupPackageListing.groupid), and_(
+            GroupPackageListing.groupname), and_(
                 GroupPackageListingAcl.acl == 'commit',
                 GroupPackageListingAcl.statuscode \
                         == self.approvedStatus,

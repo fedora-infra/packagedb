@@ -241,9 +241,9 @@ class Packages(controllers.Controller):
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
-                fas_group = fas.group_cache[group.groupid]
-                group.name = fas_group.get('name', 'Unknown (GroupID %i)' %
-                        group.groupid)
+                fas_group = fas.group_cache[group.groupname]
+                group.id = fas_group.get('id', 'Unknown (GroupName %s)' %
+                        group.groupname)
                 # Setup acls to be accessible via aclName
                 group.aclOrder = {}
                 for acl in acl_names:

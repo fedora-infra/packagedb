@@ -97,7 +97,7 @@ import simplejson
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
           </td><td>
             <div py:choose="pkg.owner" py:strip="">
-              <div py:when="orphan"
+              <div py:when="'orphan'"
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner orphaned">
                 <span class="ownerName">${pkg.ownername}</span>
@@ -179,8 +179,8 @@ import simplejson
           <table class="groupacls" width="100%">
             <tr py:for="group in pkg.groups" class="aclgrouprow"
               py:if="group.aclOrder['commit'] and group.aclOrder['commit'].status.locale['C'].statusname in ('Approved', 'Denied')">
-              <td py:content="group.name" class="aclgroup"
-                py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
+              <td py:content="group.groupname" class="aclgroup"
+                py:attrs="{'name': str(pkg.id) + ':' + group.groupname}">
                 Name
               </td>
               <!-- If the user has permission to edit the acls, give them a
@@ -188,7 +188,7 @@ import simplejson
               -->
               <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
                 <div py:if="'cvsadmin' in tg.identity.groups"
-                  py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid) +
+                  py:attrs="{'name' : str(pkg.id) + ':' + group.groupname +
                   ':commit'}"
                   class="requestContainer groupAclStatus">
                   group members can commit?
@@ -196,7 +196,7 @@ import simplejson
                     py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
                 </div>
                 <div py:if="not 'cvsadmin' in tg.identity.groups"
-                  py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
+                  py:attrs="{'name' : str(pkg.id) + ':' + group.groupname
                   + ':commit'}"
                   class="groupAclStatus requestContainer">
                   group members can commit?

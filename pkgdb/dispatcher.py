@@ -295,7 +295,7 @@ class PackageDispatcher(controllers.Controller):
                 '%s must be in one of these groups: %s to hold the %s acl' %
                 (identity.current.user_name, self.owner_memberships, acl))
 
-    def _create_or_modify_acl(self, pkg_listing, person_id, new_acl, status):
+    def _create_or_modify_acl(self, pkg_listing, person_name, new_acl, status):
         '''Create or modify an acl.
 
         Set an acl for a user.  This takes a packageListing and makes sure
@@ -304,7 +304,7 @@ class PackageDispatcher(controllers.Controller):
 
         Arguments:
         :pkg_listing: PackageListing on which to set the ACL.
-        :person_id: PersonId to set the ACL for.
+        :person_name: PersonName to set the ACL for.
         :new_acl: ACL name to set.
         :status: Status DB Object we're setting the ACL to.
         '''
@@ -312,13 +312,13 @@ class PackageDispatcher(controllers.Controller):
         change_person = None
         for person in pkg_listing.people:
             # Check for the person who's acl we're setting
-            if person.userid == person_id:
+            if person.username == person_name:
                 change_person = person
                 break
 
         if not change_person:
             # Person has no ACLs on this Package yet.  Create a record
-            change_person = PersonPackageListing(person_id)
+            change_person = PersonPackageListing(person_name)
             pkg_listing.people.append(change_person)
             person_acl = PersonPackageListingAcl(new_acl,
                     status.statuscodeid)
@@ -343,12 +343,12 @@ class PackageDispatcher(controllers.Controller):
             # depend on any acl being set adn for now, the commit acl is being
             # used for build and push
             if new_acl == 'commit':
-                self._create_or_modify_acl(pkg_listing, person_id, 'build',
+                self._create_or_modify_acl(pkg_listing, person_name, 'build',
                         status)
 
         return person_acl
 
-    def _create_or_modify_group_acl(self, pkg_listing, group_id, new_acl,
+    def _create_or_modify_group_acl(self, pkg_listing, group_name, new_acl,
             status):
         '''Create or modify a group acl.
 
@@ -358,7 +358,7 @@ class PackageDispatcher(controllers.Controller):
 
         Arguments:
         :pkg_listing: PackageListing on which to set the ACL.
-        :group_id: GroupId to set the ACL for.
+        :group_name: GroupName to set the ACL for.
         :new_acl: ACL name to set.
         :status: Status DB Objcet we're setting the ACL to.
         '''
@@ -366,13 +366,13 @@ class PackageDispatcher(controllers.Controller):
         change_group = None
         for group in pkg_listing.groups:
             # Check for the group who's acl we're setting
-            if group.groupid == group_id:
+            if group.groupname == group_name:
                 change_group = group
                 break
 
         if not change_group:
             # Group has no ACLs on this Package yet.  Create a record
-            change_group = GroupPackageListing(group_id)
+            change_group = GroupPackageListing(group_name)
             pkg_listing.groups.append(change_group)
             group_acl = GroupPackageListingAcl(new_acl,
                     status.statuscodeid)
@@ -397,7 +397,7 @@ class PackageDispatcher(controllers.Controller):
         # depend on any acl being set adn for now, the commit acl is being
         # used for build and push
         if new_acl == 'commit':
-            self._create_or_modify_group_acl(pkg_listing, group_id, 'build',
+            self._create_or_modify_group_acl(pkg_listing, group_name, 'build',
                     status)
         return group_acl
 
@@ -601,12 +601,11 @@ class PackageDispatcher(controllers.Controller):
         refresh the status without the performance hit.
 
         :container_id: a string of three ids needed for this function separated
-            by colons (':').  pkg_listing_id, group_id, and the new acl name.
+            by colons (':').  pkg_listing_id, group_name, and the new acl name.
         '''
         # Pull apart the identifier
-        pkg_listing_id, group_id, acl_name = container_id.split(':')
+        pkg_listing_id, group_name, acl_name = container_id.split(':')
         pkg_listing_id = int(pkg_listing_id)
-        group_id = int(group_id)
 
         # Make sure the package listing exists
         try:
@@ -626,9 +625,9 @@ class PackageDispatcher(controllers.Controller):
                         pkg.collection.name, pkg.collection.version))
 
         # Check that the group is one that we allow access to packages
-        if group_id not in self.groups:
+        if group_name not in self.groups:
             return dict(status=False, message='%s is not a group that can '
-                    'commit to packages' % group_id)
+                    'commit to packages' % group_name)
 
         #
         # Set the new acl status
@@ -642,7 +641,7 @@ class PackageDispatcher(controllers.Controller):
                     eagerload('status.locale')).filter(and_(
                     GroupPackageListingAcl.c.grouppackagelistingid \
                             == GroupPackageListing.c.id,
-                    GroupPackageListing.c.groupid == group_id,
+                    GroupPackageListing.c.groupname == group_name,
                     GroupPackageListingAcl.c.acl == acl_name,
                     GroupPackageListing.c.packagelistingid == pkg_listing_id
                 )).one()
@@ -655,7 +654,7 @@ class PackageDispatcher(controllers.Controller):
         status = {'Approved': self.approvedStatus,
                 'Denied': self.deniedStatus}[acl_status]
         # Change the acl
-        group_acl = self._create_or_modify_group_acl(pkg, group_id, acl_name,
+        group_acl = self._create_or_modify_group_acl(pkg, group_name, acl_name,
                 status)
 
         ### WARNING: changeAcl.status is very likely out of sync at this point.
@@ -665,7 +664,7 @@ class PackageDispatcher(controllers.Controller):
         log_msg = '%s has set the %s acl on %s (%s %s) to %s for %s' % (
                     identity.current.user_name, acl_name, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, acl_status,
-                    self.groups[group_id])
+                    self.groups[group_name])
         log = GroupPackageListingAclLog(identity.current.user.id,
                 status.statuscodeid, log_msg)
         log.acl = group_acl # pylint: disable-msg=W0201
@@ -908,7 +907,7 @@ class PackageDispatcher(controllers.Controller):
                         statuscodeid=change_acl.statuscode).one().statusname,
                     # pylint: enable-msg=E1101
 
-                    self.groups[change_acl.grouppackagelisting.groupid],
+                    self.groups[change_acl.grouppackagelisting.groupname],
                     pkg_listing.package.name,
                     pkg_listing.collection.name,
                     pkg_listing.collection.version)
@@ -1143,7 +1142,7 @@ class PackageDispatcher(controllers.Controller):
                                         ).one().statusname,
                                     # pylint: enable-msg=E1101
                                     self.groups[
-                                        change_acl.grouppackagelisting.groupid],
+                                        change_acl.grouppackagelisting.groupname],
                                     pkg_listing.package.name,
                                     pkg_listing.collection.name,
                                     pkg_listing.collection.version)
@@ -1273,7 +1272,7 @@ class PackageDispatcher(controllers.Controller):
 
                 # We don't let every group commit
                 try:
-                    group_id = self.groups[group]
+                    group_name = self.groups[group]
                 except KeyError:
                     if status == self.deniedStatus:
                         # If we're turning it off we don't have to worry

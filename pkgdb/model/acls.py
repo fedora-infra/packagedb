@@ -66,14 +66,14 @@ class PersonPackageListing(SABase):
     Table -- PersonPackageListing
     '''
     # pylint: disable-msg=R0903
-    def __init__(self, userid, packagelistingid=None):
+    def __init__(self, username, packagelistingid=None):
         # pylint: disable-msg=R0913
         super(PersonPackageListing, self).__init__()
-        self.userid = userid
+        self.username = username
         self.packagelistingid = packagelistingid
 
     def __repr__(self):
-        return 'PersonPackageListing(%r, %r)' % (self.userid,
+        return 'PersonPackageListing(%r, %r)' % (self.username,
                 self.packagelistingid)
 
 class GroupPackageListing(SABase):
@@ -82,14 +82,14 @@ class GroupPackageListing(SABase):
     Table -- GroupPackageListing
     '''
     # pylint: disable-msg=R0903
-    def __init__(self, groupid, packagelistingid=None):
+    def __init__(self, groupname, packagelistingid=None):
         # pylint: disable-msg=R0913
         super(GroupPackageListing, self).__init__()
-        self.groupid = groupid
+        self.groupname = groupname
         self.packagelistingid = packagelistingid
 
     def __repr__(self):
-        return 'GroupPackageListing(%r, %r)' % (self.groupid,
+        return 'GroupPackageListing(%r, %r)' % (self.groupname,
                 self.packagelistingid)
 
 class PersonPackageListingAcl(SABase):
