@@ -21,6 +21,8 @@
 Send acl information to third party tools.
 '''
 
+import itertools
+
 from sqlalchemy import select, and_, or_
 from turbogears import expose, validate, error_handler
 from turbogears import controllers, validators
@@ -549,70 +551,56 @@ class ListQueries(controllers.Controller):
         if errors:
             return errors
 
-        # SQLAlchemy mapped classes are monkey patched
-        # pylint: disable-msg=E1101
         # Retrieve Packages, owners, and people on watch* acls
-        query = select((Package.name, PackageListing.owner,
-            PersonPackageListing.userid, PersonPackageListingAcl.statuscode),
-            from_obj=(PackageTable.join(PackageListing).outerjoin(
-                PersonPackageListing).outerjoin(PersonPackageListingAcl),
-                CollectionTable)
-            ).where(or_(PersonPackageListingAcl.acl.in_(
-                ('watchbugzilla', 'watchcommits')),
-                PersonPackageListingAcl.acl==None)
-                ).where(and_(Collection.id==PackageListing.collectionid,
-                        Package.statuscode==self.approvedStatus,
-                        PackageListing.statuscode==self.approvedStatus,
+        # :E1101: SQLAlchemy mapped classes are monkey patched
+        # pylint: disable-msg=E1101
+        owner_query = select((Package.name, PackageListing.owner),
+                from_obj=(PackageTable.join(PackageListing).join(
+                    CollectionTable))).where(and_(
+                        Package.statuscode == self.approvedStatus,
+                        PackageListing.statuscode == self.approvedStatus)
+                        ).distinct().order_by('name')
+        watcher_query = select((Package.name, PersonPackageListing.userid),
+                from_obj=(PackageTable.join(PackageListing).join(
+                    Collection).join(PersonPackageListing).join(
+                        PersonPackageListingAcl))).where(and_(
+                            Package.statuscode == self.approvedStatus,
+                            PackageListing.statuscode == self.approvedStatus,
+                            PersonPackageListingAcl.acl.in_(
+                                ('watchbugzilla', 'watchcommits')),
+                            PersonPackageListingAcl.statuscode ==
+                                self.approvedStatus
                         )).distinct().order_by('name')
         # pylint: enable-msg=E1101
 
         if not eol:
             # Filter out eol distributions
-            # SQLAlchemy mapped classes are monkey patched
+            # :E1101: SQLAlchemy mapped classes are monkey patched
             # pylint: disable-msg=E1101
-            query = query.where(Collection.statuscode.in_(
+            owner_query = owner_query.where(Collection.statuscode.in_(
+                (self.activeStatus, self.develStatus)))
+            watcher_query = watcher_query.where(Collection.statuscode.in_(
                 (self.activeStatus, self.develStatus)))
 
         # Only grab from certain collections
         if name:
             # SQLAlchemy mapped classes are monkey patched
             # pylint: disable-msg=E1101
-            query = query.where(Collection.name==name)
+            owner_query = owner_query.where(Collection.name==name)
+            watcher_query = watcher_query.where(Collection.name==name)
             if version:
                 # Limit the versions of those collections
-                query = query.where(Collection.version==version)
+                owner_query = owner_query.where(Collection.version==version)
+                watcher_query = watcher_query.where(Collection.version==version)
 
         pkgs = {}
         # turn the query into a python object
-        for pkg in query.execute():
+        for pkg in itertools.chain(owner_query.execute(),
+                watcher_query.execute()):
             additions = []
-            '''
-            try:
-                # Save the owner
-                additions.append(fas.cache[pkg[1]]['username'])
-            except KeyError: # pylint: disable-msg=W0704
-                # We get here when we have a Null in the data (perhaps
-                # there was no one on the CC list.)  This is not an error.
-                pass
-
-            if pkg[2] and pkg[3] == self.approvedStatus:
-                # Save approved watchers
-                try:
-                    additions.append(fas.cache[pkg[2]]['username'])
-                except KeyError: # pylint: disable-msg=W0704
-                    # We get here when we have a Null in the data (perhaps
-                    # there was no one on the CC list.)  This is not an error.
-                    pass
-            '''
             additions.append(fas.cache[pkg[1]]['username'])
-            if pkg[2] and pkg[3] == self.approvedStatus:
-                # Save approved watchers
-                additions.append(fas.cache[pkg[2]]['username'])
-
-            try:
-                pkgs[pkg[0]].update(additions)
-            except KeyError:
-                pkgs[pkg[0]] = set(additions)
+            pkgs.setdefault(pkg[0], set()).update(
+                    (fas.cache[pkg[1]]['username'],))
 
         # SQLAlchemy mapped classes are monkey patched
         # pylint: disable-msg=E1101
