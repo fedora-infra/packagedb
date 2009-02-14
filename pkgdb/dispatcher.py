@@ -436,11 +436,11 @@ class PackageDispatcher(controllers.Controller):
             pkg.owner = identity.current.user.id
             pkg.statuscode = self.approvedStatus.statuscodeid
             owner_name = '%s' % identity.current.user_name
-            bzMail = '%s' % identity.current.user.email
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, owner_name)
             status = self.ownedStatus
+            bzMail = '%s' % identity.current.user.email
             bzQuery = {}
             bzQuery['product'] = pkg.collection.name
             bzQuery['component'] = pkg.package.name
@@ -452,10 +452,14 @@ class PackageDispatcher(controllers.Controller):
                 bzQuery['version'] = 'rawhide'
             queryResults = bugzilla.query(bzQuery)
             for bug in queryResults:
-                bug.setassignee(assigned_to=bzMail, comment='This package'
-                        ' has changed ownership in the Fedora Package'
-                        ' Database.  Reassigning to the new owner of this'
-                        ' component.')
+                if config.get('bugzilla.enable_modification', False):
+                    bug.setassignee(assigned_to=bzMail, comment='This package'
+                            ' has changed ownership in the Fedora Package'
+                            ' Database.  Reassigning to the new owner of this'
+                            ' component.')
+                else:
+                    ### FIXME: Print some information about the bug
+                    log.debug('Would have changed bugzilla owner')
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = ORPHAN_ID
