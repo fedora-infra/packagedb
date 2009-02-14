@@ -458,8 +458,8 @@ class PackageDispatcher(controllers.Controller):
                             ' Database.  Reassigning to the new owner of this'
                             ' component.')
                 else:
-                    ### FIXME: Print some information about the bug
-                    log.debug('Would have changed bugzilla owner')
+                    log.debug('Would have reassigned bug #%s from %s to %s' %
+                            (bug.bug_id, bug.assigned_to, bzMail))
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = ORPHAN_ID
