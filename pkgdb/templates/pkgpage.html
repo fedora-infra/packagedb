@@ -50,6 +50,8 @@ import simplejson
         <?python
         # Determine whether the present user is already involved with this
         # packagelisting and if they are allowed to change acls
+        from pkgdb.utils import admin_grp, pkger_grp
+         
         interested = False # Does the person already have an acl line?
         aclChanger = False # Is the person allowed to make changes?
         if tg.identity.anonymous:
@@ -74,7 +76,7 @@ import simplejson
                             aclChanger = True
                         break
             if not aclChanger:
-                if 'cvsadmin' in tg.identity.groups:
+                if admin_grp in tg.identity.groups:
                     # Person is an admin and thus can make changes
                     aclChanger = True
         ?>
@@ -101,7 +103,7 @@ import simplejson
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner orphaned">
                 <span class="ownerName">${pkg.ownername}</span>
-                <span py:if="'packager' in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
+                <span py:if="pkger_grp in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
                   <input type="button" name="unorphan"
                     class="ownerButton unorphanButton"
                     value="Take Ownership"/>
@@ -111,7 +113,7 @@ import simplejson
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner owned">
                 <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owneruser)}">${pkg.ownername}</a></span>
-                <span py:if="not tg.identity.anonymous and (tg.identity.user.id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
+                <span py:if="not tg.identity.anonymous and (tg.identity.user.id == pkg.ownerid or admin_grp in tg.identity.groups)">
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
                     value="Release Ownership" />
@@ -187,7 +189,7 @@ import simplejson
               checkbox to edit this
               -->
               <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
-                <div py:if="'cvsadmin' in tg.identity.groups"
+                <div py:if="admin_grp in tg.identity.groups"
                   py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid) +
                   ':commit'}"
                   class="requestContainer groupAclStatus">
@@ -195,7 +197,7 @@ import simplejson
                   <input type="checkbox" class="groupAclStatusBox"
                     py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
                 </div>
-                <div py:if="not 'cvsadmin' in tg.identity.groups"
+                <div py:if="not admin_grp in tg.identity.groups"
                   py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
                   + ':commit'}"
                   class="groupAclStatus requestContainer">
