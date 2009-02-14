@@ -69,9 +69,8 @@ class Search(controllers.Controller):
 
     @expose(template='pkgdb.templates.search', allow_json=True)
     @validate(validators={'release':Int()})
-    @paginate('packages', default_order=['package.name','collectionid'], 
-            limit=20, max_pages=13)
-    def package(self, searchon='both', release=0, operator='AND', 
+    @paginate('packages', limit=20, max_pages=13)
+    def package(self, searchon='both', release=0, operator='AND',
                         searchwords=''):
         '''Searches for packages
 
@@ -104,7 +103,7 @@ class Search(controllers.Controller):
             raise redirect(config.get('base_url_filter.base_url') + '/search/')
 
         # case insensitive
-        query = searchwords.lower() 
+        query = searchwords.lower()
 
         descriptions, names, exact = [], [], []
         if operator == 'OR':
