@@ -48,7 +48,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, bugzilla
+from pkgdb.utils import fas, bugzilla, LOG
 
 ORPHAN_ID = 9900
 MAXSYSTEMUID = 9999
@@ -458,7 +458,7 @@ class PackageDispatcher(controllers.Controller):
                             ' Database.  Reassigning to the new owner of this'
                             ' component.')
                 else:
-                    log.debug('Would have reassigned bug #%s from %s to %s' %
+                    LOG.debug('Would have reassigned bug #%s from %s to %s' %
                             (bug.bug_id, bug.assigned_to, bzMail))
         elif approved in ('admin', 'owner'):
             # Release ownership
