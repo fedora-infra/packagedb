@@ -213,7 +213,7 @@ import simplejson
         <tr py:if="not tg.identity.anonymous and not interested">
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
-            + ':' + tg.identity.username}"
+            + ':' + tg.identity.user_name}"
             class="addMyselfButton"
             value="Add myself to package"/>
           </td>
