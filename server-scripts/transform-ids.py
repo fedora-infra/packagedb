@@ -73,7 +73,9 @@ else:
 config.update({'pkgdb.basedir': PKGDBDIR}) 
 
 from pkgdb.model import Collection, PackageListing, Log, \
-        PersonPackageListing, GroupPackageListing
+        PersonPackageListing, GroupPackageListing, \
+        CollectionTable, PackageListingTable, PersonPackageListingTable, \
+        LogTable, GroupPackageListingTable
 
 fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
 username = config.get('fas.username', 'admin')
@@ -81,27 +83,31 @@ password = config.get('fas.password', 'admin')
 
 fas = AccountSystem(fas_url, username=username, password=password,
             cache_session=False)
+print 'loading people from fas'
 people = fas.people_by_id()
 
-def transform(relation, attribute):
+def transform(relation, table, attribute):
     ''' Transforms userids into usernames
 
-        relation - pkgdb.model
+        table - pkgdb.model
         attribute - string 'owner' or 'userid'
     '''
-    for field in relation.query.all():
-        # get the username by id
-        username = people[int(getattr(field, attribute))]['username']
-        # set it
-        getattr(field, '__setattr__')(attribute, username)
-
-for relation in [Collection, PackageListing]:
     print 'transforming ' + relation.__name__
-    transform(relation, 'owner')
+    for id, owner in zip(select([relation.id]).execute(),
+                         select([getattr(relation, attribute)]).execute()):
+        ownername = people[int(owner[0])]['username']
+        table.update('id=%s' % id[0], values={attribute:ownername}).execute()
+    print 'flushing ' + relation.__name__
+    session.flush()
 
-for relation in [PersonPackageListing, Log]:
-    print 'transforming ' + relation.__name__
-    transform(relation, 'username')
+for relation, table in ([PackageListing, PackageListingTable],
+                        [Collection, CollectionTable]):
+    transform(relation, table, 'owner')
+
+for relation, table in ([PersonPackageListing, PersonPackageListingTable],
+                 [Log, LogTable]):
+   transform(relation, table, 'username')
+
 # build a dictionary with the few distinct string group_id > group_name pairs
 group_ids = select(
         [GroupPackageListing.groupname]).distinct().execute().fetchall()
@@ -110,8 +116,12 @@ for group in group_ids:
     groups[group[0]] = fas.group_by_id(int(group[0]))['name']
 
 print 'transforming GroupPackageListing'
-for group in GroupPackageListing.query.all():
-    group.groupname = groups[group.groupname]
-
-print 'Flushing...'
+ 
+for id, groupname in zip(select([GroupPackageListing.id]).execute(),
+                         select([GroupPackageListing.groupname]).execute()):
+    groupname = groups[groupname[0]]
+    GroupPackageListingTable.update('id=%s' % id[0],
+                                    values={'groupname':groupname}).execute()
+print 'flushing for GroupPackageListing'
 session.flush()
+    
