@@ -17,9 +17,13 @@
 # permission of Red Hat, Inc.
 #
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+'''
+Changes statuscodes of orphaned and retired packages based on owner ids and 
+the age of the statuschange respectively.
 
-#'''
-#
+The first part of this script (orphaning) will be obsolete after it has been 
+run and will NOT work after the switch from userids to usernames. 
+'''
 
 import sqlalchemy
 from sqlalchemy.sql import func

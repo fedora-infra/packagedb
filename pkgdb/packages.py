@@ -176,7 +176,7 @@ class Packages(controllers.Controller):
                         # Retrieve all the lists of acls for the current user
                         # for each PackageListing
                         acl_lists = (p.acls for p in people \
-                                    if p.userid == identity.current.user.id)
+                                    if p.username == identity.current.user_name)
                         # For each list of acls...
                         for acls in acl_lists:
                             # ...check each acl
@@ -224,7 +224,7 @@ class Packages(controllers.Controller):
             for person in pkg.people:
                 # Retrieve info from the FAS about the people watching the pkg
                 try:
-                    fas_person = fas.cache[person.userid]
+                    fas_person = fas.cache[person.username]
                 except KeyError:
                     fas_person = {'username': 'UserID %i' % person.userid}
                 person.name = '%(username)s' % fas_person
@@ -241,9 +241,7 @@ class Packages(controllers.Controller):
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
-                fas_group = fas.group_cache[group.groupid]
-                group.name = fas_group.get('name', 'Unknown (GroupID %i)' %
-                        group.groupid)
+                fas_group = fas.group_cache[group.groupname]
                 # Setup acls to be accessible via aclName
                 group.aclOrder = {}
                 for acl in acl_names:
