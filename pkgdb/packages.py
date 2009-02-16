@@ -36,7 +36,7 @@ from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import fas
+from pkgdb.utils import fas, admin_grp
 
 from cherrypy import request
 
@@ -159,8 +159,8 @@ class Packages(controllers.Controller):
             can_set_shouldopen = False
         else:
             # admins and owners of any branch can set shouldopen
-            can_set_shouldopen = 'cvsadmin' in identity.current.groups or \
-                   identity.current.user_name in [x.owner for x in pkg_listings]
+            can_set_shouldopen = admin_grp in identity.current.groups or \
+                    identity.current.user.id in [x.owner for x in pkg_listings]
             if not can_set_shouldopen:
                 # Set up a bunch of generators to iterate through the acls
                 # on this package

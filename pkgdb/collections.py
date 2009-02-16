@@ -46,7 +46,7 @@ from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas
+from pkgdb.utils import fas, admin_grp
 
 MASS_BRANCH_SET = 500
 
@@ -268,7 +268,7 @@ class Collections(controllers.Controller):
     @expose(allow_json=True)
     @json_or_redirect('/collections')
     # Check that we have a tg.identity, otherwise you can't set any acls.
-    @identity.require(identity.in_group('cvsadmin'))
+    @identity.require(identity.in_group(admin_grp))
     def mass_branch(self, branch):
         '''Mass branch all packages listed as non-blocked in koji to the pkgdb.
 

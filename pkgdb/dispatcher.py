@@ -48,7 +48,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, bugzilla
+from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, LOG
 
 MAXSYSTEMUID = 9999
 
@@ -71,13 +71,13 @@ class PackageDispatcher(controllers.Controller):
 
     # Create a list of groups that can possibly commit to packages
     groups = {101197: 'cvsadmin',
-            107427: 'provenpackager',
-            'cvsadmin': 101197,
-            'provenpackager': 107427}
-    groupnames = ('cvsadmin', 'provenpackager')
+              107427: 'provenpackager',
+              'cvsadmin': 101197,
+              'provenpackager': 107427}
+    groupnames = (admin_grp, 'provenpackager')
 
-    # Groups that a person must be in to own or comaintain a package
-    owner_memberships = ('cvsadmin', 'packager', 'provenpackager')
+    # Groups that a person must be in to own or co-maintain a package
+    owner_memberships = (admin_grp, pkger_grp, 'provenpackager')
 
     # pylint: disable-msg=E1101
     # Status codes
@@ -208,8 +208,8 @@ class PackageDispatcher(controllers.Controller):
         status = self.approvedStatus
 
         # Make sure the current tg user has permission to set acls
-        # If the user is a cvsadmin they can
-        if ident.in_group('cvsadmin'):
+        # If the user is in the admin group they can
+        if ident.in_group(admin_grp):
             return 'admin'
         # The owner can
         if identity.current.user_name == pkg.owner:
@@ -435,11 +435,11 @@ class PackageDispatcher(controllers.Controller):
             pkg.owner = identity.current.username
             pkg.statuscode = self.approvedStatus.statuscodeid
             owner_name = '%s' % identity.current.user_name
-            bzMail = '%s' % identity.current.user.email
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, owner_name)
             status = self.ownedStatus
+            bzMail = '%s' % identity.current.user.email
             bzQuery = {}
             bzQuery['product'] = pkg.collection.name
             bzQuery['component'] = pkg.package.name
@@ -451,10 +451,14 @@ class PackageDispatcher(controllers.Controller):
                 bzQuery['version'] = 'rawhide'
             queryResults = bugzilla.query(bzQuery)
             for bug in queryResults:
-                bug.setassignee(assigned_to=bzMail, comment='This package'
-                        ' has changed ownership in the Fedora Package'
-                        ' Database.  Reassigning to the new owner of this'
-                        ' component.')
+                if config.get('bugzilla.enable_modification', False):
+                    bug.setassignee(assigned_to=bzMail, comment='This package'
+                            ' has changed ownership in the Fedora Package'
+                            ' Database.  Reassigning to the new owner of this'
+                            ' component.')
+                else:
+                    LOG.debug('Would have reassigned bug #%s from %s to %s' %
+                            (bug.bug_id, bug.assigned_to, bzMail))
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = 'orphan'
@@ -616,9 +620,9 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing with id: %s does not exist' \
                     % pkg_listing_id)
 
-        # Only cvsadmins can change whether the provenpackager group can
+        # Only admins can change whether the provenpackager group can
         # commit.
-        if not identity.in_group('cvsadmin'):
+        if not identity.in_group(admin_grp):
             return dict(status=False, message=
                     '%s is not allowed to approve Package ACLs for %s (%s %s)'
                     % (identity.current.user_name, pkg.package.name,
@@ -778,8 +782,8 @@ class PackageDispatcher(controllers.Controller):
         # Replace newlines with spaces in the summary
         summary = summary.replace('\n', ' ')
         # Check that the tg.identity is allowed to set an owner
-        if not identity.in_any_group('cvsadmin'):
-            return dict(status=False, message='User must be in cvsadmin')
+        if not identity.in_any_group(admin_grp):
+            return dict(status=False, message='User must be in admin_grp')
 
         # Make sure the package doesn't already exist
         # pylint: disable-msg=E1101
@@ -952,8 +956,8 @@ class PackageDispatcher(controllers.Controller):
                     message='Package %s does not exist' % pkg_name)
 
         # Check that the user has rights to set this field
-        # cvsadmin, owner on any branch, or approveacls holder
-        if not identity.in_any_group('cvsadmin'):
+        # admin_grp, owner on any branch, or approveacls holder
+        if not identity.in_any_group(admin_grp):
             owners = [x.owner for x in pkg.listings]
             if not (self._user_in_approveacls(pkg) or
                     identity.current.user.id in owners):
@@ -1002,8 +1006,8 @@ class PackageDispatcher(controllers.Controller):
         '''Add a new package to the database.
         '''
         # Check that the tg.identity is allowed to make changes to the package
-        if not identity.in_any_group('cvsadmin'):
-            return dict(status=False, message='User must be in cvsadmin')
+        if not identity.in_any_group(admin_grp):
+            return dict(status=False, message='User must be in admin_grp')
 
         # Log message for all owners
         pkg_log_msg = None
@@ -1331,7 +1335,7 @@ class PackageDispatcher(controllers.Controller):
 
     @expose(allow_json=True)
     # Check that we have a tg.identity, otherwise you can't set any acls.
-    @identity.require(identity.in_group('cvsadmin'))
+    @identity.require(identity.in_group(admin_grp))
     def clone_branch(self, pkg, branch, master, email_log=True):
         '''Make `branch` permissions mirror `master`, creating if necessary.
 
