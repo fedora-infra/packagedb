@@ -226,7 +226,7 @@ class Packages(controllers.Controller):
                 try:
                     fas_person = fas.cache[person.username]
                 except KeyError:
-                    fas_person = {'username': 'UserID %i' % person.userid}
+                    fas_person = {'username': '%s' % person.username}
                 person.name = '%(username)s' % fas_person
                 person.user = fas_person['username']
                 # Setup acls to be accessible via aclName
