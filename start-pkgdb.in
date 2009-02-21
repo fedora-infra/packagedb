@@ -12,10 +12,10 @@ import pkg_resources
 
 from turbogears import config, update_config, start_server, startup
 import cherrypy
+import fedora.tg.util
 
 cherrypy.lowercase_api = True
 config.update({'pkgdb.basedir': PKGDBDIR})
-
 # first look on the command line for a desired config file,
 # if it's not on the command line, then
 # look for setup.py in this directory. If it's not there, this script is
@@ -32,6 +32,7 @@ import pkgdb.utils
 
 pkgdb.utils.startup()
 startup.call_on_shutdown.append(pkgdb.utils.shutdown)
+startup.call_on_startup.append(fedora.tg.util.enable_csrf)
 
 from pkgdb.controllers import Root
 
