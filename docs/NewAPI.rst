@@ -357,7 +357,7 @@ Some of these changes will be fixed via `DB Changes`_.  Below
 is a list of changes to parameters and return values unrelated to the
 database.  In general the following rules are followed:
 
-1) If it's a db object, it folows the db object spelling
+1) If it's a db object, it follows the db object spelling
 2) If it's two words in standard usage, it becomes two words separated by
    underscore.
 3) If it is abbreviated in one place, it is abbreviated everywhere.
