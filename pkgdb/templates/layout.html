@@ -3,12 +3,13 @@
   xmlns:py="http://genshi.edgewall.org/"
   xmlns:xi="http://www.w3.org/2001/XInclude"
   py:strip="">
+
   <?python
     import socket
     import pkgdb.release
     _hostname = socket.gethostname()
     _version = pkgdb.release.VERSION
-  ?>
+    ?>
 
   <head py:match="head" py:attrs="select('@*')">
     <meta content="text/html; charset=UTF-8" http-equiv="content-type"
@@ -33,6 +34,7 @@
       tg = {userid: "${tg.identity.user.id}",
         username: "${tg.identity.user.username}",
         display_name: "${tg.identity.user.human_name}",
+        token: "${tg.identity.csrf_token}",
         anonymous: false
       };
 
@@ -61,15 +63,9 @@
     <div id="wrapper">
       <div id="head">
         <h1><a href="http://fedoraproject.org/index.html">Fedora</a></h1>
-        <div py:if="tg.config('identity.on',False) and not 'logging_in' in locals()" id="pageLogin">
-          <span py:if="tg.identity.anonymous">
-            You are not logged in yet <a class="loginButton" href="${tg.url('/login/')}">Login</a>
-          </span>
-          <span py:if="not tg.identity.anonymous">
-            Welcome <a href="${tg.url('/users/info/')}">${tg.identity.user.human_name}</a>
-            <a class="loginButton" href="${tg.url('/logout/')}">Logout</a>
-          </span>
-        </div>
+        <ul class="toolbar" id="#main-toolbar">
+          <logintoolitem><a href="${tg.url('/users/info')}"></a></logintoolitem>
+        </ul>
       </div>
       <div id="sidebar">
         <div id="nav">
@@ -117,4 +113,7 @@
       </div>
     </div>
   </body>
+
+  <xi:include href="${tg.fedora_template('login.html')}" />
+
 </html>
