@@ -142,7 +142,7 @@ class Bugs(controllers.Controller):
 
         query = {'product': 'Fedora',
                 'component': package_name,
-                'bug_status': ['ASSIGNED', 'NEW', 'NEEDINFO', 'MODIFIED',
+                'bug_status': ['ASSIGNED', 'NEW', 'MODIFIED',
                     'ON_DEV', 'ON_QA', 'VERIFIED', 'FAILS_QA',
                     'RELEASE_PENDING', 'POST'] }
         # :E1101: python-bugzilla monkey patches this in
