@@ -63,7 +63,7 @@ import simplejson
                 aclChanger = True
             else:
                 for person in pkg.people:
-                    if person.username == tg.identity.user_name:
+                    if person.user == tg.identity.user_name:
                         # Person has an acl on the package
                         for acl in aclNames:
                             if person.aclOrder[acl]:
@@ -88,6 +88,8 @@ import simplejson
             QA Contact
             </th><th>
             Status
+            </th><th>
+            Retirement
         </th></tr>
         <tr id="${''.join((pkg.collection.name, pkg.collection.version)).replace(' ','')}">
           <td>
@@ -113,15 +115,16 @@ import simplejson
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner owned">
                 <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owneruser)}">${pkg.ownername}</a></span>
-                <span py:if="not tg.identity.anonymous and (tg.identity.user.id == pkg.ownerid or admin_grp in tg.identity.groups)">
+                <span py:if="not tg.identity.anonymous and (tg.identity.username == pkg.owner or admin_grp in tg.identity.groups)">
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
                     value="Release Ownership" />
                 </span>
               </div>
             </div>
-            </td><td py:content="pkg.qacontactname">
-            </td><td py:content="pkg.status.locale['C'].statusname">
+          </td>
+          <td py:content="pkg.qacontactname">
+          </td><td class="status" py:content="pkg.status.locale['C'].statusname">
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
           <table class="acls" width="100%">
@@ -140,13 +143,13 @@ import simplejson
                 py:with="person = pkg.people[userIndex]"
                 class="aclrow">
                 <td class="acluser"
-                  py:attrs="{'name': str(pkg.id) + ':' + str(person.username)}">
-                  <a href="${tg.url('/users/packages/' + person.user)}">${person.name}</a>
+                  py:attrs="{'name': str(pkg.id) + ':' + str(person.user)}">
+                  <a href="${tg.url('/users/packages/' + person.user)}">${person.user}</a>
                 </td>
                 <td py:for="acl in aclNames" class="aclcell">
                   <!-- If the logged in user is this row, add a checkbox to set it -->
                   <div py:if="not tg.identity.anonymous and
-                    person.username==tg.identity.user_name"
+                    person.user==tg.identity.user_name"
                     py:attrs="{'name' : str(pkg.id) + ':' + acl}"
                     class="requestContainer aclPresent">
                     <input type="checkbox" checked="true" class="aclPresentBox"

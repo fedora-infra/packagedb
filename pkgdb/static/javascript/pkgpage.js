@@ -73,9 +73,9 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
         for (aclRowNum in aclRows) {
             var aclUser = getElementsByTagAndClassName('td', 'acluser',
                     aclRows[aclRowNum])[0];
-            var aclUserId = aclUser.getAttribute('name').split(':');
+            var aclUserName = aclUser.getAttribute('name').split(':');
             var createRequestBox = false;
-            if (aclUserId[1] == tgUserUserId) {
+            if (aclUserName[1] == tgUserUserName) {
                 createRequestBox = true;
             }
             /* Loop through the aclcells, creating the spans and
@@ -356,7 +356,7 @@ function request_acl_gui(event) {
     acls = ['watchbugzilla', 'watchcommits', 'commit', 'approveacls'];
     var newAclRow = TR({'class' : 'aclrow'},
             TD({'class' : 'acluser',
-                'name': pkgListTable.getAttribute('name') + ':' + tgUserUserId},
+                'name': pkgListTable.getAttribute('name') + ':' + tgUserUserName},
                 tgUserDisplayName + ' (' + tgUserUserName + ')'
             ))
     for (var aclNum in acls) {
@@ -420,8 +420,8 @@ function request_status_change(event) {
             'aclrow');
     var aclUser = getElementsByTagAndClassName('td', 'acluser', aclRow)[0];
     logDebug(aclUser);
-    logDebug(aclUser.getAttribute('name'))
-    var personid = aclUser.getAttribute('name').split(':')[1];
+    logDebug(aclUser.getAttribute('name'));
+    var person_name = aclUser.getAttribute('name').split(':')[1];
 
     /* Retrieve the status to change to for this acl */
     var selectElement = getElementsByTagAndClassName('select', 'aclStatusList',
@@ -432,13 +432,15 @@ function request_status_change(event) {
     var idParts = requestContainer.getAttribute('name').split(':');
 
     var req = loadJSONDoc(base + '/set_acl_status', {'pkgid': idParts[0],
-            'personid': personid, 'new_acl': idParts[1],
+            'person_name': person_name, 'new_acl': idParts[1],
             'statusname': aclStatus});
     req.addCallback(partial(check_acl_status, requestContainer));
     req.addErrback(partial(revert_acl_status, requestContainer));
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'new_acl':idParts[1],'statusname':aclStatus}));
+    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0],
+                    'person_name':person_name,'new_acl':idParts[1],
+                    'statusname':aclStatus}));
 }
 
 /*

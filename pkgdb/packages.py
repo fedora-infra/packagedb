@@ -206,8 +206,7 @@ class Packages(controllers.Controller):
             try:
                 user = fas.cache[pkg.owner]
             except KeyError:
-                user = {'username': 'UserID %i' % pkg.owner,
-                        'id': pkg.owner}
+                user = {'username': '%s' % pkg.owner}
             pkg.ownername = '%(username)s' % user
             pkg.ownerid = user['id']
             pkg.owneruser = user['username']
