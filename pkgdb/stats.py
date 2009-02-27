@@ -59,7 +59,7 @@ class Stats(controllers.Controller):
             # SQLAlchemy mapped classes are monkey patched
             # pylint: disable-msg=E1101
             own = PackageListing.query.filter(and_(
-                PackageListing.owner==identity.current.user.id,
+                PackageListing.owner==identity.current.user_name,
                 PackageListing.statuscode==3,
                 PackageListing.collectionid==DEVEL)).count()
 
