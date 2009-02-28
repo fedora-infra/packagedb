@@ -45,7 +45,7 @@ class Letters(controllers.Controller):
         self.removedStatus = StatusTranslation.query.filter_by(
                     statusname='Removed', language='C').first().statuscodeid
 
-    @expose(template='pkgdb.templates.pkgbugoverview')
+    @expose(template='pkgdb.templates.pkgbugoverview', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
                 allow_limit_override=True, max_pages=13)
     def default(self, searchwords=''):
