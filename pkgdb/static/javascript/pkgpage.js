@@ -171,24 +171,26 @@ function toggle_owner(ownerDiv, data) {
         display_error(null, data);
         return;
     }
+    var statusBox = getElementsByTagAndClassName('td', 'status',
+            getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist'))[0];
     var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
             ownerDiv)[0];
     var aclTable = getElementsByTagAndClassName('table', 'acls',
             getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist'))[0];
-    if (data['ownerId'] === 9900) {
+    if (data['ownerName'] === 'Orphaned Package (orphan)') {
         /* Reflect the fact that the package is now orphaned */
         swapElementClass(ownerDiv, 'owned', 'orphaned');
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
         ownerButton.setAttribute('value', 'Take Ownership');
         set_acl_approval_box(aclTable, false);
-        /** FIXME: Need to find the Status box and update it as well */
+        statusBox.innerHTML = 'Orphaned';
     } else {
         /* Show the new owner information */
         swapElementClass(ownerDiv, 'orphaned', 'owned');
         swapElementClass(ownerButton, 'unorphanButton', 'orphanButton');
         ownerButton.setAttribute('value', 'Release Ownership');
         set_acl_approval_box(aclTable, true, data['aclStatusFields']);
-        /** FIXME: Need to find the Status box and update it as well */
+        statusBox.innerHTML = 'Owned';
     }
     var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
     var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
