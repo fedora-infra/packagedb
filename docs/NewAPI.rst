@@ -346,9 +346,10 @@ Names of public variables and parameters are unwieldy in several ways:
 1) They are too long.  This is especially seen in database column names.  This
    is bad because returning values as json has to repeat the column name
    multiple times.
-2) They do not comply with PEP8.  PEP8 specifies underscores to divide words.
+2) They do not comply with PEP8_.  PEP8_ specifies underscores to divide words.
    We presently use camelCase.
 
+.. _PEP8: http://python.org/dev/peps/pep-0008/
 
 New API Fixes
 -------------
@@ -371,7 +372,7 @@ Current Name              New Name
 package                   pkg
 packageName               pkg_name
 package_name              pkg_name
-collection                collectn
+collection                collectn  (Use this for collection short name)
 collectionName            collectn_name
 collectionVersion         collectn_ver
 cc_list                   cc_list
