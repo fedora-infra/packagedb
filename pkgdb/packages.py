@@ -206,8 +206,7 @@ class Packages(controllers.Controller):
             try:
                 user = fas.cache[pkg.owner]
             except KeyError:
-                user = {'username': 'UserID %i' % pkg.owner,
-                        'id': pkg.owner}
+                user = {'username': '%s' % pkg.owner}
             pkg.ownername = '%(username)s' % user
             pkg.ownerid = user['id']
             pkg.owneruser = user['username']
@@ -226,7 +225,7 @@ class Packages(controllers.Controller):
                 try:
                     fas_person = fas.cache[person.username]
                 except KeyError:
-                    fas_person = {'username': 'UserID %i' % person.userid}
+                    fas_person = {'username': '%s' % person.username}
                 person.name = '%(username)s' % fas_person
                 person.user = fas_person['username']
                 # Setup acls to be accessible via aclName
