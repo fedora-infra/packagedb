@@ -6,7 +6,7 @@ include server-scripts/*.in
 include server-scripts/*.cfg
 include server-scripts/transform-ids.py
 exclude server-scripts/pkgdb-sync-repo
-include update-schema *
+recursive-include update-schema *
 include AUTHORS README COPYING ChangeLog NEWS
 include *.cfg.sample
 include pkgdb/templates/*.html
