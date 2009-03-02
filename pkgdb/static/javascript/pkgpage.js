@@ -75,7 +75,7 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                     aclRows[aclRowNum])[0];
             var aclUserName = aclUser.getAttribute('name').split(':');
             var createRequestBox = false;
-            if (aclUserName[1] == tgUserUserName) {
+            if (aclUserName[1] == fedora.identity.username) {
                 createRequestBox = true;
             }
             /* Loop through the aclcells, creating the spans and
@@ -340,12 +340,12 @@ function request_acl_gui(event) {
     var buttonRow = getFirstParentByTagAndClassName(event.target(), 'tr');
     var pkgListTable = getFirstParentByTagAndClassName(buttonRow, 'table',
             'pkglist');
-    
+
     /* Check that this user doesn't already have an acl GUI setup */
     var oldAclUsers = getElementsByTagAndClassName('td', 'acluser', pkgListTable);
     for (var aclNum in oldAclUsers) {
         idParts = oldAclUsers[aclNum].getAttribute('name').split(':');
-        if (idParts[1] == tgUserUserId) {
+        if (idParts[1] == fedora.identity.userid) {
             /* User already has an acl gui.  No need to create a new one. */
             return;
         }
@@ -358,9 +358,10 @@ function request_acl_gui(event) {
     acls = ['watchbugzilla', 'watchcommits', 'commit', 'approveacls'];
     var newAclRow = TR({'class' : 'aclrow'},
             TD({'class' : 'acluser',
-                'name': pkgListTable.getAttribute('name') + ':' + tgUserUserName},
-                tgUserDisplayName + ' (' + tgUserUserName + ')'
-            ))
+                'name': pkgListTable.getAttribute('name') + ':' +
+                    fedora.identity.username},
+                fedora.identity.display_name +
+                ' (' + fedora.identity.username + ')'))
     for (var aclNum in acls) {
         // FIXME: If the user is also the owner, create aclStatus as a select
         // list instead of a span so they can approve acls for themselves.
