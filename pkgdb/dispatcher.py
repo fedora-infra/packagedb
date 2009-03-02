@@ -97,6 +97,8 @@ class PackageDispatcher(controllers.Controller):
             statusname='Orphaned').one()
     ownedStatus = StatusTranslation.query.filter_by(
             statusname='Owned').one()
+    retiredStatus = StatusTranslation.query.filter_by(
+            statusname='Deprecated').one()
     # pylint: enable-msg=E1101
 
     def __init__(self):
@@ -252,7 +254,7 @@ class PackageDispatcher(controllers.Controller):
                             ' make a bugzilla account with that email address'
                             ' or change your email address in the Fedora'
                             ' Account System'
-                            ' https://admin.fedo=raproject.org/accounts/ to a'
+                            ' https://admin.fedoraproject.org/accounts/ to a'
                             ' valid bugzilla email address and try again.'
                             % user)
                 raise
@@ -432,9 +434,9 @@ class PackageDispatcher(controllers.Controller):
                 return dict(status=False, message=str(e))
 
             # Take ownership
-            pkg.owner = identity.current.username
+            pkg.owner = identity.current.user_name
             pkg.statuscode = self.approvedStatus.statuscodeid
-            owner_name = '%s' % identity.current.user_name # FIXME
+            owner_name = '%s' % identity.current.user_name
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, owner_name)
@@ -463,7 +465,6 @@ class PackageDispatcher(controllers.Controller):
             # Release ownership
             pkg.owner = 'orphan'
             pkg.statuscode = self.orphanedStatus.statuscodeid
-            pkg.statuschange = datetime.now(pkg.statuschange.tzinfo)
             owner_name = 'Orphaned Package (orphan)'
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
                     pkg.package.name, pkg.collection.name,
@@ -484,7 +485,7 @@ class PackageDispatcher(controllers.Controller):
             # An error was generated
             return dict(status=False,
                     message='Not able to change owner information for %s' \
-                            % (pkg_listing_id))
+                            % pkg_listing_id)
 
         # Send a log to people interested in this package as well
         self._send_log_msg(log_msg, '%s ownership updated' %
@@ -494,6 +495,74 @@ class PackageDispatcher(controllers.Controller):
         return dict(status=True, ownerId=pkg.owner, ownerName=owner_name,
                 aclStatusFields=self.acl_status_translations)
 
+    @expose(allow_json=True)
+    @identity.require(identity.not_anonymous())
+    def toggle_retirement(self, pkg_listing_id):
+        '''Retire/Unretire package
+
+        Rules for retiring:
+        - owned packages - can be retired by: maintainers and cvsadmin
+        - orphaned packages - can be retired by: anyone
+        Unretiring can only be done by cvsadmin
+
+        Arguments:
+        :pkg_listing_id: The packagelisting to be (un)retired.
+        '''
+        # Check that the pkg exists
+        try:
+            # pylint: disable-msg=E1101
+            pkg = PackageListing.query.filter_by(id=pkg_listing_id).one()
+        except InvalidRequestError:
+            return dict(status=False, message='No such package %s'
+                    % pkg_listing_id)
+        approved = self._user_can_set_acls(identity, pkg)
+        
+        if (pkg.statuscode != self.retiredStatus.statuscodeid and (
+            pkg.owner == 'orphan' or approved in ('admin', 'owner'))):
+            # Retire package
+            if pkg.owner != 'orphan':
+                # let toggle_owner handle bugzilla and other stuff
+                self.toggle_owner(pkg_listing_id)
+            pkg.statuscode = self.retiredStatus.statuscodeid
+            log_msg = 'Package %s in %s %s has been retired by %s' % (
+                pkg.package.name, pkg.collection.name,
+                pkg.collection.version, identity.current.user_name)
+            status = self.retiredStatus
+            retirement = 'Retired'
+        elif (pkg.statuscode == self.retiredStatus.statuscodeid and
+              approved == 'admin'):
+            # Unretire package
+            pkg.statuscode = self.orphanedStatus.statuscodeid
+            log_msg = 'Package %s in %s %s has been unretired by %s and \
+            is now orphan.' % (
+                pkg.package.name, pkg.collection.name,
+                pkg.collection.version, identity.current.user_name)
+            retirement = 'Unretired'
+        else:
+            return dict(status=False, message=\
+                        'The (un)retiring of package %s could not be\
+                        completed. Check your permissions.' % pkg_listing_id)
+        # Retired and just-unretired packages are orphan
+        pkg.owner = 'orphan'
+        # Make a log in the db.
+        log = PackageListingLog(identity.current.user_name,
+                status.statuscodeid, log_msg, None, pkg_listing_id)
+        log.packagelistingid = pkg.id
+            
+        try:
+            session.flush()
+        except SQLError, e:
+            # An error was generated
+            return dict(status=False,
+                        message='Unable to (un)retire package %s' \
+                                % pkg_listing_id)
+        # Send a log to people interested in the package
+        self._send_log_msg(log_msg, '%s (un)retirement' % pkg.package.name,
+                           identity.current.user, (pkg,),
+                           ('approveacls', 'watchbugzilla', 'watchcommits',
+                            'build', 'commit'))
+        return dict(status=True, retirement=retirement)
+        
     @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
     @identity.require(identity.not_anonymous())

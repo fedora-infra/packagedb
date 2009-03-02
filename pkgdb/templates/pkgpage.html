@@ -1,6 +1,8 @@
 <?python
 TODO='Not yet implemented'
 import simplejson
+ORPHANED=14
+RETIRED=20
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
@@ -88,8 +90,6 @@ import simplejson
             QA Contact
             </th><th>
             Status
-            </th><th>
-            Retirement
         </th></tr>
         <tr id="${''.join((pkg.collection.name, pkg.collection.version)).replace(' ','')}">
           <td>
@@ -213,14 +213,36 @@ import simplejson
             </tr>
           </table>
         </td></tr>
-        <tr py:if="not tg.identity.anonymous and not interested">
-          <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
+        <tr py:if="not tg.identity.anonymous">
+          <td py:if="not interested" class="acladd">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
             + ':' + tg.identity.user_name}"
             class="addMyselfButton"
             value="Add myself to package"/>
           </td>
-          </tr>
+          <div py:choose="" py:strip="">
+            <td>
+              <div py:when="(pkg.statuscode!=RETIRED and
+                         (pkger_grp in tg.identity.groups or
+                         admin_grp in tg.identity.groups)) or
+                         pkg.statuscode==ORPHANED"
+                   py:attrs="{'name' : str(pkg.id)}"
+                   class="requestContainer retirement not_retired">
+                <input class="retirementButton retireButton"
+                       type="button" value="Retire package"/>
+              </div>
+            </td>
+            <td>
+              <div py:when="pkg.statuscode==RETIRED and
+                            admin_grp in tg.identity.groups"
+                   py:attrs="{'name' : str(pkg.id)}"
+                   class="requestContainer retirement retired">
+                <input class="retirementButton unretireButton"
+                       type="button" value="Unretire package"/>
+              </div>
+            </td>
+          </div>
+        </tr>
       </div> <!--! here ends the pkgl def declaration -->
         <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
             <table py:when="pkg.owner=='orphan'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
