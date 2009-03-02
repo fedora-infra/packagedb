@@ -1,5 +1,5 @@
 /*
- * Copyright © 2007  Red Hat, Inc.
+ * Copyright © 2007-2009  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use, modify,
  * copy, or redistribute it subject to the terms and conditions of the GNU
@@ -436,7 +436,7 @@ function request_status_change(event) {
 
     var req = loadJSONDoc(base + '/set_acl_status', {'pkgid': idParts[0],
             'person_name': person_name, 'new_acl': idParts[1],
-            'statusname': aclStatus});
+            'statusname': aclStatus, '_csrf_token': fedora.identity.token});
     req.addCallback(partial(check_acl_status, requestContainer));
     req.addErrback(partial(revert_acl_status, requestContainer));
     req.addErrback(partial(display_error, requestContainer));
