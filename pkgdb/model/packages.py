@@ -292,8 +292,8 @@ mapper(Package, PackageTable, properties={
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
     'people2': relation(PersonPackageListing, backref=backref('packagelisting'),
-        collection_class = attribute_mapped_collection('userid')),
+        collection_class = attribute_mapped_collection('username')),
     'groups': relation(GroupPackageListing),
     'groups2': relation(GroupPackageListing, backref=backref('packagelisting'),
-        collection_class = attribute_mapped_collection('groupid')),
+        collection_class = attribute_mapped_collection('groupname')),
     })

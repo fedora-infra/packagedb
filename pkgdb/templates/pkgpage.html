@@ -45,23 +45,25 @@ import simplejson
     <form action="${tg.url('/packages/dispatcher/')}" method="POST">
         <div py:def="pkgl">
 
-            <!--! here beggins the py:def pkgl declaration -->    
+        <!--! here beggins the py:def pkgl declaration -->    
 
         <?python
         # Determine whether the present user is already involved with this
         # packagelisting and if they are allowed to change acls
+        from pkgdb.utils import admin_grp, pkger_grp
+         
         interested = False # Does the person already have an acl line?
         aclChanger = False # Is the person allowed to make changes?
         if tg.identity.anonymous:
             # Anonymous users can only look
             pass
         else:
-            if tg.identity.user.id == pkg.ownerid:
+            if tg.identity.user_name == pkg.owner:
                 # Package owners can make changes and add themselves to acls
                 aclChanger = True
             else:
                 for person in pkg.people:
-                    if person.userid == tg.identity.user.id:
+                    if person.user == tg.identity.user_name:
                         # Person has an acl on the package
                         for acl in aclNames:
                             if person.aclOrder[acl]:
@@ -74,7 +76,7 @@ import simplejson
                             aclChanger = True
                         break
             if not aclChanger:
-                if 'cvsadmin' in tg.identity.groups:
+                if admin_grp in tg.identity.groups:
                     # Person is an admin and thus can make changes
                     aclChanger = True
         ?>
@@ -86,6 +88,8 @@ import simplejson
             QA Contact
             </th><th>
             Status
+            </th><th>
+            Retirement
         </th></tr>
         <tr id="${''.join((pkg.collection.name, pkg.collection.version)).replace(' ','')}">
           <td>
@@ -96,12 +100,12 @@ import simplejson
             <a href="${tg.url('/collections/id/' + str(pkg.collection.id))}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
           </td><td>
-            <div py:choose="pkg.ownerid" py:strip="">
-              <div py:when="9900"
+            <div py:choose="pkg.owner" py:strip="">
+              <div py:when="'orphan'"
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner orphaned">
                 <span class="ownerName">${pkg.ownername}</span>
-                <span py:if="'packager' in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
+                <span py:if="pkger_grp in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
                   <input type="button" name="unorphan"
                     class="ownerButton unorphanButton"
                     value="Take Ownership"/>
@@ -111,15 +115,16 @@ import simplejson
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner owned">
                 <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owneruser)}">${pkg.ownername}</a></span>
-                <span py:if="not tg.identity.anonymous and (tg.identity.user.id == pkg.ownerid or 'cvsadmin' in tg.identity.groups)">
+                <span py:if="not tg.identity.anonymous and (tg.identity.username == pkg.owner or admin_grp in tg.identity.groups)">
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
                     value="Release Ownership" />
                 </span>
               </div>
             </div>
-            </td><td py:content="pkg.qacontactname">
-            </td><td py:content="pkg.status.locale['C'].statusname">
+          </td>
+          <td py:content="pkg.qacontactname">
+          </td><td class="status" py:content="pkg.status.locale['C'].statusname">
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
           <table class="acls" width="100%">
@@ -138,13 +143,13 @@ import simplejson
                 py:with="person = pkg.people[userIndex]"
                 class="aclrow">
                 <td class="acluser"
-                  py:attrs="{'name': str(pkg.id) + ':' + str(person.userid)}">
-                  <a href="${tg.url('/users/packages/' + person.user)}">${person.name}</a>
+                  py:attrs="{'name': str(pkg.id) + ':' + str(person.user)}">
+                  <a href="${tg.url('/users/packages/' + person.user)}">${person.user}</a>
                 </td>
                 <td py:for="acl in aclNames" class="aclcell">
                   <!-- If the logged in user is this row, add a checkbox to set it -->
                   <div py:if="not tg.identity.anonymous and
-                    person.userid==tg.identity.user.id"
+                    person.user==tg.identity.user_name"
                     py:attrs="{'name' : str(pkg.id) + ':' + acl}"
                     class="requestContainer aclPresent">
                     <input type="checkbox" checked="true" class="aclPresentBox"
@@ -179,24 +184,24 @@ import simplejson
           <table class="groupacls" width="100%">
             <tr py:for="group in pkg.groups" class="aclgrouprow"
               py:if="group.aclOrder['commit'] and group.aclOrder['commit'].status.locale['C'].statusname in ('Approved', 'Denied')">
-              <td py:content="group.name" class="aclgroup"
-                py:attrs="{'name': str(pkg.id) + ':' + str(group.groupid)}">
+              <td py:content="group.groupname" class="aclgroup"
+                py:attrs="{'name': str(pkg.id) + ':' + group.groupname}">
                 Name
               </td>
               <!-- If the user has permission to edit the acls, give them a
               checkbox to edit this
               -->
               <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
-                <div py:if="'cvsadmin' in tg.identity.groups"
-                  py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid) +
+                <div py:if="admin_grp in tg.identity.groups"
+                  py:attrs="{'name' : str(pkg.id) + ':' + group.groupname +
                   ':commit'}"
                   class="requestContainer groupAclStatus">
                   group members can commit?
                   <input type="checkbox" class="groupAclStatusBox"
                     py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
                 </div>
-                <div py:if="not 'cvsadmin' in tg.identity.groups"
-                  py:attrs="{'name' : str(pkg.id) + ':' + str(group.groupid)
+                <div py:if="not admin_grp in tg.identity.groups"
+                  py:attrs="{'name' : str(pkg.id) + ':' + group.groupname
                   + ':commit'}"
                   class="groupAclStatus requestContainer">
                   group members can commit?
@@ -211,15 +216,15 @@ import simplejson
         <tr py:if="not tg.identity.anonymous and not interested">
           <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
-            + ':' + str(tg.identity.user.id)}"
+            + ':' + tg.identity.user_name}"
             class="addMyselfButton"
             value="Add myself to package"/>
           </td>
           </tr>
       </div> <!--! here ends the pkgl def declaration -->
         <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
-            <table py:when="pkg.ownerid==9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
-            <table py:when="pkg.ownerid!=9900" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
+            <table py:when="pkg.owner=='orphan'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
+            <table py:when="pkg.owner!='orphan'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
         </div>
     </form>
   </body>

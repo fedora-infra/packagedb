@@ -17,9 +17,13 @@
 # permission of Red Hat, Inc.
 #
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+'''
+Changes statuscodes of orphaned packages based on owner ids also sets the 
+timestamp for statuscode change.
 
-#'''
-#
+The first part of this script (orphaning) will be obsolete after it has been 
+run and will NOT work after the switch from userids to usernames. 
+'''
 
 import sqlalchemy
 from sqlalchemy.sql import func
@@ -62,24 +66,6 @@ else:
         pkgl.statuscode = orphanStatus
         pkgl.statuschange = datetime.now(pkgl.statuschange.tzinfo)
         print 'Marked Orphan package: ' + pkgl.package.name + ' in ' + \
-                pkgl.collection.branchname
-
-# change statuscode of Deprecated packages when orphaned for more than 6 months
-retiredStatus = model.StatusTranslation.query.filter_by(
-    statusname='Deprecated').first().statuscodeid
-
-retirees = model.PackageListing.query.filter(
-                   model.PackageListing.statuscode==orphanStatus).filter(
-                       func.date_part('month',func.age(
-                           model.PackageListing.statuschange))>6).filter(
-                               model.PackageListing.statuscode!=retiredStatus)
-if retirees.count() == 0:
-    print '-- All deprecated packages are already marked'
-else:
-    for pkgl in retirees:
-        pkgl.statuscode = retiredStatus
-        pkgl.statuschange = datetime.now(pkgl.statuschange.tzinfo) 
-        print 'Marked Deprecated package: ' + pkgl.package.name + ' in ' + \
                 pkgl.collection.branchname
 
 session.flush()

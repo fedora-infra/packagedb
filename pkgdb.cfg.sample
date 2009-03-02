@@ -11,6 +11,10 @@ bugzilla.url='https://bugzilla.redhat.com/'
 #bugzilla.queryurl='https://bzprx.vip.phx.redhat.com'
 bugzilla.user = 'user@somewhere.com'
 bugzilla.password = 'password'
+# Whether we want pkgdb to modify bugzilla bugs (right now, just to reassign
+# bugs when the owner changes.).  Leave off for testing and
+# set to True in production.
+bugzilla.enable_modification = False
 
 # Koji configuration
 koji.huburl='https://koji.fedoraproject.org/kojihub'

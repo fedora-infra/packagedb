@@ -36,7 +36,7 @@ from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import fas
+from pkgdb.utils import fas, admin_grp
 
 from cherrypy import request
 
@@ -159,7 +159,7 @@ class Packages(controllers.Controller):
             can_set_shouldopen = False
         else:
             # admins and owners of any branch can set shouldopen
-            can_set_shouldopen = 'cvsadmin' in identity.current.groups or \
+            can_set_shouldopen = admin_grp in identity.current.groups or \
                     identity.current.user.id in [x.owner for x in pkg_listings]
             if not can_set_shouldopen:
                 # Set up a bunch of generators to iterate through the acls
@@ -176,7 +176,7 @@ class Packages(controllers.Controller):
                         # Retrieve all the lists of acls for the current user
                         # for each PackageListing
                         acl_lists = (p.acls for p in people \
-                                    if p.userid == identity.current.user.id)
+                                    if p.username == identity.current.user_name)
                         # For each list of acls...
                         for acls in acl_lists:
                             # ...check each acl
@@ -206,8 +206,7 @@ class Packages(controllers.Controller):
             try:
                 user = fas.cache[pkg.owner]
             except KeyError:
-                user = {'username': 'UserID %i' % pkg.owner,
-                        'id': pkg.owner}
+                user = {'username': '%s' % pkg.owner}
             pkg.ownername = '%(username)s' % user
             pkg.ownerid = user['id']
             pkg.owneruser = user['username']
@@ -224,9 +223,9 @@ class Packages(controllers.Controller):
             for person in pkg.people:
                 # Retrieve info from the FAS about the people watching the pkg
                 try:
-                    fas_person = fas.cache[person.userid]
+                    fas_person = fas.cache[person.username]
                 except KeyError:
-                    fas_person = {'username': 'UserID %i' % person.userid}
+                    fas_person = {'username': '%s' % person.username}
                 person.name = '%(username)s' % fas_person
                 person.user = fas_person['username']
                 # Setup acls to be accessible via aclName
@@ -241,9 +240,7 @@ class Packages(controllers.Controller):
 
             for group in pkg.groups:
                 # Retrieve info from the FAS about a group
-                fas_group = fas.group_cache[group.groupid]
-                group.name = fas_group.get('name', 'Unknown (GroupID %i)' %
-                        group.groupid)
+                fas_group = fas.group_cache[group.groupname]
                 # Setup acls to be accessible via aclName
                 group.aclOrder = {}
                 for acl in acl_names:

@@ -125,27 +125,31 @@ class Users(controllers.Controller):
                 raise identity.IdentityFailure(
                         'You must be logged in to view your information')
             else:
-                fasid = identity.current.user.id
+                ## fasid = identity.current.user.id
                 fasname = identity.current.user_name
-        else:
-            try:
-                fasid = fas.cache[fasname]['id']
-            except KeyError:
-                error = dict(title=self.app_title + ' -- Invalid Username',
-                        status = False, pkgs = [],
-                        message='The username you were linked to (%s) cannot' \
-                        ' be found.  If you received this error from' \
-                        ' a link on the fedoraproject.org website, please' \
-                        ' report it.' % fasname
-                    )
-                if request_format() != 'json':
-                    error['tg_template'] = 'pkgdb.templates.errors'
-                return error
+        ##else:
+        ##    try:
+        ##        fasid = fas.cache[fasname]['id']
+        ##    except KeyError:
+        ##        error = dict(title=self.app_title + ' -- Invalid Username',
+        ##                status = False, pkgs = [],
+        ##                message='The username you were linked to (%s) cannot' \
+        ##                ' be found.  If you received this error from' \
+        ##                ' a link on the fedoraproject.org website, please' \
+        ##                ' report it.' % fasname
+        ##            )
+        ##        if request_format() != 'json':
+        ##            error['tg_template'] = 'pkgdb.templates.errors'
+        ##        return error
 
         page_title = self.app_title + ' -- ' + fasname + ' -- Packages'
 
         # pylint: disable-msg=E1101
-        query = Package.query.join('listings2').distinct().options(lazyload('listings2.groups2'), lazyload('listings2.groups2.acls2'),lazyload('listings2.people2'), lazyload('listings2.people2.acls2'), lazyload('listings2'))
+        query = Package.query.join('listings2').distinct().options(
+                lazyload('listings2.groups2'), 
+                lazyload('listings2.groups2.acls2'),
+                lazyload('listings2.people2'), 
+                lazyload('listings2.people2.acls2'), lazyload('listings2'))
 
         if not eol:
             # We don't want EOL releases, filter those out of each clause
@@ -160,7 +164,7 @@ class Users(controllers.Controller):
                             self.approvedStatusId,
                             self.awaitingReviewStatusId,
                             self.underReviewStatusId)),
-                        PackageListing.c.owner==fasid,
+                        PackageListing.c.owner==fasname,
                         PackageListing.c.statuscode.in_((
                             self.approvedStatusId,
                             self.awaitingBranchStatusId,
@@ -174,7 +178,7 @@ class Users(controllers.Controller):
                     ['listings2', 'people2', 'acls2']).filter(sqlalchemy.and_(
                     Package.c.statuscode.in_((self.approvedStatusId,
                     self.awaitingReviewStatusId, self.underReviewStatusId)),
-                    PersonPackageListing.c.userid == fasid,
+                    PersonPackageListing.c.username == fasname,
                     PersonPackageListingAcl.c.statuscode == \
                             self.approvedStatusId,
                     PackageListing.c.statuscode.in_(
@@ -223,25 +227,25 @@ class Users(controllers.Controller):
                 raise identity.IdentityFailure(
                         "You must be logged in to view your information")
             else:
-                fasid = identity.current.user.id
+            ##    fasid = identity.current.user.id
                 fasname = identity.current.user_name
-        else:
-            try:
-                user = fas.cache[fasname]
-            except KeyError:
-                error = dict(status = False,
-                        title = self.app_title + ' -- Invalid Username',
-                        message = 'The username you were linked to,' \
-                                ' (%username)s does not exist.  If you' \
-                                ' received this error from a link on the' \
-                                ' fedoraproject.org website, please report' \
-                                ' it.' % {'username': fasname})
-                if request_format() != 'json':
-                    error['tg_template'] = 'pkgdb.templates.errors'
-                return error
+        ##else:
+        ##    try:
+        ##        user = fas.cache[fasname]
+        ##    except KeyError:
+        ##        error = dict(status = False,
+        ##                title = self.app_title + ' -- Invalid Username',
+        ##                message = 'The username you were linked to,' \
+        ##                        ' (%username)s does not exist.  If you' \
+        ##                        ' received this error from a link on the' \
+        ##                        ' fedoraproject.org website, please report' \
+        ##                        ' it.' % {'username': fasname})
+        ##        if request_format() != 'json':
+        ##            error['tg_template'] = 'pkgdb.templates.errors'
+        ##        return error
 
-            fasid = user['id']
+        ##    fasid = user['id']
 
         page_title = self.app_title + ' -- ' + fasname + ' -- Info'
-
-        return dict(title=page_title, fasid=fasid, fasname=fasname)
+        # FIXME do we still need this to return a fasid?
+        return dict(title=page_title, fasname=fasname)

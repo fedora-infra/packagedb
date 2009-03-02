@@ -1,5 +1,5 @@
 /*
- * Copyright © 2007  Red Hat, Inc.
+ * Copyright © 2007-2009  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use, modify,
  * copy, or redistribute it subject to the terms and conditions of the GNU
@@ -75,7 +75,7 @@ function spin_spinner(timeout, seqNum) {
 function busy(elem, event) {
     /* Create a spinner */
     var spinner = create_spinner(spinnerImages[0]);
-   
+
     /* Display it over the widget */ 
     // MochiKit 1.4 has a getElementPosition() function instead
     var pos = elementPosition(elem);
@@ -89,7 +89,7 @@ function busy(elem, event) {
     if (spinnerCount <= 1) {
         spin_spinner(spinnerTimeout, 0);
     }
-      
+
     /* Walk the tree and set everything to disabled */
     nodes = getElementsByTagAndClassName(null, null, elem);
     for (nodeNum in nodes) {
@@ -165,7 +165,8 @@ function make_request(action, callback, errback, event) {
         url = url + requestContainer.getAttribute('name');
     }
 
-    var req = loadJSONDoc(url);
+    /* Add the CSRF token */
+    var req = loadJSONDoc(url, {'_csrf_token': fedora.identity.token});
     if (callback !== null) {
         req.addCallback(partial(callback, requestContainer));
     }

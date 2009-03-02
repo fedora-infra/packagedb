@@ -20,8 +20,12 @@
 '''
 Utilities for all classes to use
 '''
-from turbogears import config
+import os
+import tempfile
 import logging
+
+from turbogears import config
+
 from bugzilla import Bugzilla
 
 # The Fedora Account System Module
@@ -33,6 +37,8 @@ STATUS = {}
 fas = None
 LOG = None
 bugzilla = None
+admin_grp = None
+pkger_grp = None
 
 def to_unicode(obj, encoding='utf-8', errors='strict'):
     '''
@@ -48,9 +54,11 @@ def to_unicode(obj, encoding='utf-8', errors='strict'):
         :ignore: silently drop the bad characters
 
     '''
-    if not isinstance(obj, unicode):
-        obj = unicode(obj, encoding, errors)
-    return obj
+    if isinstance(obj, unicode):
+        return obj
+    if isinstance(obj, str):
+        return unicode(obj, encoding, errors)
+    return unicode(obj)
 
 class GroupCache(dict):
     '''Naive cache for group information.
@@ -153,13 +161,22 @@ def refresh_status():
         statuses[status.statusname] = status
     STATUS = statuses
 
+def shutdown():
+    pass
+
 def startup():
     # Things to do on startup
     refresh_status()
-    global fas, LOG, bugzilla
+    global fas, LOG, bugzilla, admin_grp, pkger_grp
     LOG = logging.getLogger('pkgdb.controllers')
 
-    # Get a connection to the Account System server
+    # Get the admin group if one is specified.
+    admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
+
+    # Get the packager group if one is specified.
+    pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
+
+# Get a connection to the Account System server
     fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
@@ -175,6 +192,7 @@ def startup():
     bz_url = bz_server + '/xmlrpc.cgi'
     bz_user = config.get('bugzilla.user')
     bz_pass = config.get('bugzilla.password')
-    bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass)
+    bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass,
+            cookiefile=None)
 
 __all__ = [STATUS, LOG, fas, bugzilla, refresh_status, startup, to_unicode]

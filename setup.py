@@ -224,9 +224,9 @@ setup(
         # 'Framework :: TurboGears :: Widgets',
     ],
     test_suite='nose.collector',
-    entry_points = {
-        'console_scripts': [
-            'start-pkgdb = pkgdb.commands:start',
-        ],
-    },
+    #entry_points = {
+    #    'console_scripts': [
+    #        'start-pkgdb = pkgdb.commands:start',
+    #    ],
+    #},
     )

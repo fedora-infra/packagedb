@@ -37,6 +37,8 @@ from pkgdb.users import Users
 from pkgdb.stats import Stats
 from pkgdb.search import Search
 
+from fedora.tg import controllers as f_ctrlers
+
 class Root(controllers.RootController):
     '''Toplevel controller for the PackageDB
 
@@ -55,6 +57,16 @@ class Root(controllers.RootController):
     # For backwards compatibility:
     acls = lists
 
+    @expose(template="pkgdb.templates.login")
+    def login(self, forward_url=None, *args, **kwargs):
+        login_dict = f_ctrlers.login(forward_url=forward_url, *args, **kwargs)
+        login_dict['title'] = 'Login to the PackageDB'
+        return login_dict
+
+    @expose(allow_json=True)
+    def logout(self):
+        return f_ctrlers.logout()
+
     @expose(template='pkgdb.templates.overview')
     def index(self):
         '''Overview of the PackageDB.
@@ -63,58 +75,3 @@ class Root(controllers.RootController):
         tell developers where to get more information on their packages.
         '''
         return dict(title=self.app_title, version=release.VERSION)
-
-    @expose(template="pkgdb.templates.login", allow_json=True)
-    def login(self, forward_url=None, previous_url=None, *args, **kwargs):
-        '''Page to become authenticated to the PackageDB.
-
-        This shows a small login box to type in your username and password
-        from the Fedora Account System.
-
-        Arguments:
-        :forward_url: The url to send to once authentication succeeds
-        :previous_url: The url that sent us to the login page
-        '''
-        # pylint: disable-msg=R0201
-        if not identity.current.anonymous \
-                and identity.was_login_attempted() \
-                and not identity.get_identity_errors():
-            # User is logged in
-            if request_format() == 'json':
-                # When called as a json method, doesn't make any sense to
-                # redirect to a page.  Returning the logged in identity
-                # is better.
-                return dict(user = identity.current.user)
-            if not forward_url:
-                forward_url = config.get('base_url_filter.base_url') + '/'
-            raise redirect(forward_url)
-
-        forward_url = None
-        previous_url = request.path
-
-        if identity.was_login_attempted():
-            msg = _("The credentials you supplied were not correct or "
-                   "did not grant access to this resource.")
-        elif identity.get_identity_errors():
-            msg = _("You must provide your credentials before accessing "
-                   "this resource.")
-        else:
-            msg = _("Please log in.")
-            forward_url = request.headers.get("Referer", "/")
-
-        response.status = 403
-        flash(msg)
-        return dict(previous_url=previous_url, logging_in=True,
-                    original_parameters=request.params,
-                    forward_url=forward_url,
-                    title='Fedora Account System Login')
-
-    @expose(allow_json=True)
-    def logout(self):
-        '''Logout from the database.
-        '''
-        # pylint: disable-msg=R0201
-        identity.current.logout()
-        if request_format() == 'json':
-            return dict()
-        raise redirect(request.headers.get("Referer","/"))

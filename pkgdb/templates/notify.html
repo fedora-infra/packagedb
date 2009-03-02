@@ -11,7 +11,7 @@
     <table>
       <tr py:for="pkg in sorted(packages.keys())">
         <td>${pkg}</td>
-        <td>${', '.join(packages[pkg])}</td>
+        <td>${', '.join(sorted(packages[pkg]))}</td>
       </tr>
     </table>
   </body>

@@ -45,15 +45,15 @@ class Log(SABase):
     Table -- Log
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, userid, description=None, changetime=None):
+    def __init__(self, username, description=None, changetime=None):
         # pylint: disable-msg=R0913
         super(Log, self).__init__()
-        self.userid = userid
+        self.username = username
         self.description = description
         self.changetime = changetime
 
     def __repr__(self):
-        return 'Log(%r, description=%r, changetime=%r)' % (self.userid,
+        return 'Log(%r, description=%r, changetime=%r)' % (self.username,
                 self.description, self.changetime)
 
 class PackageLog(Log):
@@ -62,16 +62,16 @@ class PackageLog(Log):
     Table -- PackageLog
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, userid, action, description=None, changetime=None,
+    def __init__(self, username, action, description=None, changetime=None,
             packageid=None):
         # pylint: disable-msg=R0913
-        super(PackageLog, self).__init__(userid, description, changetime)
+        super(PackageLog, self).__init__(username, description, changetime)
         self.action = action
         self.packageid = packageid
 
     def __repr__(self):
         return 'PackageLog(%r, %r, description=%r, changetime=%r,' \
-                ' packageid=%r)' % (self.userid, self.action,
+                ' packageid=%r)' % (self.username, self.action,
                         self.description, self.changetime, self.packageid)
 
 class PackageListingLog(Log):
@@ -80,16 +80,16 @@ class PackageListingLog(Log):
     Table -- PackageListingLog
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, userid, action, description=None, changetime=None,
+    def __init__(self, username, action, description=None, changetime=None,
             packagelistingid=None):
         # pylint: disable-msg=R0913
-        super(PackageListingLog, self).__init__(userid, description, changetime)
+        super(PackageListingLog, self).__init__(username, description, changetime)
         self.action = action
         self.packagelistingid = packagelistingid
 
     def __repr__(self):
         return 'PackageListingLog(%r, %r, description=%r, changetime=%r,' \
-                ' packagelistingid=%r)' % (self.userid,
+                ' packagelistingid=%r)' % (self.username,
                 self.action, self.description, self.changetime,
                 self.packagelistingid)
 
@@ -99,10 +99,10 @@ class PersonPackageListingAclLog(Log):
     Table -- PersonPackageListingAcl
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, userid, action, description=None, changetime=None,
+    def __init__(self, username, action, description=None, changetime=None,
             personpackagelistingaclid=None):
         # pylint: disable-msg=R0913
-        super(PersonPackageListingAclLog, self).__init__(userid, description,
+        super(PersonPackageListingAclLog, self).__init__(username, description,
                 changetime)
         self.action = action
         self.personpackagelistingaclid = personpackagelistingaclid
@@ -110,7 +110,7 @@ class PersonPackageListingAclLog(Log):
     def __repr__(self):
         return 'PersonPackageListingAclLog(%r, %r, description=%r,' \
                 ' changetime=%r, personpackagelistingaclid=%r)' % (
-                        self.userid, self.action, self.description,
+                        self.username, self.action, self.description,
                         self.changetime, self.personpackagelistingaclid)
 
 class GroupPackageListingAclLog(Log):
@@ -119,10 +119,10 @@ class GroupPackageListingAclLog(Log):
     Table -- GroupPackageListingAclLog
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, userid, action, description=None, changetime=None,
+    def __init__(self, username, action, description=None, changetime=None,
             grouppackagelistingaclid=None):
         # pylint: disable-msg=R0913
-        super(GroupPackageListingAclLog, self).__init__(userid, description,
+        super(GroupPackageListingAclLog, self).__init__(username, description,
                 changetime)
         self.action = action
         self.grouppackagelistingaclid = grouppackagelistingaclid
@@ -130,7 +130,7 @@ class GroupPackageListingAclLog(Log):
     def __repr__(self):
         return 'GroupPackageListingAclLog(%r, %r, description=%r,' \
                 ' changetime=%r, grouppackagelistingaclid=%r)' % (
-                        self.userid, self.action, self.description,
+                        self.username, self.action, self.description,
                         self.changetime, self.grouppackagelistingaclid)
 
 #

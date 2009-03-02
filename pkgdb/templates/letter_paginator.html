@@ -5,7 +5,7 @@
   py:strip="">
   <div py:def="letter_paginate_nav(mode='')" class="LetPaginateNav">|
     <div py:choose="" py:strip="">
-        <b py:when="searchwords in '0123456789' and searchwords != ''">0-9</b>
+        <b py:when="searchwords.isdigit() and searchwords != ''">0-9</b>
         <a py:otherwise="" href="${tg.url('0')}">0-9</a> |
     </div>
     <py:for each="letr in 'abcdefghijklmnopqrstuvwxyz'" py:choose="">
