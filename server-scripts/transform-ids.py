@@ -57,8 +57,8 @@ REVOKE UPDATE ON log FROM pkgdbadmin;
 '''
 
 # ugly configs so we can import tables from the model
-CONFDIR='/home/mapleoin/pkgdb' 
-PKGDBDIR=os.path.join('/home/mapleoin/pkgdb', 'fedora-packagedb') 
+CONFDIR='@CONFIDR@' 
+PKGDBDIR=os.path.join('@DATADIR', 'fedora-packagedb') 
 sys.path.append(PKGDBDIR) 
 
 if len(sys.argv) > 1:
