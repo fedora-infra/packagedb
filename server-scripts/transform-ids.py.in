@@ -57,7 +57,7 @@ REVOKE UPDATE ON log FROM pkgdbadmin;
 '''
 
 # ugly configs so we can import tables from the model
-CONFDIR='@CONFIDR@' 
+CONFDIR='@CONFDIR@' 
 PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb') 
 sys.path.append(PKGDBDIR) 
 
