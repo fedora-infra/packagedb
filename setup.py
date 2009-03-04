@@ -182,6 +182,7 @@ setup(
     ],
     scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo",
         "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status",
+        "server-scripts/transform-ids.py",
         "clients/pkgdb-client"],
     zip_safe=False,
     packages=find_packages(),
