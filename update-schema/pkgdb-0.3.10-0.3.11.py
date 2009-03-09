@@ -18,47 +18,56 @@
 #
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 
-''' 
-Instructions to modify the schema and script to modify the table data
-in order to make the switch from userids to usernames in the pkgdb db.
 '''
+Script to modify the table data order to make the switch from userids
+to usernames in the pkgdb db.
+'''
+
+# Please change these fields!
+pguser = 'postgres'
+pgpasswd = 'postgres'
+pghost = 'localhost'
 
 import os
 import sys
 
 import sqlalchemy
+from sqlalchemy import DDL, create_engine
 from sqlalchemy.sql import select
 from turbogears.database import session
 from turbogears import config, update_config
 
 from fedora.client.fas2 import AccountSystem
 
-''' These sql statements have to be run in order to modify the schema:
+# These sql statements have to be run in order to modify the schema:
 
-ALTER TABLE collection ALTER COLUMN owner TYPE text USING CAST(owner AS text);
+engine = create_engine("postgres://"+pguser+":"+pgpasswd+"@"+pghost+"/pkgdb")
 
-ALTER TABLE log ALTER COLUMN userid TYPE text USING CAST(userid AS text);
-ALTER TABLE log RENAME userid TO username;
+for s in (
+    'ALTER TABLE collection ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
+      
+    'ALTER TABLE log ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
+    'ALTER TABLE log RENAME userid TO username;',
 
-ALTER TABLE packagelisting ALTER COLUMN owner TYPE text USING CAST(owner AS text);
+    'ALTER TABLE packagelisting ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
 
-ALTER TABLE personpackagelisting ALTER COLUMN userid TYPE text USING CAST(userid AS text);
-ALTER TABLE personpackagelisting RENAME userid TO username;
+    'ALTER TABLE personpackagelisting ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
+    'ALTER TABLE personpackagelisting RENAME userid TO username;',
 
-ALTER TABLE grouppackagelisting ALTER COLUMN groupid TYPE text USING CAST(groupid AS text);
-ALTER TABLE grouppackagelisting RENAME groupid TO groupname;
+    'ALTER TABLE grouppackagelisting ALTER COLUMN groupid TYPE text USING CAST(groupid AS text);',
+    'ALTER TABLE grouppackagelisting RENAME groupid TO groupname;'
+    ):
+    alter = DDL(s)
+    engine.execute(alter)
 
--- updating the Log table needs more privileges
+# updating the Log table needs more privileges
 
-GRANT UPDATE ON log TO pkgdbadmin;
-
--- Be sure to revoke the privilege AFTER the script has done its job
-REVOKE UPDATE ON log FROM pkgdbadmin;
-'''
+engine.execute(DDL('GRANT UPDATE ON log TO pkgdbadmin;'))
+print 'Altering complete'
 
 # ugly configs so we can import tables from the model
-CONFDIR='@CONFIDR@' 
-PKGDBDIR=os.path.join('@DATADIR', 'fedora-packagedb') 
+CONFDIR='@CONFDIR@' 
+PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb') 
 sys.path.append(PKGDBDIR) 
 
 if len(sys.argv) > 1:
@@ -125,3 +134,5 @@ for id, groupname in zip(select([GroupPackageListing.id]).execute(),
 print 'flushing for GroupPackageListing'
 session.flush()
     
+# Be sure to revoke the privilege AFTER the script has done its job
+engine.execute(DDL('REVOKE UPDATE ON log FROM pkgdbadmin;'))

@@ -182,7 +182,7 @@ setup(
     ],
     scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo",
         "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status",
-        "clients/pkgdb-client"],
+        "clients/pkgdb-client", "update-schema/pkgdb-0.3.10-0.3.11.py"],
     zip_safe=False,
     packages=find_packages(),
     package_data = find_package_data(where='pkgdb',
