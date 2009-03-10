@@ -21,6 +21,8 @@
 '''
 Script to modify the table data order to make the switch from userids
 to usernames in the pkgdb db.
+
+This script will also change the statuscode of orphaned packages to 14(Orphaned)
 '''
 
 # Please change these fields!
@@ -133,6 +135,10 @@ for id, groupname in zip(select([GroupPackageListing.id]).execute(),
                                     values={'groupname':groupname}).execute()
 print 'flushing for GroupPackageListing'
 session.flush()
-    
+
+print 'changing orphan statuscodes to 14 (Orphaned)'
+session.execute(update(PackageListingTable,
+                       values={PackageListingTable.c.statuscode:20}))
+
 # Be sure to revoke the privilege AFTER the script has done its job
 engine.execute(DDL('REVOKE UPDATE ON log FROM pkgdbadmin;'))
