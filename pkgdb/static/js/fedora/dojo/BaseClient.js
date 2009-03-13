@@ -19,6 +19,11 @@
 
 dojo.require('fedora.dojo.LoginBox');
 dojo.provide('fedora.dojo.BaseClient');
+
+if (typeof(fedora.identity) == 'undefined') {
+    fedora.identity = {'anonymous': true};
+}
+
 /*
  * This is the initial port of the python BaseClient to Dojo.  Be careful in
  * using this as not all concepts have been translated to Dojo verbatim. In
@@ -118,6 +123,9 @@ dojo.declare('fedora.dojo.BaseClient', null, {
             params['password'] = this.password;
             params['login'] = 'Login';
         }
+        if (kw['auth'] && !fedora.identity.anonymous) {
+            params['_csrf_token'] = fedora.identity.token;
+        }
         action = dojo.xhrPost({url: this.base_url + method,
             headers: {Accept: 'text/javascript',
                 'User-agent': this.useragent},
@@ -134,6 +142,9 @@ dojo.declare('fedora.dojo.BaseClient', null, {
                     delete data['tg_flash'];
                     throw new fedora.dojo.AppError(data['exc'],
                         data['tg_flash'], data);
+                }
+                if (data['_csrf_token']) {
+                    fedora.identity.token = data['_csrf_token'];
                 }
                 return data;
             },

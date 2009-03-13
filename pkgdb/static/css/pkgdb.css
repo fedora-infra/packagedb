@@ -1,6 +1,6 @@
 /*
  * Copyright © 2007  Ricky Zhou
- * Copyright © 2007  Red Hat, Inc.
+ * Copyright © 2007, 2009  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use, modify,
  * copy, or redistribute it subject to the terms and conditions of the GNU
@@ -146,37 +146,3 @@
 }
 
 /* Requested to merge */
-.toolbar {
-  list-style: none;
-  list-style-image: none;
-  list-style-position: outside;
-  list-style-type: none;
-  text-align: right;
-  color: #888888;
-  font-size: 0.9em;
-  text-transform: uppercase;
-  vertical-align: middle;
-}
-
-.toolbar * {
-  display: inline;
-}
-
-#head #main-toolbar {
-  float: right;
-  margin-top: 9px;
-  width: 50%;
-}
-
-#login-toolitem {
-}
-
-.toolbar input.button {
-  background-color: #888888;
-  color: white;
-  font-size: 0.9em;
-  margin-left: 5px;
-  padding: 2px;
-  text-transform: uppercase;
-  vertical-align: middle;
-}
