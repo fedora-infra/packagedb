@@ -1402,17 +1402,16 @@ class PackageDispatcher(controllers.Controller):
     # Check that the requestor is in a group that could potentially set ACLs.
     @identity.require(identity.not_anonymous())
     def remove_user(self, username, pkg_name, collectn_list=None):
-	'''Remove users from a package.
+        '''Remove users from a package.
         :arg pkg_name: Name of the package
         :arg username: Name of user to remove from the package
-        :arg collectn_list: list of collections like 'F-10', 'devel'. 
+        :arg collectn_list: list of collections like 'F-10', 'devel'.
           If collectn_list=None, user removed from all collections associates with the package
         '''        
-	
         try:
             # pylint: disable-msg=E1101
             pkg = Package.query.filter_by(name=pkg_name).one()
-       	except InvalidRequestError:
+        except InvalidRequestError:
             flash('Package %s does not exist' % pkg_name)
             return dict(exc='NoPackageError')
 
@@ -1424,14 +1423,14 @@ class PackageDispatcher(controllers.Controller):
         log_msgs = []
         package_listings = []
 
-	if collectn_list:
-	    for simple_name in collectn_list:
-	        try:
-		    collectn = Collection.by_simple_name(simple_name)
-	        except InvalidRequestError:
-           	    flash('Collection %s does not exist' % simple_name)
+        if collectn_list:
+            for simple_name in collectn_list:
+                try:
+                    collectn = Collection.by_simple_name(simple_name)
+                except InvalidRequestError:
+                    flash('Collection %s does not exist' % simple_name)
                     return dict(exc='NoCollectionError')
-	                
+
                 pkg_listing = PackageListing.query.filter_by(packageid=pkg.id,
                                   collectionid=collectn.id).one()
                 package_listings.append(pkg_listing)
@@ -1440,7 +1439,7 @@ class PackageDispatcher(controllers.Controller):
             package_listings = pkg.listings
 
         for pkg_listing in package_listings:
-	    acls = PersonPackageListingAcl.query.filter(and_(
+            acls = PersonPackageListingAcl.query.filter(and_(
                        PersonPackageListingAcl.c.personpackagelistingid
                            == PersonPackageListing.c.id,
                        PersonPackageListing.c.packagelistingid == pkg_listing.id,
@@ -1464,12 +1463,12 @@ class PackageDispatcher(controllers.Controller):
             # An error was generated
             flash('Unable to save changes to the database: %s ' % e)
             return dict(exc='DatabaseError')
-                    
-       
+
+
         user_email = username + '@fedoraproject.org'
         # Send a log to people interested in this package as well
         self._send_log_msg('\n'.join(log_msgs), '%s had acl change status' % (
                            pkg.name), identity.current.user, pkg.listings,
                            other_email=(user_email,))
-                           
+        
         return dict(status=True)
