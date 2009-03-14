@@ -1439,7 +1439,7 @@ class PackageDispatcher(controllers.Controller):
         else:
             package_listings = pkg.listings
 
-        for pkg_listing in pkg.listings:
+        for pkg_listing in package_listings:
 	    acls = PersonPackageListingAcl.query.filter(and_(
                        PersonPackageListingAcl.c.personpackagelistingid
                            == PersonPackageListing.c.id,
