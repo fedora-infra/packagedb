@@ -42,8 +42,6 @@ from pkgdb.utils import fas
 
 from fedora.tg.util import request_format
 
-ORPHAN_ID = 9900
-
 class Users(controllers.Controller):
     '''Controller for all things user related.
 
@@ -60,6 +58,8 @@ class Users(controllers.Controller):
             statusname='Under Review', language='C').one().statuscodeid
     EOLStatusId = StatusTranslation.query.filter_by(
             statusname='EOL', language='C').one().statuscodeid
+    orphanedStatusId = StatusTranslation.query.filter_by(
+            statusname='Orphaned', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
     allAcls = (('owner', 'owner'), ('approveacls', 'approveacls'),
@@ -125,23 +125,7 @@ class Users(controllers.Controller):
                 raise identity.IdentityFailure(
                         'You must be logged in to view your information')
             else:
-                ## fasid = identity.current.user.id
                 fasname = identity.current.user_name
-        ##else:
-        ##    try:
-        ##        fasid = fas.cache[fasname]['id']
-        ##    except KeyError:
-        ##        error = dict(title=self.app_title + ' -- Invalid Username',
-        ##                status = False, pkgs = [],
-        ##                message='The username you were linked to (%s) cannot' \
-        ##                ' be found.  If you received this error from' \
-        ##                ' a link on the fedoraproject.org website, please' \
-        ##                ' report it.' % fasname
-        ##            )
-        ##        if request_format() != 'json':
-        ##            error['tg_template'] = 'pkgdb.templates.errors'
-        ##        return error
-
         page_title = self.app_title + ' -- ' + fasname + ' -- Packages'
 
         # pylint: disable-msg=E1101
@@ -199,7 +183,12 @@ class Users(controllers.Controller):
         else:
             my_pkgs = queries[0]
 
-        my_pkgs = my_pkgs.options(lazyload('listings2.people2'), lazyload('listings2.people2.acls2'), lazyload('listings2.groups2'), lazyload('listings2.groups2.acls2'), lazyload('listings2')).order_by(Package.name)
+        my_pkgs = my_pkgs.options(lazyload('listings2.people2'), 
+                                  lazyload('listings2.people2.acls2'), 
+                                  lazyload('listings2.groups2'), 
+                                  lazyload('listings2.groups2.acls2'), 
+                                  lazyload('listings2')
+                                  ).order_by(Package.name)
         # pylint: enable-msg=E1101
         pkg_list = []
         for pkg in my_pkgs:
@@ -227,25 +216,37 @@ class Users(controllers.Controller):
                 raise identity.IdentityFailure(
                         "You must be logged in to view your information")
             else:
-            ##    fasid = identity.current.user.id
                 fasname = identity.current.user_name
-        ##else:
-        ##    try:
-        ##        user = fas.cache[fasname]
-        ##    except KeyError:
-        ##        error = dict(status = False,
-        ##                title = self.app_title + ' -- Invalid Username',
-        ##                message = 'The username you were linked to,' \
-        ##                        ' (%username)s does not exist.  If you' \
-        ##                        ' received this error from a link on the' \
-        ##                        ' fedoraproject.org website, please report' \
-        ##                        ' it.' % {'username': fasname})
-        ##        if request_format() != 'json':
-        ##            error['tg_template'] = 'pkgdb.templates.errors'
-        ##        return error
-
-        ##    fasid = user['id']
-
         page_title = self.app_title + ' -- ' + fasname + ' -- Info'
-        # FIXME do we still need this to return a fasid?
         return dict(title=page_title, fasname=fasname)
+    
+    @expose(template='pkgdb.templates.userpkgs', allow_json=True)
+    @paginate('pkgs', limit=75, default_order='name',
+            allow_limit_override=True, max_pages=13)
+    def orphans(self, eol=None):
+        '''List orphaned packages.
+
+        Arguments:
+        :eol: If set, list packages that are in EOL distros.
+        Returns: A list of packages.
+        '''
+        if not eol or eol.lower() in ('false','f','0'):
+            eol = False
+        else:
+            eol = bool(eol)
+
+        page_title = self.app_title + '--' + 'Orphaned Packages'
+       
+        query = Package.query.join('listings2').distinct().filter(
+                    PackageListing.statuscode==self.orphanedStatusId)
+        if not eol:
+            # We don't want EOL releases, filter those out of each clause
+            query = query.join(['listings2', 'collection']).filter(
+                    Collection.c.statuscode != self.EOLStatusId)
+        pkg_list = []
+        for pkg in query:
+            pkg.json_props = {'Package':('listings',)}
+            pkg_list.append(pkg)
+        return dict(title=page_title, pkgCount=len(pkg_list), pkgs=pkg_list,
+                fasname='orphan')
+
