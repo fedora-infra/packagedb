@@ -46,25 +46,29 @@ from fedora.client.fas2 import AccountSystem
 engine = create_engine("postgres://"+pguser+":"+pgpasswd+"@"+pghost+"/pkgdb")
 
 for s in (
-    'ALTER TABLE collection ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
+    'ALTER TABLE collection \
+        ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
       
     'ALTER TABLE log ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
     'ALTER TABLE log RENAME userid TO username;',
 
-    'ALTER TABLE packagelisting ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
+    'ALTER TABLE packagelisting \
+        ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
 
-    'ALTER TABLE personpackagelisting ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
+    'ALTER TABLE personpackagelisting \
+        ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
     'ALTER TABLE personpackagelisting RENAME userid TO username;',
 
-    'ALTER TABLE grouppackagelisting ALTER COLUMN groupid TYPE text USING CAST(groupid AS text);',
+    'ALTER TABLE grouppackagelisting \
+        ALTER COLUMN groupid TYPE text USING CAST(groupid AS text);',
     'ALTER TABLE grouppackagelisting RENAME groupid TO groupname;'
     ):
     alter = DDL(s)
     engine.execute(alter)
 
 # updating the Log table needs more privileges
-
-engine.execute(DDL('GRANT UPDATE ON log TO pkgdbadmin;'))
+# PG treats DCL statements transactionally
+engine.execute('BEGIN; GRANT UPDATE ON log TO pkgdbadmin; COMMIT;')
 print 'Altering complete'
 
 # ugly configs so we can import tables from the model
@@ -137,8 +141,7 @@ print 'flushing for GroupPackageListing'
 session.flush()
 
 print 'changing orphan statuscodes to 14 (Orphaned)'
-session.execute(update(PackageListingTable,
-                       values={PackageListingTable.c.statuscode:20}))
+engine.execute("UPDATE packagelisting SET statuscode=14 WHERE owner='orphan'")
 
 # Be sure to revoke the privilege AFTER the script has done its job
-engine.execute(DDL('REVOKE UPDATE ON log FROM pkgdbadmin;'))
+engine.execute('BEGIN; REVOKE UPDATE ON log FROM pkgdbadmin; COMMIT;')
