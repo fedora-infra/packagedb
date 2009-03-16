@@ -55,6 +55,9 @@ for s in (
     'ALTER TABLE packagelisting \
         ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
 
+    'ALTER TABLE packagelisting \
+        ALTER COLUMN qacontact TYPE text USING CAST(qacontact AS text);',
+
     'ALTER TABLE personpackagelisting \
         ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
     'ALTER TABLE personpackagelisting RENAME userid TO username;',
@@ -107,6 +110,8 @@ def transform(relation, table, attribute):
         table - pkgdb.model
         attribute - string 'owner' or 'userid'
     '''
+    # Note: qacontact has been changed to a string as well but it's currently
+    # unused so no need to transform
     print 'transforming ' + relation.__name__
     for id, owner in zip(select([relation.id]).execute(),
                          select([getattr(relation, attribute)]).execute()):
