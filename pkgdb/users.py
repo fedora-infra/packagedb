@@ -219,34 +219,3 @@ class Users(controllers.Controller):
                 fasname = identity.current.user_name
         page_title = self.app_title + ' -- ' + fasname + ' -- Info'
         return dict(title=page_title, fasname=fasname)
-    
-    @expose(template='pkgdb.templates.userpkgs', allow_json=True)
-    @paginate('pkgs', limit=75, default_order='name',
-            allow_limit_override=True, max_pages=13)
-    def orphans(self, eol=None):
-        '''List orphaned packages.
-
-        Arguments:
-        :eol: If set, list packages that are in EOL distros.
-        Returns: A list of packages.
-        '''
-        if not eol or eol.lower() in ('false','f','0'):
-            eol = False
-        else:
-            eol = bool(eol)
-
-        page_title = self.app_title + '--' + 'Orphaned Packages'
-       
-        query = Package.query.join('listings2').distinct().filter(
-                    PackageListing.statuscode==self.orphanedStatusId)
-        if not eol:
-            # We don't want EOL releases, filter those out of each clause
-            query = query.join(['listings2', 'collection']).filter(
-                    Collection.c.statuscode != self.EOLStatusId)
-        pkg_list = []
-        for pkg in query:
-            pkg.json_props = {'Package':('listings',)}
-            pkg_list.append(pkg)
-        return dict(title=page_title, pkgCount=len(pkg_list), pkgs=pkg_list,
-                fasname='orphan')
-
