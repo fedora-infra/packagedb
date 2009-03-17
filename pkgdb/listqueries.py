@@ -35,7 +35,6 @@ from pkgdb.model import PackageTable, CollectionTable
 ORPHAN_ID = 9900
 
 from pkgdb.validators import BooleanValue, CollectionNameVersion
-from pkgdb.utils import fas
 
 try:
     from fedora.tg.util import jsonify_validation_errors
@@ -279,7 +278,7 @@ class ListQueries(controllers.Controller):
         # Save them into a python data structure
         for record in group_acls.execute():
             if not record[2] in groups:
-                groups[record[2]] = fas.group_cache[record[2]].name
+                groups[record[2]] = record[2]
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     groups[record[2]], group=True)
@@ -304,7 +303,7 @@ class ListQueries(controllers.Controller):
 
         # Save them into a python data structure
         for record in owner_acls.execute():
-            username = fas.cache[record[2]].username
+            username = record[2]
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -333,7 +332,7 @@ class ListQueries(controllers.Controller):
             )
         # Save them into a python data structure
         for record in person_acls.execute():
-            username = fas.cache[record[2]].username
+            username = record[2]
             self._add_to_vcs_acl_list(package_acls, 'commit',
                     record[0], record[1],
                     username, group=False)
@@ -404,12 +403,12 @@ class ListQueries(controllers.Controller):
 
             # Save the package information in the data structure to return
             if not package.owner:
-                package.owner = fas.cache[pkg[2]].username
-            elif fas.cache[pkg[2]].username != package.owner:
+                package.owner = pkg[2]
+            elif pkg[2] != package.owner:
                 # There are multiple owners for this package.
                 undupe_owners.append(package_name)
             if pkg[3]:
-                package.qacontact = fas.cache[pkg[3]].username
+                package.qacontact = pkg[3]
             package.summary = pkg[4]
 
         if undupe_owners:
@@ -471,9 +470,7 @@ class ListQueries(controllers.Controller):
                             else:
                                 # Prefer devel above all others
                                 bugzilla_acls[collection][pkg].owner = \
-                                    fas.cache[
-                                            by_pkg[pkg][collection]['devel']
-                                            ].username
+                                        by_pkg[pkg][collection]['devel']
                                 continue
 
                     # For any collection except Fedora or Fedora if the devel
@@ -487,8 +484,7 @@ class ListQueries(controllers.Controller):
                     else:
                         releases.sort()
                         bugzilla_acls[collection][pkg].owner = \
-                                fas.cache[by_pkg[pkg][collection][ \
-                                    unicode(releases[-1])]].username
+                                by_pkg[pkg][collection][unicode(releases[-1])]
 
         # Retrieve the user acls
 
@@ -516,7 +512,7 @@ class ListQueries(controllers.Controller):
 
         # Save them into a python data structure
         for record in person_acls.execute():
-            username = fas.cache[record[2]].username
+            username = record[2]
             self._add_to_bugzilla_acl_list(bugzilla_acls, record[0], record[1],
                     username, group=False)
 
@@ -559,7 +555,7 @@ class ListQueries(controllers.Controller):
                         Package.statuscode == self.approvedStatus,
                         PackageListing.statuscode == self.approvedStatus)
                         ).distinct().order_by('name')
-        watcher_query = select((Package.name, PersonPackageListing.userid),
+        watcher_query = select((Package.name, PersonPackageListing.username),
                 from_obj=(PackageTable.join(PackageListing).join(
                     Collection).join(PersonPackageListing).join(
                         PersonPackageListingAcl))).where(and_(
@@ -597,9 +593,9 @@ class ListQueries(controllers.Controller):
         for pkg in itertools.chain(owner_query.execute(),
                 watcher_query.execute()):
             additions = []
-            additions.append(fas.cache[pkg[1]]['username'])
+            additions.append(pkg[1])
             pkgs.setdefault(pkg[0], set()).update(
-                    (fas.cache[pkg[1]]['username'],))
+                    (pkg[1],))
 
         # SQLAlchemy mapped classes are monkey patched
         # pylint: disable-msg=E1101

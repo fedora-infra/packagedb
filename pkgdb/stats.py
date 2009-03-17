@@ -29,7 +29,6 @@ from turbogears import controllers, expose, identity
 
 from pkgdb.model import PackageListing, PersonPackageListing, \
         PersonPackageListingAcl
-from pkgdb.utils import fas
 
 DEVEL = 8 # collection id
 class Stats(controllers.Controller):

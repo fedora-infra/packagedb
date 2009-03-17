@@ -233,8 +233,8 @@ class PackageDispatcher(controllers.Controller):
 
         Args:
         :acl: The acl to verify
-        :user: The user to check.  Either a user, group tuple from FAS or None.
-               If None, the current identity will be used.
+        :user: The user to check.  Either a (user, group) tuple from FAS or
+                None.  If None, the current identity will be used.
         '''
         if not user:
             user = identity.current.user
@@ -436,10 +436,9 @@ class PackageDispatcher(controllers.Controller):
             # Take ownership
             pkg.owner = identity.current.user_name
             pkg.statuscode = self.approvedStatus.statuscodeid
-            owner_name = '%s' % identity.current.user_name
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
-                    pkg.collection.version, owner_name)
+                    pkg.collection.version, pkg.owner)
             status = self.ownedStatus
             bzMail = '%s' % identity.current.user.email
             bzQuery = {}
@@ -465,7 +464,6 @@ class PackageDispatcher(controllers.Controller):
             # Release ownership
             pkg.owner = 'orphan'
             pkg.statuscode = self.orphanedStatus.statuscodeid
-            owner_name = 'Orphaned Package (orphan)'
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, identity.current.user_name)
@@ -492,7 +490,7 @@ class PackageDispatcher(controllers.Controller):
             pkg.package.name, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
 
-        return dict(status=True, ownerId=pkg.owner, ownerName=owner_name,
+        return dict(status=True, owner=pkg.owner,
                 aclStatusFields=self.acl_status_translations)
 
     @expose(allow_json=True)
@@ -602,10 +600,9 @@ class PackageDispatcher(controllers.Controller):
                     message='Package Listing %s does not exist' % pkgid)
 
         # Make sure the person we're setting the acl for exists
-        # This can't come from cache ATM because it is used to call
-        # _acl_can_be_held_by_user() which needs approved_group data.
-        user = fas.person_by_username(person_name)
-        if not user:
+        try:
+            user = fas.cache[person_name]
+        except KeyError:
             return dict(status=False,
                 message='No such user %(username), for package %(pkg)s in' \
                         ' %(collection)s %(version)s' %
@@ -861,11 +858,9 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False,
                     message='Package %s already exists' % package)
 
-        # This can't be taken from the cache at the moment because it is used
-        # to call _acl_can_be_held_by_user() which needs the approved_group
-        # information
-        person = fas.person_by_username(owner)
-        if not person:
+        try:
+            person = fas.cache[owner]
+        except KeyError:
             return dict(status=False,
                     message='Specified owner ID %s does not have a Fedora' \
                     ' Account' % owner)
@@ -1107,10 +1102,9 @@ class PackageDispatcher(controllers.Controller):
         person = None
         owner_name = None
         if 'owner' in changes:
-            # This can't come from the cache ATM as it is used in a call to
-            # _acl_can_be_held_by_user() which needs group information.
-            person = fas.person_by_username(changes['owner'])
-            if not person:
+            try:
+                person = fas.cache[changes['owner']]
+            except KeyError:
                 return dict(status=False,
                         message='Specified owner %s does not have a Fedora'
                         ' Account' % changes['owner'])
@@ -1266,7 +1260,7 @@ class PackageDispatcher(controllers.Controller):
                 for pkg_listing in listings:
                     for acl in ('watchbugzilla', 'watchcommits'):
                         person_acl = self._create_or_modify_acl(pkg_listing,
-                                person['username'], acl, self.approvedStatus)
+                                username, acl, self.approvedStatus)
                         log_msg = '%s approved %s on %s (%s %s)' \
                                 ' for %s' % (
                                         identity.current.user_name,

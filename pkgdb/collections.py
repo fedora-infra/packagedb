@@ -46,7 +46,7 @@ from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, admin_grp
+from pkgdb.utils import admin_grp
 
 MASS_BRANCH_SET = 500
 
@@ -121,22 +121,12 @@ class Collections(controllers.Controller):
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
 
-        # Get ownership information from the fas
-        try:
-            user = fas.cache[collection_entry.owner]
-        except KeyError:
-            user = {}
-            user['username'] = 'User ID %i' % collection_entry.owner
-            user['email'] = 'unknown@fedoraproject.org'
-
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
-        # 2) We need ownerName and statusname which are not in the specific
-        #    table.
+        # 2) We need statusname which is not in the specific table.
         collection = {'name': collection_entry.name,
                 'version': collection_entry.version,
                 'owner': collection_entry.owner,
-                'ownername': user['username'],
                 'summary': collection_entry.summary,
                 'description': collection_entry.description,
                 'statusname': collection_entry.status.locale['C'].statusname
@@ -156,15 +146,13 @@ class Collections(controllers.Controller):
     # Read-write methods
     #
 
-    def _mass_branch_worker(self, to_branch, devel_branch, pkgs, author_name,
-            author_id):
+    def _mass_branch_worker(self, to_branch, devel_branch, pkgs, author_name):
         '''Main worker for mass branching.
 
         :arg to_branch: Branch to put new PackageListings on
         :arg devel_branch: Branch for devel, where we're branching from
         :arg pkgs: List of packages to branch
         :arg author_name: username of person making the branch
-        :arg author_id: userid of person making the branch
         :returns: List of packages which had failures while trying to branch
 
         This method forks and invokes the branching in a child.  That prevents
@@ -189,8 +177,7 @@ class Collections(controllers.Controller):
                     # clone the package from the devel branch
                     try:
                         devel_branch.listings2[pkg['package_name']
-                                ].clone(to_branch.branchname, author_name,
-                                        author_id)
+                                ].clone(to_branch.branchname, author_name)
                     except InvalidRequestError:
                         # Exceptions will be handled later.
                         pass
@@ -221,14 +208,14 @@ class Collections(controllers.Controller):
             return []
 
     def _mass_branch(self, to_branch, devel_branch, pkgs, author_name,
-            author_id):
+            author_email):
         '''Performs a mass branching.  Intended to run in the background.
 
         :arg to_branch: Branch to put new PackageListings on
         :arg devel_branch: Branch for devel, where we're branching from
         :arg pkgs: List of packages to branch
         :arg author_name: username of person making the branch
-        :arg author_id: userid of person making the branch
+        :arg author_email: email of person making the branch
 
         This method branches all the packages given to it from devel_branch to
         to_branch.  It subdivides the package list and branches each set in a
@@ -241,10 +228,9 @@ class Collections(controllers.Controller):
         # Split this up and fork so we don't blow out all our memory
         for pkg_idx in range(MASS_BRANCH_SET, len(pkgs), MASS_BRANCH_SET):
             unbranched.extend(self._mass_branch_worker(to_branch, devel_branch,
-                pkgs[pkg_idx - MASS_BRANCH_SET:pkg_idx], author_name,
-                author_id))
+                pkgs[pkg_idx - MASS_BRANCH_SET:pkg_idx], author_name))
         unbranched.extend(self._mass_branch_worker(to_branch, devel_branch,
-            pkgs[pkg_idx:], author_name, author_id))
+            pkgs[pkg_idx:], author_name))
 
 
         if unbranched:
@@ -263,7 +249,7 @@ class Collections(controllers.Controller):
         eventlogger = EventLogger()
         eventlogger.send_msg(msg, _('Mass branching status for %(branch)s') %
                 {'branch': to_branch.branchname},
-                (fas.cache[author_id]['email'],))
+                (author_email,))
 
     @expose(allow_json=True)
     @json_or_redirect('/collections')
@@ -337,9 +323,26 @@ class Collections(controllers.Controller):
         # server is likely to time out.
         brancher = threading.Thread(target=self._mass_branch,
                 args=[to_branch, devel_branch, pkgs,
-                    identity.current.user_name, identity.current.user.id])
+                    identity.current.user_name, identity.current.user.email])
         brancher.start()
         ### FIXME: Create a status page for this that we update the database
         # to see.
         flash(_('Mass branch started.  You will be emailed the results.'))
         return {}
+
+    @expose(allow_json=True)
+    def by_simple_name(self, collctn_name, collctn_ver):
+        '''
+        Retrieve a collection by its simple_name
+        '''
+        collection = Collection.query.filter_by(name=collctn_name,
+                version=collectn_ver).one()
+        return dict(name=collection.simple_name())
+
+    @expose(allow_json=True)
+    def by_canonical_name(self, collctn):
+        '''
+        Retrieve a collection by its canonical_name
+        '''
+        collection, version = Collection.by_simple_name(collctn)
+        return dict(collctn_name=collection, collctn_ver=version)
