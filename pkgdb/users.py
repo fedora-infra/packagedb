@@ -38,7 +38,6 @@ from turbogears import controllers, expose, paginate, config, \
 
 from pkgdb.model import Collection, Package, PackageListing, \
         StatusTranslation, PersonPackageListing, PersonPackageListingAcl
-from pkgdb.utils import fas
 
 from fedora.tg.util import request_format
 
@@ -125,22 +124,7 @@ class Users(controllers.Controller):
                 raise identity.IdentityFailure(
                         'You must be logged in to view your information')
             else:
-                ## fasid = identity.current.user.id
                 fasname = identity.current.user_name
-        ##else:
-        ##    try:
-        ##        fasid = fas.cache[fasname]['id']
-        ##    except KeyError:
-        ##        error = dict(title=self.app_title + ' -- Invalid Username',
-        ##                status = False, pkgs = [],
-        ##                message='The username you were linked to (%s) cannot' \
-        ##                ' be found.  If you received this error from' \
-        ##                ' a link on the fedoraproject.org website, please' \
-        ##                ' report it.' % fasname
-        ##            )
-        ##        if request_format() != 'json':
-        ##            error['tg_template'] = 'pkgdb.templates.errors'
-        ##        return error
 
         page_title = self.app_title + ' -- ' + fasname + ' -- Packages'
 
@@ -227,25 +211,7 @@ class Users(controllers.Controller):
                 raise identity.IdentityFailure(
                         "You must be logged in to view your information")
             else:
-            ##    fasid = identity.current.user.id
                 fasname = identity.current.user_name
-        ##else:
-        ##    try:
-        ##        user = fas.cache[fasname]
-        ##    except KeyError:
-        ##        error = dict(status = False,
-        ##                title = self.app_title + ' -- Invalid Username',
-        ##                message = 'The username you were linked to,' \
-        ##                        ' (%username)s does not exist.  If you' \
-        ##                        ' received this error from a link on the' \
-        ##                        ' fedoraproject.org website, please report' \
-        ##                        ' it.' % {'username': fasname})
-        ##        if request_format() != 'json':
-        ##            error['tg_template'] = 'pkgdb.templates.errors'
-        ##        return error
-
-        ##    fasid = user['id']
 
         page_title = self.app_title + ' -- ' + fasname + ' -- Info'
-        # FIXME do we still need this to return a fasid?
         return dict(title=page_title, fasname=fasname)
