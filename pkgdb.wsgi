@@ -1,9 +1,11 @@
+__requires__ = 'fedora_packagedb'
+
 import sys
 sys.stdout = sys.stderr
+sys.path.append('/usr/share/fedora-packagedb')
+
 import pkg_resources
 pkg_resources.require("CherryPy<3.0")
-
-sys.path.append('/usr/share/fedora-packagedb')
 
 import os
 os.environ['PYTHON_EGG_CACHE'] = '/var/www/.python-eggs'
