@@ -53,7 +53,7 @@ RETIRED=20
         # Determine whether the present user is already involved with this
         # packagelisting and if they are allowed to change acls
         from pkgdb.utils import admin_grp, pkger_grp
-         
+
         interested = False # Does the person already have an acl line?
         aclChanger = False # Is the person allowed to make changes?
         if tg.identity.anonymous:
@@ -65,7 +65,7 @@ RETIRED=20
                 aclChanger = True
             else:
                 for person in pkg.people:
-                    if person.user == tg.identity.user_name:
+                    if person.username == tg.identity.user_name:
                         # Person has an acl on the package
                         for acl in aclNames:
                             if person.aclOrder[acl]:
@@ -104,7 +104,7 @@ RETIRED=20
               <div py:when="'orphan'"
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner orphaned">
-                <span class="ownerName">${pkg.ownername}</span>
+                <span class="ownerName">${pkg.owner}</span>
                 <span py:if="pkger_grp in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
                   <input type="button" name="unorphan"
                     class="ownerButton unorphanButton"
@@ -114,8 +114,8 @@ RETIRED=20
               <div py:otherwise=""
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner owned">
-                <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owneruser)}">${pkg.ownername}</a></span>
-                <span py:if="not tg.identity.anonymous and (tg.identity.username == pkg.owner or admin_grp in tg.identity.groups)">
+                <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owner)}">${pkg.owner}</a></span>
+                <span py:if="not tg.identity.anonymous and (tg.identity.user_name == pkg.owner or admin_grp in tg.identity.groups)">
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
                     value="Release Ownership" />
@@ -123,7 +123,7 @@ RETIRED=20
               </div>
             </div>
           </td>
-          <td py:content="pkg.qacontactname">
+          <td py:content="pkg.qacontact">
           </td><td class="status" py:content="pkg.status.locale['C'].statusname">
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
@@ -136,20 +136,20 @@ RETIRED=20
                  the list to access them in sorted order
               -->
             <py:with vars="peopleIndex = [p[1] for p in sorted(
-              [(pi[0].user, pi[1]) for pi in
+              [(pi[0].username, pi[1]) for pi in
               zip(pkg.people, range(0, len(pkg.people)))])]">
               <tr py:for="userIndex in peopleIndex"
                 py:if="[acl for acl in aclNames if pkg.people[userIndex].aclOrder[acl]]"
                 py:with="person = pkg.people[userIndex]"
                 class="aclrow">
                 <td class="acluser"
-                  py:attrs="{'name': str(pkg.id) + ':' + str(person.user)}">
-                  <a href="${tg.url('/users/packages/' + person.user)}">${person.user}</a>
+                  py:attrs="{'name': str(pkg.id) + ':' + str(person.username)}">
+                  <a href="${tg.url('/users/packages/' + person.username)}">${person.username}</a>
                 </td>
                 <td py:for="acl in aclNames" class="aclcell">
                   <!-- If the logged in user is this row, add a checkbox to set it -->
                   <div py:if="not tg.identity.anonymous and
-                    person.user==tg.identity.user_name"
+                    person.username==tg.identity.user_name"
                     py:attrs="{'name' : str(pkg.id) + ':' + acl}"
                     class="requestContainer aclPresent">
                     <input type="checkbox" checked="true" class="aclPresentBox"
