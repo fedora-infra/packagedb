@@ -46,7 +46,7 @@ from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, admin_grp
+from pkgdb.utils import admin_grp
 
 MASS_BRANCH_SET = 500
 
