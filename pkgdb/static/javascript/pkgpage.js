@@ -193,7 +193,7 @@ function toggle_retirement(retirementDiv, data) {
         statusBox.innerHTML = 'Orphaned';
     }
 }
-    
+
 function toggle_owner(ownerDiv, data) {
     logDebug('in toggle_owner');
     if (! data.status) {
@@ -206,7 +206,7 @@ function toggle_owner(ownerDiv, data) {
             ownerDiv)[0];
     var aclTable = getElementsByTagAndClassName('table', 'acls', pkglTable)[0];
 
-    if (data['ownerName'] === 'Orphaned Package (orphan)') {
+    if (data['owner'] === 'orphan') {
         /* Reflect the fact that the package is now orphaned */
         swapElementClass(ownerDiv, 'owned', 'orphaned');
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
@@ -224,7 +224,7 @@ function toggle_owner(ownerDiv, data) {
         statusBox.innerHTML = 'Owned';
     }
     var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
-    var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
+    var newOwnerName = SPAN({'class' : 'ownerName'}, data['owner']);
     insertSiblingNodesBefore(ownerName, newOwnerName);
     removeElement(ownerName);
 }

@@ -436,10 +436,9 @@ class PackageDispatcher(controllers.Controller):
             # Take ownership
             pkg.owner = identity.current.user_name
             pkg.statuscode = self.approvedStatus.statuscodeid
-            owner_name = '%s' % identity.current.user_name
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
-                    pkg.collection.version, owner_name)
+                    pkg.collection.version, pkg.owner)
             status = self.ownedStatus
             bzMail = '%s' % identity.current.user.email
             bzQuery = {}
@@ -465,7 +464,6 @@ class PackageDispatcher(controllers.Controller):
             # Release ownership
             pkg.owner = 'orphan'
             pkg.statuscode = self.orphanedStatus.statuscodeid
-            owner_name = 'Orphaned Package (orphan)'
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, identity.current.user_name)
@@ -492,7 +490,7 @@ class PackageDispatcher(controllers.Controller):
             pkg.package.name, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
 
-        return dict(status=True, ownerId=pkg.owner, ownerName=owner_name,
+        return dict(status=True, owner=pkg.owner,
                 aclStatusFields=self.acl_status_translations)
 
     @expose(allow_json=True)
