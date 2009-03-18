@@ -1,6 +1,8 @@
 <?python
 TODO='Not yet implemented'
 import simplejson
+ORPHANED=14
+RETIRED=20
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
@@ -51,7 +53,7 @@ import simplejson
         # Determine whether the present user is already involved with this
         # packagelisting and if they are allowed to change acls
         from pkgdb.utils import admin_grp, pkger_grp
-         
+
         interested = False # Does the person already have an acl line?
         aclChanger = False # Is the person allowed to make changes?
         if tg.identity.anonymous:
@@ -63,7 +65,7 @@ import simplejson
                 aclChanger = True
             else:
                 for person in pkg.people:
-                    if person.user == tg.identity.user_name:
+                    if person.username == tg.identity.user_name:
                         # Person has an acl on the package
                         for acl in aclNames:
                             if person.aclOrder[acl]:
@@ -88,8 +90,6 @@ import simplejson
             QA Contact
             </th><th>
             Status
-            </th><th>
-            Retirement
         </th></tr>
         <tr id="${''.join((pkg.collection.name, pkg.collection.version)).replace(' ','')}">
           <td>
@@ -104,7 +104,7 @@ import simplejson
               <div py:when="'orphan'"
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner orphaned">
-                <span class="ownerName">${pkg.ownername}</span>
+                <span class="ownerName">${pkg.owner}</span>
                 <span py:if="pkger_grp in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
                   <input type="button" name="unorphan"
                     class="ownerButton unorphanButton"
@@ -114,8 +114,8 @@ import simplejson
               <div py:otherwise=""
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner owned">
-                <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owneruser)}">${pkg.ownername}</a></span>
-                <span py:if="not tg.identity.anonymous and (tg.identity.username == pkg.owner or admin_grp in tg.identity.groups)">
+                <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owner)}">${pkg.owner}</a></span>
+                <span py:if="not tg.identity.anonymous and (tg.identity.user_name == pkg.owner or admin_grp in tg.identity.groups)">
                   <input type="button" name="orphan"
                     class="ownerButton orphanButton"
                     value="Release Ownership" />
@@ -123,7 +123,7 @@ import simplejson
               </div>
             </div>
           </td>
-          <td py:content="pkg.qacontactname">
+          <td py:content="pkg.qacontact">
           </td><td class="status" py:content="pkg.status.locale['C'].statusname">
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
@@ -136,20 +136,20 @@ import simplejson
                  the list to access them in sorted order
               -->
             <py:with vars="peopleIndex = [p[1] for p in sorted(
-              [(pi[0].user, pi[1]) for pi in
+              [(pi[0].username, pi[1]) for pi in
               zip(pkg.people, range(0, len(pkg.people)))])]">
               <tr py:for="userIndex in peopleIndex"
                 py:if="[acl for acl in aclNames if pkg.people[userIndex].aclOrder[acl]]"
                 py:with="person = pkg.people[userIndex]"
                 class="aclrow">
                 <td class="acluser"
-                  py:attrs="{'name': str(pkg.id) + ':' + str(person.user)}">
-                  <a href="${tg.url('/users/packages/' + person.user)}">${person.user}</a>
+                  py:attrs="{'name': str(pkg.id) + ':' + str(person.username)}">
+                  <a href="${tg.url('/users/packages/' + person.username)}">${person.username}</a>
                 </td>
                 <td py:for="acl in aclNames" class="aclcell">
                   <!-- If the logged in user is this row, add a checkbox to set it -->
                   <div py:if="not tg.identity.anonymous and
-                    person.user==tg.identity.user_name"
+                    person.username==tg.identity.user_name"
                     py:attrs="{'name' : str(pkg.id) + ':' + acl}"
                     class="requestContainer aclPresent">
                     <input type="checkbox" checked="true" class="aclPresentBox"
@@ -213,14 +213,36 @@ import simplejson
             </tr>
           </table>
         </td></tr>
-        <tr py:if="not tg.identity.anonymous and not interested">
-          <td class="acladd" py:attrs="{'colspan' : str(len(aclNames)+1)}">
+        <tr py:if="not tg.identity.anonymous">
+          <td py:if="not interested" class="acladd">
             <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
             + ':' + tg.identity.user_name}"
             class="addMyselfButton"
             value="Add myself to package"/>
           </td>
-          </tr>
+          <div py:choose="" py:strip="">
+            <td>
+              <div py:when="(pkg.statuscode!=RETIRED and
+                         (pkger_grp in tg.identity.groups or
+                         admin_grp in tg.identity.groups)) or
+                         pkg.statuscode==ORPHANED"
+                   py:attrs="{'name' : str(pkg.id)}"
+                   class="requestContainer retirement not_retired">
+                <input class="retirementButton retireButton"
+                       type="button" value="Retire package"/>
+              </div>
+            </td>
+            <td>
+              <div py:when="pkg.statuscode==RETIRED and
+                            admin_grp in tg.identity.groups"
+                   py:attrs="{'name' : str(pkg.id)}"
+                   class="requestContainer retirement retired">
+                <input class="retirementButton unretireButton"
+                       type="button" value="Unretire package"/>
+              </div>
+            </td>
+          </div>
+        </tr>
       </div> <!--! here ends the pkgl def declaration -->
         <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
             <table py:when="pkg.owner=='orphan'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>

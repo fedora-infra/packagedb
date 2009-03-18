@@ -1,9 +1,12 @@
+include pkgdb.wsgi.in
 include pkgdb.sql
 include start-pkgdb.in
 exclude start-pkgdb
 include server-scripts/*.in
 include server-scripts/*.cfg
+include server-scripts/transform-ids.py
 exclude server-scripts/pkgdb-sync-repo
+recursive-include update-schema *
 include AUTHORS README COPYING ChangeLog NEWS
 include *.cfg.sample
 include pkgdb/templates/*.html
@@ -14,3 +17,4 @@ recursive-exclude pkgdb/static/js/dojox/ *
 include fedora-packagedb.spec
 include yum.repos.d/*
 include clients/*
+recursive-include docs *

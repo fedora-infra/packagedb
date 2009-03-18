@@ -36,7 +36,7 @@ from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import fas, admin_grp
+from pkgdb.utils import admin_grp
 
 from cherrypy import request
 
@@ -193,8 +193,7 @@ class Packages(controllers.Controller):
 
         for pkg in pkg_listings:
             pkg.json_props = {'PackageListing': ('package', 'collection',
-                    'people', 'groups', 'qacontactname', 'owneruser',
-                    'ownerid'),
+                    'people', 'groups', 'qacontactname', 'ownerid'),
                 'PersonPackageListing': ('aclOrder', 'name', 'user'),
                 'GroupPackageListing': ('aclOrder', 'name'),
                 }
@@ -202,32 +201,8 @@ class Packages(controllers.Controller):
             status_map[pkg.statuscode] = pkg.status.locale['C'].statusname
             status_map[pkg.collection.statuscode] = \
                     pkg.collection.status.locale['C'].statusname
-            # Get real ownership information from the fas
-            try:
-                user = fas.cache[pkg.owner]
-            except KeyError:
-                user = {'username': '%s' % pkg.owner}
-            pkg.ownername = '%(username)s' % user
-            pkg.ownerid = user['id']
-            pkg.owneruser = user['username']
-
-            if pkg.qacontact:
-                try:
-                    user = fas.cache[pkg.qacontact]
-                except KeyError:
-                    user = {'username': 'UserId %i' % pkg.qacontact}
-                pkg.qacontactname = '%(username)s' % user
-            else:
-                pkg.qacontactname = ''
 
             for person in pkg.people:
-                # Retrieve info from the FAS about the people watching the pkg
-                try:
-                    fas_person = fas.cache[person.username]
-                except KeyError:
-                    fas_person = {'username': '%s' % person.username}
-                person.name = '%(username)s' % fas_person
-                person.user = fas_person['username']
                 # Setup acls to be accessible via aclName
                 person.aclOrder = {}
                 for acl in acl_names:
@@ -239,8 +214,6 @@ class Packages(controllers.Controller):
                         person.aclOrder[acl.acl] = acl
 
             for group in pkg.groups:
-                # Retrieve info from the FAS about a group
-                fas_group = fas.group_cache[group.groupname]
                 # Setup acls to be accessible via aclName
                 group.aclOrder = {}
                 for acl in acl_names:

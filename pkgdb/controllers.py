@@ -57,7 +57,7 @@ class Root(controllers.RootController):
     # For backwards compatibility:
     acls = lists
 
-    @expose(template="pkgdb.templates.login")
+    @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, *args, **kwargs):
         login_dict = f_ctrlers.login(forward_url=forward_url, *args, **kwargs)
         login_dict['title'] = 'Login to the PackageDB'

@@ -889,3 +889,20 @@ grant select on
 --   name
 --   description
 -- );
+
+-- Create a trigger function to update statuschange on any statuscode update
+
+CREATE OR REPLACE FUNCTION packagelisting_statuschange() RETURNS trigger
+AS $packagelisting_statuschange$
+    BEGIN
+        -- Check that the status changed --
+        IF NEW.statuscode IS DISTINCT FROM OLD.statuscode THEN
+            NEW.statuschange := current_timestamp;
+        END IF;
+
+        RETURN NEW;
+    END;
+$packagelisting_statuschange$ LANGUAGE plpgsql;
+
+CREATE TRIGGER packagelisting_statuschange BEFORE UPDATE ON packagelisting
+    FOR EACH ROW EXECUTE PROCEDURE packagelisting_statuschange();

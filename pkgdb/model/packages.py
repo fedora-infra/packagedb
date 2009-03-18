@@ -108,7 +108,7 @@ class Package(SABase):
                 self.reviewurl, self.shouldopen)
 
     def create_listing(self, collection, owner, status,
-            qacontact=None, author_name=None, author_id=None):
+            qacontact=None, author_name=None):
         '''Create a new PackageListing branch on this Package.
 
         :arg collection: Collection that the new PackageListing lives on
@@ -116,8 +116,6 @@ class Package(SABase):
         :arg status: Status to set the PackageListing to
         :kwarg qacontact: QAContact for this PackageListing in bugzilla.
         :kwarg author_name: Author of the change.  Note: will remove when
-            logging is made generic
-        :kwarg author_id: Author of the change.  Note: will remove when
             logging is made generic
         :returns: The new PackageListing object.
 
@@ -146,7 +144,7 @@ class Package(SABase):
                 # pylint: enable-msg=W0201
 
         # Create a log message
-        log = PackageListingLog(author_id,
+        log = PackageListingLog(author_name,
                 STATUS['Added'].statuscodeid,
                 '%(user)s added a %(branch)s to %(pkg)s' %
                 {'user': author_name, 'branch': collection,
@@ -178,13 +176,11 @@ class PackageListing(SABase):
                 ' qacontact=%r)' % (self.owner, self.statuscode,
                         self.packageid, self.collectionid, self.qacontact)
 
-    def clone(self, branch, author_name, author_id):
+    def clone(self, branch, author_name):
         '''Clone the permissions on this PackageListing to another `Branch`.
 
         :arg branch: `branchname` to make a new clone for
         :arg author_name: Author of the change.  Note, will remove when logs
-            are made generic
-        :arg author_id: Author of the change.  Note, will remove when logs
             are made generic
         :raises sqlalchemy.exceptions.InvalidRequestError: when a request
             does something that violates the SQL integrity of the database
@@ -210,7 +206,7 @@ class PackageListing(SABase):
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
                     self.owner, STATUS['Approved'], qacontact=self.qacontact,
-                    author_id=author_id, author_name=author_name)
+                    author_name=author_name)
 
         log_params = {'user': author_name,
                 'pkg': self.package.name, 'branch': branch}
@@ -236,7 +232,7 @@ class PackageListing(SABase):
                 log_params['status'] = acl.status.locale['C'].statusname
                 log_msg = '%(user)s set %(acl)s status for %(group)s to' \
                         ' %(status)s on (%(pkg)s %(branch)s)' % log_params
-                log = GroupPackageListingAclLog(author_id,
+                log = GroupPackageListingAclLog(author_name,
                         acl.statuscode, log_msg)
                 log.acl = clone_group.acls2[acl_name]
 
@@ -261,7 +257,7 @@ class PackageListing(SABase):
                 log_params['status'] = acl.status.locale['C'].statusname
                 log_msg = '%(user)s set %(acl)s status for %(person)s to' \
                         ' %(status)s on (%(pkg)s %(branch)s)' % log_params
-                log = PersonPackageListingAclLog(author_id,
+                log = PersonPackageListingAclLog(author_name,
                         acl.statuscode, log_msg)
                 log.acl = clone_person.acls2[acl_name]
 

@@ -165,22 +165,52 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
     }
 }
 
+function toggle_retirement(retirementDiv, data) {
+    logDebug('in toggle_retirement');
+    if (! data.status) {
+        display_error(null, data);
+        return;
+    }
+    var pkglTable = getFirstParentByTagAndClassName(retirementDiv, 'table', 'pkglist');
+    var statusBox = getElementsByTagAndClassName('td', 'status', pkglTable)[0];
+    var retirementButton = getElementsByTagAndClassName('input',
+            'retirementButton', retirementDiv)[0];
+    var ownerBox = getElementsByTagAndClassName('div', 'owner', pkglTable)[0];
+    if (data['retirement'] == 'Retired') {
+        /* Reflect the fact that the package is now retired */
+        swapElementClass(retirementDiv, 'not_retired', 'retired');
+        swapElementClass(retirementButton, 'retireButton', 'unretireButton');
+        swapElementClass(pkglTable, 'owned', 'orphan');
+        retirementButton.value = 'Unretire package';
+        statusBox.innerHTML = 'Retired';
+        ownerBox.innerHTML = 'Orphaned Package (orphan)'
+    } else {
+        /* Reflect the fact that the package has been unretired */
+        swapElementClass(retirementDiv, 'retired', 'not_retired');
+        swapElementClass(retirementButton, 'unretireButton', 'retireButton');
+        swapElementClass(pkglTable, 'orphan', 'owned');
+        retirementButton.value = 'Retire package';
+        statusBox.innerHTML = 'Orphaned';
+    }
+}
+
 function toggle_owner(ownerDiv, data) {
     logDebug('in toggle_owner');
     if (! data.status) {
         display_error(null, data);
         return;
     }
-    var statusBox = getElementsByTagAndClassName('td', 'status',
-            getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist'))[0];
+    var pkglTable = getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist');
+    var statusBox = getElementsByTagAndClassName('td', 'status', pkglTable)[0];
     var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
             ownerDiv)[0];
-    var aclTable = getElementsByTagAndClassName('table', 'acls',
-            getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist'))[0];
-    if (data['ownerName'] === 'Orphaned Package (orphan)') {
+    var aclTable = getElementsByTagAndClassName('table', 'acls', pkglTable)[0];
+
+    if (data['owner'] === 'orphan') {
         /* Reflect the fact that the package is now orphaned */
         swapElementClass(ownerDiv, 'owned', 'orphaned');
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
+        swapElementClass(pkglTable, 'owned', 'orphan');
         ownerButton.setAttribute('value', 'Take Ownership');
         set_acl_approval_box(aclTable, false);
         statusBox.innerHTML = 'Orphaned';
@@ -188,12 +218,13 @@ function toggle_owner(ownerDiv, data) {
         /* Show the new owner information */
         swapElementClass(ownerDiv, 'orphaned', 'owned');
         swapElementClass(ownerButton, 'unorphanButton', 'orphanButton');
+        swapElementClass(pkglTable, 'orphan', 'owned');
         ownerButton.setAttribute('value', 'Release Ownership');
         set_acl_approval_box(aclTable, true, data['aclStatusFields']);
         statusBox.innerHTML = 'Owned';
     }
     var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
-    var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
+    var newOwnerName = SPAN({'class' : 'ownerName'}, data['owner']);
     insertSiblingNodesBefore(ownerName, newOwnerName);
     removeElement(ownerName);
 }
@@ -468,6 +499,13 @@ function init(event) {
         connect(ownerButtons[buttonNum], 'onclick', request_owner_change);
     }
 
+    var retirementButtons = getElementsByTagAndClassName('input', 'retirementButton');
+    for (var retNum in retirementButtons) {
+        var request_retirement_change = partial(
+                make_request, '/toggle_retirement', toggle_retirement, null);
+        connect(retirementButtons[retNum], 'onclick', request_retirement_change);
+    }
+    
     var statusBoxes = getElementsByTagAndClassName('select', 'aclStatusList');
     for (var statusNum in statusBoxes) {
         connect(statusBoxes[statusNum], 'onchange', request_status_change);
