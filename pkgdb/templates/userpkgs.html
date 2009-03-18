@@ -32,7 +32,15 @@
         ${acl_filter()}
       </div>
       <div py:when="'orphan'">
-        View: Orphaned Packages (${pkgCount})
+        View: Orphaned Packages (${pkgCount}) - 
+        <div py:choose="eol" py:strip="">
+          <div py:when="True" py:strip="">
+            <a href="${tg.url('/packages/orphans/')}">hide</a>
+          </div>
+          <div py:when="False" py:strip="">
+            <a href="${tg.url('/packages/orphans/eol')}">show</a>
+          </div>
+        </div> EOL packages
       </div>
       <div py:otherwise="">
         View: <a href="${tg.url('/users/info/' + fasname)}">${fasname}'s

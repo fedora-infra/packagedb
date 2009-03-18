@@ -18,43 +18,58 @@
 #
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 
-''' 
-Instructions to modify the schema and script to modify the table data
-in order to make the switch from userids to usernames in the pkgdb db.
 '''
+Script to modify the table data order to make the switch from userids
+to usernames in the pkgdb db.
+
+This script will also change the statuscode of orphaned packages to 14(Orphaned)
+'''
+
+# Please change these fields!
+pguser = 'postgres'
+pgpasswd = 'postgres'
+pghost = 'localhost'
 
 import os
 import sys
 
 import sqlalchemy
+from sqlalchemy import DDL, create_engine
 from sqlalchemy.sql import select
 from turbogears.database import session
 from turbogears import config, update_config
 
 from fedora.client.fas2 import AccountSystem
 
-''' These sql statements have to be run in order to modify the schema:
+# These sql statements have to be run in order to modify the schema:
 
-ALTER TABLE collection ALTER COLUMN owner TYPE text USING CAST(owner AS text);
+engine = create_engine("postgres://"+pguser+":"+pgpasswd+"@"+pghost+"/pkgdb")
 
-ALTER TABLE log ALTER COLUMN userid TYPE text USING CAST(userid AS text);
-ALTER TABLE log RENAME userid TO username;
+for s in (
+    'ALTER TABLE collection \
+        ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
+      
+    'ALTER TABLE log ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
+    'ALTER TABLE log RENAME userid TO username;',
 
-ALTER TABLE packagelisting ALTER COLUMN owner TYPE text USING CAST(owner AS text);
+    'ALTER TABLE packagelisting \
+        ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
 
-ALTER TABLE personpackagelisting ALTER COLUMN userid TYPE text USING CAST(userid AS text);
-ALTER TABLE personpackagelisting RENAME userid TO username;
+    'ALTER TABLE personpackagelisting \
+        ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
+    'ALTER TABLE personpackagelisting RENAME userid TO username;',
 
-ALTER TABLE grouppackagelisting ALTER COLUMN groupid TYPE text USING CAST(groupid AS text);
-ALTER TABLE grouppackagelisting RENAME groupid TO groupname;
+    'ALTER TABLE grouppackagelisting \
+        ALTER COLUMN groupid TYPE text USING CAST(groupid AS text);',
+    'ALTER TABLE grouppackagelisting RENAME groupid TO groupname;'
+    ):
+    alter = DDL(s)
+    engine.execute(alter)
 
--- updating the Log table needs more privileges
-
-GRANT UPDATE ON log TO pkgdbadmin;
-
--- Be sure to revoke the privilege AFTER the script has done its job
-REVOKE UPDATE ON log FROM pkgdbadmin;
-'''
+# updating the Log table needs more privileges
+# PG treats DCL statements transactionally
+engine.execute('BEGIN; GRANT UPDATE ON log TO pkgdbadmin; COMMIT;')
+print 'Altering complete'
 
 # ugly configs so we can import tables from the model
 CONFDIR='@CONFDIR@' 
@@ -124,4 +139,9 @@ for id, groupname in zip(select([GroupPackageListing.id]).execute(),
                                     values={'groupname':groupname}).execute()
 print 'flushing for GroupPackageListing'
 session.flush()
-    
+
+print 'changing orphan statuscodes to 14 (Orphaned)'
+engine.execute("UPDATE packagelisting SET statuscode=14 WHERE owner='orphan'")
+
+# Be sure to revoke the privilege AFTER the script has done its job
+engine.execute('BEGIN; REVOKE UPDATE ON log FROM pkgdbadmin; COMMIT;')
