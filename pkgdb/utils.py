@@ -102,10 +102,12 @@ def refresh_status():
         statuses[status.statusname] = status
     STATUS = statuses
 
-def shutdown():
-    pass
+def init_globals():
+    '''Initialize global variables.
 
-def startup():
+    This is mostly connections to services like FAS, bugzilla, and loading
+    constants from the database.
+    '''
     # Things to do on startup
     refresh_status()
     global fas, LOG, bugzilla, admin_grp, pkger_grp
@@ -117,7 +119,7 @@ def startup():
     # Get the packager group if one is specified.
     pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
 
-# Get a connection to the Account System server
+    # Get a connection to the Account System server
     fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
@@ -135,4 +137,5 @@ def startup():
     bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass,
             cookiefile=None)
 
-__all__ = [STATUS, LOG, fas, bugzilla, refresh_status, startup, to_unicode]
+__all__ = [STATUS, admin_grp, pkger_grp, LOG, fas, bugzilla, refresh_status,
+        init_globals, to_unicode]

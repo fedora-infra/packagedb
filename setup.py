@@ -180,7 +180,7 @@ setup(
         "python_fedora >= 0.3.7",
         "SQLAlchemy >= 0.4alpha",
     ],
-    scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo",
+    scripts = ["start-pkgdb", "pkgdb.wsgi", "server-scripts/pkgdb-sync-repo",
         "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status",
         "server-scripts/transform-ids.py",
         "clients/pkgdb-client"],

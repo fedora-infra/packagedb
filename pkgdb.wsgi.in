@@ -1,28 +1,32 @@
 __requires__ = 'fedora_packagedb'
 
 import sys
+import os
 sys.stdout = sys.stderr
-sys.path.append('/usr/share/fedora-packagedb')
+sys.path.append(os.path.join('@DATADIR@', 'fedora-packagedb'))
 
 import pkg_resources
 pkg_resources.require("CherryPy<3.0")
 
-import os
 os.environ['PYTHON_EGG_CACHE'] = '/var/www/.python-eggs'
 
 import atexit
 import cherrypy
 import cherrypy._cpwsgi
 import turbogears
+import fedora
 
-turbogears.update_config(configfile="/etc/pkgdb.cfg", modulename="pkgdb.config")
+turbogears.update_config(configfile=os.path.join('@CONFDIR@', 'pkgdb.cfg'),
+        modulename="pkgdb.config")
 turbogears.config.update({'global': {'server.environment': 'production'}})
 turbogears.config.update({'global': {'autoreload.on': False}})
 turbogears.config.update({'global': {'server.log_to_screen': False}})
 #turbogears.config.update({'global': {'server.webpath': None}})
 
-#from pkgdb import jobs
-#turbogears.startup.call_on_startup.append(jobs.schedule)
+
+import pkgdb.utils
+turbogears.startup.call_on_startup.append(fedora.tg.util.enable_csrf)
+turbogears.startup.call_on_startup.append(pkgdb.utils.init_globals)
 
 import pkgdb.controllers
 cherrypy.root = pkgdb.controllers.Root()
