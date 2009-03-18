@@ -638,7 +638,7 @@ class PackageDispatcher(controllers.Controller):
                     identity.current.user_name, new_acl, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, statusname,
                     user['username'])
-        log = PersonPackageListingAclLog(identity.current.user.id,
+        log = PersonPackageListingAclLog(identity.current.user_name,
                 status.statuscodeid, log_msg)
         log.acl = person_acl # pylint: disable-msg=W0201
 
@@ -737,7 +737,7 @@ class PackageDispatcher(controllers.Controller):
                     identity.current.user_name, acl_name, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, acl_status,
                     self.groups[group_name])
-        log = GroupPackageListingAclLog(identity.current.user.id,
+        log = GroupPackageListingAclLog(identity.current.user_name,
                 status.statuscodeid, log_msg)
         log.acl = group_acl # pylint: disable-msg=W0201
 
@@ -817,7 +817,7 @@ class PackageDispatcher(controllers.Controller):
                     identity.current.user_name, acl_action, acl_name,
                     pkg_listing.package.name, pkg_listing.collection.name,
                     pkg_listing.collection.version)
-        log = PersonPackageListingAclLog(identity.current.user.id,
+        log = PersonPackageListingAclLog(identity.current.user_name,
                 person_acl.statuscode, log_msg)
         log.acl = person_acl
 
@@ -923,7 +923,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.summary)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user.id, self.addedStatus.statuscodeid,
+                identity.current.user_name, self.addedStatus.statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg # pylint: disable-msg=W0201
         pkg_log_msg = '%s has approved Package %s' % (
@@ -931,7 +931,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user.id, self.approvedStatus.statuscodeid,
+                identity.current.user_name, self.approvedStatus.statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg
 
@@ -944,7 +944,7 @@ class PackageDispatcher(controllers.Controller):
                         owner)
         logs.append(pkg_log_msg)
         pkg_listing_log = PackageListingLog(
-                identity.current.user.id, self.addedStatus.statuscodeid,
+                identity.current.user_name, self.addedStatus.statuscodeid,
                 pkg_log_msg
                 )
         pkg_listing_log.listing = pkg_listing # pylint: disable-msg=W0201
@@ -956,7 +956,7 @@ class PackageDispatcher(controllers.Controller):
                     pkg_listing.collection.version)
         logs.append(pkg_log_msg)
         pkg_listing_log = PackageListingLog(
-                identity.current.user.id, self.approvedStatus.statuscodeid,
+                identity.current.user_name, self.approvedStatus.statuscodeid,
                 pkg_log_msg
                 )
         pkg_listing_log.listing = pkg_listing
@@ -966,7 +966,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user.id, self.approvedStatus.statuscodeid,
+                identity.current.user_name, self.approvedStatus.statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg
 
@@ -984,7 +984,7 @@ class PackageDispatcher(controllers.Controller):
                     pkg_listing.collection.name,
                     pkg_listing.collection.version)
             pkg_log = GroupPackageListingAclLog(
-                    identity.current.user.id,
+                    identity.current.user_name,
                     change_acl.statuscode, pkg_log_msg)
             pkg_log.acl = change_acl
             logs.append(pkg_log_msg)
@@ -1098,7 +1098,7 @@ class PackageDispatcher(controllers.Controller):
             pkg.summary = changes['summary'].replace('\n', ' ')
             log_msg = '%s set package %s summary to %s' % (
                     identity.current.user_name, package, changes['summary'])
-            log = PackageLog(identity.current.user.id,
+            log = PackageLog(identity.current.user_name,
                     self.modifiedStatus.statuscodeid, log_msg)
             log.package = pkg
             pkg_log_msg = log_msg
@@ -1196,7 +1196,7 @@ class PackageDispatcher(controllers.Controller):
                                 pkg_listing.collection.version,
                                 pkg_listing.package.name)
                         pkg_log = PackageListingLog(
-                                identity.current.user.id,
+                                identity.current.user_name,
                                 self.addedStatus.statuscodeid,
                                 log_msg
                                 )
@@ -1219,7 +1219,7 @@ class PackageDispatcher(controllers.Controller):
                                     pkg_listing.collection.name,
                                     pkg_listing.collection.version)
                             pkg_log = GroupPackageListingAclLog(
-                                    identity.current.user.id,
+                                    identity.current.user_name,
                                     change_acl.statuscode, pkg_listing_log_msg)
                             pkg_log.acl = change_acl
                             pkg_list_log_msgs[pkg_listing].append(
@@ -1241,7 +1241,7 @@ class PackageDispatcher(controllers.Controller):
                         person['username']
                         )
                 pkg_log = PackageListingLog(
-                        identity.current.user.id,
+                        identity.current.user_name,
                         self.ownedStatus.statuscodeid,
                         log_msg
                         )
@@ -1275,7 +1275,7 @@ class PackageDispatcher(controllers.Controller):
                                         pkg_listing.collection.version,
                                         username)
                         pkg_log = PersonPackageListingAclLog(
-                                identity.current.user.id,
+                                identity.current.user_name,
                                 self.approvedStatus.statuscodeid,
                                 log_msg
                                 )
@@ -1321,7 +1321,7 @@ class PackageDispatcher(controllers.Controller):
                                         pkg_listing.collection.version,
                                         username)
                         pkg_log = PersonPackageListingAclLog(
-                                identity.current.user.id,
+                                identity.current.user_name,
                                 self.approvedStatus.statuscodeid,
                                 log_msg
                                 )
@@ -1365,7 +1365,7 @@ class PackageDispatcher(controllers.Controller):
                                     pkg_listing.collection.name,
                                     pkg_listing.collection.version)
                     pkg_log = GroupPackageListingAclLog(
-                            identity.current.user.id,
+                            identity.current.user_name,
                             status.statuscodeid,
                             log_msg
                             )
@@ -1433,7 +1433,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(exc='InvalidBranch')
 
         try:
-            clone_branch = master_branch.clone(branch, identity.current.user_name, identity.current.user.id)
+            clone_branch = master_branch.clone(branch, identity.current.user_name)
         except InvalidRequestError, e:
             # Not a valid collection
             session.rollback()

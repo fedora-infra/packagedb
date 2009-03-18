@@ -178,13 +178,11 @@ class PackageListing(SABase):
                 ' qacontact=%r)' % (self.owner, self.statuscode,
                         self.packageid, self.collectionid, self.qacontact)
 
-    def clone(self, branch, author_name, author_id):
+    def clone(self, branch, author_name):
         '''Clone the permissions on this PackageListing to another `Branch`.
 
         :arg branch: `branchname` to make a new clone for
         :arg author_name: Author of the change.  Note, will remove when logs
-            are made generic
-        :arg author_id: Author of the change.  Note, will remove when logs
             are made generic
         :raises sqlalchemy.exceptions.InvalidRequestError: when a request
             does something that violates the SQL integrity of the database
@@ -210,7 +208,7 @@ class PackageListing(SABase):
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
                     self.owner, STATUS['Approved'], qacontact=self.qacontact,
-                    author_id=author_id, author_name=author_name)
+                    author_name=author_name)
 
         log_params = {'user': author_name,
                 'pkg': self.package.name, 'branch': branch}
