@@ -37,8 +37,11 @@ STATUS = {}
 fas = None
 LOG = None
 bugzilla = None
-admin_grp = None
-pkger_grp = None
+# Get the admin group if one is specified.
+admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
+
+# Get the packager group if one is specified.
+pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
 
 def to_unicode(obj, encoding='utf-8', errors='strict'):
     '''
@@ -112,12 +115,6 @@ def init_globals():
     refresh_status()
     global fas, LOG, bugzilla, admin_grp, pkger_grp
     LOG = logging.getLogger('pkgdb.controllers')
-
-    # Get the admin group if one is specified.
-    admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
-
-    # Get the packager group if one is specified.
-    pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
 
     # Get a connection to the Account System server
     fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')

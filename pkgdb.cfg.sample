@@ -1,4 +1,7 @@
 [global]
+pkgdb.admin_grp = 'cvsadmin'
+pkgdb.pkger_grp = 'packager'
+
 fas.url = 'https://admin.fedoraproject.org/accounts/'
 fas.username = 'user'
 fas.password = 'password'
