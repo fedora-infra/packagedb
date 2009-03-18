@@ -166,7 +166,8 @@ class Packages(controllers.Controller):
         else:
             # admins and owners of any branch can set shouldopen
             can_set_shouldopen = admin_grp in identity.current.groups or \
-                    identity.current.user.id in [x.owner for x in pkg_listings]
+                    identity.current.user_name in [
+                            x.owner for x in pkg_listings]
             if not can_set_shouldopen:
                 # Set up a bunch of generators to iterate through the acls
                 # on this package
