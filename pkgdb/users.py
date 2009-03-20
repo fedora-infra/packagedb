@@ -41,8 +41,6 @@ from pkgdb.model import Collection, Package, PackageListing, \
 
 from fedora.tg.util import request_format
 
-ORPHAN_ID = 9900
-
 class Users(controllers.Controller):
     '''Controller for all things user related.
 
@@ -59,6 +57,8 @@ class Users(controllers.Controller):
             statusname='Under Review', language='C').one().statuscodeid
     EOLStatusId = StatusTranslation.query.filter_by(
             statusname='EOL', language='C').one().statuscodeid
+    orphanedStatusId = StatusTranslation.query.filter_by(
+            statusname='Orphaned', language='C').one().statuscodeid
     # pylint: enable-msg=E1101
 
     allAcls = (('owner', 'owner'), ('approveacls', 'approveacls'),
@@ -183,7 +183,12 @@ class Users(controllers.Controller):
         else:
             my_pkgs = queries[0]
 
-        my_pkgs = my_pkgs.options(lazyload('listings2.people2'), lazyload('listings2.people2.acls2'), lazyload('listings2.groups2'), lazyload('listings2.groups2.acls2'), lazyload('listings2')).order_by(Package.name)
+        my_pkgs = my_pkgs.options(lazyload('listings2.people2'), 
+                                  lazyload('listings2.people2.acls2'), 
+                                  lazyload('listings2.groups2'), 
+                                  lazyload('listings2.groups2.acls2'), 
+                                  lazyload('listings2')
+                                  ).order_by(Package.name)
         # pylint: enable-msg=E1101
         pkg_list = []
         for pkg in my_pkgs:

@@ -31,7 +31,7 @@ else:
 import pkgdb.utils
 
 startup.call_on_startup.append(fedora.tg.util.enable_csrf)
-startup.call_on_startup(pkgdb.utils.init_globals)
+startup.call_on_startup.append(pkgdb.utils.init_globals)
 
 from pkgdb.controllers import Root
 

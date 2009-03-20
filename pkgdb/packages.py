@@ -22,6 +22,7 @@
 Controller for displaying Package Information.
 '''
 
+
 #
 # Pylint Explanations
 #
@@ -30,7 +31,8 @@ Controller for displaying Package Information.
 #   classes so we have to disable these checks.
 
 from sqlalchemy.orm import eagerload
-from turbogears import controllers, expose, config, redirect, identity 
+from turbogears import controllers, expose, config, redirect, identity, \
+        paginate
 
 from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
@@ -58,6 +60,10 @@ class Packages(controllers.Controller):
                 statusname='Removed', language='C').one().statuscodeid
         self.approved_status = model.StatusTranslation.query.filter_by(
                 statusname='Approved', language='C').one().statuscodeid
+        self.orphaned_status = model.StatusTranslation.query.filter_by(
+                statusname='Orphaned', language='C').one().statuscodeid
+        self.eol_status = model.StatusTranslation.query.filter_by(
+                statusname='EOL', language='C').one().statuscodeid
         # pylint: enable-msg=E1101
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
@@ -160,7 +166,8 @@ class Packages(controllers.Controller):
         else:
             # admins and owners of any branch can set shouldopen
             can_set_shouldopen = admin_grp in identity.current.groups or \
-                    identity.current.user.id in [x.owner for x in pkg_listings]
+                    identity.current.user_name in [
+                            x.owner for x in pkg_listings]
             if not can_set_shouldopen:
                 # Set up a bunch of generators to iterate through the acls
                 # on this package
@@ -261,3 +268,34 @@ class Packages(controllers.Controller):
 
         raise redirect(config.get('base_url_filter.base_url') +
                 '/packages/name/' + pkg.name)
+
+    @expose(template='pkgdb.templates.userpkgs', allow_json=True)
+    @paginate('pkgs', limit=75, default_order='name',
+            allow_limit_override=True, max_pages=13)
+    def orphans(self, eol=None):
+        '''List orphaned packages.
+
+        Arguments:
+        :eol: If set, list packages that are in EOL distros.
+        Returns: A list of packages.
+        '''
+        if not eol or eol.lower() in ('false','f','0'):
+            eol = False
+        else:
+            eol = bool(eol)
+
+        page_title = self.app_title + '--' + 'Orphaned Packages'
+       
+        query = model.Package.query.join('listings2').distinct().filter(
+                    model.PackageListing.statuscode==self.orphaned_status)
+        if not eol:
+            # We don't want EOL releases, filter those out of each clause
+            query = query.join(['listings2', 'collection']).filter(
+                    model.Collection.c.statuscode != self.eol_status)
+        pkg_list = []
+        for pkg in query:
+            pkg.json_props = {'Package':('listings',)}
+            pkg_list.append(pkg)
+        return dict(title=page_title, pkgCount=len(pkg_list), pkgs=pkg_list,
+                fasname='orphan', eol=eol)
+
