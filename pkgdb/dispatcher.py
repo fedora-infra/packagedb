@@ -1477,12 +1477,12 @@ class PackageDispatcher(controllers.Controller):
         except InvalidRequestError:
             flash('Package %s does not exist' % pkg_name)
             return dict(exc='NoPackageError')
-
-        # Check that the current user is allowed to change acl statuses
+  
+        #Check that the current user is allowed to change acl statuses
         if not identity.in_group(admin_grp):
             flash('%s is not in admin_grp' % identity.current.user_name)
-            return dict(exc='NoAllowError')			
-
+            return dict(exc='NoAllowError')
+  
         log_msgs = []
         package_listings = []
 
@@ -1509,7 +1509,7 @@ class PackageDispatcher(controllers.Controller):
                        PersonPackageListing.c.username == username)).all()
             
             for acl in acls:
-                person_acl = self._create_or_modify_acl(pkg_listing, username, acl, self.obsoleteStatus)
+                person_acl = self._create_or_modify_acl(pkg_listing, username, acl.acl, self.obsoleteStatus)
 
                 log_msg = u'%s has set the %s acl on %s (%s %s) to Obsolete for %s' % (
                             identity.current.user_name, acl, pkg.name,
@@ -1531,7 +1531,7 @@ class PackageDispatcher(controllers.Controller):
         user_email = username + '@fedoraproject.org'
         # Send a log to people interested in this package as well
         self._send_log_msg('\n'.join(log_msgs), '%s had acl change status' % (
-                           pkg.name), identity.current.user, pkg.listings,
+                           pkg.name), identity.current.user, package_listings,
                            other_email=(user_email,))
         
         return dict(status=True)
