@@ -473,7 +473,7 @@ class PackageDispatcher(controllers.Controller):
                     'Package %s not available for taking' % pkg_listing_id)
 
         # Make sure a log is created in the db as well.
-        log = PackageListingLog(identity.current.user.id,
+        log = PackageListingLog(identity.current.user_name,
                 status.statuscodeid, log_msg, None, pkg_listing_id)
         log.packagelistingid = pkg.id
 
