@@ -225,6 +225,28 @@ def add_edit_package(pkgdb, options):
             continue
     return failedPackages
 
+def remove_user(pkgdb, options):
+    '''Change package's acls for the removeUser to Obsolete
+    used options:
+    :removeUserList: username
+    :branchList: collectn_list
+    '''
+    failedPackages = {}
+    for package in options.packages:
+        for removeUser in options.removeUserList:
+            try:
+                if options.branchList:
+                    pkgdb.remove_user(removeUser, package, options.branchList)
+                else:
+                    pkgdb.remove_user(removeUser, package)
+            except AppError, e:
+                failedPackages[package] = 'Failed to remove user %(user)s ' \
+                    'from package %(package)s: %(msg)s' % {'user': removeUser,
+                    'package': package, 'msg': e.message}
+            continue
+    return failedPackages
+
+
 if __name__ == '__main__':
     config = parse_config()
     try:
@@ -251,6 +273,8 @@ if __name__ == '__main__':
                     sys.exit(0)
             elif options.masterBranch:
                 failedPackages.update(clone_branch(pkgdb, options))
+            elif options.removeUserList:
+                failedPackages.update(remove_user(pkgdb, options))
             else:
                 failedPackages.update(add_edit_package(pkgdb, options))
         except AuthError, e:

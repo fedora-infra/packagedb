@@ -473,7 +473,7 @@ class PackageDispatcher(controllers.Controller):
                     'Package %s not available for taking' % pkg_listing_id)
 
         # Make sure a log is created in the db as well.
-        log = PackageListingLog(identity.current.user.id,
+        log = PackageListingLog(identity.current.user_name,
                 status.statuscodeid, log_msg, None, pkg_listing_id)
         log.packagelistingid = pkg.id
 
@@ -1475,12 +1475,12 @@ class PackageDispatcher(controllers.Controller):
             # pylint: disable-msg=E1101
             pkg = Package.query.filter_by(name=pkg_name).one()
         except InvalidRequestError:
-            flash('Package %s does not exist' % pkg_name)
+            flash(_('Package %s does not exist' % pkg_name))
             return dict(exc='NoPackageError')
   
         #Check that the current user is allowed to change acl statuses
         if not identity.in_group(admin_grp):
-            flash('%s is not in admin_grp' % identity.current.user_name)
+            flash(_('%s is not in admin_grp' % identity.current.user_name))
             return dict(exc='NoAllowError')
   
         log_msgs = []
@@ -1491,7 +1491,7 @@ class PackageDispatcher(controllers.Controller):
                 try:
                     collectn = Collection.by_simple_name(simple_name)
                 except InvalidRequestError:
-                    flash('Collection %s does not exist' % simple_name)
+                    flash(_('Collection %s does not exist' % simple_name))
                     return dict(exc='NoCollectionError')
 
                 pkg_listing = PackageListing.query.filter_by(packageid=pkg.id,
@@ -1524,7 +1524,7 @@ class PackageDispatcher(controllers.Controller):
             session.flush()
         except SQLError, e:
             # An error was generated
-            flash('Unable to save changes to the database: %s ' % e)
+            flash(_('Unable to save changes to the database: %s ' % e))
             return dict(exc='DatabaseError')
 
 
