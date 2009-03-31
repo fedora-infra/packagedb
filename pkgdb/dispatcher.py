@@ -1487,6 +1487,8 @@ class PackageDispatcher(controllers.Controller):
         package_listings = []
 
         if collectn_list:
+            if not isinstance(collectn_list,(tuple,list)):
+                collectn_list = [collectn_list]
             for simple_name in collectn_list:
                 try:
                     collectn = Collection.by_simple_name(simple_name)
