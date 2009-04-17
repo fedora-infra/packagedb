@@ -131,7 +131,7 @@ class Package(SABase):
         pkg_listing.package = self
         for group in DEFAULT_GROUPS:
             new_group = GroupPackageListing(group)
-            pkg_listing.groups2[GROUP_MAP[group]] = new_group
+            pkg_listing.groups2[group] = new_group
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
                     acl_status = STATUS['Approved'].statuscodeid
