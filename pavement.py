@@ -46,7 +46,7 @@ options(
         ],
         scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo",
             "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status",
-            "clients/pkgdb-client"],
+            "clients/pkgdb-client", "pkgdb.wsgi"],
         zip_safe=False,
         packages=find_packages(),
         data_files = [
