@@ -473,7 +473,7 @@ class PackageDispatcher(controllers.Controller):
                     'Package %s not available for taking' % pkg_listing_id)
 
         # Make sure a log is created in the db as well.
-        log = PackageListingLog(identity.current.user.id,
+        log = PackageListingLog(identity.current.user_name,
                 status.statuscodeid, log_msg, None, pkg_listing_id)
         log.packagelistingid = pkg.id
 
@@ -1460,3 +1460,80 @@ class PackageDispatcher(controllers.Controller):
                 identity.current.user, [clone_branch])
 
         return dict(pkglisting=clone_branch)
+
+    @expose(allow_json=True)
+    # Check that the requestor is in a group that could potentially set ACLs.
+    @identity.require(identity.not_anonymous())
+    def remove_user(self, username, pkg_name, collectn_list=None):
+        '''Remove users from a package.
+        :arg pkg_name: Name of the package
+        :arg username: Name of user to remove from the package
+        :arg collectn_list: list of collections like 'F-10', 'devel'.
+          If collectn_list=None, user removed from all collections associates with the package
+        '''        
+        try:
+            # pylint: disable-msg=E1101
+            pkg = Package.query.filter_by(name=pkg_name).one()
+        except InvalidRequestError:
+            flash(_('Package %s does not exist' % pkg_name))
+            return dict(exc='NoPackageError')
+  
+        #Check that the current user is allowed to change acl statuses
+        if not identity.in_group(admin_grp):
+            flash(_('%s is not in admin_grp' % identity.current.user_name))
+            return dict(exc='NoAllowError')
+  
+        log_msgs = []
+        package_listings = []
+
+        if collectn_list:
+            if not isinstance(collectn_list,(tuple,list)):
+                collectn_list = [collectn_list]
+            for simple_name in collectn_list:
+                try:
+                    collectn = Collection.by_simple_name(simple_name)
+                except InvalidRequestError:
+                    flash(_('Collection %s does not exist' % simple_name))
+                    return dict(exc='NoCollectionError')
+
+                pkg_listing = PackageListing.query.filter_by(packageid=pkg.id,
+                                  collectionid=collectn.id).one()
+                package_listings.append(pkg_listing)
+                
+        else:
+            package_listings = pkg.listings
+
+        for pkg_listing in package_listings:
+            acls = PersonPackageListingAcl.query.filter(and_(
+                       PersonPackageListingAcl.c.personpackagelistingid
+                           == PersonPackageListing.c.id,
+                       PersonPackageListing.c.packagelistingid == pkg_listing.id,
+                       PersonPackageListing.c.username == username)).all()
+            
+            for acl in acls:
+                person_acl = self._create_or_modify_acl(pkg_listing, username, acl.acl, self.obsoleteStatus)
+
+                log_msg = u'%s has set the %s acl on %s (%s %s) to Obsolete for %s' % (
+                            identity.current.user_name, acl, pkg.name,
+                            pkg_listing.collection.name, pkg_listing.collection.version, 
+                            username)
+                log = PersonPackageListingAclLog(identity.current.user.id,
+                        self.obsoleteStatus.statuscodeid, log_msg)
+                log.acl = person_acl # pylint: disable-msg=W0201
+                log_msgs.append(log_msg)
+
+        try:
+            session.flush()
+        except SQLError, e:
+            # An error was generated
+            flash(_('Unable to save changes to the database: %s ' % e))
+            return dict(exc='DatabaseError')
+
+
+        user_email = username + '@fedoraproject.org'
+        # Send a log to people interested in this package as well
+        self._send_log_msg('\n'.join(log_msgs), '%s had acl change status' % (
+                           pkg.name), identity.current.user, package_listings,
+                           other_email=(user_email,))
+        
+        return dict(status=True)
