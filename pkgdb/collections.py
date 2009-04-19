@@ -46,7 +46,7 @@ from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import admin_grp
+from pkgdb.utils import admin_grp, STATUS
 
 MASS_BRANCH_SET = 500
 
@@ -136,7 +136,9 @@ class Collections(controllers.Controller):
         # pylint:disable-msg=E1101
         packages = Package.query.options(lazyload('listings2.people2'),
                 lazyload('listings2.groups2')).join('listings2'
-                        ).filter_by(collectionid = collection_id)
+                        ).filter_by(collectionid = collection_id
+                        ).filter(Package.statuscode !=
+                                STATUS['Removed'].statuscodeid)
         # pylint:enable-msg=E1101
 
         return dict(title='%s -- %s %s' % (self.app_title, collection['name'],

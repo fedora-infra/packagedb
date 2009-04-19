@@ -22,7 +22,6 @@
 Controller for displaying Package Information.
 '''
 
-
 #
 # Pylint Explanations
 #
@@ -285,7 +284,7 @@ class Packages(controllers.Controller):
             eol = bool(eol)
 
         page_title = self.app_title + '--' + 'Orphaned Packages'
-       
+
         query = model.Package.query.join('listings2').distinct().filter(
                     model.PackageListing.statuscode==self.orphaned_status)
         if not eol:
