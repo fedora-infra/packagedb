@@ -126,11 +126,12 @@ class Package(SABase):
         from pkgdb.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
         pkg_listing = PackageListing(owner, status.statuscodeid,
-                packageid=self.id, collectionid=collection.id,
+                collectionid=collection.id,
                 qacontact=qacontact)
+        pkg_listing.package = self
         for group in DEFAULT_GROUPS:
-            new_group = GroupPackageListing(GROUP_MAP[group])
-            pkg_listing.groups2[GROUP_MAP[group]] = new_group
+            new_group = GroupPackageListing(group)
+            pkg_listing.groups2[group] = new_group
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
                     acl_status = STATUS['Approved'].statuscodeid

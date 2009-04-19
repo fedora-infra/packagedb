@@ -864,7 +864,6 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False,
                     message='Specified owner ID %s does not have a Fedora' \
                     ' Account' % owner)
-
         # Make sure the owner is in the correct group
         try:
             self._acl_can_be_held_by_user('owner', person)
@@ -879,35 +878,27 @@ class PackageDispatcher(controllers.Controller):
 
         # Create the package
         pkg = Package(package, summary, self.approvedStatus.statuscodeid)
-        pkg_listing = PackageListing(person['id'],
-                self.approvedStatus.statuscodeid)
-        pkg_listing.collection = devel_collection
-        pkg_listing.package = pkg
-
-        changed_acls = ()
-
+        pkg_listing = pkg.create_listing(devel_collection, person['username'],
+                self.approvedStatus,
+                author_name = identity.current.user_name)
+        try:
+            session.flush()
+        except SQLError, e:
+            return dict(status=False,
+                    message='Unable to create PackageListing(%s, %s, %s, %s)' %
+                        (package, # pylint: disable-msg=E1101
+                            devel_collection.id, person['username'],
+                            self.approvedStatus.statuscodeid))
+        changed_acls = []
         for group in ('provenpackager',):
-            # Create the group => packagelisting association
-            group_pkg_listing = GroupPackageListing(self.groups[group])
-            group_pkg_listing.packagelisting = pkg_listing
+            changed_acls.append(GroupPackageListingAcl.query.filter(and_(
+                    GroupPackageListingAcl.c.grouppackagelistingid
+                        == GroupPackageListing.c.id,
+                    GroupPackageListing.c.packagelistingid 
+                        == pkg_listing.id,
+                    GroupPackageListing.c.groupname == group)).all())
+            
 
-            # Everyone has checkout
-            group_checkout_acl = GroupPackageListingAcl('checkout',
-                    self.approvedStatus.statuscodeid)
-            # Not everyone has commit and build by default
-            if group == 'provenpackager':
-                statuscode = self.approvedStatus.statuscodeid
-            else:
-                statuscode = self.deniedStatus.statuscodeid
-            group_commit_acl = GroupPackageListingAcl('commit', statuscode)
-            group_build_acl = GroupPackageListingAcl('build', statuscode)
-
-            group_checkout_acl.grouppackagelisting = group_pkg_listing
-            group_commit_acl.grouppackagelisting = group_pkg_listing
-            group_build_acl.grouppackagelisting = group_pkg_listing
-
-            changed_acls += (group_commit_acl, group_build_acl,
-                    group_checkout_acl)
         # pylint: enable-msg=W0201
 
         # Create a log of changes
@@ -933,29 +924,19 @@ class PackageDispatcher(controllers.Controller):
         pkg_log_msg = '%s has added a %s %s branch for %s with an' \
                 ' owner of %s' % (
                         identity.current.user_name,
-                        pkg_listing.collection.name,
-                        pkg_listing.collection.version,
-                        pkg_listing.package.name,
+                        devel_collection.name,
+                        devel_collection.version,
+                        pkg.name,
                         owner)
         logs.append(pkg_log_msg)
-        pkg_listing_log = PackageListingLog(
-                identity.current.user_name, self.addedStatus.statuscodeid,
-                pkg_log_msg
-                )
-        pkg_listing_log.listing = pkg_listing # pylint: disable-msg=W0201
 
         pkg_log_msg = '%s has approved %s in %s %s' % (
                     identity.current.user_name,
-                    pkg_listing.package.name,
-                    pkg_listing.collection.name,
-                    pkg_listing.collection.version)
+                    pkg.name,
+                    devel_collection.name,
+                    devel_collection.version)
         logs.append(pkg_log_msg)
-        pkg_listing_log = PackageListingLog(
-                identity.current.user_name, self.approvedStatus.statuscodeid,
-                pkg_log_msg
-                )
-        pkg_listing_log.listing = pkg_listing
-
+    
         pkg_log_msg = '%s has approved Package %s' % (
                 identity.current.user_name,
                 pkg.name)
@@ -965,8 +946,9 @@ class PackageDispatcher(controllers.Controller):
                 pkg_log_msg)
         pkg_log.package = pkg
 
-        for change_acl in changed_acls:
-            pkg_log_msg = '%s has set %s to %s for %s on %s (%s %s)' % (
+        for group_acls in changed_acls:
+            for change_acl in group_acls:
+                pkg_log_msg = '%s has set %s to %s for %s on %s (%s %s)' % (
                     identity.current.user_name,
                     change_acl.acl,
                     # pylint: disable-msg=E1101
@@ -975,14 +957,14 @@ class PackageDispatcher(controllers.Controller):
                     # pylint: enable-msg=E1101
 
                     self.groups[change_acl.grouppackagelisting.groupname],
-                    pkg_listing.package.name,
-                    pkg_listing.collection.name,
-                    pkg_listing.collection.version)
-            pkg_log = GroupPackageListingAclLog(
+                    pkg.name,
+                    devel_collection.name,
+                    devel_collection.version)
+                pkg_log = GroupPackageListingAclLog(
                     identity.current.user_name,
                     change_acl.statuscode, pkg_log_msg)
-            pkg_log.acl = change_acl
-            logs.append(pkg_log_msg)
+                pkg_log.acl = change_acl
+                logs.append(pkg_log_msg)
 
         try:
             session.flush()
@@ -1000,6 +982,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Return the new values
         return dict(status=True, package=pkg, packageListing=pkg_listing)
+
 
     @expose(allow_json=True)
     @identity.require(identity.not_anonymous())
@@ -1132,95 +1115,81 @@ class PackageDispatcher(controllers.Controller):
                 # pylint: enable-msg=E1101
                 owner_name = devel_pkg.owner
 
-            # Turn JSON collection data back to python
-            collection_data = simplejson.loads(changes['collections'])
+            collection_data = changes['collections']
+            if not isinstance(collection_data,(tuple,list)):
+                collection_data = [collection_data]
             for collection_name in collection_data:
-                for version in collection_data[collection_name]:
-                    # Check if collection/version exists
+                # Check if collection/version exists
+                try:
+                    # pylint: disable-msg=E1101
+                    collection = Collection.by_simple_name(
+                            collection_name)
+                except InvalidRequestError:
+                    return dict(status=False,
+                            message='No collection %s' %
+                            (collection_name))
+
+                # Create the packageListing if necessary
+                try:
+                    # pylint: disable-msg=E1101
+                    pkg_listing = PackageListing.query.filter_by(
+                            collectionid=collection.id,
+                            packageid=pkg.id).one()
+                except InvalidRequestError:
+                    pkg_listing = pkg.create_listing(collection,
+                            owner_name,
+                            self.approvedStatus,
+                            author_name = identity.current.user_name)
                     try:
-                        # pylint: disable-msg=E1101
-                        collection = Collection.query.filter_by(
-                                name=collection_name, version=version).one()
-                    except InvalidRequestError:
+                        session.flush()
+                    except SQLError, e:
                         return dict(status=False,
-                                message='No collection %s %s' %
-                                (collection_name, version))
-
-                    # Create the packageListing if necessary
-                    try:
-                        # pylint: disable-msg=E1101
-                        pkg_listing = PackageListing.query.filter_by(
-                                collectionid=collection.id,
-                                packageid=pkg.id).one()
-                    except InvalidRequestError:
-                        pkg_listing = PackageListing(owner_name,
-                                self.approvedStatus.statuscodeid)
-                        pkg_listing.package = pkg
-                        pkg_listing.collection = collection
-                        for group in ('provenpackager',):
-                            # Create the group => packagelisting association
-                            group_pkg_listing = GroupPackageListing(
-                                    self.groups[group])
-                            group_pkg_listing.packagelisting = pkg_listing
-
-                            # Everyone has checkout
-                            group_checkout_acl = GroupPackageListingAcl(
-                                    'checkout',
-                                    self.approvedStatus.statuscodeid)
-                            # Not everyone has commit and build by default
-                            if group == 'provenpackager':
-                                statuscode = self.approvedStatus.statuscodeid
-                            else:
-                                statuscode = self.deniedStatus.statuscodeid
-                            group_commit_acl = GroupPackageListingAcl('commit',
-                                    statuscode)
-                            group_build_acl = GroupPackageListingAcl('build',
-                                    statuscode)
-
-                            group_checkout_acl.grouppackagelisting = \
-                                    group_pkg_listing
-                            group_commit_acl.grouppackagelisting \
-                                    = group_pkg_listing
-                            group_build_acl.grouppackagelisting \
-                                    = group_pkg_listing
-
-                        log_msg = '%s added a %s %s branch for %s' % (
-                                identity.current.user_name,
-                                pkg_listing.collection.name,
-                                pkg_listing.collection.version,
-                                pkg_listing.package.name)
-                        pkg_log = PackageListingLog(
-                                identity.current.user_name,
-                                self.addedStatus.statuscodeid,
-                                log_msg
-                                )
-                        pkg_log.listing = pkg_listing
-                        pkg_list_log_msgs[pkg_listing] = [log_msg]
-                        for change_acl in (group_commit_acl,
-                                group_build_acl, group_checkout_acl):
+                            message='Unable to create ' \
+                                'PackageListing(%s, %s, %s, %s)' % (
+                                    package, # pylint: disable-msg=E1101
+                                    devel_collection.id, person['username'],
+                                    self.approvedStatus.statuscodeid))
+                    changed_acls = []
+                    for group in ('provenpackager',):
+                        changed_acls.append(GroupPackageListingAcl.query.filter(
+                            and_(
+                            GroupPackageListingAcl.c.grouppackagelistingid
+                                == GroupPackageListing.c.id,
+                            GroupPackageListing.c.packagelistingid
+                                == pkg_listing.id,
+                            GroupPackageListing.c.groupname
+                                == group)).all())
+                    log_msg = '%s added a %s %s branch for %s' % (
+                            identity.current.user_name,
+                            collection.name,
+                            collection.version,
+                            pkg.name)
+                    pkg_list_log_msgs[pkg_listing] = [log_msg]
+                    for group_acls in changed_acls:
+                        for change_acl in group_acls:
                             pkg_listing_log_msg = '%s has set %s to %s' \
-                                    ' for %s on %s (%s %s)' % (
-                                    identity.current.user_name,
-                                    change_acl.acl,
-                                    # pylint: disable-msg=E1101
-                                    StatusTranslation.query.filter_by(
-                                        statuscodeid = change_acl.statuscode
-                                        ).one().statusname,
-                                    # pylint: enable-msg=E1101
-                                    self.groups[
-                                        change_acl.grouppackagelisting.groupname],
-                                    pkg_listing.package.name,
-                                    pkg_listing.collection.name,
-                                    pkg_listing.collection.version)
+                                ' for %s on %s (%s %s)' % (
+                                identity.current.user_name,
+                                change_acl.acl,
+                                # pylint: disable-msg=E1101
+                                StatusTranslation.query.filter_by(
+                                    statuscodeid = change_acl.statuscode
+                                    ).one().statusname,
+                                # pylint: enable-msg=E1101
+                                self.groups[
+                                    change_acl.grouppackagelisting.groupname],
+                                pkg.name,
+                                collection.name,
+                                collection.version)
                             pkg_log = GroupPackageListingAclLog(
-                                    identity.current.user_name,
-                                    change_acl.statuscode, pkg_listing_log_msg)
+                                identity.current.user_name,
+                                change_acl.statuscode, pkg_listing_log_msg)
                             pkg_log.acl = change_acl
                             pkg_list_log_msgs[pkg_listing].append(
-                                    pkg_listing_log_msg)
+                                pkg_listing_log_msg)
 
-                    # Save a reference to all pkg_listings
-                    listings.append(pkg_listing)
+                # Save a reference to all pkg_listings
+                listings.append(pkg_listing)
 
         # If ownership, change the owners
         if 'owner' in changes:
@@ -1388,8 +1357,8 @@ class PackageDispatcher(controllers.Controller):
         for pkg_listing in pkg_list_log_msgs.keys():
             self._send_log_msg('\n'.join(pkg_list_log_msgs[pkg_listing]),
                     '%s (%s, %s) updated by %s' % (pkg.name,
-                        pkg_listing.collection.name,
-                        pkg_listing.collection.version,
+                        collection.name,
+                        collection.version,
                         identity.current.user_name),
                     identity.current.user, (pkg_listing,))
         return dict(status=True)
