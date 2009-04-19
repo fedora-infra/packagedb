@@ -1,7 +1,6 @@
 [extras3-i386]
 name=Fedora Extras 3 - i386
 baseurl=http://archives.fedoraproject.org/pub/archive/fedora/linux/extras/3/i386/
-#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=extras-3&arch=i386
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-extras
 gpgcheck=0
@@ -9,7 +8,6 @@ gpgcheck=0
 [extras3-x86_64]
 name=Fedora Extras 3 - x86_64
 baseurl=http://archives.fedoraproject.org/pub/archive/fedora/linux/extras/3/x86_64/
-#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=extras-3&arch=x86_64
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-extras
 gpgcheck=0
@@ -17,7 +15,6 @@ gpgcheck=0
 [extras3-source]
 name=Fedora Extras 3 - Source
 baseurl=http://archives.fedoraproject.org/pub/archive/fedora/linux/extras/3/SRPMS/
-#mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=extras-source-3&arch=i386
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-extras
 gpgcheck=0

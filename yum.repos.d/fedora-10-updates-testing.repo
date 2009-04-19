@@ -1,0 +1,27 @@
+[updates10-testing-i386]
+name=Fedora 10 - i386 - Test Updates
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f10&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates10-testing-x86_64]
+name=Fedora 10 - x86_64 - Test Updates
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f10&arch=x86_64
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates10-testing-ppc]
+name=Fedora 10 - ppc - Test Updates
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f10&arch=ppc
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
+
+[updates10-testing-source]
+name=Fedora 10 - Test Updates Source
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-source-f10&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-test
