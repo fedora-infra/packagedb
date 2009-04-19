@@ -194,7 +194,9 @@ class RepoInfo(object):
 
     def _bind_to_repo(self, repo, mdtype):
         '''Set our model to talk to the db in this particular repo.'''
-        self.metadata.bind = self.repo_files[repo][mdtype]
+        md_list = [t for t in self.repo_files[repo].keys()
+                if t.endswith(mdtype)]
+        self.metadata.bind = self.repo_files[repo][md_list[0]]
         info = self.session.query(DB_Info).one()
         if info.dbversion not in (9, 10):
             raise UnknownRepoMDFormat, 'Expected Repo format 9 or 10, got %s' \
