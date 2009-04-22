@@ -50,6 +50,7 @@ except ImportError:
 from pkgdb.model import StatusTranslation, Package
 from pkgdb.letter_paginator import Letters
 from pkgdb.utils import to_unicode, LOG, bugzilla
+from pkgdb import _
 
 class BugList(list):
     '''Transform and store values in the bugzilla.Bug data structure
