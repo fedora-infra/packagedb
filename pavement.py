@@ -63,6 +63,10 @@ options(
             # 'turbogears.command',
             'turbogears.app',
         ],
+        message_extractors = {
+            'pkgdb': [('**.py', 'python', None),
+                ('templates/**.html', 'genshi', None),],
+            },
         classifiers = [
             'Development Status :: 4 - Beta',
             'Operating System :: OS Independent',
