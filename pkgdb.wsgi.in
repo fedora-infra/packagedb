@@ -1,3 +1,4 @@
+#!/usr/bin/python -tt
 __requires__ = 'fedora_packagedb'
 
 import sys
