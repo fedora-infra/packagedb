@@ -18,6 +18,7 @@ except ImportError:
     PAVER_VER = '0.8'
 
 import sys, os
+import re
 import glob
 import paver.doctools
 from setuptools import find_packages, command
@@ -37,16 +38,16 @@ options(
         download_url=DOWNLOAD_URL,
         license=LICENSE,
         install_requires = [
-            "TurboGears[future] >= 1.0",
-            "TurboMail",
-            "python_fedora >= 0.3.7",
-            "SQLAlchemy >= 0.4alpha",
+            'TurboGears[future] >= 1.0',
+            'TurboMail',
+            'python_fedora >= 0.3.7',
+            'SQLAlchemy >= 0.4alpha',
             # Doesn't use setuptools so not on RHEL5
-            #"python_bugzilla >= 0.4",
+            #'python_bugzilla >= 0.4',
         ],
-        scripts = ["start-pkgdb", "server-scripts/pkgdb-sync-repo",
-            "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status",
-            "clients/pkgdb-client", "pkgdb.wsgi"],
+        scripts = ['start-pkgdb', 'pkgdb.wsgi', 'clients/pkgdb-client',
+            'server-scripts/pkgdb-sync-repo',
+            'server-scripts/pkgdb-sync-bugzilla'],
         zip_safe=False,
         packages=find_packages(),
         data_files = [
@@ -104,6 +105,18 @@ options(
             'yum.repos.d'],
         localefiles=['pkgdb/locale'],
         docfiles=['docs'],
+        ),
+    ### FIXME: Eventually, this should be tied into data and a library that
+    # finds file location instead.
+    substitutions = Bunch(
+        # Files to substitute on
+        onfiles=['start-pkgdb', 'pkgdb.wsgi', 'server-scripts/pkgdb-sync-repo',
+            'server-scripts/pkgdb-sync-bugzilla',
+            'update-schema/pkgdb-0.3.10-0.3.11.py', 'httpd-pkgdb.conf'],
+        # Strings to substitute inside the files
+        patterns={'@CONFDIR@': '/usr/local/etc',
+            '@DATADIR@': '/usr/local/share',
+            '@SBINDIR@': '/usr/local/sbin'},
         ),
     ### FIXME: These are due to a bug in paver-1.0
     # http://code.google.com/p/paver/issues/detail?id=24
@@ -252,6 +265,42 @@ if PAVER_VER != '0.8':
 #
 # Generic Tasks
 #
+
+### Substitute path variables ###
+@task
+@cmdopts([
+    ('install-conf=', None, 'Installation directory for configuration files'),
+    ('install-data=', None, 'Installation directory for data files')
+    ])
+def substitute():
+    options.order('substitutions', add_rest=True)
+    substitutions = options.patterns
+    if hasattr(options.substitute, 'install_conf'):
+        substitutions['@CONFDIR@'] = options.substitute.install_conf
+    if hasattr(options.substitute, 'install_data'):
+        substitutions['@DATADIR@'] = options.substitute.install_data
+
+    subRE = re.compile('('+'|'.join(options.patterns.keys())+')+')
+
+    for filename in options.onfiles:
+        infile = paver_path(filename + '.in')
+        if not infile.exists():
+            pass
+            # print error about infile not existing
+        outf = paver_path(filename)
+        contents = []
+        for line in infile.lines(encoding='utf8'):
+            matches = subRE.search(line)
+            if matches:
+                for pattern in substitutions:
+                    line = line.replace(pattern, substitutions[pattern])
+            contents.append(line)
+        outf.write_lines(contents, encoding='utf8')
+
+@task
+@needs(['substitute', 'setuptools.command.build'])
+def build():
+    pass
 
 ### Install ###
 
