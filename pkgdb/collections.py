@@ -74,8 +74,8 @@ class Collections(controllers.Controller):
                                 (Collection.name, Collection.version))
         # pylint: enable-msg=E1101
 
-        return dict(title=self.app_title + ' -- Collection Overview',
-                collections=collections)
+        return dict(title=_('%(app)s -- Collection Overview') %
+                {'app': self.app_title}, collections=collections)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
@@ -91,11 +91,12 @@ class Collections(controllers.Controller):
             collection_id = int(collection_id)
         except ValueError:
             error = dict(status = False,
-                    title = self.app_title + ' -- Invalid Collection Id',
-                    message = 'The collection_id you were linked to is not a' \
+                    title = _('%(app)s -- Invalid Collection Id') %
+                        {'app': self.app_title},
+                    message =_('The collection_id you were linked to is not a' \
                             ' valid id.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
-                            ' report it.')
+                            ' report it.'))
             if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
@@ -112,11 +113,11 @@ class Collections(controllers.Controller):
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
-                    title = self.app_title + ' -- Invalid Collection Id',
-                    message = 'The collection_id you were linked to, %s, does' \
-                            ' not exist.  If you received this error from a' \
-                            ' link on the fedoraproject.org website, please' \
-                            ' report it.' % collection_id)
+                    title = _('%(app)s -- Invalid Collection Id') % {'app': self.app_title},
+                    message = _('The collection_id you were linked to, %(id)s,'
+                            ' does not exist.  If you received this error from'
+                            ' a link on the fedoraproject.org website, please'
+                            ' report it.') % {'id': collection_id})
             if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
@@ -298,11 +299,13 @@ class Collections(controllers.Controller):
         koji_name = to_branch.koji_name
         if not koji_name:
             session.rollback()
-            flash(_('Unable to mass branch for %(branch)s because it is not managed by koji') % {'branch': branch})
+            flash(_('Unable to mass branch for %(branch)s because it is not'
+                ' managed by koji') % {'branch': branch})
             return dict(exc='InvalidBranch')
 
         koji_session = koji.ClientSession(koji_url)
-        if not koji_session.ssl_login(cert=pkgdb_cert, ca=user_ca, serverca=server_ca):
+        if not koji_session.ssl_login(cert=pkgdb_cert, ca=user_ca,
+                serverca=server_ca):
             session.rollback()
             flash(_('Unable to log into koji'))
             return dict(exc='ServiceError')
