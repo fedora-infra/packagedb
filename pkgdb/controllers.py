@@ -46,7 +46,7 @@ class Root(controllers.RootController):
     '''
     # Controller methods don't need an __init__()
     # pylint: disable-msg=W0232
-    app_title = 'Fedora Package Database'
+    app_title = _('Fedora Package Database')
 
     collections = Collections(app_title)
     packages = Packages(app_title)
@@ -60,7 +60,7 @@ class Root(controllers.RootController):
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, *args, **kwargs):
         login_dict = f_ctrlers.login(forward_url=forward_url, *args, **kwargs)
-        login_dict['title'] = 'Login to the PackageDB'
+        login_dict['title'] = _('Login to the PackageDB')
         return login_dict
 
     @expose(allow_json=True)
