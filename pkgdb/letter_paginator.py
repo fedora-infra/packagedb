@@ -51,9 +51,8 @@ class Letters(controllers.Controller):
     def default(self, searchwords=''):
         '''Return a list of all packages in the database.
 
-           Arguments:
-           :searchwords: optional - string to restrict the list, can use % or * 
-           as wildcards
+           :kwarg searchwords: optional - string to restrict the list, can use
+           % or * as wildcards
         '''
         if searchwords != '':
             searchwords = searchwords.replace('*','%')
