@@ -60,7 +60,7 @@ mv %{buildroot}%{_bindir}/pkgdb.wsgi %{buildroot}%{_sbindir}/
 install -d %{buildroot}%{_sysconfdir}/httpd/conf.d
 install -m 0644 httpd-pkgdb.conf %{buildroot}%{_sysconfdir}/httpd/conf.d/pkgdb.conf
 
-install -d %{buildroot}%{_datadir}/fedora-packagedb/updae-schema
+install -d %{buildroot}%{_datadir}/fedora-packagedb/update-schema
 install -m 0755 update-schema/pkgdb-0.3.10-0.3.11.py %{buildroot}%{_datadir}/fedora-packagedb/update-schema
 install -m 0644 update-schema/pkgdb-0.3.3-0.3.4.sql %{buildroot}%{_datadir}/fedora-packagedb/update-schema
 install -m 0644 update-schema/pkgdb-0.3.5-0.3.6.sql %{buildroot}%{_datadir}/fedora-packagedb/update-schema
