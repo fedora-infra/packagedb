@@ -46,11 +46,13 @@ Command line script to communicate with the Fedora PackageDB
 
 
 %build
-paver build --install-conf=%{_sysconfdir} --install-data=%{_datadir}
+paver build --install-conf=%{_sysconfdir} --install-data=%{_datadir} \
+    --install-sbin=%{_sbindir}
 
 
 %install
 rm -rf %{buildroot}
+# We don't currently have a paver target for this to work.
 %{__python} setup.py install --skip-build --install-conf=%{_sysconfdir} \
     --install-data=%{_datadir} --root %{buildroot}
 install -d %{buildroot}%{_sbindir}
