@@ -47,7 +47,7 @@ class Letters(controllers.Controller):
 
     @expose(template='pkgdb.templates.pkgbugoverview', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
-                allow_limit_override=True, max_pages=13)
+                max_limit=None, max_pages=13)
     def default(self, searchwords=''):
         '''Return a list of all packages in the database.
 
@@ -85,6 +85,7 @@ class Letters(controllers.Controller):
         else:
             mode = 'bugs/'
             bzUrl = config.get('bugzilla.url', 'https://bugzilla.redhat.com/')
-        return dict(title=self.app_title + ' -- Packages Overview'+mode,
+        return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {
+            'app': self.app_title, 'mode': mode},
                        searchwords=searchwords, packages=packages, mode=mode,
                        bzurl=bzUrl)
