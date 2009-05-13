@@ -270,7 +270,7 @@ class Packages(controllers.Controller):
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name',
-            allow_limit_override=True, max_pages=13)
+            max_limit=None, max_pages=13)
     def orphans(self, eol=None):
         '''List orphaned packages.
 

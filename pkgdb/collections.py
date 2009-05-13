@@ -79,7 +79,7 @@ class Collections(controllers.Controller):
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
+            max_limit=None, max_pages=13)
     # :C0103: id is an appropriate name for this function
     def id(self, collection_id): # pylint: disable-msg=C0103
         '''Return a page with information on a particular Collection

@@ -81,7 +81,7 @@ class Users(controllers.Controller):
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=100, default_order='name',
-            allow_limit_override=True, max_pages=13)
+            max_limit=None, max_pages=13)
     def packages(self, fasname=None, acls=None, eol=None):
         '''List packages that the user is interested in.
 
