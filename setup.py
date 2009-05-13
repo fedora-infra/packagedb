@@ -177,7 +177,7 @@ setup(
     install_requires = [
         "TurboGears[future] >= 1.0",
         "TurboMail",
-        "python_fedora >= 0.3.7",
+        "python_fedora >= 0.3.12",
         "SQLAlchemy >= 0.4alpha",
     ],
     scripts = ["start-pkgdb", "pkgdb.wsgi", "server-scripts/pkgdb-sync-repo",
@@ -220,7 +220,7 @@ setup(
         # if this is an application that you'll distribute through
         # the Cheeseshop, uncomment the next line
         'Framework :: TurboGears :: Applications',
-        
+
         # if this is a package that includes widgets that you'll distribute
         # through the Cheeseshop, uncomment the next line
         # 'Framework :: TurboGears :: Widgets',

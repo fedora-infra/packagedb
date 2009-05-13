@@ -33,7 +33,7 @@ options(
         install_requires = [
             'TurboGears[future] >= 1.0',
             'TurboMail',
-            'python_fedora >= 0.3.7',
+            'python_fedora >= 0.3.12',
             'SQLAlchemy >= 0.4alpha',
             # Doesn't use setuptools so not on RHEL5
             #'python_bugzilla >= 0.4',
