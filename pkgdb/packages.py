@@ -105,8 +105,8 @@ class Packages(controllers.Controller):
                         title=_('%(app)s -- Not a Collection') % {
                             'app': self.app_title},
                         message=_('%(name)s %(ver)s is not a Collection.') % {
-                            {'name': collectionName,
-                                'ver': collectionVersion or ''})
+                            'name': collectionName,
+                            'ver': collectionVersion or ''})
                 if request_format() != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
