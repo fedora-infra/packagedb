@@ -47,7 +47,7 @@ except ImportError:
         # :E0611: This is only found if we are using python-bugzilla 0.3
         from bugzilla import Bug # pylint: disable-msg=E0611
 
-from pkgdb.model import StatusTranslation, Package
+from pkgdb.model import Package
 from pkgdb.letter_paginator import Letters
 from pkgdb.utils import to_unicode, LOG, bugzilla
 from pkgdb import _
@@ -106,11 +106,6 @@ class Bugs(controllers.Controller):
     bzUrl = config.get('bugzilla.url',
                 'https://bugzilla.redhat.com/')
     bzQueryUrl = config.get('bugzilla.queryurl', bzUrl)
-
-    # pylint: disable-msg=E1101
-    removedStatus = StatusTranslation.query.filter_by(
-            statusname='Removed', language='C').first().statuscodeid
-    # pylint: enable-msg=E1101
 
     def __init__(self, app_title=None):
         '''Create a Packages Controller.
