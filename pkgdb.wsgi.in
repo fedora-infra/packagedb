@@ -15,7 +15,7 @@ import atexit
 import cherrypy
 import cherrypy._cpwsgi
 import turbogears
-import fedora
+import fedora.tg.util
 
 turbogears.update_config(configfile=os.path.join('@CONFDIR@', 'pkgdb.cfg'),
         modulename="pkgdb.config")
@@ -26,8 +26,8 @@ turbogears.config.update({'global': {'server.log_to_screen': False}})
 
 
 import pkgdb.utils
+pkgdb.utils.init_globals()
 turbogears.startup.call_on_startup.append(fedora.tg.util.enable_csrf)
-turbogears.startup.call_on_startup.append(pkgdb.utils.init_globals)
 
 import pkgdb.controllers
 cherrypy.root = pkgdb.controllers.Root()
