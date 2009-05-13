@@ -4,9 +4,6 @@ Fedora Package Database
 A web application that manages ownership information for the packages in the
 Fedora Collection.
 '''
-from pkgdb import release
-__version__ = release.VERSION
-
 # Assign a gettext function to "_" so that we can use it for i18n work.
 # :W0611: we have to import turbogears so we get access to the builtin _
 # :W0622: _ is assigned to a builtin by turbogears but we want to be able to
@@ -16,3 +13,6 @@ __version__ = release.VERSION
 import turbogears
 _ = _
 # pylint: enable-msg=W0611,W0622,E0601
+
+from pkgdb import release
+__version__ = release.VERSION
