@@ -39,6 +39,7 @@ from turbogears import controllers, expose, paginate, config, \
 from pkgdb.model import Collection, Package, PackageListing, \
         StatusTranslation, PersonPackageListing, PersonPackageListingAcl
 from pkgdb.utils import STATUS
+from pkgdb import _
 
 from fedora.tg.util import request_format
 
@@ -55,7 +56,7 @@ class Users(controllers.Controller):
     def __init__(self, app_title):
         '''Create a User Controller.
 
-        :app_title: Title of the web app.
+        :arg app_title: Title of the web app.
         '''
         self.app_title = app_title
 
@@ -76,15 +77,14 @@ class Users(controllers.Controller):
         provide more or less information by adding query params for acls and
         EOL.
 
-        Arguments:
-        :fasname: The name of the user to get the package list for.
+        :kwarg fasname: The name of the user to get the package list for.
                   Default: The logged in user.
-        :acls: List of acls to select.
+        :kwarg acls: List of acls to select.
                Note: for backwards compatibility, this can also be a comma
                separated string of acls.
                Default: all acls.
-        :eol: If set, list packages that are in EOL distros.
-        Returns: A list of packages.
+        :kwarg eol: If set, list packages that are in EOL distros.
+        :returns: A list of packages.
         '''
         # Set EOL to false for a few obvious values
         if not eol or eol.lower() in ('false', 'f', '0'):
@@ -108,11 +108,12 @@ class Users(controllers.Controller):
         if fasname == None:
             if identity.current.anonymous:
                 raise identity.IdentityFailure(
-                        'You must be logged in to view your information')
+                        _('You must be logged in to view your information'))
             else:
                 fasname = identity.current.user_name
 
-        page_title = self.app_title + ' -- ' + fasname + ' -- Packages'
+        page_title = _('%(app)s -- %(name)s -- Packages') % {
+                'app': self.app_title, 'name': fasname}
 
         # pylint: disable-msg=E1101
         query = Package.query.join('listings2').distinct().options(
@@ -193,17 +194,17 @@ class Users(controllers.Controller):
         overview of what the user can do.  A TODO queue of people/packages
         they need to approve.  Links to FAS. Etc.
 
-        Keyword Arguments:
-        :fasname: If given, the name of hte user to display information for.
-            Defaults to the logged in user.
+        :kwarg fasname: If given, the name of hte user to display information
+            for.  Defaults to the logged in user.
         '''
         # If fasname is blank, ask for auth, we assume they want their own?
         if fasname == None:
             if identity.current.anonymous:
                 raise identity.IdentityFailure(
-                        "You must be logged in to view your information")
+                        _('You must be logged in to view your information'))
             else:
                 fasname = identity.current.user_name
 
-        page_title = self.app_title + ' -- ' + fasname + ' -- Info'
+        page_title = _('%(app)s -- %(name)s -- Info') % {
+                'app': self.app_title, 'name': fasname}
         return dict(title=page_title, fasname=fasname)
