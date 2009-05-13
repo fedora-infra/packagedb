@@ -186,8 +186,8 @@ class PackageDispatcher(controllers.Controller):
                         recipients[person['email']] = ''
 
         # Append a link to the package to the message
-        msg = _('%(msg)s\n\nTo make changes to this package see:\n  %(url)s\n')
-                 % {'msg': msg, 'url':'  %s/packages/name/%s' %
+        msg = _('%(msg)s\n\nTo make changes to this package see:\n'
+                ' %(url)s\n') % {'msg': msg, 'url':'  %s/packages/name/%s' %
                       (config.get('base_url_filter.base_url'),
                       listings[0].package.name)}
 
@@ -685,7 +685,7 @@ class PackageDispatcher(controllers.Controller):
             pkg = PackageListing.query.filter_by(id=pkg_listing_id).one()
         except InvalidRequestError:
             return dict(status=False, message=_('Package Listing with id:'
-                ' %(pkg)s does not exist') % {'pkg': % pkg_listing_id})
+                ' %(pkg)s does not exist') % {'pkg': pkg_listing_id})
 
         # Only admins can change whether the provenpackager group can
         # commit.
@@ -747,7 +747,7 @@ class PackageDispatcher(controllers.Controller):
             # An error was generated
             return dict(status=False, message=_('Not able to create acl'
                 ' %(acl)s on %(pkg)s (%(collctn)s %(ver)s) with status'
-                ' %(status)s' % {
+                ' %(status)s') % {
                     'acl': acl_name, 'pkg': pkg.package.name,
                     'collctn': pkg.collection.name,
                     'ver': pkg.collection.version, 'status': acl_status})
@@ -830,7 +830,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Not able to create acl'
                 ' %(acl)s for %(user)s on %(pkg)s') % {
                     'acl': acl_name, 'user': identity.current.user_name,
-                    'pkg': pkg_listing_id))
+                    'pkg': pkg_listing_id})
 
         # Send a log to the commits list as well
         self._send_log_msg(log_msg, _('%(pkg)s: %(user)s has %(action)s'
