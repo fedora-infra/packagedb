@@ -32,6 +32,7 @@ from bugzilla import Bugzilla
 from fedora.client.fas2 import AccountSystem
 
 from pkgdb.model.statuses import StatusTranslation
+from pkgdb import _
 
 STATUS = {}
 fas = None
@@ -44,7 +45,7 @@ admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
 pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
 
 def to_unicode(obj, encoding='utf-8', errors='strict'):
-    '''
+    '''return a unicode representation of the object.
 
     :arg obj: object to attempt to convert to unicode.  Note: If this is not
         a str or unicode object then the conversion might not be what
@@ -89,7 +90,7 @@ class UserCache(dict):
                 # If the key is just whitespace, raise KeyError immediately,
                 # don't try to pull from fas
                 raise KeyError(username)
-            LOG.debug('refresh forced for %s' % username)
+            LOG.debug(_('refresh forced for %(user)s') % {'user':  username})
             person = fas.person_by_username(username)
             if not person:
                 # no value for this username
