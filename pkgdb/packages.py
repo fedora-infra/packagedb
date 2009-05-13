@@ -33,7 +33,8 @@ from sqlalchemy.orm import eagerload
 from turbogears import controllers, expose, config, redirect, identity, \
         paginate
 
-from pkgdb import model
+from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
+        PackageListingTable
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
@@ -72,8 +73,8 @@ class Packages(controllers.Controller):
         '''
         # pylint: disable-msg=E1101
         # Return the information about a package.
-        package = model.Package.query.filter(
-                model.Package.c.statuscode!=STATUS['Removed'].statuscodeid
+        package = Package.query.filter(
+                Package.c.statuscode!=STATUS['Removed'].statuscodeid
                 ).filter_by(name=packageName).first()
         # pylint: enable-msg=E1101
         if not package:
@@ -91,7 +92,7 @@ class Packages(controllers.Controller):
         collection = None
         if collectionName:
             # pylint: disable-msg=E1101
-            collection = model.Collection.query.filter_by(name=collectionName)
+            collection = Collection.query.filter_by(name=collectionName)
             # pylint: enable-msg=E1101
             if collectionVersion:
                 collection = collection.filter_by(version=collectionVersion)
@@ -108,7 +109,7 @@ class Packages(controllers.Controller):
         acl_names = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # pylint: disable-msg=E1101
         # Possible statuses for acls:
-        acl_status = model.PackageAclStatus.query.options(
+        acl_status = PackageAclStatus.query.options(
                 eagerload('locale')).all()
         # pylint: enable-msg=E1101
         acl_status_translations = ['']
@@ -121,17 +122,17 @@ class Packages(controllers.Controller):
 
         # pylint: disable-msg=E1101
         # Fetch information about all the packageListings for this package
-        pkg_listings = model.PackageListing.query.options(
+        pkg_listings = PackageListing.query.options(
                 eagerload('people2.acls2.status.locale'),
                 eagerload('groups2.acls2.status.locale'),
                 eagerload('status.locale'),
                 eagerload('collection.status.locale'),
-                ).filter(model.PackageListingTable.c.packageid==package.id)
+                ).filter(PackageListingTable.c.packageid==package.id)
         # pylint: enable-msg=E1101
         if collection:
             # User asked to limit it to specific collections
             pkg_listings = pkg_listings.filter(
-                    model.PackageListingTable.c.collectionid.in_(
+                    PackageListingTable.c.collectionid.in_(
                     [c.id for c in collection]))
             if not pkg_listings.count():
                 error = dict(status=False,
@@ -245,7 +246,7 @@ class Packages(controllers.Controller):
                     )
 
         # pylint: disable-msg=E1101
-        pkg = model.Package.query.filter_by(id=package_id).first()
+        pkg = Package.query.filter_by(id=package_id).first()
         # pylint: enable-msg=E1101
         if not pkg:
             return dict(tg_template='pkgdb.templates.errors', status=False,
@@ -275,13 +276,12 @@ class Packages(controllers.Controller):
 
         page_title = self.app_title + '--' + 'Orphaned Packages'
 
-        query = model.Package.query.join('listings2').distinct().filter(
-                    model.PackageListing.statuscode == \
-                            STATUS['Orphaned'].statuscodeid)
+        query = Package.query.join('listings2').distinct().filter(
+                    PackageListing.statuscode==STATUS['Orphaned'].statuscodeid)
         if not eol:
             # We don't want EOL releases, filter those out of each clause
             query = query.join(['listings2', 'collection']).filter(
-                    model.Collection.c.statuscode!=STATUS['EOL'].statuscodeid)
+                    Collection.c.statuscode!=STATUS['EOL'].statuscodeid)
         pkg_list = []
         for pkg in query:
             pkg.json_props = {'Package':('listings',)}
