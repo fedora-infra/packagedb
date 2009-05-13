@@ -32,6 +32,7 @@ from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
         PersonPackageListingAcl,)
 from pkgdb.model import PackageTable, CollectionTable
 from pkgdb.utils import STATUS
+from pkgdb import _
 
 from pkgdb.validators import BooleanValue, CollectionNameVersion
 
@@ -118,13 +119,12 @@ class ListQueries(controllers.Controller):
             collection_name, identity, group=None):
         '''Add the given acl to the list of acls for bugzilla.
 
-        Arguments:
-        :package_acls: The data structure to fill
-        :pkg_name: Name of the package we're setting the acl on
-        :collection_name: Name of the bugzilla collection on which we're
+        :arg package_acls: Data structure to fill
+        :arg pkg_name: Name of the package we're setting the acl on
+        :arg collection_name: Name of the bugzilla collection on which we're
             setting the acl.
-        :identity: The id of the user or group for whom the acl is being set.
-        :group: If set, we're dealing with a group instead of a person.
+        :arg identity: Id of the user or group for whom the acl is being set.
+        :kwarg group: If set, we're dealing with a group instead of a person.
         '''
         # Lookup the collection
         try:
@@ -154,13 +154,12 @@ class ListQueries(controllers.Controller):
             identity, group=None):
         '''Add the given acl to the list of acls for the vcs.
 
-        Arguments:
-        :package_acls: The data structure to fill
-        :acl: The acl to create
-        :pkg_name: Name of the package we're setting the acl on
-        :branch_name: Name of the branch for which the acl is being set
-        :identity: The id of the user or group for whom the acl is being set.
-        :group: If set, we're dealing with a group instead of a person.
+        :arg package_acls: Data structure to fill
+        :arg acl: Acl to create
+        :arg pkg_name: Name of the package we're setting the acl on
+        :arg branch_name: Name of the branch for which the acl is being set
+        :arg identity: id of the user or group for whom the acl is being set.
+        :kwarg group: If set, we're dealing with a group instead of a person.
         '''
         # Key by package name
         try:
@@ -203,10 +202,6 @@ class ListQueries(controllers.Controller):
 
         This method can display a long list of users but most people will want
         to access it as JSON data with the ?tg_format=json query parameter.
-
-        Caveat: The group handling in this code is special cased for cvsextras
-        rather than generic.  When we get groups figured out we can change
-        this.
         '''
         # Store our acls in a dict
         package_acls = {}
@@ -297,7 +292,7 @@ class ListQueries(controllers.Controller):
                     record[0], record[1],
                     username, group=False)
 
-        return dict(title=self.app_title + ' -- VCS ACLs',
+        return dict(title=_('%(app)s -- VCS ACLs') % {'app': self.app_title},
                 packageAcls=package_acls)
 
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
@@ -316,11 +311,11 @@ class ListQueries(controllers.Controller):
 
         bugzillaAcls[collection][package].attribute
         attribute is one of:
-        :owner: FAS username for the owner
-        :qacontact: if the package has a special qacontact, their userid is
-          listed here
-        :summary: Short description of the package
-        :cclist: list of FAS userids that are watching the package
+            :owner: FAS username for the owner
+            :qacontact: if the package has a special qacontact, their userid
+                is listed here
+            :summary: Short description of the package
+            :cclist: list of FAS userids that are watching the package
         '''
         bugzilla_acls = {}
         username = None
@@ -478,8 +473,8 @@ class ListQueries(controllers.Controller):
 
         ### TODO: No group acls at the moment
         # There are no group acls to take advantage of this.
-        return dict(title=self.app_title + ' -- Bugzilla ACLs',
-                bugzillaAcls=bugzilla_acls)
+        return dict(title=_('%(app)s -- Bugzilla ACLs') % {
+            'app': self.app_title}, bugzillaAcls=bugzilla_acls)
 
     @validate(validators=NotifyList())
     @error_handler()
@@ -493,13 +488,11 @@ class ListQueries(controllers.Controller):
         For the collections specified we want to retrieve all of the owners,
         watchbugzilla, and watchcommits accounts.
 
-        Keyword Arguments:
-        :name: Set to a collection name to filter the results for that
-        :version: Set to a collection version to further filter results for a
-            single version
-        :eol: Set to True if you want to include end of life distributions
-        :email: If set to True, this will return email addresses from FAS
-            instead of Fedora Project usernames
+        :kwarg name: Set to a collection name to filter the results for that
+        :kwarg version: Set to a collection version to further filter results
+            for a single version
+        :kwarg eol: Set to True if you want to include end of life
+            distributions
         '''
         # Check for validation errors requesting this form
         errors = jsonify_validation_errors()
@@ -576,6 +569,6 @@ class ListQueries(controllers.Controller):
                 collections[collection.name] = [collection.version]
 
         # Return the data
-        return dict(title='%s -- Notification List' % self.app_title,
-                packages=pkgs, collections=collections, name=name,
-                version=version, eol=eol)
+        return dict(title=_('%(app)s -- Notification List') % {
+            'app': self.app_title}, packages=pkgs, collections=collections,
+            name=name, version=version, eol=eol)
