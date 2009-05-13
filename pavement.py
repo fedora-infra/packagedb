@@ -266,10 +266,10 @@ def _install_conf(args, paths):
     for conf_file in options.data.conffiles:
         conf_file = paver_path(conf_file)
         installfile = conf_dir.joinpath(conf_file)
-        dry('cp %s %s'%  (conf_file, installfile),
+        dry('cp %s %s' %  (conf_file, installfile),
                 conf_file.copy, install_file)
-                dry('chmod 0644 %s'%  install_locale,
-                        install_locale.chmod, 0644)
+        dry('chmod 0644 %s'%  install_locale,
+                install_locale.chmod, 0644)
 
     for catalog in paver_path(options.builddir).walkfiles('*.mo'):
         locale_dir = catalog.dirname()
