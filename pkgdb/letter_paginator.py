@@ -31,8 +31,9 @@ Module to be used for letter pagination and search.
 from sqlalchemy.sql import or_
 from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate, config
-from pkgdb.model import Package, StatusTranslation
+from pkgdb.model import Package
 from pkgdb.utils import STATUS
+from pkgdb import _
 
 from cherrypy import request
 
