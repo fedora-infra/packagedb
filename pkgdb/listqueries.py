@@ -36,35 +36,7 @@ ORPHAN_ID = 9900
 
 from pkgdb.validators import BooleanValue, CollectionNameVersion
 
-try:
-    from fedora.tg.util import jsonify_validation_errors
-except ImportError:
-    # Not a recent enough version of python-fedora.  This is only a
-    # temporary workaround
-    from fedora.tg.util import request_format
-    from turbogears import flash
-    import cherrypy
-    def jsonify_validation_errors():
-        '''Turn tg_errors into a flash message and a json exception.'''
-        # Check for validation errors
-        errors = getattr(cherrypy.request, 'validation_errors', None)
-        if not errors:
-            return None
-
-        # Set the message for both html and json output
-        message = u'\n'.join([u'%s: %s' % (param, msg) for param, msg in
-            errors.items()])
-        format = request_format()
-        if format == 'html':
-            message.translate({ord('\n'): u'<br />\n'})
-        flash(message)
-
-        # If json, return additional information to make this an exception
-        if format == 'json':
-            # Note: explicit setting of tg_template is needed in TG < 1.0.4.4
-            # A fix has been applied for TG-1.0.4.5
-            return dict(exc='Invalid', tg_template='json')
-        return None
+from fedora.tg.util import jsonify_validation_errors
 
 #
 # Validators
