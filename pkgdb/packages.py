@@ -37,7 +37,7 @@ from pkgdb import model
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import admin_grp
+from pkgdb.utils import admin_grp, STATUS
 
 from cherrypy import request
 
@@ -54,16 +54,6 @@ class Packages(controllers.Controller):
         self.bugs = Bugs(app_title)
         self.index = Letters(app_title)
         self.dispatcher = PackageDispatcher()
-        # pylint: disable-msg=E1101
-        self.removed_status = model.StatusTranslation.query.filter_by(
-                statusname='Removed', language='C').one().statuscodeid
-        self.approved_status = model.StatusTranslation.query.filter_by(
-                statusname='Approved', language='C').one().statuscodeid
-        self.orphaned_status = model.StatusTranslation.query.filter_by(
-                statusname='Orphaned', language='C').one().statuscodeid
-        self.eol_status = model.StatusTranslation.query.filter_by(
-                statusname='EOL', language='C').one().statuscodeid
-        # pylint: enable-msg=E1101
 
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
@@ -83,8 +73,8 @@ class Packages(controllers.Controller):
         # pylint: disable-msg=E1101
         # Return the information about a package.
         package = model.Package.query.filter(
-                model.Package.c.statuscode!=self.removed_status).filter_by(
-                name=packageName).first()
+                model.Package.c.statuscode!=STATUS['Removed'].statuscodeid
+                ).filter_by(name=packageName).first()
         # pylint: enable-msg=E1101
         if not package:
             error = dict(status=False,
@@ -187,8 +177,8 @@ class Packages(controllers.Controller):
                         for acls in acl_lists:
                             # ...check each acl
                             for acl in acls:
-                                if acl.acl == 'approveacls' and \
-                                        acl.statuscode == self.approved_status:
+                                if acl.acl == 'approveacls' and acl.statuscode \
+                                        == STATUS['Approved'].statuscodeid:
                                     # If the user has approveacls we're done
                                     can_set_shouldopen = True
                                     raise StopIteration
@@ -286,11 +276,12 @@ class Packages(controllers.Controller):
         page_title = self.app_title + '--' + 'Orphaned Packages'
 
         query = model.Package.query.join('listings2').distinct().filter(
-                    model.PackageListing.statuscode==self.orphaned_status)
+                    model.PackageListing.statuscode == \
+                            STATUS['Orphaned'].statuscodeid)
         if not eol:
             # We don't want EOL releases, filter those out of each clause
             query = query.join(['listings2', 'collection']).filter(
-                    model.Collection.c.statuscode != self.eol_status)
+                    model.Collection.c.statuscode!=STATUS['EOL'].statuscodeid)
         pkg_list = []
         for pkg in query:
             pkg.json_props = {'Package':('listings',)}
