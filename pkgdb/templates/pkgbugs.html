@@ -12,7 +12,7 @@
     ${pkgheader(package, 'bugz')}
 
     <h4>${len(bugs)} bugs found</h4>
-    <h4><a href="${'https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora&amp;version=rawhide&amp;component=%s' % package}">Report</a> a new bug against this package</h4>
+    <h4><a href="${'https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora&amp;version=rawhide&amp;component=%s' % tg.quote_plus(package)}">Report</a> a new bug against this package</h4>
     <table class="buglist">
       <tr>
         <th>Number</th>
