@@ -184,7 +184,7 @@ class Users(controllers.Controller):
             pkg_list.append(pkg)
 
         return dict(title=page_title, pkgCount=len(pkg_list),
-                pkgs=pkg_list, acls=acl_list, fasname=fasname)
+                pkgs=pkg_list, acls=acl_list, fasname=fasname, eol=eol)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):

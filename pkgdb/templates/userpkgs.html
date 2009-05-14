@@ -10,13 +10,20 @@
     action="${tg.url('/users/packages/' + fasname)}">
     Only packages with these acls:
 
-    <ul py:for="acl in acls">
-      <li>
+    <ul>
+      <li py:for="acl in acls">
       <label>
         <input type="checkbox" name="acls" value="${acl[0]}"
         py:attrs="{'checked': tg.checker(acl[1])}"/>
         ${acl[2]}
       </label>
+      </li>
+      <li>
+        <label>
+          <input type="checkbox" name="eol" value="eol"
+          py:attrs="{'checked': tg.checker(eol)}"/>
+          Include EOL Distributions
+        </label>
       </li>
     </ul>
     <button type="submit">Filter</button>
