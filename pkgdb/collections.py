@@ -295,6 +295,12 @@ class Collections(controllers.Controller):
                 branch})
             return dict(exc='InvalidBranch')
 
+        if to_branch.statuscode == STATUS['EOL'].statuscodeid:
+            session.rollback()
+            flash(_('Will not branch packages in EOL collection %(branch)s') % {
+                branch})
+            return dict(exc='InvalidBranch')
+
         # Retrieve the a koji session to get the lisst of packages from
         koji_name = to_branch.koji_name
         if not koji_name:
