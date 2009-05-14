@@ -1,4 +1,7 @@
 [global]
+pkgdb.admin_grp = 'cvsadmin'
+pkgdb.pkger_grp = 'packager'
+
 fas.url = 'https://admin.fedoraproject.org/accounts/'
 fas.username = 'user'
 fas.password = 'password'
@@ -40,8 +43,10 @@ sqlalchemy.dburi="postgres://pkgdbadmin:bunbunbun@localhost/pkgdb"
 # set to 1 to make SQLAlchemy echo SQL commands on the console
 sqlalchemy.echo = 0
 
-sqlalchemy.pool_size=5
-sqlalchemy.max_overflow=21
+# WSGI doesn't need a lot of db connections.  Up these if you're deploying as a
+# standalone daemon
+sqlalchemy.pool_size=1
+sqlalchemy.max_overflow=1
 
 # SERVER
 
@@ -50,19 +55,24 @@ server.socket_port=8086
 server.socket_host="localhost"
 server.webpath="/pkgdb"
 
-server.thread_pool=50
-server.socket_queue_size=30
+# WSGI Takes care of scaling these via httpd daemons.  Up these if you're
+# deploying as a standalone daemon
+server.thread_pool=1
+#server.socket_queue_size=30
 
 base_url_filter.on = True
 base_url_filter.use_x_forwarded_host = True
-base_url_filter.base_url = "http://localhost/pkgdb"
+base_url_filter.base_url = "https://localhost/pkgdb"
 
 visit.cookie.secure = True
+#jsonfas.debug = True
 
 # Enable the debug output at the end on pages.
 # log_debug_info_filter.on = False
 
-server.environment="development"
+# You may want to turn this to development if testing standalone
+# (not under mod_wsgi)
+server.environment="production"
 autoreload.package="pkgdb"
 
 # session_filter.on = True
@@ -70,7 +80,6 @@ autoreload.package="pkgdb"
 # Set to True if you'd like to abort execution if a controller gets an
 # unexpected parameter. False by default
 tg.strict_parameters = True
-tg.ignore_parameters = ["_csrf_token"]
 
 # LOGGING
 # Logging configuration generally follows the style of the standard
@@ -80,37 +89,37 @@ tg.ignore_parameters = ["_csrf_token"]
 
 [logging]
 [[formatters]]
+# *(asctime)s can be added to these if not using apache logging
 [[[message_only]]]
 format='*(message)s'
 
 [[[full_content]]]
-format='*(asctime)s *(name)s *(levelname)s *(message)s'
+format='*(name)s *(levelname)s *(message)s'
 
 [[handlers]]
 [[[cron_out]]]
-args="('/var/log/pkgdb/cron.log', 'D', 2)"
-class='TimedRotatingFileHandler'
+class='StreamHandler'
 level='DEBUG'
+args='(sys.stdout,)'
 formatter='full_content'
 
 [[[debug_out]]]
-class='TimedRotatingFileHandler'
-args="('/var/log/pkgdb/server.log', 'D', 2)"
+class='StreamHandler'
 level='DEBUG'
+args='(sys.stdout,)'
 formatter='full_content'
 
 [[[access_out]]]
-class='TimedRotatingFileHandler'
+class='StreamHandler'
 level='INFO'
-args="('/var/log/pkgdb/access.log', 'D', 2)"
+args='(sys.stdout,)'
 formatter='message_only'
 
 [[[error_out]]]
-class='TimedRotatingFileHandler'
-args="('/var/log/pkgdb/server.log', 'D', 7)"
+class='StreamHandler'
 level='ERROR'
+args='(sys.stdout,)'
 formatter='full_content'
-
 
 [[loggers]]
 [[[pkgdb]]]
@@ -120,6 +129,7 @@ handlers=['debug_out']
 
 [[[allinfo]]]
 level='INFO'
+qualname='*'
 handlers=['debug_out']
 
 [[[access]]]

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -33,7 +33,8 @@ from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy.orm import Mapper, create_session
 
 from fedora.tg.json import SABase
-from pkgdb import model
+from pkgdb import model, _
+from pkgdb.utils import STATUS
 
 log = logging.getLogger('pkgdb.repo')
 
@@ -130,11 +131,6 @@ class RepoInfo(object):
     # Test what happens if we have a repo.sqlite file open and use RepoUpdater
     # to change it.
 
-    # pylint: disable-msg=E1101
-    approvedStatus = model.StatusTranslation.query.filter_by(
-            statusname='Approved', language='C').one().statuscodeid
-    # pylint: enable-msg=E1101
-
     def __init__(self):
         '''Setup the links to repositories and the table mappings.
         '''
@@ -194,18 +190,21 @@ class RepoInfo(object):
 
     def _bind_to_repo(self, repo, mdtype):
         '''Set our model to talk to the db in this particular repo.'''
-        self.metadata.bind = self.repo_files[repo][mdtype]
+        md_list = [t for t in self.repo_files[repo].keys()
+                if t.endswith(mdtype)]
+        self.metadata.bind = self.repo_files[repo][md_list[0]]
         info = self.session.query(DB_Info).one()
         if info.dbversion not in (9, 10):
-            raise UnknownRepoMDFormat, 'Expected Repo format 9 or 10, got %s' \
-                    % (info.dbversion)
+            raise UnknownRepoMDFormat(_('Expected Repo format 9 or 10, got'
+                    ' %(ver)s') % {'ver': info.dbversion})
 
     def sync_package_descriptions(self):
         '''Add a new package to the database.
         '''
         # pylint: disable-msg=E1101
         # Retrieve all the packages which are active
-        pkgs = model.Package.query.filter_by(statuscode=self.approvedStatus)
+        pkgs = model.Package.query.filter_by(
+                statuscode=STATUS['Approved'].statuscodeid)
         # pylint: enable-msg=E1101
 
         # Since we update the information, we need to be sure we search from
@@ -314,7 +313,8 @@ class RepoInfo(object):
         # List packages which haven't changed
         no_desc_pkgs = [pkg.name for pkg in pkgs if not pkg.description]
         no_desc_pkgs.sort()
-        log.warning('Packages without descriptions: %s' % len(no_desc_pkgs))
+        log.warning(_('Packages without descriptions: %(num)s') % {
+            'num': len(no_desc_pkgs)})
         log.warning('\t'.join(no_desc_pkgs))
 
 ### FIXME: DB Tables not yet listed here:

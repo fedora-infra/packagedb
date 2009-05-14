@@ -47,9 +47,10 @@ except ImportError:
         # :E0611: This is only found if we are using python-bugzilla 0.3
         from bugzilla import Bug # pylint: disable-msg=E0611
 
-from pkgdb.model import StatusTranslation, Package
+from pkgdb.model import Package
 from pkgdb.letter_paginator import Letters
 from pkgdb.utils import to_unicode, LOG, bugzilla
+from pkgdb import _
 
 class BugList(list):
     '''Transform and store values in the bugzilla.Bug data structure
@@ -76,7 +77,7 @@ class BugList(list):
         :arg bug: A bug record returned from the python-bugzilla interface.
         '''
         if not isinstance(bug, Bug):
-            raise TypeError('Can only store bugzilla.Bug type')
+            raise TypeError(_('Can only store bugzilla.Bug type'))
         if self.query_url != self.public_url:
             bug.url = bug.url.replace(self.query_url, self.public_url)
 
@@ -106,11 +107,6 @@ class Bugs(controllers.Controller):
                 'https://bugzilla.redhat.com/')
     bzQueryUrl = config.get('bugzilla.queryurl', bzUrl)
 
-    # pylint: disable-msg=E1101
-    removedStatus = StatusTranslation.query.filter_by(
-            statusname='Removed', language='C').first().statuscodeid
-    # pylint: enable-msg=E1101
-
     def __init__(self, app_title=None):
         '''Create a Packages Controller.
 
@@ -137,7 +133,8 @@ class Bugs(controllers.Controller):
                         + quote(package_name) \
                         + '?' + '&'.join([quote(q) + '=' + quote(v) for (q, v)
                             in kwargs.items()])
-            LOG.warning('Invalid URL: redirecting: %s' % url)
+                LOG.warning(_('Invalid URL: redirecting: %(url)s') %
+                        {'url':url})
             raise redirect(url)
 
         query = {'product': 'Fedora',
@@ -157,13 +154,15 @@ class Bugs(controllers.Controller):
                 # pylint: disable-msg=E1101
                 Package.query.filter_by(name=package_name).one()
             except InvalidRequestError:
-                error = dict(status = False,
-                        title = self.app_title + ' -- Not a Valid Package Name',
-                        message='No such package %s' % package_name)
+                error = dict(status=False,
+                        title=_('%(app)s -- Not a Valid Package Name') %
+                            {'app': self.app_title},
+                        message=_('No such package %(pkg)s') %
+                            {'pkg': package_name})
                 if request.params.get('tg_format', 'html') != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
-        return dict(title='%s -- Open Bugs for %s' %
-                (self.app_title, package_name), package=package_name,
-                bugs=bugs)
+        return dict(title=_('%(app)s -- Open Bugs for %(pkg)s') %
+                {'app': self.app_title, 'pkg': package_name},
+                package=package_name, bugs=bugs)

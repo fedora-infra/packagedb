@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -28,43 +28,15 @@ from turbogears import expose, validate, error_handler
 from turbogears import controllers, validators
 
 from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
-        StatusTranslation, GroupPackageListingAcl, PackageListing,
-        PersonPackageListing, PersonPackageListingAcl,)
+        GroupPackageListingAcl, PackageListing, PersonPackageListing,
+        PersonPackageListingAcl,)
 from pkgdb.model import PackageTable, CollectionTable
-
-ORPHAN_ID = 9900
+from pkgdb.utils import STATUS
+from pkgdb import _
 
 from pkgdb.validators import BooleanValue, CollectionNameVersion
 
-try:
-    from fedora.tg.util import jsonify_validation_errors
-except ImportError:
-    # Not a recent enough version of python-fedora.  This is only a
-    # temporary workaround
-    from fedora.tg.util import request_format
-    from turbogears import flash
-    import cherrypy
-    def jsonify_validation_errors():
-        '''Turn tg_errors into a flash message and a json exception.'''
-        # Check for validation errors
-        errors = getattr(cherrypy.request, 'validation_errors', None)
-        if not errors:
-            return None
-
-        # Set the message for both html and json output
-        message = u'\n'.join([u'%s: %s' % (param, msg) for param, msg in
-            errors.items()])
-        format = request_format()
-        if format == 'html':
-            message.translate({ord('\n'): u'<br />\n'})
-        flash(message)
-
-        # If json, return additional information to make this an exception
-        if format == 'json':
-            # Note: explicit setting of tg_template is needed in TG < 1.0.4.4
-            # A fix has been applied for TG-1.0.4.5
-            return dict(exc='Invalid', tg_template='json')
-        return None
+from fedora.tg.util import jsonify_validation_errors
 
 #
 # Validators
@@ -140,17 +112,6 @@ class ListQueries(controllers.Controller):
     and plain text that they return as the main usage of this is for external
     tools to take data for their use.
     '''
-    # pylint: disable-msg=E1101
-    approvedStatus = StatusTranslation.query.filter_by(
-            statusname='Approved', language='C').one().statuscodeid
-    removedStatus = StatusTranslation.query.filter_by(
-            statusname='Removed', language='C').one().statuscodeid
-    activeStatus = StatusTranslation.query.filter_by(
-            statusname='Active', language='C').one().statuscodeid
-    develStatus = StatusTranslation.query.filter_by(
-            statusname='Under Development', language='C').one().statuscodeid
-    # pylint: enable-msg=E1101
-
     def __init__(self, app_title=None):
         self.app_title = app_title
 
@@ -158,13 +119,12 @@ class ListQueries(controllers.Controller):
             collection_name, identity, group=None):
         '''Add the given acl to the list of acls for bugzilla.
 
-        Arguments:
-        :package_acls: The data structure to fill
-        :pkg_name: Name of the package we're setting the acl on
-        :collection_name: Name of the bugzilla collection on which we're
+        :arg package_acls: Data structure to fill
+        :arg pkg_name: Name of the package we're setting the acl on
+        :arg collection_name: Name of the bugzilla collection on which we're
             setting the acl.
-        :identity: The id of the user or group for whom the acl is being set.
-        :group: If set, we're dealing with a group instead of a person.
+        :arg identity: Id of the user or group for whom the acl is being set.
+        :kwarg group: If set, we're dealing with a group instead of a person.
         '''
         # Lookup the collection
         try:
@@ -194,13 +154,12 @@ class ListQueries(controllers.Controller):
             identity, group=None):
         '''Add the given acl to the list of acls for the vcs.
 
-        Arguments:
-        :package_acls: The data structure to fill
-        :acl: The acl to create
-        :pkg_name: Name of the package we're setting the acl on
-        :branch_name: Name of the branch for which the acl is being set
-        :identity: The id of the user or group for whom the acl is being set.
-        :group: If set, we're dealing with a group instead of a person.
+        :arg package_acls: Data structure to fill
+        :arg acl: Acl to create
+        :arg pkg_name: Name of the package we're setting the acl on
+        :arg branch_name: Name of the branch for which the acl is being set
+        :arg identity: id of the user or group for whom the acl is being set.
+        :kwarg group: If set, we're dealing with a group instead of a person.
         '''
         # Key by package name
         try:
@@ -243,10 +202,6 @@ class ListQueries(controllers.Controller):
 
         This method can display a long list of users but most people will want
         to access it as JSON data with the ?tg_format=json query parameter.
-
-        Caveat: The group handling in this code is special cased for cvsextras
-        rather than generic.  When we get groups figured out we can change
-        this.
         '''
         # Store our acls in a dict
         package_acls = {}
@@ -260,7 +215,7 @@ class ListQueries(controllers.Controller):
             GroupPackageListing.groupname), and_(
                 GroupPackageListingAcl.acl == 'commit',
                 GroupPackageListingAcl.statuscode \
-                        == self.approvedStatus,
+                        == STATUS['Approved'].statuscodeid,
                 GroupPackageListingAcl.grouppackagelistingid \
                         == GroupPackageListing.id,
                 GroupPackageListing.packagelistingid \
@@ -268,8 +223,8 @@ class ListQueries(controllers.Controller):
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
                 Branch.collectionid == Collection.id,
-                PackageListing.statuscode != self.removedStatus,
-                Package.statuscode != self.removedStatus
+                PackageListing.statuscode != STATUS['Removed'].statuscodeid,
+                Package.statuscode != STATUS['Removed'].statuscodeid
                 )
             )
 
@@ -295,8 +250,8 @@ class ListQueries(controllers.Controller):
                 PackageListing.collectionid==Collection.id,
                 PackageListing.owner!='orphan',
                 Collection.id==Branch.collectionid,
-                PackageListing.statuscode != self.removedStatus,
-                Package.statuscode != self.removedStatus
+                PackageListing.statuscode != STATUS['Removed'].statuscodeid,
+                Package.statuscode != STATUS['Removed'].statuscodeid
                 ),
             order_by=(PackageListing.owner,)
             )
@@ -317,7 +272,7 @@ class ListQueries(controllers.Controller):
             and_(
                 PersonPackageListingAcl.acl=='commit',
                 PersonPackageListingAcl.statuscode \
-                        == self.approvedStatus,
+                        == STATUS['Approved'].statuscodeid,
                 PersonPackageListingAcl.personpackagelistingid \
                         == PersonPackageListing.id,
                 PersonPackageListing.packagelistingid \
@@ -325,8 +280,8 @@ class ListQueries(controllers.Controller):
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
                 Branch.collectionid == Collection.id,
-                PackageListing.statuscode != self.removedStatus,
-                Package.statuscode != self.removedStatus
+                PackageListing.statuscode != STATUS['Removed'].statuscodeid,
+                Package.statuscode != STATUS['Removed'].statuscodeid
                 ),
             order_by=(PersonPackageListing.username,)
             )
@@ -337,7 +292,7 @@ class ListQueries(controllers.Controller):
                     record[0], record[1],
                     username, group=False)
 
-        return dict(title=self.app_title + ' -- VCS ACLs',
+        return dict(title=_('%(app)s -- VCS ACLs') % {'app': self.app_title},
                 packageAcls=package_acls)
 
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
@@ -356,11 +311,11 @@ class ListQueries(controllers.Controller):
 
         bugzillaAcls[collection][package].attribute
         attribute is one of:
-        :owner: FAS username for the owner
-        :qacontact: if the package has a special qacontact, their userid is
-          listed here
-        :summary: Short description of the package
-        :cclist: list of FAS userids that are watching the package
+            :owner: FAS username for the owner
+            :qacontact: if the package has a special qacontact, their userid
+                is listed here
+            :summary: Short description of the package
+            :cclist: list of FAS userids that are watching the package
         '''
         bugzilla_acls = {}
         username = None
@@ -374,10 +329,10 @@ class ListQueries(controllers.Controller):
             and_(
                 Collection.id==PackageListing.collectionid,
                 Package.id==PackageListing.packageid,
-                Package.statuscode==self.approvedStatus,
-                PackageListing.statuscode==self.approvedStatus,
-                Collection.statuscode.in_((self.activeStatus,
-                    self.develStatus)),
+                Package.statuscode==STATUS['Approved'].statuscodeid,
+                PackageListing.statuscode==STATUS['Approved'].statuscodeid,
+                Collection.statuscode.in_((STATUS['Active'].statuscodeid,
+                    STATUS['Under Development'].statuscodeid)),
                 ),
             order_by=(Collection.name,), distinct=True)
 
@@ -423,10 +378,10 @@ class ListQueries(controllers.Controller):
                 and_(
                     Collection.id==PackageListing.collectionid,
                     Package.id==PackageListing.packageid,
-                    Package.statuscode==self.approvedStatus,
-                    PackageListing.statuscode==self.approvedStatus,
-                    Collection.statuscode.in_((self.activeStatus,
-                        self.develStatus)),
+                    Package.statuscode==STATUS['Approved'].statuscodeid,
+                    PackageListing.statuscode==STATUS['Approved'].statuscodeid,
+                    Collection.statuscode.in_((STATUS['Active'].statuscodeid,
+                        STATUS['Under Development'].statuscodeid)),
                     Package.name.in_(undupe_owners),
                     ),
                 order_by=(Collection.name, Collection.version),
@@ -495,17 +450,17 @@ class ListQueries(controllers.Controller):
             and_(
                 PersonPackageListingAcl.acl == 'watchbugzilla',
                 PersonPackageListingAcl.statuscode == \
-                        self.approvedStatus,
+                        STATUS['Approved'].statuscodeid,
                 PersonPackageListingAcl.personpackagelistingid == \
                         PersonPackageListing.id,
                 PersonPackageListing.packagelistingid == \
                         PackageListing.id,
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
-                Package.statuscode==self.approvedStatus,
-                PackageListing.statuscode==self.approvedStatus,
-                Collection.statuscode.in_((self.activeStatus,
-                    self.develStatus)),
+                Package.statuscode==STATUS['Approved'].statuscodeid,
+                PackageListing.statuscode==STATUS['Approved'].statuscodeid,
+                Collection.statuscode.in_((STATUS['Active'].statuscodeid,
+                    STATUS['Under Development'].statuscodeid)),
                 ),
             order_by=(PersonPackageListing.username,), distinct=True
             )
@@ -518,8 +473,8 @@ class ListQueries(controllers.Controller):
 
         ### TODO: No group acls at the moment
         # There are no group acls to take advantage of this.
-        return dict(title=self.app_title + ' -- Bugzilla ACLs',
-                bugzillaAcls=bugzilla_acls)
+        return dict(title=_('%(app)s -- Bugzilla ACLs') % {
+            'app': self.app_title}, bugzillaAcls=bugzilla_acls)
 
     @validate(validators=NotifyList())
     @error_handler()
@@ -533,13 +488,11 @@ class ListQueries(controllers.Controller):
         For the collections specified we want to retrieve all of the owners,
         watchbugzilla, and watchcommits accounts.
 
-        Keyword Arguments:
-        :name: Set to a collection name to filter the results for that
-        :version: Set to a collection version to further filter results for a
-            single version
-        :eol: Set to True if you want to include end of life distributions
-        :email: If set to True, this will return email addresses from FAS
-            instead of Fedora Project usernames
+        :kwarg name: Set to a collection name to filter the results for that
+        :kwarg version: Set to a collection version to further filter results
+            for a single version
+        :kwarg eol: Set to True if you want to include end of life
+            distributions
         '''
         # Check for validation errors requesting this form
         errors = jsonify_validation_errors()
@@ -552,19 +505,22 @@ class ListQueries(controllers.Controller):
         owner_query = select((Package.name, PackageListing.owner),
                 from_obj=(PackageTable.join(PackageListing).join(
                     CollectionTable))).where(and_(
-                        Package.statuscode == self.approvedStatus,
-                        PackageListing.statuscode == self.approvedStatus)
+                        Package.statuscode == STATUS['Approved'].statuscodeid,
+                        PackageListing.statuscode == \
+                                STATUS['Approved'].statuscodeid)
                         ).distinct().order_by('name')
         watcher_query = select((Package.name, PersonPackageListing.username),
                 from_obj=(PackageTable.join(PackageListing).join(
                     Collection).join(PersonPackageListing).join(
                         PersonPackageListingAcl))).where(and_(
-                            Package.statuscode == self.approvedStatus,
-                            PackageListing.statuscode == self.approvedStatus,
+                            Package.statuscode == \
+                                    STATUS['Approved'].statuscodeid,
+                            PackageListing.statuscode == \
+                                    STATUS['Approved'].statuscodeid,
                             PersonPackageListingAcl.acl.in_(
                                 ('watchbugzilla', 'watchcommits')),
                             PersonPackageListingAcl.statuscode ==
-                                self.approvedStatus
+                                STATUS['Approved'].statuscodeid
                         )).distinct().order_by('name')
         # pylint: enable-msg=E1101
 
@@ -573,9 +529,11 @@ class ListQueries(controllers.Controller):
             # :E1101: SQLAlchemy mapped classes are monkey patched
             # pylint: disable-msg=E1101
             owner_query = owner_query.where(Collection.statuscode.in_(
-                (self.activeStatus, self.develStatus)))
+                (STATUS['Active'].statuscodeid,
+                    STATUS['Under Development'].statuscodeid)))
             watcher_query = watcher_query.where(Collection.statuscode.in_(
-                (self.activeStatus, self.develStatus)))
+                (STATUS['Active'].statuscodeid,
+                    STATUS['Under Development'].statuscodeid)))
 
         # Only grab from certain collections
         if name:
@@ -611,6 +569,6 @@ class ListQueries(controllers.Controller):
                 collections[collection.name] = [collection.version]
 
         # Return the data
-        return dict(title='%s -- Notification List' % self.app_title,
-                packages=pkgs, collections=collections, name=name,
-                version=version, eol=eol)
+        return dict(title=_('%(app)s -- Notification List') % {
+            'app': self.app_title}, packages=pkgs, collections=collections,
+            name=name, version=version, eol=eol)

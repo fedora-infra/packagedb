@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2008-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -32,16 +32,20 @@ from bugzilla import Bugzilla
 from fedora.client.fas2 import AccountSystem
 
 from pkgdb.model.statuses import StatusTranslation
+from pkgdb import _
 
 STATUS = {}
 fas = None
 LOG = None
 bugzilla = None
-admin_grp = None
-pkger_grp = None
+# Get the admin group if one is specified.
+admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
+
+# Get the packager group if one is specified.
+pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
 
 def to_unicode(obj, encoding='utf-8', errors='strict'):
-    '''
+    '''return a unicode representation of the object.
 
     :arg obj: object to attempt to convert to unicode.  Note: If this is not
         a str or unicode object then the conversion might not be what
@@ -86,7 +90,7 @@ class UserCache(dict):
                 # If the key is just whitespace, raise KeyError immediately,
                 # don't try to pull from fas
                 raise KeyError(username)
-            LOG.debug('refresh forced for %s' % username)
+            LOG.debug(_('refresh forced for %(user)s') % {'user':  username})
             person = fas.person_by_username(username)
             if not person:
                 # no value for this username
@@ -102,22 +106,18 @@ def refresh_status():
         statuses[status.statusname] = status
     STATUS = statuses
 
-def shutdown():
-    pass
+def init_globals():
+    '''Initialize global variables.
 
-def startup():
+    This is mostly connections to services like FAS, bugzilla, and loading
+    constants from the database.
+    '''
     # Things to do on startup
     refresh_status()
     global fas, LOG, bugzilla, admin_grp, pkger_grp
     LOG = logging.getLogger('pkgdb.controllers')
 
-    # Get the admin group if one is specified.
-    admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
-
-    # Get the packager group if one is specified.
-    pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
-
-# Get a connection to the Account System server
+    # Get a connection to the Account System server
     fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
@@ -135,4 +135,5 @@ def startup():
     bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass,
             cookiefile=None)
 
-__all__ = [STATUS, LOG, fas, bugzilla, refresh_status, startup, to_unicode]
+__all__ = [STATUS, admin_grp, pkger_grp, LOG, fas, bugzilla, refresh_status,
+        init_globals, to_unicode]

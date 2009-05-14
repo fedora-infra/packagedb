@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2008  Ionuț Arțăriși
-# Copyright © 2008  Red Hat, Inc.
+# Copyright © 2008, 2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -41,6 +41,7 @@ from turbogears import controllers, expose, validate, paginate, redirect, \
 from turbogears.validators import Int
 
 from pkgdb.model import Collection, PackageListing, Package
+from pkgdb import _
 
 class Search(controllers.Controller):
     '''Controller for searching the pkgdb.
@@ -48,7 +49,7 @@ class Search(controllers.Controller):
     def __init__(self, app_title):
         '''Create a Search Controller.
 
-        :app_title: Title of the web app.
+        :arg app_title: Title of the web app.
         '''
         self.app_title = app_title
 
@@ -56,16 +57,16 @@ class Search(controllers.Controller):
     def index(self):
         '''Advanced package search.
 
-           Provides a form with multiple fields for a comprehensive package
-           search.
+        Provides a form with multiple fields for a comprehensive package
+        search.
         '''
         # pylint: disable-msg=E1101
         # a little helper so we don't have to write/update form selects manually
         releases = select([Collection.id,
                     Collection.name, Collection.version]).execute()
         # pylint: enable-msg=E1101
-        return dict(title=self.app_title + ' -- Advanced Search',
-                    releases=releases)
+        return dict(title=_('%(app)s -- Advanced Search') % {
+            'app': self.app_title}, releases=releases)
 
     @expose(template='pkgdb.templates.search', allow_json=True)
     @validate(validators={'release':Int()})
@@ -74,28 +75,27 @@ class Search(controllers.Controller):
                         searchwords=''):
         '''Searches for packages
 
-           This method returns a list of packages (PackageListing objects)
-           matching the given search words. Other information useful in the
-           view is also returned: 
-           :query: words that were used for the search, unchanged
-           :count: number of packages
-           :release: long name of the release
-           :searchon: same as the argument, unchanged
-           :packages: a nested list of pkglistings grouped by package name
-           :collections: a dict of all the available collection branchnames as 
-           keys and their corresponding ids 
-           :operator: 'AND'/'OR' unchanged
+        This method returns a list of packages (PackageListing objects)
+        matching the given search words. Other information useful in the
+        view is also returned: 
+            :query: words that were used for the search, unchanged
+            :count: number of packages
+            :release: long name of the release
+            :searchon: same as the argument, unchanged
+            :packages: a nested list of pkglistings grouped by package name
+            :collections: a dict of all the available collection branchnames as 
+                keys and their corresponding ids 
+            :operator: 'AND'/'OR' unchanged
  
-           Arguments:
-           :searchwords: this can be one or more words which will be used to
-           search in the packages' name and description for matches. If absent,
-           all packages from all collections will be returned.
-           :release: if the number is a valid PackageListing.collectionid, the
-           search will be limited to that release. Otherwise (eg "0"),
-           the search will return packages from all releases.
-           :searchon: area of the search, should be one of: description, name, 
-           both
-           :operator: can be either 'AND' or 'OR'
+        :kwarg searchwords: one or more words which will be used to search
+            in the packages' name and description for matches. If absent, all
+            packages from all collections will be returned.
+        :kwarg release: if the number is a valid PackageListing.collectionid,
+            the search will be limited to that release. Otherwise (eg "0"),
+            the search will return packages from all releases.
+        :kwarg searchon: area of the search, should be one of: description,
+            name, both
+        :kwarg operator: can be either 'AND' or 'OR'
         '''
         # pylint: disable-msg=E1101
 
@@ -206,8 +206,8 @@ class Search(controllers.Controller):
         if not release:
             release = 'all'
 
-        return dict(title='%s -- Search packages for: %s' %
-                (self.app_title, searchwords),
+        return dict(title=_('%(app)s -- Search packages for: %(words)s')
+                % {'app': self.app_title, 'words': searchwords},
                    query=searchwords,
                    packages=packages,
                    count=count,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -20,9 +20,6 @@
 '''
 Mapping of package related database tables to python classes.
 
-.. data:: GROUP_MAP
-    Map groupids to group names and back.  It only has the groups that the
-    packagedb uses.
 .. data:: DEFAULT_GROUPS
     Groups that get acls on the Package Database by default (in 0.3.x, the
     groups have to be listed here in order for them to show up in the Package
@@ -56,10 +53,6 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
 
 get_engine()
 
-GROUP_MAP = {101197: 'cvsadmin',
-    107427: 'provenpackager',
-    'cvsadmin': 101197,
-    'provenpackager': 107427}
 DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
     'checkout': True}}
 
@@ -126,11 +119,12 @@ class Package(SABase):
         from pkgdb.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
         pkg_listing = PackageListing(owner, status.statuscodeid,
-                packageid=self.id, collectionid=collection.id,
+                collectionid=collection.id,
                 qacontact=qacontact)
+        pkg_listing.package = self
         for group in DEFAULT_GROUPS:
-            new_group = GroupPackageListing(GROUP_MAP[group])
-            pkg_listing.groups2[GROUP_MAP[group]] = new_group
+            new_group = GroupPackageListing(group)
+            pkg_listing.groups2[group] = new_group
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
                     acl_status = STATUS['Approved'].statuscodeid

@@ -1,0 +1,27 @@
+[fedora10-i386]
+name=Fedora 10 - i386
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-10&arch=i386
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+
+[fedora10-x86_64]
+name=Fedora 10 - x86_64
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-10&arch=x86_64
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+
+[fedora10-ppc]
+name=Fedora 10 - ppc
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-10&arch=ppc
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+
+[fedora10-source]
+name=Fedora 10 - Source
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-source-10&arch=source
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora file:///etc/pki/rpm-gpg/RPM-GPG-KEY

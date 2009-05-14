@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -25,8 +25,8 @@ import logging
 
 import turbomail
 from turbogears import config
-
-log = logging.getLogger('pkgdb.controllers')
+from pkgdb import _
+from pkgdb.utils import LOG
 
 class Event(object):
     '''Data structure to constrain an event record to just a few fields.
@@ -57,13 +57,13 @@ class EventLogger(object):
                 email.plain = msg
                 turbomail.enqueue(email)
         else:
-            log.debug('Would have sent: %s' %
-                    subject.encode('ascii', 'replace'))
-            log.debug('To: %s' % recipients)
-            log.debug('From: %s %s' %
+            LOG.debug(_('Would have sent: %(subject)s') % {
+                'subject': subject.encode('ascii', 'replace')})
+            LOG.debug('To: %s' % recipients)
+            LOG.debug('From: %s %s' %
                     (from_addr[0].encode('ascii', 'replace'),
                     from_addr[1].encode('ascii', 'replace')))
-            log.debug('%s' % msg.encode('ascii', 'replace'))
+            LOG.debug('%s' % msg.encode('ascii', 'replace'))
 
     # The eventual plan is to abstract this one layer.  The application alerts
     # us to an event via a notify() method.  The notify() method needs to know

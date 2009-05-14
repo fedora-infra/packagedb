@@ -30,8 +30,7 @@ else:
 
 import pkgdb.utils
 
-pkgdb.utils.startup()
-startup.call_on_shutdown.append(pkgdb.utils.shutdown)
+pkgdb.utils.init_globals()
 startup.call_on_startup.append(fedora.tg.util.enable_csrf)
 
 from pkgdb.controllers import Root
