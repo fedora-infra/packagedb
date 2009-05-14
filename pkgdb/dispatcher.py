@@ -48,7 +48,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, LOG
+from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, LOG, STATUS
 
 MAXSYSTEMUID = 9999
 
@@ -80,17 +80,12 @@ class PackageDispatcher(controllers.Controller):
     owner_memberships = (admin_grp, pkger_grp, 'provenpackager')
 
     # pylint: disable-msg=E1101
-    # Status codes
-    addedStatus = StatusTranslation.query.filter_by(
-            statusname='Added').one()
     approvedStatus = StatusTranslation.query.filter_by(
             statusname='Approved').one()
     awaitingReviewStatus = StatusTranslation.query.filter_by(
             statusname='Awaiting Review').one()
     deniedStatus = StatusTranslation.query.filter_by(
             statusname='Denied').one()
-    modifiedStatus = StatusTranslation.query.filter_by(
-            statusname='Modified').one()
     obsoleteStatus = StatusTranslation.query.filter_by(
             statusname='Obsolete').one()
     orphanedStatus = StatusTranslation.query.filter_by(
@@ -437,7 +432,7 @@ class PackageDispatcher(controllers.Controller):
 
             # Take ownership
             pkg.owner = identity.current.user_name
-            pkg.statuscode = self.approvedStatus.statuscodeid
+            pkg.statuscode = STATUS['Approved'].statuscodeid
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, pkg.owner)
@@ -467,7 +462,7 @@ class PackageDispatcher(controllers.Controller):
         elif approved in ('admin', 'owner'):
             # Release ownership
             pkg.owner = 'orphan'
-            pkg.statuscode = self.orphanedStatus.statuscodeid
+            pkg.statuscode = STATUS['Orphaned'].statuscodeid
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, identity.current.user_name)
@@ -517,22 +512,22 @@ class PackageDispatcher(controllers.Controller):
                     {'pkg': pkg_listing_id})
         approved = self._user_can_set_acls(identity, pkg)
 
-        if (pkg.statuscode != self.retiredStatus.statuscodeid and (
+        if (pkg.statuscode != STATUS['Retired'].statuscodeid and (
             pkg.owner == 'orphan' or approved in ('admin', 'owner'))):
             # Retire package
             if pkg.owner != 'orphan':
                 # let toggle_owner handle bugzilla and other stuff
                 self.toggle_owner(pkg_listing_id)
-            pkg.statuscode = self.retiredStatus.statuscodeid
+            pkg.statuscode = STATUS['Retired'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
                 pkg.collection.version, identity.current.user_name)
             status = self.retiredStatus
             retirement = 'Retired'
-        elif (pkg.statuscode == self.retiredStatus.statuscodeid and
+        elif (pkg.statuscode == STATUS['Retired'].statuscodeid and
               approved == 'admin'):
             # Unretire package
-            pkg.statuscode = self.orphanedStatus.statuscodeid
+            pkg.statuscode = STATUS['Orphaned'].statuscodeid
             log_msg = 'Package %s in %s %s has been unretired by %s and' \
                     ' is now orphan.' % (
                             pkg.package.name, pkg.collection.name,
@@ -885,7 +880,7 @@ class PackageDispatcher(controllers.Controller):
         # pylint: enable-msg=E1101
 
         # Create the package
-        pkg = Package(package, summary, self.approvedStatus.statuscodeid)
+        pkg = Package(package, summary, STATUS['Approved'].statuscodeid)
         pkg_listing = pkg.create_listing(devel_collection, person['username'],
                 self.approvedStatus,
                 author_name = identity.current.user_name)
@@ -895,7 +890,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Unable to create'
                 ' PackageListing for %(pkg)s(Fedora devel), %(user)s),'
                 ' %(status)s') % { 'pkg': package, 'user': person['username'],
-                    'status': self.approvedStatus.statuscodeid})
+                    'status': STATUS['Approved'].statuscodeid})
         changed_acls = []
         for group in ('provenpackager',):
             changed_acls.append(GroupPackageListingAcl.query.filter(and_(
@@ -915,7 +910,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.summary)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user_name, self.addedStatus.statuscodeid,
+                identity.current.user_name, STATUS['Added'].statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg # pylint: disable-msg=W0201
         pkg_log_msg = '%s has approved Package %s' % (
@@ -923,7 +918,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user_name, self.approvedStatus.statuscodeid,
+                identity.current.user_name, STATUS['Approved'].statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg
 
@@ -948,7 +943,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user_name, self.approvedStatus.statuscodeid,
+                identity.current.user_name, STATUS['APPROVED'].statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg
 
@@ -978,7 +973,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Unable to create'
                 ' PackageListing for %(pkg)s(Fedora devel), %(user)s),'
                 ' %(status)s') % { 'pkg': pkg.name, 'user': person['username'],
-                    'status': self.approvedStatus.statuscodeid})
+                    'status': STATUS['Approved'].statuscodeid})
 
         # Send notification of the new package
         self._send_log_msg('\n'.join(logs), _('%(pkg)s was added for %(owner)s')
@@ -1043,7 +1038,7 @@ class PackageDispatcher(controllers.Controller):
                     # Check each acl
                     for acl in acls:
                         if acl.acl == 'approveacls' and acl.statuscode \
-                                == self.approvedStatus.statuscodeid:
+                                == STATUS['Approved'].statuscodeid:
                             return True
             except StopIteration:
                 # Exhausted the list, approveaclswas not found
@@ -1084,7 +1079,7 @@ class PackageDispatcher(controllers.Controller):
             log_msg = '%s set package %s summary to %s' % (
                     identity.current.user_name, package, changes['summary'])
             log = PackageLog(identity.current.user_name,
-                    self.modifiedStatus.statuscodeid, log_msg)
+                    STATUS['Modified'].statuscodeid, log_msg)
             log.package = pkg
             pkg_log_msg = log_msg
 
@@ -1153,7 +1148,7 @@ class PackageDispatcher(controllers.Controller):
                             ' PackageListing for %(pkg)s(Fedora devel),'
                             ' %(user)s), %(status)s') % {
                                 'pkg': package, 'user': person['username'],
-                                'status': self.approvedStatus.statuscodeid})
+                                'status': STATUS['Approved'].statuscodeid})
                     changed_acls = []
                     for group in ('provenpackager',):
                         changed_acls.append(GroupPackageListingAcl.query.filter(
@@ -1210,7 +1205,7 @@ class PackageDispatcher(controllers.Controller):
                         )
                 pkg_log = PackageListingLog(
                         identity.current.user_name,
-                        self.ownedStatus.statuscodeid,
+                        STATUS['Owned'].statuscodeid,
                         log_msg
                         )
                 pkg_log.listing = pkg_listing
@@ -1243,7 +1238,7 @@ class PackageDispatcher(controllers.Controller):
                                         username)
                         pkg_log = PersonPackageListingAclLog(
                                 identity.current.user_name,
-                                self.approvedStatus.statuscodeid,
+                                STATUS['Approved'].statuscodeid,
                                 log_msg
                                 )
                         pkg_log.acl = person_acl
@@ -1289,7 +1284,7 @@ class PackageDispatcher(controllers.Controller):
                                         username)
                         pkg_log = PersonPackageListingAclLog(
                                 identity.current.user_name,
-                                self.approvedStatus.statuscodeid,
+                                STATUS['Approved'].statuscodeid,
                                 log_msg
                                 )
                         pkg_log.acl = person_acl
@@ -1500,7 +1495,7 @@ class PackageDispatcher(controllers.Controller):
                                 pkg_listing.collection.name,
                                 pkg_listing.collection.version, username)
                 log = PersonPackageListingAclLog(identity.current.user.id,
-                        self.obsoleteStatus.statuscodeid, log_msg)
+                        STATUS['Obsolete'].statuscodeid, log_msg)
                 log.acl = person_acl # pylint: disable-msg=W0201
                 log_msgs.append(log_msg)
 
