@@ -291,14 +291,14 @@ class Collections(controllers.Controller):
             to_branch = Branch.query.filter_by(branchname=branch).one()
         except InvalidRequestError, e:
             session.rollback()
-            flash(_('Unable to locate a branch for %(branch)s') % {'branch':
-                branch})
+            flash(_('Unable to locate a branch for %(branch)s') % {
+                'branch': branch})
             return dict(exc='InvalidBranch')
 
         if to_branch.statuscode == STATUS['EOL'].statuscodeid:
             session.rollback()
             flash(_('Will not branch packages in EOL collection %(branch)s') % {
-                branch})
+                'branch': branch})
             return dict(exc='InvalidBranch')
 
         # Retrieve the a koji session to get the lisst of packages from
