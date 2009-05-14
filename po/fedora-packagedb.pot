@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fedora-packagedb 0.3.10.90\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2009-04-22 01:15-0700\n"
+"POT-Creation-Date: 2009-05-14 00:32-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,22 +22,22 @@ msgstr ""
 msgid "Can only store bugzilla.Bug type"
 msgstr ""
 
-#: pkgdb/bugs.py:141
+#: pkgdb/bugs.py:136
 #, python-format
 msgid "Invalid URL: redirecting: %(url)s"
 msgstr ""
 
-#: pkgdb/bugs.py:163
+#: pkgdb/bugs.py:158
 #, python-format
 msgid "%(app)s -- Not a Valid Package Name"
 msgstr ""
 
-#: pkgdb/bugs.py:165
+#: pkgdb/bugs.py:160 pkgdb/dispatcher.py:516
 #, python-format
 msgid "No such package %(pkg)s"
 msgstr ""
 
-#: pkgdb/bugs.py:171
+#: pkgdb/bugs.py:166
 #, python-format
 msgid "%(app)s -- Open Bugs for %(pkg)s"
 msgstr ""
@@ -108,13 +108,13 @@ msgstr ""
 msgid "Login to the PackageDB"
 msgstr ""
 
-#: pkgdb/dispatcher.py:190
+#: pkgdb/dispatcher.py:189
 #, python-format
 msgid ""
 "%(msg)s\n"
 "\n"
 "To make changes to this package see:\n"
-"  %(url)s\n"
+" %(url)s\n"
 msgstr ""
 
 #: pkgdb/dispatcher.py:252
@@ -132,48 +132,403 @@ msgstr ""
 msgid "%(user)s must be in one of these groups: %(groups)s to own a package"
 msgstr ""
 
-#: pkgdb/dispatcher.py:1397
+#: pkgdb/dispatcher.py:294 pkgdb/dispatcher.py:300
+#, python-format
+msgid ""
+"%(user)s must be in one of these groups: %(groups)s to hold the %(acl)s "
+"acl"
+msgstr ""
+
+#: pkgdb/dispatcher.py:428
+#, python-format
+msgid "No such package %(pkg_id)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:463
+#, python-format
+msgid "Would have reassigned bug #%(bug_num)s from %(former)s to %(current)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:476
+#, python-format
+msgid "Package %(pkg)s not available for taking"
+msgstr ""
+
+#: pkgdb/dispatcher.py:488
+#, python-format
+msgid "Not able to change owner information for %(pkg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:492
+#, python-format
+msgid "%(pkg)s ownership updated"
+msgstr ""
+
+#: pkgdb/dispatcher.py:543
+#, python-format
+msgid ""
+"The (un)retiring of package %(pkg)s could not be completed. Check your "
+"permissions."
+msgstr ""
+
+#: pkgdb/dispatcher.py:558
+#, python-format
+msgid "Unable to (un)retire package %(pkg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:561
+#, python-format
+msgid "%(pkg)s (un)retirement"
+msgstr ""
+
+#: pkgdb/dispatcher.py:590
+#, python-format
+msgid "Invalid Status: %(status)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:602
+#, python-format
+msgid "PackageListing %(pkg)s does not exist"
+msgstr ""
+
+#: pkgdb/dispatcher.py:609
+#, python-format
+msgid ""
+"No such user %(username), for package %(pkg)s in %(collection)s "
+"%(version)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:619
+#, python-format
+msgid "%(user)s is not allowed to approve Package ACLs"
+msgstr ""
+
+#: pkgdb/dispatcher.py:648
+#, python-format
+msgid "Not able to create acl %(acl)s on %(pkg)s with status %(status)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:652 pkgdb/dispatcher.py:1518
+#, python-format
+msgid "%(pkg)s had acl change status"
+msgstr ""
+
+#: pkgdb/dispatcher.py:687
+#, python-format
+msgid "Package Listing with id: %(pkg)s does not exist"
+msgstr ""
+
+#: pkgdb/dispatcher.py:693
+#, python-format
+msgid ""
+"%(user)s is not allowed to approve Package ACLs for %(pkg)s (%(collctn)s "
+"%(ver)s)"
+msgstr ""
+
+#: pkgdb/dispatcher.py:701
+#, python-format
+msgid "%(group)s is not a group that can commit to packages"
+msgstr ""
+
+#: pkgdb/dispatcher.py:748
+#, python-format
+msgid ""
+"Not able to create acl %(acl)s on %(pkg)s (%(collctn)s %(ver)s) with "
+"status %(status)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:756
+#, python-format
+msgid "%(pkg)s had group_acl changed"
+msgstr ""
+
+#: pkgdb/dispatcher.py:777
+#, python-format
+msgid "No such package listing %(pkg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:830
+#, python-format
+msgid "Not able to create acl %(acl)s for %(user)s on %(pkg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:836
+#, python-format
+msgid "%(pkg)s: %(user)s has %(action)s %(acl)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:860 pkgdb/dispatcher.py:1063
+msgid "User must be in admin_grp"
+msgstr ""
+
+#: pkgdb/dispatcher.py:867
+#, python-format
+msgid "Package %(pkg)s already exists"
+msgstr ""
+
+#: pkgdb/dispatcher.py:873
+#, python-format
+msgid "Specified owner ID %(owner)s does not have a Fedora Account"
+msgstr ""
+
+#: pkgdb/dispatcher.py:895 pkgdb/dispatcher.py:978 pkgdb/dispatcher.py:1152
+#, python-format
+msgid ""
+"Unable to create PackageListing for %(pkg)s(Fedora devel), %(user)s), "
+"%(status)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:984
+#, python-format
+msgid "%(pkg)s was added for %(owner)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1005 pkgdb/dispatcher.py:1075 pkgdb/dispatcher.py:1456
+#, python-format
+msgid "Package %(pkg)s does not exist"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1014
+msgid "Permission denied"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1021
+#, python-format
+msgid "Unable to set shouldopen on Package %(pkg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1098
+#, python-format
+msgid "Specified owner %(owner)s does not have a Fedora Account"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1135
+#, python-format
+msgid "No collection %(collctn)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1230
+#, python-format
+msgid "New cclist member %(user)s is not in FAS"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1265
+#, python-format
+msgid "New comaintainer%(user)s does not have a Fedora Account"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1318
+#, python-format
+msgid "Group %(group)s is not allowed to commit"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1351
+#, python-format
+msgid "Unable to modify PackageListing %(pkg)s(%(collctn)s-%(ver)s)"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1359
+#, python-format
+msgid "%(pkg)s summary updated by %(user)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1365
+#, python-format
+msgid "%(pkg)s (%(collctn)s, %(ver)s) updated by %(user)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1400
 #, python-format
 msgid "\"%(package)s\" does not exist on branch \"%(master)s\""
 msgstr ""
 
-#: pkgdb/dispatcher.py:1406
+#: pkgdb/dispatcher.py:1409
 #, python-format
-msgid "\"%(branch)s\" is not a valid branch namebranch"
+msgid "\"%(branch)s\" is not a valid branch name"
 msgstr ""
 
-#: pkgdb/dispatcher.py:1412
+#: pkgdb/dispatcher.py:1415
 #, python-format
 msgid ""
 "Unable to clone \"%(package)s %(master)s\" to \"%(package)s %(branch)s\":"
 " %(msg)s"
 msgstr ""
 
-#: pkgdb/dispatcher.py:1421
+#: pkgdb/dispatcher.py:1424
 #, python-format
 msgid ""
 "Unable to save clone of %(package)s %(master)s for %(branch)s to the "
 "database: %(error)s"
 msgstr ""
 
-#: pkgdb/dispatcher.py:1451
+#: pkgdb/dispatcher.py:1431
 #, python-format
-msgid "Package %s does not exist"
+msgid "%(user)s cloned %(pkg)s %(branch)s from %(master)s"
 msgstr ""
 
-#: pkgdb/dispatcher.py:1456
+#: pkgdb/dispatcher.py:1433
 #, python-format
-msgid "%s is not in admin_grp"
+msgid "%(pkg)s %(branch)s cloned from %(master)s"
 msgstr ""
 
-#: pkgdb/dispatcher.py:1469
+#: pkgdb/dispatcher.py:1461
 #, python-format
-msgid "Collection %s does not exist"
+msgid "%(user)s is not in admin_grp"
 msgstr ""
 
-#: pkgdb/dispatcher.py:1502
+#: pkgdb/dispatcher.py:1475
 #, python-format
-msgid "Unable to save changes to the database: %s "
+msgid "Collection %(collctn)s does not exist"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1511
+#, python-format
+msgid "Unable to save changes to the database: %(err)s"
+msgstr ""
+
+#: pkgdb/letter_paginator.py:89
+#, python-format
+msgid "%(app)s -- Packages Overview %(mode)s"
+msgstr ""
+
+#: pkgdb/listqueries.py:295
+#, python-format
+msgid "%(app)s -- VCS ACLs"
+msgstr ""
+
+#: pkgdb/listqueries.py:476
+#, python-format
+msgid "%(app)s -- Bugzilla ACLs"
+msgstr ""
+
+#: pkgdb/listqueries.py:572
+#, python-format
+msgid "%(app)s -- Notification List"
+msgstr ""
+
+#: pkgdb/notifier.py:60
+#, python-format
+msgid "Would have sent: %(subject)s"
+msgstr ""
+
+#: pkgdb/packages.py:85
+#, python-format
+msgid "%(app)s -- Invalid Package Name"
+msgstr ""
+
+#: pkgdb/packages.py:87
+#, python-format
+msgid ""
+"The packagename you were linked to (%(pkg)s) does not appear in the "
+"Package Database. If you received this error from a link on the "
+"fedoraproject.org website, please report it."
+msgstr ""
+
+#: pkgdb/packages.py:105
+#, python-format
+msgid "%(app)s -- Not a Collection"
+msgstr ""
+
+#: pkgdb/packages.py:107
+#, python-format
+msgid "%(name)s %(ver)s is not a Collection."
+msgstr ""
+
+#: pkgdb/packages.py:145
+#, python-format
+msgid "%(app)s -- Not in Collection"
+msgstr ""
+
+#: pkgdb/packages.py:147
+#, python-format
+msgid "The package %(pkg)s is not in Collection %(collctn_name)s %(collctn_ver)s."
+msgstr ""
+
+#: pkgdb/packages.py:235
+#, python-format
+msgid "%(title)s -- %(pkg)s"
+msgstr ""
+
+#: pkgdb/packages.py:252
+#, python-format
+msgid "%(app)s -- Invalid Package Id"
+msgstr ""
+
+#: pkgdb/packages.py:254
+msgid ""
+"The packageId you were linked to is not a valid id.  If you received this"
+" error from a link on the fedoraproject.org website, please report it."
+msgstr ""
+
+#: pkgdb/packages.py:263
+#, python-format
+msgid "%(app)s -- Unknown Package"
+msgstr ""
+
+#: pkgdb/packages.py:265
+#, python-format
+msgid ""
+"The packageId you were linked to, %(pkg)s, does not exist. If you "
+"received this error from a link on the fedoraproject.org website, please "
+"report it."
+msgstr ""
+
+#: pkgdb/packages.py:287
+#, python-format
+msgid "%(app)s -- Orphaned Packages"
+msgstr ""
+
+#: pkgdb/release.py:8
+msgid "The Fedora Package Database"
+msgstr ""
+
+#: pkgdb/release.py:9
+msgid ""
+"\n"
+"Keep track of owner, maintainer, and parties interested in the "
+"development of\n"
+"a particular software package within Fedora.  This database is a central "
+"store\n"
+"for important package information and allows querying of the package\n"
+"information from other tools.\n"
+msgstr ""
+
+#: pkgdb/search.py:68
+#, python-format
+msgid "%(app)s -- Advanced Search"
+msgstr ""
+
+#: pkgdb/search.py:209
+#, python-format
+msgid "%(app)s -- Search packages for: %(words)s"
+msgstr ""
+
+#: pkgdb/stats.py:58
+msgid "need to be logged in"
+msgstr ""
+
+#: pkgdb/stats.py:111
+#, python-format
+msgid "%(app)s -- Package Stats"
+msgstr ""
+
+#: pkgdb/users.py:111 pkgdb/users.py:204
+msgid "You must be logged in to view your information"
+msgstr ""
+
+#: pkgdb/users.py:115
+#, python-format
+msgid "%(app)s -- %(name)s -- Packages"
+msgstr ""
+
+#: pkgdb/users.py:208
+#, python-format
+msgid "%(app)s -- %(name)s -- Info"
+msgstr ""
+
+#: pkgdb/utils.py:93
+#, python-format
+msgid "refresh forced for %(user)s"
 msgstr ""
 
 #: pkgdb/validators.py:72
@@ -193,6 +548,30 @@ msgstr ""
 #: pkgdb/validators.py:107
 #, python-format
 msgid "Collection named %(name)s does not exist"
+msgstr ""
+
+#: pkgdb/yumrepo.py:198
+#, python-format
+msgid "Expected Repo format 9 or 10, got %(ver)s"
+msgstr ""
+
+#: pkgdb/yumrepo.py:316
+#, python-format
+msgid "Packages without descriptions: %(num)s"
+msgstr ""
+
+#: pkgdb/controllers.bak/root.py:30
+msgid ""
+"The credentials you supplied were not correct or did not grant access to "
+"this resource."
+msgstr ""
+
+#: pkgdb/controllers.bak/root.py:33
+msgid "You must provide your credentials before accessing this resource."
+msgstr ""
+
+#: pkgdb/controllers.bak/root.py:36
+msgid "Please log in."
 msgstr ""
 
 #: pkgdb/templates/bugzillaacls.html:9
