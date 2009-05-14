@@ -79,23 +79,6 @@ class PackageDispatcher(controllers.Controller):
     # Groups that a person must be in to own or co-maintain a package
     owner_memberships = (admin_grp, pkger_grp, 'provenpackager')
 
-    # pylint: disable-msg=E1101
-    approvedStatus = StatusTranslation.query.filter_by(
-            statusname='Approved').one()
-    awaitingReviewStatus = StatusTranslation.query.filter_by(
-            statusname='Awaiting Review').one()
-    deniedStatus = StatusTranslation.query.filter_by(
-            statusname='Denied').one()
-    obsoleteStatus = StatusTranslation.query.filter_by(
-            statusname='Obsolete').one()
-    orphanedStatus = StatusTranslation.query.filter_by(
-            statusname='Orphaned').one()
-    ownedStatus = StatusTranslation.query.filter_by(
-            statusname='Owned').one()
-    retiredStatus = StatusTranslation.query.filter_by(
-            statusname='Deprecated').one()
-    # pylint: enable-msg=E1101
-
     def __init__(self):
         controllers.Controller.__init__(self)
         # We want to expose a list of public methods to the outside world so
@@ -203,7 +186,7 @@ class PackageDispatcher(controllers.Controller):
         :arg pkg: packagelisting to find the user's permissions on
         '''
         # Find the approved statuscode
-        status = self.approvedStatus
+        status = STATUS['Approved']
 
         # Make sure the current tg user has permission to set acls
         # If the user is in the admin group they can
@@ -436,7 +419,7 @@ class PackageDispatcher(controllers.Controller):
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, pkg.owner)
-            status = self.ownedStatus
+            status = STATUS['Owned']
             bzMail = '%s' % identity.current.user.email
             bzQuery = {}
             bzQuery['product'] = pkg.collection.name
@@ -466,7 +449,7 @@ class PackageDispatcher(controllers.Controller):
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, identity.current.user_name)
-            status = self.orphanedStatus
+            status = STATUS['Orphaned']
         else:
             return dict(status=False, message=_('Package %(pkg)s not available'
                 ' for taking') % {'pkg': pkg.package.name})
@@ -512,19 +495,19 @@ class PackageDispatcher(controllers.Controller):
                     {'pkg': pkg_listing_id})
         approved = self._user_can_set_acls(identity, pkg)
 
-        if (pkg.statuscode != STATUS['Retired'].statuscodeid and (
+        if (pkg.statuscode != STATUS['Deprecated'].statuscodeid and (
             pkg.owner == 'orphan' or approved in ('admin', 'owner'))):
             # Retire package
             if pkg.owner != 'orphan':
                 # let toggle_owner handle bugzilla and other stuff
                 self.toggle_owner(pkg_listing_id)
-            pkg.statuscode = STATUS['Retired'].statuscodeid
+            pkg.statuscode = STATUS['Deprecated'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
                 pkg.collection.version, identity.current.user_name)
-            status = self.retiredStatus
+            status = STATUS['Deprecated']
             retirement = 'Retired'
-        elif (pkg.statuscode == STATUS['Retired'].statuscodeid and
+        elif (pkg.statuscode == STATUS['Deprecated'].statuscodeid and
               approved == 'admin'):
             # Unretire package
             pkg.statuscode = STATUS['Orphaned'].statuscodeid
@@ -718,8 +701,8 @@ class PackageDispatcher(controllers.Controller):
             if acl.status.locale['C'].statusname == 'Approved':
                 acl_status = 'Denied'
 
-        status = {'Approved': self.approvedStatus,
-                'Denied': self.deniedStatus}[acl_status]
+        status = {'Approved': STATUS['Approved'],
+                'Denied': STATUS['Denied']}[acl_status]
         # Change the acl
         group_acl = self._create_or_modify_group_acl(pkg, group_name, acl_name,
                 status)
@@ -798,8 +781,8 @@ class PackageDispatcher(controllers.Controller):
                 self._acl_can_be_held_by_user(acl_name)
             except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
-        status = {'Awaiting Review': self.awaitingReviewStatus,
-                'Obsolete': self.obsoleteStatus}[acl_status]
+        status = {'Awaiting Review': STATUS['Awaiting Review'],
+                'Obsolete': STATUS['Obsolete']}[acl_status]
 
         # Assign person to package
         person_acl = self._create_or_modify_acl(pkg_listing,
@@ -882,7 +865,7 @@ class PackageDispatcher(controllers.Controller):
         # Create the package
         pkg = Package(package, summary, STATUS['Approved'].statuscodeid)
         pkg_listing = pkg.create_listing(devel_collection, person['username'],
-                self.approvedStatus,
+                STATUS['Approved'],
                 author_name = identity.current.user_name)
         try:
             session.flush()
@@ -1139,7 +1122,7 @@ class PackageDispatcher(controllers.Controller):
                 except InvalidRequestError:
                     pkg_listing = pkg.create_listing(collection,
                             owner_name,
-                            self.approvedStatus,
+                            STATUS['Approved'],
                             author_name = identity.current.user_name)
                     try:
                         session.flush()
@@ -1228,7 +1211,7 @@ class PackageDispatcher(controllers.Controller):
                 for pkg_listing in listings:
                     for acl in ('watchbugzilla', 'watchcommits'):
                         person_acl = self._create_or_modify_acl(pkg_listing,
-                                username, acl, self.approvedStatus)
+                                username, acl, STATUS['Approved'])
                         log_msg = '%s approved %s on %s (%s %s)' \
                                 ' for %s' % (
                                         identity.current.user_name,
@@ -1272,7 +1255,7 @@ class PackageDispatcher(controllers.Controller):
                     for acl in ('watchbugzilla', 'watchcommits', 'commit',
                             'build', 'approveacls'):
                         person_acl = self._create_or_modify_acl(pkg_listing,
-                                username, acl, self.approvedStatus)
+                                username, acl, STATUS['Approved'])
 
                         # Make sure a log is created in the db as well.
                         log_msg = u'%s approved %s on %s (%s %s)' \
@@ -1299,15 +1282,15 @@ class PackageDispatcher(controllers.Controller):
             for group in group_list:
                 # True means approve commit, False means deny
                 if group_list[group] == True:
-                    status = self.approvedStatus
+                    status = STATUS['Approved']
                 else:
-                    status = self.deniedStatus
+                    status = STATUS['Denied']
 
                 # We don't let every group commit
                 try:
                     group_name = self.groups[group]
                 except KeyError:
-                    if status == self.deniedStatus:
+                    if status == STATUS['Denied']:
                         # If we're turning it off we don't have to worry
                         continue
                     return dict(status=False, message=_('Group %(group)s is'
@@ -1487,7 +1470,7 @@ class PackageDispatcher(controllers.Controller):
 
             for acl in acls:
                 person_acl = self._create_or_modify_acl(pkg_listing, username,
-                        acl.acl, self.obsoleteStatus)
+                        acl.acl, STATUS['Obsolete'])
 
                 log_msg = u'%s has set the %s acl on %s (%s %s) to Obsolete' \
                         ' for %s' % (
