@@ -185,9 +185,6 @@ class PackageDispatcher(controllers.Controller):
         :arg ident: identity instance from this request
         :arg pkg: packagelisting to find the user's permissions on
         '''
-        # Find the approved statuscode
-        status = STATUS['Approved']
-
         # Make sure the current tg user has permission to set acls
         # If the user is in the admin group they can
         if ident.in_group(admin_grp):
@@ -202,7 +199,7 @@ class PackageDispatcher(controllers.Controller):
                 # Check each acl that this person has on the package.
                 for acl in person.acls:
                     if (acl.acl == 'approveacls' and acl.statuscode
-                            == status.statuscodeid):
+                            == STATUS['Approved'].statuscodeid):
                         return 'comaintainer'
                 break
         return False
@@ -701,8 +698,7 @@ class PackageDispatcher(controllers.Controller):
             if acl.status.locale['C'].statusname == 'Approved':
                 acl_status = 'Denied'
 
-        status = {'Approved': STATUS['Approved'],
-                'Denied': STATUS['Denied']}[acl_status]
+        status = STATUS[acl_status]
         # Change the acl
         group_acl = self._create_or_modify_group_acl(pkg, group_name, acl_name,
                 status)
@@ -781,8 +777,7 @@ class PackageDispatcher(controllers.Controller):
                 self._acl_can_be_held_by_user(acl_name)
             except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
-        status = {'Awaiting Review': STATUS['Awaiting Review'],
-                'Obsolete': STATUS['Obsolete']}[acl_status]
+        status = STATUS[acl_status]
 
         # Assign person to package
         person_acl = self._create_or_modify_acl(pkg_listing,
