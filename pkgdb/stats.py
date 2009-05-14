@@ -30,6 +30,7 @@ from turbogears import controllers, expose, identity
 from pkgdb.model import PackageListing, PersonPackageListing, \
         PersonPackageListingAcl
 
+from pkgdb.utils import STATUS
 from pkgdb import _
 
 DEVEL = 8 # collection id
@@ -103,10 +104,10 @@ class Stats(controllers.Controller):
             PackageListing.id).execute().rowcount
         # orphan packages in DEVEL 
         orphan_devel = PackageListing.query.filter_by(
-            owner='orphan', collectionid=DEVEL).count()
+            status=STATUS['Orphaned'].statuscodeid, collectionid=DEVEL).count()
         # orphan packages in fedora 10
         orphan_latest = PackageListing.query.filter_by(
-            owner='orphan', collectionid=19).count()
+            status=STATUS['Orphaned'].statuscodeid, collectionid=19).count()
 
         return dict(title=_('%(app)s -- Package Stats') % {
             'app': self.app_title},
