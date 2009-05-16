@@ -176,14 +176,26 @@ function toggle_retirement(retirementDiv, data) {
     var retirementButton = getElementsByTagAndClassName('input',
             'retirementButton', retirementDiv)[0];
     var ownerBox = getElementsByTagAndClassName('div', 'owner', pkglTable)[0];
+    var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
+                        ownerBox)[0];
+    var aclTable = getElementsByTagAndClassName('table', 'acls', pkglTable)[0];
+
     if (data['retirement'] == 'Retired') {
         /* Reflect the fact that the package is now retired */
         swapElementClass(retirementDiv, 'not_retired', 'retired');
         swapElementClass(retirementButton, 'retireButton', 'unretireButton');
         swapElementClass(pkglTable, 'owned', 'orphan');
+        swapElementClass(ownerBox, 'owned', 'orphaned');
+        swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
         retirementButton.value = 'Unretire package';
         statusBox.innerHTML = 'Retired';
-        ownerBox.innerHTML = 'Orphaned Package (orphan)'
+        ownerButton.setAttribute('value', 'Take Ownership');
+        set_acl_approval_box(aclTable, false);
+        var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerBox)[0];
+        var newOwnerName = SPAN({'class' : 'ownerName'}, 'orphan');
+        insertSiblingNodesBefore(ownerName, newOwnerName);
+        removeElement(ownerName);
+        addElementClass(ownerButton,'invisible');
     } else {
         /* Reflect the fact that the package has been unretired */
         swapElementClass(retirementDiv, 'retired', 'not_retired');
@@ -191,6 +203,8 @@ function toggle_retirement(retirementDiv, data) {
         swapElementClass(pkglTable, 'orphan', 'owned');
         retirementButton.value = 'Retire package';
         statusBox.innerHTML = 'Orphaned';
+        set_acl_approval_box(aclTable, true);
+        removeElementClass(ownerButton, 'invisible');
     }
 }
 
