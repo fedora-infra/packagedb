@@ -403,6 +403,12 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('No such package %(pkg_id)s') %
                     {'pkg_id': pkg_listing_id})
         approved = self._user_can_set_acls(identity, pkg)
+
+        if pkg.statuscode == STATUS['Deprecated'].statuscodeid:
+            # Retired packages must be brought out of retirement first
+            return dict(status=False, message=_('This package is retired.  It'
+                ' must be unretired first'))
+
         if pkg.owner == 'orphan':
             # Check that the tg.identity is allowed to set themselves as owner
             try:
@@ -513,6 +519,7 @@ class PackageDispatcher(controllers.Controller):
                     ' is now orphan.' % (
                             pkg.package.name, pkg.collection.name,
                             pkg.collection.version, identity.current.user_name)
+            status = STATUS['Orphaned']
             retirement = 'Unretired'
         else:
             return dict(status=False, message=
