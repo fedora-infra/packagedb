@@ -493,7 +493,8 @@ class PackageDispatcher(controllers.Controller):
         approved = self._user_can_set_acls(identity, pkg)
 
         if (pkg.statuscode != STATUS['Deprecated'].statuscodeid and (
-            pkg.owner == 'orphan' or approved in ('admin', 'owner'))):
+            pkg.statuscode == STATUS['Orphaned'].statuscodeid or
+            approved in ('admin', 'owner'))):
             # Retire package
             if pkg.owner != 'orphan':
                 # let toggle_owner handle bugzilla and other stuff
