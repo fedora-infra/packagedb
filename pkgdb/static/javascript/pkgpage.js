@@ -443,11 +443,8 @@ function request_status_change(event) {
     var requestContainer = getFirstParentByTagAndClassName(event.target(),
             'div', 'requestContainer');
     busy(requestContainer);
-    var form = getFirstParentByTagAndClassName(requestContainer, 'form');
-    var base = form.action;
-    if (base[base.length-1] == '/') {
-        base = base.slice(0,-1);
-    }
+    var url, query_params;
+    url, query_params = create_url(requestContainer, '/set_acl_status');
 
     /* Retrieve person to make the change for. */
     var aclRow = getFirstParentByTagAndClassName(requestContainer, 'tr',
@@ -465,16 +462,16 @@ function request_status_change(event) {
     /* Retrieve pkgid and aclName */
     var idParts = requestContainer.getAttribute('name').split(':');
 
-    var req = loadJSONDoc(base + '/set_acl_status', {'pkgid': idParts[0],
+    query_params = query_params.merge({'pkgid': idParts[0],
             'person_name': person_name, 'new_acl': idParts[1],
-            'statusname': aclStatus, '_csrf_token': fedora.identity.token});
+            'statusname': aclStatus});
+
+    var req = loadJSONDoc(url, query_params);
     req.addCallback(partial(check_acl_status, requestContainer));
     req.addErrback(partial(revert_acl_status, requestContainer));
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0],
-                    'person_name':person_name,'new_acl':idParts[1],
-                    'statusname':aclStatus}));
+    logDebug(url+'?'+queryString(query_params));
 }
 
 /*
