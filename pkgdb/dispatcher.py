@@ -381,6 +381,75 @@ class PackageDispatcher(controllers.Controller):
                     status)
         return group_acl
 
+    def _most_eligible_comaintainer(self, pkg_listing):
+        '''Find the comaintainer that's been on the package the longest.
+
+        This method returns the name of the comaintainer that requested
+        approveacls the longest time ago. This gives a good approximation
+        of who has been comaintaining the package the longest.
+
+        :arg pkg_listing: Package listing to retrieve the comaintainer.
+        :returns: User name of the person who has held approveacls the
+            longest. If no on is found, return 'orphan'.
+        :raises InvalidRequestError: if there's problem retrieving
+            information from the database.
+        '''
+        #get acls to comparison
+        acls = PersonPackageListingAcl.query.filter(and_(
+                   PersonPackageListingAcl.c.personpackagelistingid
+                       == PersonPackageListing.c.id,
+                   PersonPackageListing.c.packagelistingid
+                       == PackageListing.c.id,
+                   PackageListing.c.id == pkg_listing.id,
+                   PersonPackageListingAcl.c.statuscode 
+                       == STATUS['Approved'].statuscodeid,
+                   PersonPackageListingAcl.c.acl == 'approveacls')
+                   ).all()
+        username = ''
+        #get acl with min personpackagelistingacl.id
+        if len(acls) > 0:
+            search_acl = acls[0]
+            for acl in acls:
+                if search_acl.id > acl.id:
+                    search_acl = acl
+            username = search_acl.personpackagelisting.username
+        else:
+            username = 'orphan'
+
+        pkg_listing.owner = username
+
+        return username
+
+    def _set_bugzilla_owner(self, user_email, pkg_name, collectn,
+            collectn_version, bzComment):
+        '''Change the package owner
+
+         :arg user_email: User email address to change the owner
+         :arg pkg_name: Name of the package to change the owner
+         :arg collectn: Collection name of the package
+         :arg collectn_version: Collection version
+         :arg bzComment: the comment of changes
+        '''
+        bzMail = '%s' % user_email
+        bzQuery = {}
+        bzQuery['product'] = collectn
+        bzQuery['component'] = pkg_name
+        bzQuery['bug_status'] = ['NEW', 'ASSIGNED', 'ON_DEV', 'ON_QA',
+                'MODIFIED', 'POST', 'FAILS_QA', 'PASSES_QA',
+                'RELEASE_PENDING']
+        bzQuery['version'] = collectn_version
+        if bzQuery['version'] == 'devel':
+            bzQuery['version'] = 'rawhide'
+        queryResults = bugzilla.query(bzQuery)
+        for bug in queryResults:
+            if config.get('bugzilla.enable_modification', False):
+                bug.setassignee(assigned_to=bzMail, comment=bzComments)
+            else:
+                LOG.debug(_('Would have reassigned bug #%(bug_num)s'
+                ' from %(former)s to %(current)s') % {
+                    'bug_num': bug.bug_id, 'former': bug.assigned_to,
+                    'current': bzMail})
+
     @expose(allow_json=True)
     def index(self):
         '''
@@ -409,6 +478,10 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('This package is retired.  It'
                 ' must be unretired first'))
 
+        bzComment = 'This package has changed ownership in the Fedora'\
+                        ' Package Database.  Reassigning to the new owner'\
+                        ' of this component.'
+
         if pkg.owner == 'orphan':
             # Check that the tg.identity is allowed to set themselves as owner
             try:
@@ -423,36 +496,37 @@ class PackageDispatcher(controllers.Controller):
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, pkg.owner)
             status = STATUS['Owned']
-            bzMail = '%s' % identity.current.user.email
-            bzQuery = {}
-            bzQuery['product'] = pkg.collection.name
-            bzQuery['component'] = pkg.package.name
-            bzQuery['bug_status'] = ['NEW', 'ASSIGNED', 'ON_DEV', 'ON_QA',
-                    'MODIFIED', 'POST', 'FAILS_QA', 'PASSES_QA',
-                    'RELEASE_PENDING']
-            bzQuery['version'] = pkg.collection.version
-            if bzQuery['version'] == 'devel':
-                bzQuery['version'] = 'rawhide'
-            queryResults = bugzilla.query(bzQuery)
-            for bug in queryResults:
-                if config.get('bugzilla.enable_modification', False):
-                    bug.setassignee(assigned_to=bzMail, comment='This package'
-                            ' has changed ownership in the Fedora Package'
-                            ' Database.  Reassigning to the new owner of this'
-                            ' component.')
-                else:
-                    LOG.debug(_('Would have reassigned bug #%(bug_num)s'
-                    ' from %(former)s to %(current)s') % {
-                        'bug_num': bug.bug_id, 'former': bug.assigned_to,
-                        'current': bzMail})
+            self.set_bugzilla_owner(identity.current.user.email, 
+                pkg.package.name, pkg.collection.name,
+                pkg.collection.version, bzComment)
         elif approved in ('admin', 'owner'):
-            # Release ownership
-            pkg.owner = 'orphan'
-            pkg.statuscode = STATUS['Orphaned'].statuscodeid
-            log_msg = 'Package %s in %s %s was orphaned by %s' % (
+            try:
+                owner_name = self._most_eligible_comaintainer(pkg)
+            except InvalidRequestError, e:
+                return dict(status=False, 
+                    message=_('Acls error: %(err)s') % {'err': e})
+            if owner_name != 'orphan':
+                pkg.statuscode = STATUS['Approved'].statuscodeid
+                log_msg = 'Package %s in %s %s is now owned by %s' % (
                     pkg.package.name, pkg.collection.name,
-                    pkg.collection.version, identity.current.user_name)
-            status = STATUS['Orphaned']
+                    pkg.collection.version, owner_name)
+                status = STATUS['Owned']
+                try:
+                    person = fas.cache[owner_name]
+                    email = person['bugzilla_email']
+                except KeyError:
+                    log_msg += ' Specified owner %s does not have a Fedora'\
+                               ' Account' % owner_name
+                    email = identity.current.user.email
+                self._set_bugzilla_owner(email, pkg.package.name,
+                    pkg.collection.name, pkg.collection.version, bzComment)
+            else:
+                # Release ownership
+                pkg.statuscode = STATUS['Orphaned'].statuscodeid
+                log_msg = 'Package %s in %s %s was orphaned by %s' % (
+                        pkg.package.name, pkg.collection.name,
+                        pkg.collection.version, identity.current.user_name)
+                status = STATUS['Orphaned']
         else:
             return dict(status=False, message=_('Package %(pkg)s not available'
                 ' for taking') % {'pkg': pkg.package.name})
