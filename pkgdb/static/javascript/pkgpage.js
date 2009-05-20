@@ -179,6 +179,7 @@ function toggle_retirement(retirementDiv, data) {
     var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
                         ownerBox)[0];
     var aclTable = getElementsByTagAndClassName('table', 'acls', pkglTable)[0];
+    var addMyselfButton = getElementsByTagAndClassName('input', 'addMyselfButton', pkglTable)[0];
 
     if (data['retirement'] == 'Retired') {
         /* Reflect the fact that the package is now retired */
@@ -195,7 +196,8 @@ function toggle_retirement(retirementDiv, data) {
         var newOwnerName = SPAN({'class' : 'ownerName'}, 'orphan');
         insertSiblingNodesBefore(ownerName, newOwnerName);
         removeElement(ownerName);
-        addElementClass(ownerButton,'invisible');
+        addElementClass(ownerButton, 'invisible');
+        addElementClass(addMyselfButton, 'invisible');
     } else {
         /* Reflect the fact that the package has been unretired */
         swapElementClass(retirementDiv, 'retired', 'not_retired');
@@ -203,8 +205,9 @@ function toggle_retirement(retirementDiv, data) {
         swapElementClass(pkglTable, 'orphan', 'owned');
         retirementButton.value = 'Retire package';
         statusBox.innerHTML = 'Orphaned';
-        set_acl_approval_box(aclTable, true);
+        set_acl_approval_box(aclTable, true, data['aclStatusFields']);
         removeElementClass(ownerButton, 'invisible');
+        removeElementClass(addMyselfButton, 'invisible');
     }
 }
 
