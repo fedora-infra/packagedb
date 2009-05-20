@@ -91,10 +91,11 @@ class UserCache(dict):
                 # don't try to pull from fas
                 raise KeyError(username)
             LOG.debug(_('refresh forced for %(user)s') % {'user':  username})
-            person = fas.person_by_username(username)
+            person = self.fas.person_by_username(username)
             if not person:
                 # no value for this username
                 raise KeyError(username)
+            self[username] = person
         return super(UserCache, self).__getitem__(username)
 
 def refresh_status():

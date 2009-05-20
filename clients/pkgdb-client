@@ -69,9 +69,9 @@ def store_groups(option, opt, group, parser, enable):
 
 def parse_commands(config):
     parser = optparse.OptionParser(version = __version__,
-            usage='''pkgdb-client [options] packagename
+            usage='''pkgdb-client [options] [add|edit] packagename
 
-Example: pkgdb-client -u toshio -o testowner -d 'Purely a test package' -b devel -b F-7 -b EL-5 -c toshio -c kevin -m wtogami fedoratest
+Example: pkgdb-client -u toshio -o testowner -d 'Purely a test package' -b devel -b F-7 -b EL-5 -c toshio -c kevin -m wtogami add fedoratest
 
 ''')
     parser.add_option('-u', '--username',
@@ -136,8 +136,12 @@ Example: pkgdb-client -u toshio -o testowner -d 'Purely a test package' -b devel
     # Must specify a package name except for mass_branch
     if len(args) < 1 and not opts.mass_branch:
         raise ArgumentsError, 'No package name'
+    elif len(args) > 1 and (args[0]=='add' or args[0]=='edit'):
+        opts.pkg_action = args[0]
+        opts.packages = args[1:]
     else:
         opts.packages = args
+        opts.pkg_action = None
 
     # Mass branching must specify exactly one branch
     if opts.mass_branch and len(opts.branchList) != 1:
@@ -207,14 +211,28 @@ def clone_branch(pkgdb, options):
 
     return failedPackages
 
-def add_edit_package(pkgdb, options):
-    '''Add or edit a package.
+def add_package(pkgdb, options):
+    '''Add a package.
+    '''
+    failedPackages = {}
+    for package in options.packages:
+        try:
+            pkgdb.add_package(pkg=package, owner=options.owner,
+                    description=options.description,
+                    branches=options.branchList)
+        except AppError, e:
+            failedPackages[package] = e.message
+            continue
+    return failedPackages
+
+def edit_package(pkgdb, options):
+    '''Edit a package.
     '''
     failedPackages = {}
     for package in options.packages:
         group_dict = group_list_to_dict(options.groups)
         try:
-            pkgdb.add_edit_package(package, owner=options.owner,
+            pkgdb.edit_package(package, owner=options.owner,
                     description=options.description,
                     branches=options.branchList,
                     cc_list=options.ccList,
@@ -275,8 +293,10 @@ if __name__ == '__main__':
                 failedPackages.update(clone_branch(pkgdb, options))
             elif options.removeUserList:
                 failedPackages.update(remove_user(pkgdb, options))
-            else:
-                failedPackages.update(add_edit_package(pkgdb, options))
+            elif options.pkg_action and options.pkg_action == 'add':
+                failedPackages.update(add_package(pkgdb, options))
+            elif options.pkg_action and options.pkg_action == 'edit':
+                failedPackages.update(edit_package(pkgdb, options))
         except AuthError, e:
             if sys.stdin.isatty():
                 if retry >= config['pkgdb.retries']:

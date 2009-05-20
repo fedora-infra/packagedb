@@ -30,6 +30,8 @@ Controller to show information about packages by user.
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
 
+import urllib
+
 import sqlalchemy
 from sqlalchemy.orm import lazyload
 
@@ -91,6 +93,19 @@ class Users(controllers.Controller):
             eol = False
         else:
             eol = bool(eol)
+
+        # For backward compat, redirect the orphan user to the orphan page
+        if fasname == 'orphan':
+            params = {}
+            if eol:
+                params['eol'] = True
+            if request_format() == 'json':
+                params['tg_format'] = 'json'
+            url = '/packages/orphans'
+            if params:
+                url = url + '?' + urllib.urlencode(params, True)
+
+            raise redirect(url)
 
         if not acls:
             # Default to all acls
@@ -184,7 +199,7 @@ class Users(controllers.Controller):
             pkg_list.append(pkg)
 
         return dict(title=page_title, pkgCount=len(pkg_list),
-                pkgs=pkg_list, acls=acl_list, fasname=fasname)
+                pkgs=pkg_list, acls=acl_list, fasname=fasname, eol=eol)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):

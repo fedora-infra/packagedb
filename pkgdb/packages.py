@@ -200,7 +200,7 @@ class Packages(controllers.Controller):
         for pkg in pkg_listings:
             pkg.json_props = {'PackageListing': ('package', 'collection',
                     'people', 'groups', 'qacontact', 'owner'),
-                'PersonPackageListing': ('aclOrder', 'user'),
+                'PersonPackageListing': ('aclOrder', ),
                 'GroupPackageListing': ('aclOrder', ),
                 }
 

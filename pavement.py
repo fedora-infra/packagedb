@@ -36,7 +36,7 @@ options(
             'python_fedora >= 0.3.12',
             'SQLAlchemy >= 0.4alpha',
             # Doesn't use setuptools so not on RHEL5
-            #'python_bugzilla >= 0.4',
+            #'python_bugzilla >= 0.5',
         ],
         scripts = ['start-pkgdb', 'pkgdb.wsgi', 'clients/pkgdb-client',
             'server-scripts/pkgdb-sync-repo',
