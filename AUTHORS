@@ -3,6 +3,8 @@
   status, and a whole bunch more!
 * Casey Dahlin <sadmac@fedoraproject.org> enhanced group acls.
 * Nigel Jones <nigelj@fedoraproject.org> worked on the user package view.
+* Dmitry Kolesov <kolesov_dv@mail.ru> added remove_person json method,
+  cleaned up add_package() and edit_package().
 * Toshio Kuratomi <tkuratom@redhat.com> is the primary author of the Fedora
   PackageDB with plenty of help from other members of the Fedora
   Infrastructure Group.

@@ -177,12 +177,14 @@ setup(
     install_requires = [
         "TurboGears[future] >= 1.0",
         "TurboMail",
-        "python_fedora >= 0.3.7",
+        "python_fedora >= 0.3.12",
         "SQLAlchemy >= 0.4alpha",
     ],
     scripts = ["start-pkgdb", "pkgdb.wsgi", "server-scripts/pkgdb-sync-repo",
-        "server-scripts/pkgdb-sync-bugzilla", "server-scripts/pkgdb-status",
-        "clients/pkgdb-client", "update-schema/pkgdb-0.3.10-0.3.11.py"],
+        "server-scripts/pkgdb-sync-bugzilla", "clients/pkgdb-client",],
+    # Note: these need to be installed somewhere in the data directory so that
+    # the end user can upgrade the db "update-schema/pkgdb-0.3.10-0.3.11.py"
+    # "update-schema/*"
     zip_safe=False,
     packages=find_packages(),
     package_data = find_package_data(where='pkgdb',
@@ -218,7 +220,7 @@ setup(
         # if this is an application that you'll distribute through
         # the Cheeseshop, uncomment the next line
         'Framework :: TurboGears :: Applications',
-        
+
         # if this is a package that includes widgets that you'll distribute
         # through the Cheeseshop, uncomment the next line
         # 'Framework :: TurboGears :: Widgets',

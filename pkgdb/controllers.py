@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -46,7 +46,7 @@ class Root(controllers.RootController):
     '''
     # Controller methods don't need an __init__()
     # pylint: disable-msg=W0232
-    app_title = 'Fedora Package Database'
+    app_title = _('Fedora Package Database')
 
     collections = Collections(app_title)
     packages = Packages(app_title)
@@ -60,7 +60,7 @@ class Root(controllers.RootController):
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, *args, **kwargs):
         login_dict = f_ctrlers.login(forward_url=forward_url, *args, **kwargs)
-        login_dict['title'] = 'Login to the PackageDB'
+        login_dict['title'] = _('Login to the PackageDB')
         return login_dict
 
     @expose(allow_json=True)

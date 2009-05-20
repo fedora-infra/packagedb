@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.10.90
+Version:        0.3.10.91
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -17,14 +17,16 @@ Requires: python-TurboMail
 Requires: python-sqlalchemy >= 0.4
 Requires: python-psycopg2
 Requires: python-genshi
-Requires: python-fedora >= 0.3.7
-Requires: python-bugzilla
+Requires: python-fedora >= 0.3.12
+Requires: python-bugzilla >= 0.5
 Requires: koji
+Requires: mod_wsgi
 
 BuildRequires: python-devel
 BuildRequires: python-genshi
 BuildRequires: TurboGears
-BuildRequires:  python-setuptools-devel
+BuildRequires: python-setuptools-devel
+BuildRequires: python-paver
 
 %description
 The Fedora Packagedb tracks who owns a package in the Fedora Collection.
@@ -44,18 +46,26 @@ Command line script to communicate with the Fedora PackageDB
 
 
 %build
-%{__python} setup.py build --install-conf=%{_sysconfdir} \
-    --install-data=%{_datadir}
+paver build --install-conf=%{_sysconfdir} --install-data=%{_datadir} \
+    --install-sbin=%{_sbindir}
 
 
 %install
 rm -rf %{buildroot}
+# We don't currently have a paver target for this to work.
 %{__python} setup.py install --skip-build --install-conf=%{_sysconfdir} \
     --install-data=%{_datadir} --root %{buildroot}
 install -d %{buildroot}%{_sbindir}
 mv %{buildroot}%{_bindir}/start-pkgdb %{buildroot}%{_sbindir}/
+mv %{buildroot}%{_bindir}/pkgdb.wsgi %{buildroot}%{_sbindir}/
 
-mkdir -p -m 0755 %{buildroot}/%{_localstatedir}/log/pkgdb
+install -d %{buildroot}%{_sysconfdir}/httpd/conf.d
+install -m 0644 httpd-pkgdb.conf %{buildroot}%{_sysconfdir}/httpd/conf.d/pkgdb.conf
+
+install -d %{buildroot}%{_datadir}/fedora-packagedb/update-schema
+install -m 0755 update-schema/pkgdb-0.3.10-0.3.11.py %{buildroot}%{_datadir}/fedora-packagedb/update-schema
+install -m 0644 update-schema/pkgdb-0.3.3-0.3.4.sql %{buildroot}%{_datadir}/fedora-packagedb/update-schema
+install -m 0644 update-schema/pkgdb-0.3.5-0.3.6.sql %{buildroot}%{_datadir}/fedora-packagedb/update-schema
 
 %clean
 rm -rf %{buildroot}
@@ -66,12 +76,12 @@ rm -rf %{buildroot}
 %doc README COPYING AUTHORS NEWS ChangeLog
 %{_datadir}/fedora-packagedb/
 %{_sbindir}/start-pkgdb
-%{_bindir}/pkgdb-status
+%{_sbindir}/pkgdb.wsgi
 %{_bindir}/pkgdb-sync-bugzilla
 %{_bindir}/pkgdb-sync-repo
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
 %config(noreplace) %{_sysconfdir}/pkgdb-sync-bugzilla.cfg
-%attr(-,apache,root) %{_localstatedir}/log/pkgdb
+%config(noreplace) %{_sysconfdir}/httpd/conf.d/pkgdb.conf
 
 %files clients
 %defattr(-,root,root,-)
@@ -79,6 +89,14 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Thu May 14 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10.91-1
+- New test release.  Mainly bug fixes.
+
+* Tue Apr 21 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10.90-1
+- Update to use mod_wsgi
+- Shift to use username
+- Include schema update scripts
+
 * Wed Jan 22 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10.1-1
 - bugzilla checking fix.
 

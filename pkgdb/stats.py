@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2007  Ionuț Arțăriși
-# Copyright © 2007  Red Hat, Inc.
+# Copyright © 2007, 2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -30,6 +30,8 @@ from turbogears import controllers, expose, identity
 from pkgdb.model import PackageListing, PersonPackageListing, \
         PersonPackageListingAcl
 
+from pkgdb import _
+
 DEVEL = 8 # collection id
 class Stats(controllers.Controller):
     '''Controller which calculates general stats about packages
@@ -40,7 +42,7 @@ class Stats(controllers.Controller):
     def __init__(self, app_title):
         '''Create a Stats Controller.
 
-        :app_title: Title of the web app.
+        :kwarg app_title: Title of the web app.
         '''
         self.app_title = app_title
 
@@ -53,7 +55,7 @@ class Stats(controllers.Controller):
         # attributes on mapper classes (E1101)
         # pylint: disable-msg=E1101
         if identity.current.anonymous:
-            own = 'need to be logged in'
+            own = _('need to be logged in')
         else:
             # SQLAlchemy mapped classes are monkey patched
             # pylint: disable-msg=E1101
@@ -106,7 +108,8 @@ class Stats(controllers.Controller):
         orphan_latest = PackageListing.query.filter_by(
             owner='orphan', collectionid=19).count()
 
-        return dict(title=self.app_title + ' -- Package Stats',
+        return dict(title=_('%(app)s -- Package Stats') % {
+            'app': self.app_title},
             total=total,
             no_comaintainers=no_comaintainers,
             orphan_devel=orphan_devel, orphan_latest=orphan_latest,

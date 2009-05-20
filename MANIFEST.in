@@ -1,4 +1,6 @@
 include pkgdb.wsgi.in
+include setup.py
+include httpd-pkgdb.conf.in
 include pkgdb.sql
 include start-pkgdb.in
 exclude start-pkgdb
@@ -17,4 +19,7 @@ recursive-exclude pkgdb/static/js/dojox/ *
 include fedora-packagedb.spec
 include yum.repos.d/*
 include clients/*
+include po/*.pot
+include po/*.po
+include locale/*/*/*.mo
 recursive-include docs *

@@ -137,6 +137,36 @@ function display_error(container, data) {
 }
 
 /*
+ * Create the url to use with this request
+ */
+function create_url(requestContainer, action) {
+    var form = getFirstParentByTagAndClassName(requestContainer, 'form');
+    var url = form.action;
+
+    /* Intialize the query parameters with the _csrf_token */
+    var query_params = {'_csrf_token': fedora.identity.token};
+
+    /* If url has a query string, pick that off and add it to query params */
+    var qs_start = url.indexOf('?');
+    if (qs_start != -1) {
+        var query_string = url.slice(qs_start + 1);
+        url = url.slice(0, qs_start);
+        query_params = merge(parseQueryString(query_string), query_params);
+    }
+
+    /* Add the action to the url */
+    if (url[url.length - 1] == '/') {
+        url = url.slice(0, -1);
+    }
+    if (action[0] != '/') {
+        url = url + '/';
+    }
+    url = url + action;
+
+    return [url, query_params];
+}
+
+/*
  * Make an xmlhttp request.
  * Using partial to set additional values on your callback and errorback
  * is the recommended way to send more data.  Having the server send the
@@ -148,13 +178,12 @@ function make_request(action, callback, errback, event) {
     var requestContainer = getFirstParentByTagAndClassName(event.target(),
             'div', 'requestContainer');
     busy(requestContainer, event);
-    var form = getFirstParentByTagAndClassName(requestContainer, 'form');
-    if (form.action[form.action.length - 1] == '/' && action[0] == '/') {
-        var url = form.action + action.slice(1);
-    } else {
-        var url = form.action + action;
-    }
+    var url, query_params;
+    [url, query_params] = create_url(requestContainer, action);
 
+    /* Make sure we have a single slash separating url and the positional
+     * arguments
+     */
     if (url[url.length -1] == '/' && 
             requestContainer.getAttribute('name')[0] == '/') {
         url = url + requestContainer.getAttribute('name').slice(1);
@@ -165,8 +194,7 @@ function make_request(action, callback, errback, event) {
         url = url + requestContainer.getAttribute('name');
     }
 
-    /* Add the CSRF token */
-    var req = loadJSONDoc(url, {'_csrf_token': fedora.identity.token});
+    var req = loadJSONDoc(url, query_params);
     if (callback !== null) {
         req.addCallback(partial(callback, requestContainer));
     }

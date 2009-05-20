@@ -106,8 +106,13 @@ RETIRED=20
                 class="requestContainer owner orphaned">
                 <span class="ownerName">${pkg.owner}</span>
                 <span py:if="pkger_grp in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
-                  <input type="button" name="unorphan"
+                  <input py:if="pkg.status.locale['C'].statusname!='Deprecated'"
+                    type="button" name="unorphan"
                     class="ownerButton unorphanButton"
+                    value="Take Ownership"/>
+                  <input py:if="pkg.status.locale['C'].statusname=='Deprecated'"
+                    type="button" name="unorphan"
+                    class="ownerButton unorphanButton invisible"
                     value="Take Ownership"/>
                 </span>
               </div>

@@ -147,6 +147,7 @@ session.flush()
 
 print 'changing orphan statuscodes to 14 (Orphaned)'
 engine.execute("UPDATE packagelisting SET statuscode=14 WHERE owner='orphan'")
+engine.execute("UPDATE packagelisting SET statuscode=3 WHERE owner!='orphan' and statuscode=14")
 
 # Be sure to revoke the privilege AFTER the script has done its job
 engine.execute('BEGIN; REVOKE UPDATE ON log FROM pkgdbadmin; COMMIT;')
