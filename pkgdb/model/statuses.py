@@ -159,7 +159,7 @@ mapper(CollectionStatus, CollectionStatusTable, properties={
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         collection_class=attribute_mapped_collection('language'),
         backref=backref('cstatuscode',
-            foreign_keys=[CollectionStatusTable.c.statuscodeid],
+            foreign_keys=[StatusTranslationTable.c.statuscodeid],
             primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == CollectionStatusTable.c.statuscodeid)),
     })
@@ -178,7 +178,7 @@ mapper(PackageListingStatus, PackageListingStatusTable, properties={
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         collection_class=attribute_mapped_collection('language'),
         backref=backref('plstatuscode',
-            foreign_keys=[PackageListingStatusTable.c.statuscodeid],
+            foreign_keys=[StatusTranslationTable.c.statuscodeid],
             primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == PackageListingStatusTable.c.statuscodeid))
     })
@@ -197,7 +197,7 @@ mapper(PackageStatus, PackageStatusTable, properties={
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         collection_class=attribute_mapped_collection('language'),
         backref=backref('pstatuscode',
-            foreign_keys=[PackageStatusTable.c.statuscodeid],
+            foreign_keys=[StatusTranslationTable.c.statuscodeid],
             primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == PackageStatusTable.c.statuscodeid))
     })
@@ -219,7 +219,7 @@ mapper(PackageAclStatus, PackageAclStatusTable, properties={
         foreign_keys=[StatusTranslationTable.c.statuscodeid],
         collection_class=attribute_mapped_collection('language'),
         backref=backref('pastatuscode',
-            foreign_keys=[PackageAclStatusTable.c.statuscodeid],
+            foreign_keys=[StatusTranslationTable.c.statuscodeid],
             primaryjoin=StatusTranslationTable.c.statuscodeid \
                     == PackageAclStatusTable.c.statuscodeid))
     })

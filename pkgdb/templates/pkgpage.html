@@ -1,8 +1,6 @@
 <?python
 TODO='Not yet implemented'
 import simplejson
-ORPHANED=14
-RETIRED=20
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
@@ -100,8 +98,8 @@ RETIRED=20
             <a href="${tg.url('/collections/id/' + str(pkg.collection.id))}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
           </td><td>
-            <div py:choose="pkg.owner" py:strip="">
-              <div py:when="'orphan'"
+            <div py:choose="" py:strip="">
+              <div py:when="pkg.status.locale['C'].statusname in ('Orphaned', 'Deprecated')"
                 py:attrs="{'name': str(pkg.id)}"
                 class="requestContainer owner orphaned">
                 <span class="ownerName">${pkg.owner}</span>
@@ -154,7 +152,8 @@ RETIRED=20
                 <td py:for="acl in aclNames" class="aclcell">
                   <!-- If the logged in user is this row, add a checkbox to set it -->
                   <div py:if="not tg.identity.anonymous and
-                    person.username==tg.identity.user_name"
+                    person.username==tg.identity.user_name and
+                    pkg.status.locale['C'].statusname!='Deprecated'"
                     py:attrs="{'name' : str(pkg.id) + ':' + acl}"
                     class="requestContainer aclPresent">
                     <input type="checkbox" checked="true" class="aclPresentBox"
@@ -164,7 +163,7 @@ RETIRED=20
                   </div>
                   <!-- If the user can set acls, give drop downs for status -->
                   <div py:choose="" py:strip="">
-                    <div py:when="aclChanger"
+                    <div py:when="aclChanger and pkg.status.locale['C'].statusname!='Deprecated'"
                       py:attrs="{'name': str(pkg.id) + ':' + acl}"
                       class='aclStatus requestContainer'>
                       <select class="aclStatusList" py:attrs="{'name' : acl}">
@@ -197,7 +196,7 @@ RETIRED=20
               checkbox to edit this
               -->
               <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
-                <div py:if="admin_grp in tg.identity.groups"
+                <div py:if="admin_grp in tg.identity.groups and pkg.status.locale['C'].statusname!='Deprecated'"
                   py:attrs="{'name' : str(pkg.id) + ':' + group.groupname +
                   ':commit'}"
                   class="requestContainer groupAclStatus">
@@ -205,7 +204,7 @@ RETIRED=20
                   <input type="checkbox" class="groupAclStatusBox"
                     py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
                 </div>
-                <div py:if="not admin_grp in tg.identity.groups"
+                <div py:if="not admin_grp in tg.identity.groups or pkg.status.locale['C'].statusname=='Deprecated'"
                   py:attrs="{'name' : str(pkg.id) + ':' + group.groupname
                   + ':commit'}"
                   class="groupAclStatus requestContainer">
@@ -219,39 +218,48 @@ RETIRED=20
           </table>
         </td></tr>
         <tr py:if="not tg.identity.anonymous">
-          <td py:if="not interested" class="acladd">
-            <input type="button" py:attrs="{'name':'add:' + str(pkg.package.id)
-            + ':' + tg.identity.user_name}"
+          <td py:if="not interested" class="acladd"
+            py:choose="pkg.status.locale['C'].statusname">
+            <input py:when="'Deprecated'" type="button" py:attrs="
+            {'name':'add:' + str(pkg.package.id) + ':' + tg.identity.user_name}"
+            class="addMyselfButton invisible"
+            value="Add myself to package"/>
+            <input py:otherwise="" type="button" py:attrs="
+            {'name':'add:' + str(pkg.package.id) + ':' + tg.identity.user_name}"
             class="addMyselfButton"
             value="Add myself to package"/>
           </td>
           <div py:choose="" py:strip="">
             <td>
-              <div py:when="(pkg.statuscode!=RETIRED and
-                         (pkger_grp in tg.identity.groups or
-                         admin_grp in tg.identity.groups)) or
-                         pkg.statuscode==ORPHANED"
+              <div py:when="pkg.status.locale['C'].statusname!='Deprecated'"
                    py:attrs="{'name' : str(pkg.id)}"
-                   class="requestContainer retirement not_retired">
-                <input class="retirementButton retireButton"
-                       type="button" value="Retire package"/>
+                   class="requestContainer retirement not_retired"
+                   py:choose="">
+                <input py:when="aclChanger or (pkger_grp in tg.identity.groups
+                  and pkg.status.locale['C'].statusname=='Orphaned')"
+                  type="button" value="Retire package"
+                  class="retirementButton retireButton" />
+                <input py:otherwise="" type="button" value="Retire package"
+                  class="retirementButton retireButton invisible" />
               </div>
             </td>
             <td>
-              <div py:when="pkg.statuscode==RETIRED and
-                            admin_grp in tg.identity.groups"
-                   py:attrs="{'name' : str(pkg.id)}"
-                   class="requestContainer retirement retired">
-                <input class="retirementButton unretireButton"
-                       type="button" value="Unretire package"/>
+              <div py:otherwise="" py:attrs="{'name' : str(pkg.id)}"
+                class="requestContainer retirement retired" py:choose="">
+                <input py:when="admin_grp in tg.identity.groups"
+                  class="retirementButton unretireButton"
+                  type="button" value="Unretire package"/>
+                <input py:otherwise=""
+                  class="retirementButton unretireButton invisible"
+                  type="button" value="Unretire package"/>
               </div>
             </td>
           </div>
         </tr>
       </div> <!--! here ends the pkgl def declaration -->
         <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
-            <table py:when="pkg.owner=='orphan'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
-            <table py:when="pkg.owner!='orphan'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
+            <table py:when="pkg.status.locale['C'].statusname=='Orphaned'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
+            <table py:when="pkg.status.locale['C'].statusname!='Orphaned'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
         </div>
     </form>
   </body>
