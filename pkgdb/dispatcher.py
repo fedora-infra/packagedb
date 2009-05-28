@@ -405,20 +405,23 @@ class PackageDispatcher(controllers.Controller):
                        == STATUS['Approved'].statuscodeid,
                    PersonPackageListingAcl.c.acl == 'approveacls')
                    ).all()
-        username = ''
+        comaintainers = {}
         #get acl with min personpackagelistingacl.id
         if len(acls) > 0:
-            search_acl = acls[0]
             for acl in acls:
-                if search_acl.id > acl.id:
-                    search_acl = acl
-            username = search_acl.personpackagelisting.username
+                comaintainers[acl.id] = acl.personpackagelisting.username
+
+            for acl_id in sorted(comaintainers.keys()):
+                try:
+                    person = fas.cache[comaintainers[acl_id]]
+                    return person
+                except KeyError:
+                    continue
+            person = {'username':'orphan'}
         else:
-            username = 'orphan'
+            person = {'username':'orphan'}
 
-        pkg_listing.owner = username
-
-        return username
+        return person
 
     def _set_bugzilla_owner(self, user_email, pkg_name, collectn,
             collectn_version, bzComment):
@@ -450,106 +453,54 @@ class PackageDispatcher(controllers.Controller):
                     'bug_num': bug.bug_id, 'former': bug.assigned_to,
                     'current': bzMail})
 
+    def _set_owner(self, pkg_listing, owner):
+        '''Change the package owner
+
+        This method change a owner of the package.
+        If owner.username='orphan', the owner of package set to 'orphan'.
+
+        :arg pkg_listing: Package listing to set the owner.
+        :arg owner: User name to change the owner
+        :returns: Log message about changes.
+        :raises InvalidRequestError: if there's problem retrieving
+            information from the database.
+        '''
+        bzComment = 'This package has changed ownership in the Fedora'\
+                        ' Package Database.  Reassigning to the new owner'\
+                        ' of this component.'
+        if owner['username'] != 'orphan':
+            # Take ownership
+            pkg_listing.owner = owner['username']
+            pkg_listing.statuscode = STATUS['Approved'].statuscodeid
+            log_msg = 'Package %s in %s %s is now owned by %s' % (
+                pkg_listing.package.name, pkg_listing.collection.name,
+                pkg_listing.collection.version, pkg_listing.owner)
+            status = STATUS['Owned']
+            self._set_bugzilla_owner(owner['bugzilla_email'],
+                pkg_listing.package.name, pkg_listing.collection.name,
+                pkg_listing.collection.version, bzComment)
+        else:
+            # Release ownership
+            pkg_listing.owner = 'orphan'
+            pkg_listing.statuscode = STATUS['Orphaned'].statuscodeid
+            log_msg = 'Package %s in %s %s was orphaned by %s' % (
+                pkg_listing.package.name, pkg_listing.collection.name,
+                pkg_listing.collection.version,
+                identity.current.user_name)
+            status = STATUS['Orphaned']
+        # Make sure a log is created in the db as well.
+        log = PackageListingLog(identity.current.user_name,
+                status.statuscodeid, log_msg, None, pkg_listing.id)
+        log.packagelistingid = pkg_listing.id
+    
+        return log_msg
+    
     @expose(allow_json=True)
     def index(self):
         '''
         Return a list of methods that can be called on this dispatcher.
         '''
         return dict(methods=self.methods)
-
-    @expose(allow_json=True)
-    @identity.require(identity.not_anonymous())
-    def toggle_owner(self, pkg_listing_id):
-        '''Orphan package or set the owner to the logged in user.
-
-        :arg pkg_listing_id: The packagelisting to change ownership for.
-        '''
-        # Check that the pkg exists
-        try:
-            # pylint: disable-msg=E1101
-            pkg = PackageListing.query.filter_by(id=pkg_listing_id).one()
-        except InvalidRequestError:
-            return dict(status=False, message=_('No such package %(pkg_id)s') %
-                    {'pkg_id': pkg_listing_id})
-        approved = self._user_can_set_acls(identity, pkg)
-
-        if pkg.statuscode == STATUS['Deprecated'].statuscodeid:
-            # Retired packages must be brought out of retirement first
-            return dict(status=False, message=_('This package is retired.  It'
-                ' must be unretired first'))
-
-        bzComment = 'This package has changed ownership in the Fedora'\
-                        ' Package Database.  Reassigning to the new owner'\
-                        ' of this component.'
-
-        if pkg.owner == 'orphan':
-            # Check that the tg.identity is allowed to set themselves as owner
-            try:
-                self._acl_can_be_held_by_user('owner')
-            except AclNotAllowedError, e:
-                return dict(status=False, message=str(e))
-
-            # Take ownership
-            pkg.owner = identity.current.user_name
-            pkg.statuscode = STATUS['Approved'].statuscodeid
-            log_msg = 'Package %s in %s %s is now owned by %s' % (
-                    pkg.package.name, pkg.collection.name,
-                    pkg.collection.version, pkg.owner)
-            status = STATUS['Owned']
-            self.set_bugzilla_owner(identity.current.user.email, 
-                pkg.package.name, pkg.collection.name,
-                pkg.collection.version, bzComment)
-        elif approved in ('admin', 'owner'):
-            try:
-                owner_name = self._most_eligible_comaintainer(pkg)
-            except InvalidRequestError, e:
-                return dict(status=False, 
-                    message=_('Acls error: %(err)s') % {'err': e})
-            if owner_name != 'orphan':
-                pkg.statuscode = STATUS['Approved'].statuscodeid
-                log_msg = 'Package %s in %s %s is now owned by %s' % (
-                    pkg.package.name, pkg.collection.name,
-                    pkg.collection.version, owner_name)
-                status = STATUS['Owned']
-                try:
-                    person = fas.cache[owner_name]
-                    email = person['bugzilla_email']
-                except KeyError:
-                    log_msg += ' Specified owner %s does not have a Fedora'\
-                               ' Account' % owner_name
-                    email = identity.current.user.email
-                self._set_bugzilla_owner(email, pkg.package.name,
-                    pkg.collection.name, pkg.collection.version, bzComment)
-            else:
-                # Release ownership
-                pkg.statuscode = STATUS['Orphaned'].statuscodeid
-                log_msg = 'Package %s in %s %s was orphaned by %s' % (
-                        pkg.package.name, pkg.collection.name,
-                        pkg.collection.version, identity.current.user_name)
-                status = STATUS['Orphaned']
-        else:
-            return dict(status=False, message=_('Package %(pkg)s not available'
-                ' for taking') % {'pkg': pkg.package.name})
-
-        # Make sure a log is created in the db as well.
-        log = PackageListingLog(identity.current.user_name,
-                status.statuscodeid, log_msg, None, pkg_listing_id)
-        log.packagelistingid = pkg.id
-
-        try:
-            session.flush()
-        except SQLError, e:
-            # An error was generated
-            return dict(status=False, message=_('Not able to change owner'
-                ' information for %(pkg)s') % {'pkg': pkg.package.name})
-
-        # Send a log to people interested in this package as well
-        self._send_log_msg(log_msg, _('%(pkg)s ownership updated') % {
-            'pkg': pkg.package.name}, identity.current.user, (pkg,),
-            ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
-
-        return dict(status=True, owner=pkg.owner,
-                aclStatusFields=self.acl_status_translations)
 
     @expose(allow_json=True)
     @identity.require(identity.not_anonymous())
@@ -1255,20 +1206,11 @@ class PackageDispatcher(controllers.Controller):
         if 'owner' in changes:
             # Already retrieved owner into person
             for pkg_listing in listings:
-                pkg_listing.owner = person['username']
-                log_msg = '%s changed owner of %s in %s %s to %s' % (
-                        identity.current.user_name,
-                        pkg_listing.package.name,
-                        pkg_listing.collection.name,
-                        pkg_listing.collection.version,
-                        person['username']
-                        )
-                pkg_log = PackageListingLog(
-                        identity.current.user_name,
-                        STATUS['Owned'].statuscodeid,
-                        log_msg
-                        )
-                pkg_log.listing = pkg_listing
+                try:
+                   log_msg = self._set_owner(pkg_listing, person)
+                except InvalidRequestError, e:
+                    return dict(status=False, 
+                        message=_('Acls error: %(err)s') % {'err': e})
                 try:
                     pkg_list_log_msgs[pkg_listing].append(log_msg)
                 except KeyError:
@@ -1575,3 +1517,101 @@ class PackageDispatcher(controllers.Controller):
             package_listings, other_email=(user_email,))
 
         return dict(status=True)
+
+    @expose(allow_json=True)
+    # Check that the requestor is in a group that could potentially set owner.
+    @identity.require(identity.not_anonymous())
+    def set_owner(self, pkg_name, owner=None, collectn_list=None):
+        '''Change owner of a package.
+
+        This method change the owner of the package.
+        If owner=None the owner of tha package will be set to the name 
+        of the comaintainer that requested approveacls the longest time ago.
+        If owner='orphan' owner will be set to 'orphan'.
+
+        :arg pkg_listing: Package listing to retrieve the comaintainer.
+        :returns: User name of the person who has held approveacls the
+        :arg pkg_name: Name of the package to change the owner
+        :arg owner: User name to change the owner of package
+        :kwarg collectn_list: list of collections like 'F-10', 'devel'.
+          If collectn_list=None, owner changed in all collections associated
+          with the package
+        '''
+        # Check that the pkg exists
+        try:
+            # pylint: disable-msg=E1101
+            pkg = Package.query.filter_by(name=pkg_name).one()
+        except InvalidRequestError:
+            return dict(status=False, message=
+                    _('No such package %(pkg_name)s') %
+                        {'pkg_name': pkg_name})
+        approved = self._user_can_set_acls(identity, pkg)
+
+        if not approved or approved not in ('admin', 'owner'):
+            return dict(status=False, message=
+                    _('%(user)s is not allowed to approve Package ACLs') % {
+                        'user': identity.current.user_name})
+        if owner and owner != 'orphan':
+            try:
+                person = fas.cache[owner]
+            except KeyError:
+                return dict(status=False, message=_('Specified owner '
+                    '%(owner)s does not have a Fedora Account') 
+                    % {'owner': owner})
+        else:
+            person = {'username':'orphan'}
+        log_msgs = []
+        package_listings = []
+
+        if collectn_list:
+            if not isinstance(collectn_list,(tuple,list)):
+                collectn_list = [collectn_list]
+            for simple_name in collectn_list:
+                try:
+                    collectn = Collection.by_simple_name(simple_name)
+                except InvalidRequestError:
+                    return dict(status=False,message=
+                        _('Collection %(collctn)s does not exist') % {
+                        'collctn': simple_name})
+                pkg_listing = PackageListing.query.filter_by(packageid=pkg.id,
+                                  collectionid=collectn.id).one()
+                package_listings.append(pkg_listing)
+        else:
+             package_listings = PackageListing.query.filter(and_(
+                                PackageListing.c.collectionid
+                                    == Collection.c.id,
+                                Collection.c.statuscode 
+                                    != STATUS['EOL'].statuscodeid,
+                                PackageListing.c.packageid == pkg.id)).all()
+
+        for pkg_listing in package_listings:
+            if not owner:
+               person = self._most_eligible_comaintainer(pkg_listing)
+            if person['username'] == pkg_listing.owner:
+                continue
+            else:
+                try:
+                    log_msg = self._set_owner(pkg_listing, person)
+                    log_msgs.append(log_msg)
+                except InvalidRequestError, e:
+                    return dict(status=False, 
+                        message=_('Acls error: %(err)s') % {'err': e})
+        if len(log_msgs) < 1:
+            return dict(status=False, message=_('Not able to change owner'
+                ' information for %(pkg)s.') % {'pkg': pkg.name})
+        try:
+            session.flush()
+        except SQLError, e:
+            # An error was generated
+            return dict(status=False, message=_('Not able to change owner'
+                ' information for %(pkg)s. Message: %(err)s') % 
+                {'pkg': pkg.name,'err':e})
+
+        # Send a log to people interested in this package as well
+        self._send_log_msg('\n'.join(log_msgs), 
+            _('%(pkg)s ownership changed') % {
+                'pkg': pkg_name}, identity.current.user, package_listings,
+                ('approveacls', 'watchbugzilla', 'watchcommits', 'build',
+                    'commit'))
+
+        return dict(status=True, pkg_listings=package_listings)
