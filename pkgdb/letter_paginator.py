@@ -77,7 +77,7 @@ class Letters(controllers.Controller):
         searchwords = searchwords.replace('%','*')
         # minus removed packages
         packages = packages.filter(
-                        Package.c.statuscode!=STATUS['Removed'].statuscodeid)
+                        Package.statuscode!=STATUS['Removed'].statuscodeid)
 
         # set the links for bugs or package info
         if request.path.startswith('/pkgdb/packages/index/'):

@@ -60,7 +60,8 @@ Install Prerequisites
 ::
   yum -y install python-genshi TurboGears python-turbojson postgresql-server \
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
-    python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi httpd
+    python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi \
+    python-paver httpd mod_ssl
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -120,8 +121,8 @@ Note:: If you don't have sudo, you can use su - instead::
 
 Get some test data and import it into the database.  You want to grab the most
 recent dump from http://fedorahosted.org/releases/p/a/packagedb like this::
-  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20081031.dump.bz2
-  bzcat pkgdb-20081031.dump.bz2 | sudo -u postgres psql
+  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-transition.dump.bz2
+  bzcat pkgdb-transition.dump.bz2 | sudo -u postgres psql
 
 Your postgres server is now all set.
 
@@ -140,7 +141,7 @@ You'll need to change 'bunbunbun' to your password.
 
 Next copy the httpd-pkgdb.conf file to your apache conf.d directory::
 
-  cp httpd-pkgdb.conf /etc/httpd/conf.d/
+  sudo cp httpd-pkgdb.conf /etc/httpd/conf.d/
 
 Restart apache::
 

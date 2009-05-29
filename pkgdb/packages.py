@@ -77,7 +77,7 @@ class Packages(controllers.Controller):
         # pylint: disable-msg=E1101
         # Return the information about a package.
         package = Package.query.filter(
-                Package.c.statuscode!=STATUS['Removed'].statuscodeid
+                Package.statuscode!=STATUS['Removed'].statuscodeid
                 ).filter_by(name=packageName).first()
         # pylint: enable-msg=E1101
         if not package:
@@ -291,7 +291,7 @@ class Packages(controllers.Controller):
         if not eol:
             # We don't want EOL releases, filter those out of each clause
             query = query.join(['listings2', 'collection']).filter(
-                    Collection.c.statuscode!=STATUS['EOL'].statuscodeid)
+                    Collection.statuscode!=STATUS['EOL'].statuscodeid)
         pkg_list = []
         for pkg in query:
             pkg.json_props = {'Package':('listings',)}
