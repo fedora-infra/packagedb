@@ -1,5 +1,5 @@
 /*
- * Copyright © 2008  Red Hat, Inc.
+ * Copyright © 2008-2009  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use, modify,
  * copy, or redistribute it subject to the terms and conditions of the GNU
@@ -124,7 +124,8 @@ dojo.declare('fedora.dojo.ThrobberGroup', null, {
 dojo.declare('fedora.dojo.Throbber', null, {
     statics: {nextid: 0},
     constructor: function(group, kw) {
-        this.id = this.statics.nextid++;
+        this.id = 'FedoraDojoThrobber' + group.id + '-' +
+                (this.statics.nextid++);
         this.group = group;
         kw= kw || {};
         this.domNode = dojo.doc.createElement('span');
