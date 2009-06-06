@@ -60,7 +60,8 @@ Install Prerequisites
 ::
   yum -y install python-genshi TurboGears python-turbojson postgresql-server \
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
-    python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi httpd
+    python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi httpd \
+    babel
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
