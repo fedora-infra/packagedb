@@ -329,10 +329,12 @@ class ListQueries(controllers.Controller):
             and_(
                 Collection.id==PackageListing.collectionid,
                 Package.id==PackageListing.packageid,
-                Package.statuscode==STATUS['Approved'].statuscodeid,
-                PackageListing.statuscode==STATUS['Approved'].statuscodeid,
-                Collection.statuscode.in_((STATUS['Active'].statuscodeid,
-                    STATUS['Under Development'].statuscodeid)),
+                Package.statuscode.in_(STATUS['Approved'].statuscodeid,
+                    STATUS['Orphaned'].statuscodeid),
+                PackageListing.statuscode.in_(STATUS['Approved'].statuscodeid,
+                    STATUS['Orphaned'].statuscodeid),
+                Collection.statuscode.in_(STATUS['Active'].statuscodeid,
+                    STATUS['Under Development'].statuscodeid),
                 ),
             order_by=(Collection.name,), distinct=True)
 
