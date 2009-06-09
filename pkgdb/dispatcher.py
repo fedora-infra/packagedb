@@ -496,7 +496,7 @@ class PackageDispatcher(controllers.Controller):
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, pkg.owner)
             status = STATUS['Owned']
-            self.set_bugzilla_owner(identity.current.user.email, 
+            self._set_bugzilla_owner(identity.current.user.email, 
                 pkg.package.name, pkg.collection.name,
                 pkg.collection.version, bzComment)
         elif approved in ('admin', 'owner'):
