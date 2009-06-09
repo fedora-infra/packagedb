@@ -458,7 +458,7 @@ class ListQueries(controllers.Controller):
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
                 Package.statuscode!=STATUS['Removed'].statuscodeid,
-                PackageListing.statuscode!=STATUS['Removed'].statuscodeid),
+                PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
                 Collection.statuscode.in_((STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)),
                 ),
