@@ -147,7 +147,7 @@ class InstallApp(_install_lib, object):
         ### FIXME: Couldn't think of a better way to do this in limited time
 
         # Install the configuration file to the confdir
-        confdir = self.root + os.path.sep + self.install_conf
+        confdir = '%s%s%s' % (self.root, os.path.sep, self.install_conf)
         confdir.replace('//','/')
         self.mkpath(confdir)
         if not os.path.exists('pkgdb.cfg') \

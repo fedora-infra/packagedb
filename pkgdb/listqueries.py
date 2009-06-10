@@ -320,7 +320,7 @@ class ListQueries(controllers.Controller):
         bugzilla_acls = {}
         username = None
 
-        # select all packages that are active in an active release
+        # select all packages that are in an active release
         package_info = select((
             # pylint: disable-msg=E1101
             Collection.name, Package.name,
@@ -329,10 +329,10 @@ class ListQueries(controllers.Controller):
             and_(
                 Collection.id==PackageListing.collectionid,
                 Package.id==PackageListing.packageid,
-                Package.statuscode==STATUS['Approved'].statuscodeid,
-                PackageListing.statuscode==STATUS['Approved'].statuscodeid,
-                Collection.statuscode.in_((STATUS['Active'].statuscodeid,
-                    STATUS['Under Development'].statuscodeid)),
+                Package.statuscode!=STATUS['Removed'].statuscodeid,
+                PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
+                Collection.statuscode.in_(STATUS['Active'].statuscodeid,
+                    STATUS['Under Development'].statuscodeid),
                 ),
             order_by=(Collection.name,), distinct=True)
 
@@ -378,8 +378,8 @@ class ListQueries(controllers.Controller):
                 and_(
                     Collection.id==PackageListing.collectionid,
                     Package.id==PackageListing.packageid,
-                    Package.statuscode==STATUS['Approved'].statuscodeid,
-                    PackageListing.statuscode==STATUS['Approved'].statuscodeid,
+                    Package.statuscode!=STATUS['Removed'].statuscodeid,
+                    PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
                     Collection.statuscode.in_((STATUS['Active'].statuscodeid,
                         STATUS['Under Development'].statuscodeid)),
                     Package.name.in_(undupe_owners),
@@ -457,8 +457,8 @@ class ListQueries(controllers.Controller):
                         PackageListing.id,
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
-                Package.statuscode==STATUS['Approved'].statuscodeid,
-                PackageListing.statuscode==STATUS['Approved'].statuscodeid,
+                Package.statuscode!=STATUS['Removed'].statuscodeid,
+                PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
                 Collection.statuscode.in_((STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)),
                 ),
