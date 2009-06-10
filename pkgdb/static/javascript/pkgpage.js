@@ -461,7 +461,7 @@ function request_status_change(event) {
             'div', 'requestContainer');
     busy(requestContainer);
     var url, query_params;
-    url, query_params = create_url(requestContainer, '/set_acl_status');
+    [url, query_params] = create_url(requestContainer, '/set_acl_status');
 
     /* Retrieve person to make the change for. */
     var aclRow = getFirstParentByTagAndClassName(requestContainer, 'tr',
@@ -479,7 +479,7 @@ function request_status_change(event) {
     /* Retrieve pkgid and aclName */
     var idParts = requestContainer.getAttribute('name').split(':');
 
-    query_params = query_params.merge({'pkgid': idParts[0],
+    query_params = merge(query_params, {'pkgid': idParts[0],
             'person_name': person_name, 'new_acl': idParts[1],
             'statusname': aclStatus});
 
