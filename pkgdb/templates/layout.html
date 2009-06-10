@@ -77,6 +77,7 @@
         <div py:replace="select('*|text()')" />
       </div>
     </div>
+    <div py:for="js in tg_js_bodybottom" py:replace="ET(js.display())" />
     <div id="bottom">
       <div id="footer">
         <p>PackageDB Version: ${_version} -- Server: ${_hostname}</p>
