@@ -83,8 +83,10 @@ class BugList(list):
 
         bug.bug_status = to_unicode(bug.bug_status, errors='replace')
         bug.short_desc = to_unicode(bug.short_desc, errors='replace')
+        bug.product = to_unicode(bug.product, errors='replace')
         return {'url': bug.url, 'bug_status': bug.bug_status,
-                'short_desc': bug.short_desc, 'bug_id': bug.bug_id}
+                'short_desc': bug.short_desc, 'bug_id': bug.bug_id,
+                'product': bug.product}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
@@ -137,11 +139,11 @@ class Bugs(controllers.Controller):
                         {'url':url})
             raise redirect(url)
 
-        query = {'product': 'Fedora',
+        query = {'product': ('Fedora', 'Fedora EPEL'),
                 'component': package_name,
-                'bug_status': ['ASSIGNED', 'NEW', 'MODIFIED',
+                'bug_status': ('ASSIGNED', 'NEW', 'MODIFIED',
                     'ON_DEV', 'ON_QA', 'VERIFIED', 'FAILS_QA',
-                    'RELEASE_PENDING', 'POST'] }
+                    'RELEASE_PENDING', 'POST') }
         # :E1101: python-bugzilla monkey patches this in
         raw_bugs = bugzilla.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
