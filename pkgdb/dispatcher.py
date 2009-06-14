@@ -745,6 +745,11 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Package Listing with id:'
                 ' %(pkg)s does not exist') % {'pkg': pkg_listing_id})
 
+        if pkg.statuscode == STATUS['Deprecated'].statuscodeid:
+            # Retired packages must be brought out of retirement first
+            return dict(status=False, message=_('This package is retired.  It'
+                ' must be unretired first'))
+
         # Only admins can change whether the provenpackager group can
         # commit.
         if not identity.in_group(admin_grp):
