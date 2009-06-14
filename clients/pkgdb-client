@@ -155,17 +155,6 @@ Example: pkgdb-client add -u toshio -o testowner -d 'Purely a test package' -b d
 
     return opts
 
-def group_list_to_dict(groups):
-    '''Reformat groups to be added.
-
-    The pkgdb takes a mapping of group names to True or False.
-    '''
-    group_dict = {}
-    if groups:
-        for group in groups:
-            group_dict[group] = True
-    return group_dict
-
 def clone_branch(pkgdb, options):
     '''Clone a package's permissions from one branch to another.
 
@@ -186,7 +175,7 @@ def clone_branch(pkgdb, options):
         # Make changes to the master branch before cloning
         if options.groups or options.comaintList or options.ccList \
                 or options.description or options.owner:
-            group_dict = group_list_to_dict(options.groups)
+            group_dict = options.groups
             try:
                 pkgdb.add_edit_package(package, options.owner,
                         options.description, [options.masterBranch],
@@ -216,7 +205,7 @@ def add_package(pkgdb, options):
     '''
     failedPackages = {}
     for package in options.packages:
-        group_dict = group_list_to_dict(options.groups)
+        group_dict = options.groups
         try:
             pkgdb.add_package(pkg=package, owner=options.owner,
                     description=options.description,
@@ -234,7 +223,7 @@ def edit_package(pkgdb, options):
     '''
     failedPackages = {}
     for package in options.packages:
-        group_dict = group_list_to_dict(options.groups)
+        group_dict = options.groups
         try:
             pkgdb.edit_package(package, owner=options.owner,
                     description=options.description,
