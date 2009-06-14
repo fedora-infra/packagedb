@@ -3,7 +3,7 @@ Information about this pkgdb release
 '''
 from pkgdb import _
 
-VERSION = '0.3.10.93'
+VERSION = '0.3.99'
 NAME = 'fedora-packagedb'
 DESCRIPTION = _('The Fedora Package Database')
 LONG_DESCRIPTION = _('''
