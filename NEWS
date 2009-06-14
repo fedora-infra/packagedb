@@ -3,8 +3,28 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 22 Jan 2009
-:Version: 0.3.10.1
+:Date: 14 Jun 2009
+:Version: 0.4.0
+
+------
+0.4.0
+-----
+
+This is a major upgrade with many changes to all areas of the code.
+
+* Now uses usernames and group names instead of ids in the db and public API
+* Package status now uses the status field instead of the owner
+* Add Package retirement
+* Use templates and code in python-fedora to prevent CSRF attacks
+* Using MochiKit-1.4
+* Updated pkgdb-client takes subcommands add or edit to help with typo
+  related problems
+* List bugs in EPEL as well as Fedora
+* Fix bug list to not show closed bugs
+* Switch to a wsgi-based server
+* Change User and group caching to not cause long startup times.
+* Code cleanups and bugfixes galore
+* Update for TurboGear-1.0.8
 
 --------
 0.3.10.1

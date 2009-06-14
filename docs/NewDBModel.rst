@@ -4,6 +4,7 @@ Changes to DB Model
 
 :Author: Toshio Kuratomi
 :Date: 16 Oct, 2008
+:For Version: 0.5.x
 
 We want to make some changes to the DB Model.  In some cases these will be
 fairly invasive and require rewriting various bits of both client code and
