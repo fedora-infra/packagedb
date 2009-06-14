@@ -216,10 +216,14 @@ def add_package(pkgdb, options):
     '''
     failedPackages = {}
     for package in options.packages:
+        group_dict = group_list_to_dict(options.groups)
         try:
             pkgdb.add_package(pkg=package, owner=options.owner,
                     description=options.description,
-                    branches=options.branchList)
+                    branches=options.branchList,
+                    cc_list=options.ccList,
+                    comaintainers=options.comaintList,
+                    groups=group_dict)
         except AppError, e:
             failedPackages[package] = e.message
             continue
