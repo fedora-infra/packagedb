@@ -279,6 +279,9 @@ if __name__ == '__main__':
     for retry in range(1, config['pkgdb.retries'] + 1):
         try:
             if options.pkg_action and options.pkg_action == 'add':
+                if len(options.packages) > 1:
+                    print 'You can only specify one package to add at a time'
+                    sys.exit(1)
                 failedPackages.update(add_package(pkgdb, options))
             elif options.pkg_action and options.pkg_action == 'edit':
                 if options.mass_branch:
@@ -297,6 +300,9 @@ if __name__ == '__main__':
                     failedPackages.update(remove_user(pkgdb, options))
                 else:
                     failedPackages.update(edit_package(pkgdb, options))
+            else:
+                print 'You must specify either add or edit as a subcommand to pkgdb-client.'
+                sys.exit(1)
         except AuthError, e:
             if sys.stdin.isatty():
                 if retry >= config['pkgdb.retries']:
