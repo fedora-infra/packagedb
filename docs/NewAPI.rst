@@ -4,7 +4,7 @@ New PackageDB API
 
 :Author: Toshio Kuratomi
 :Date: 14 Oct, 2008
-:For Version: 0.4.x
+:For Version: 0.5.x
 
 The first version of the PackageDB API grew somewhat organically.  This document
 exlains what API changes are going into 0.4.x to create a more cohesive, easier
