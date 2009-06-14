@@ -1004,7 +1004,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user_name, STATUS['APPROVED'].statuscodeid,
+                identity.current.user_name, STATUS['Approved'].statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg
 
