@@ -1251,6 +1251,14 @@ class PackageDispatcher(controllers.Controller):
 
                 # Save a reference to all pkg_listings
                 listings.append(pkg_listing)
+        else:
+            # Default to the devel branch
+            collection = Collection.query.filter_by(
+                    name='Fedora', version='devel').one()
+            pkg_listing = PackageListing.query.filter_by(
+                    collectionid=collection.id,
+                    packageid=pkg.id).one()
+            listings = [pkg_listing]
 
         # If ownership, change the owners
         if 'owner' in changes:
@@ -1366,7 +1374,7 @@ class PackageDispatcher(controllers.Controller):
 
                 # We don't let every group commit
                 try:
-                    group_name = self.groups[group]
+                    self.groups[group]
                 except KeyError:
                     if status == STATUS['Denied']:
                         # If we're turning it off we don't have to worry
@@ -1376,7 +1384,7 @@ class PackageDispatcher(controllers.Controller):
 
                 for pkg_listing in listings:
                     group_acl = self._create_or_modify_group_acl(pkg_listing,
-                            group_id, 'commit', status)
+                            group, 'commit', status)
 
                     # Make sure a log is created in the db as well.
                     log_msg = u'%s %s %s for commit access on %s' \
