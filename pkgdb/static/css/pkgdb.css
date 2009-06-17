@@ -1,6 +1,6 @@
 /*
  * Copyright © 2007  Ricky Zhou
- * Copyright © 2007  Red Hat, Inc.
+ * Copyright © 2007, 2009  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use, modify,
  * copy, or redistribute it subject to the terms and conditions of the GNU
@@ -47,71 +47,6 @@
   margin: 1ex 0;
 }
 
-/*
- * These could be reused in all of our TurboGears apps.
- */
-#pageLogin
-{
-  float: right;
-}
-
-.actions
-{
-  list-style: none;
-  line-height: 1;
-  margin: 1ex 0!important;
-}
-
-.actions li
-{
-  display: inline;
-  margin-right: 1ex;
-}
-
-a.bodhi
-{
-  padding-left: 20px;
-  background: url(https://fedoraproject.org/static/images/icons/fedora-infra-icon_bodhi.png) 0 50% no-repeat;
-}
-
-a.koji
-{
-  padding-left: 20px;
-  background: url(http://fedoraproject.org/static/images/icons/fedora-infra-icon_koji.png) 0 50% no-repeat;
-}
-
-a.bugz
-{
-  padding-left: 20px;
-  background: url(http://fedoraproject.org/static/images/icons/fedora-infra-icon_bugzilla.png) 0 50% no-repeat;
-}
-
-a.pkgdb
-{
-  padding-left: 20px;
-  background: url(http://fedoraproject.org/static/images/icons/fedora-infra-icon_pkgdb.png) 0 50% no-repeat;
-}
-
-a.cvs
-{
-  padding-left: 20px;
-  background: url(http://fedoraproject.org/static/images/icons/fedora-infra-icon_source-control.png) 0 50% no-repeat;
-}
-
-.ToolTip
-{
-  display: block;
-  positon: absolute;
-  border: 1px solid black;
-  background-color: lightyellow;
-  width: 200px;
-}
-
-.invisible
-{
-  display: none;
-}
-
 .filter
 {
     background: #ddd;
@@ -134,12 +69,25 @@ a.cvs
     margin: .1em;
 }
 
-.flash
+/*
+ * These could be reused in all of our TurboGears apps.
+ */
+
+#pageLogin
 {
-    background: #DEE681 url(../images/success.png) 10px 50% no-repeat;
-    border: 1px solid #CCBBAA;
-    padding: 1.5ex 15px 1.5ex 43px;
-    margin: 1ex 0;
+  float: right;
+}
+.actions
+{
+  list-style: none;
+  line-height: 1;
+  margin: 1ex 0!important;
+}
+
+.actions li
+{
+  display: inline;
+  margin-right: 1ex;
 }
 
 #smalltext
@@ -187,3 +135,14 @@ a.cvs
 .PackageList dd {
   margin-left: 2em;
 }
+
+/* Want to merge somehow -- talk to mizmo and ricky */
+#head h1 {
+  float: left;
+}
+
+#head {
+  height: 65px;
+}
+
+/* Requested to merge */

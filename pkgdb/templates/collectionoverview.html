@@ -29,9 +29,12 @@
             Number of Packages
         </td>
         <td>
-          <form py:if="hasattr(collection, 'branchname') and collection.branchname and collection.koji_name and collection.branchname != 'devel'" action="${tg.url('/collections/mass_branch/' + collection.simple_name())}" method="POST">
-            <input py:if="not tg.identity.anonymous and 'cvsadmin' in tg.identity.groups" type="submit" value="Branch All" class="Active MassBranchButton" title="Branch every package in 'Fedora devel' to this branch.  This copies the permissions and makes it possible to create a branch on the cvs server."/>
-            <input py:if="tg.identity.anonymous or not 'cvsadmin' in tg.identity.groups" type="submit" disabled="true" value="Branch All" class="Inactive MassBranchButton"/>
+        <?python
+        from pkgdb.utils import admin_grp
+        ?>
+          <form py:if="collection.status.locale['C'].statusname != 'EOL' and hasattr(collection, 'branchname') and collection.branchname and collection.koji_name and collection.branchname != 'devel'" action="${tg.url('/collections/mass_branch/' + collection.simple_name())}" method="POST">
+            <input py:if="not tg.identity.anonymous and admin_grp in tg.identity.groups" type="submit" value="Branch All" class="Active MassBranchButton" title="Branch every package in 'Fedora devel' to this branch.  This copies the permissions and makes it possible to create a branch on the cvs server."/>
+            <input py:if="tg.identity.anonymous or not admin_grp in tg.identity.groups" type="submit" disabled="true" value="Branch All" class="Inactive MassBranchButton"/>
           </form>
         </td>
       </tr>

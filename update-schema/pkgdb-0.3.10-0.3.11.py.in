@@ -1,0 +1,153 @@
+#!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
+#
+# Copyright © 2009  Red Hat, Inc. All rights reserved.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.  You should have
+# received a copy of the GNU General Public License along with this program;
+# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
+# incorporated in the source code or documentation are not subject to the GNU
+# General Public License and may only be used or replicated with the express
+# permission of Red Hat, Inc.
+#
+# Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+
+'''
+Script to modify the table data order to make the switch from userids
+to usernames in the pkgdb db.
+
+This script will also change the statuscode of orphaned packages to 14(Orphaned)
+'''
+
+# Please change these fields!
+pguser = 'postgres'
+pgpasswd = 'postgres'
+pghost = 'localhost'
+
+import os
+import sys
+
+import sqlalchemy
+from sqlalchemy import DDL, create_engine
+from sqlalchemy.sql import select
+from turbogears.database import session
+from turbogears import config, update_config
+
+from fedora.client.fas2 import AccountSystem
+
+# These sql statements have to be run in order to modify the schema:
+
+engine = create_engine("postgres://"+pguser+":"+pgpasswd+"@"+pghost+"/pkgdb")
+
+for s in (
+    'ALTER TABLE collection \
+        ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
+      
+    'ALTER TABLE log ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
+    'ALTER TABLE log RENAME userid TO username;',
+
+    'ALTER TABLE packagelisting \
+        ALTER COLUMN owner TYPE text USING CAST(owner AS text);',
+
+    'ALTER TABLE packagelisting \
+        ALTER COLUMN qacontact TYPE text USING CAST(qacontact AS text);',
+
+    'ALTER TABLE personpackagelisting \
+        ALTER COLUMN userid TYPE text USING CAST(userid AS text);',
+    'ALTER TABLE personpackagelisting RENAME userid TO username;',
+
+    'ALTER TABLE grouppackagelisting \
+        ALTER COLUMN groupid TYPE text USING CAST(groupid AS text);',
+    'ALTER TABLE grouppackagelisting RENAME groupid TO groupname;'
+    ):
+    alter = DDL(s)
+    engine.execute(alter)
+
+# updating the Log table needs more privileges
+# PG treats DCL statements transactionally
+engine.execute('BEGIN; GRANT UPDATE ON log TO pkgdbadmin; COMMIT;')
+print 'Altering complete'
+
+# ugly configs so we can import tables from the model
+CONFDIR='@CONFDIR@' 
+PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb') 
+sys.path.append(PKGDBDIR) 
+
+if len(sys.argv) > 1:
+    update_config(configfile=sys.argv[1],
+        modulename='pkgdb.config')
+elif os.path.exists(os.path.join(os.path.dirname(__file__), '..',
+        'setup.py')):
+    update_config(configfile='pkgdb.cfg',modulename='pkgdb.config')
+else:
+    update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),
+            modulename='pkgdb.config')
+config.update({'pkgdb.basedir': PKGDBDIR}) 
+
+from pkgdb.model import Collection, PackageListing, Log, \
+        PersonPackageListing, GroupPackageListing, \
+        CollectionTable, PackageListingTable, PersonPackageListingTable, \
+        LogTable, GroupPackageListingTable
+
+fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
+username = config.get('fas.username', 'admin')
+password = config.get('fas.password', 'admin')
+
+fas = AccountSystem(fas_url, username=username, password=password,
+            cache_session=False)
+print 'loading people from fas'
+people = fas.people_by_id()
+
+def transform(relation, table, attribute):
+    ''' Transforms userids into usernames
+
+        table - pkgdb.model
+        attribute - string 'owner' or 'userid'
+    '''
+    # Note: qacontact has been changed to a string as well but it's currently
+    # unused so no need to transform
+    print 'transforming ' + relation.__name__
+    for id, owner in zip(select([relation.id]).execute(),
+                         select([getattr(relation, attribute)]).execute()):
+        ownername = people[int(owner[0])]['username']
+        table.update('id=%s' % id[0], values={attribute:ownername}).execute()
+    print 'flushing ' + relation.__name__
+    session.flush()
+
+for relation, table in ([PackageListing, PackageListingTable],
+                        [Collection, CollectionTable]):
+    transform(relation, table, 'owner')
+
+for relation, table in ([PersonPackageListing, PersonPackageListingTable],
+                 [Log, LogTable]):
+   transform(relation, table, 'username')
+
+# build a dictionary with the few distinct string group_id > group_name pairs
+group_ids = select(
+        [GroupPackageListing.groupname]).distinct().execute().fetchall()
+groups = {}
+for group in group_ids:
+    groups[group[0]] = fas.group_by_id(int(group[0]))['name']
+
+print 'transforming GroupPackageListing'
+ 
+for id, groupname in zip(select([GroupPackageListing.id]).execute(),
+                         select([GroupPackageListing.groupname]).execute()):
+    groupname = groups[groupname[0]]
+    GroupPackageListingTable.update('id=%s' % id[0],
+                                    values={'groupname':groupname}).execute()
+print 'flushing for GroupPackageListing'
+session.flush()
+
+print 'changing orphan statuscodes to 14 (Orphaned)'
+engine.execute("UPDATE packagelisting SET statuscode=14 WHERE owner='orphan'")
+engine.execute("UPDATE packagelisting SET statuscode=3 WHERE owner!='orphan' and statuscode=14")
+
+# Be sure to revoke the privilege AFTER the script has done its job
+engine.execute('BEGIN; REVOKE UPDATE ON log FROM pkgdbadmin; COMMIT;')

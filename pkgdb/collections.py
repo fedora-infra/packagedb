@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -46,7 +46,7 @@ from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas
+from pkgdb.utils import admin_grp, STATUS
 
 MASS_BRANCH_SET = 500
 
@@ -74,12 +74,12 @@ class Collections(controllers.Controller):
                                 (Collection.name, Collection.version))
         # pylint: enable-msg=E1101
 
-        return dict(title=self.app_title + ' -- Collection Overview',
-                collections=collections)
+        return dict(title=_('%(app)s -- Collection Overview') %
+                {'app': self.app_title}, collections=collections)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
-            allow_limit_override=True, max_pages=13)
+            max_limit=None, max_pages=13)
     # :C0103: id is an appropriate name for this function
     def id(self, collection_id): # pylint: disable-msg=C0103
         '''Return a page with information on a particular Collection
@@ -91,11 +91,12 @@ class Collections(controllers.Controller):
             collection_id = int(collection_id)
         except ValueError:
             error = dict(status = False,
-                    title = self.app_title + ' -- Invalid Collection Id',
-                    message = 'The collection_id you were linked to is not a' \
+                    title = _('%(app)s -- Invalid Collection Id') %
+                        {'app': self.app_title},
+                    message =_('The collection_id you were linked to is not a' \
                             ' valid id.  If you received this error from a' \
                             ' link on the fedoraproject.org website, please' \
-                            ' report it.')
+                            ' report it.'))
             if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
@@ -112,31 +113,21 @@ class Collections(controllers.Controller):
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
-                    title = self.app_title + ' -- Invalid Collection Id',
-                    message = 'The collection_id you were linked to, %s, does' \
-                            ' not exist.  If you received this error from a' \
-                            ' link on the fedoraproject.org website, please' \
-                            ' report it.' % collection_id)
+                    title = _('%(app)s -- Invalid Collection Id') % {'app': self.app_title},
+                    message = _('The collection_id you were linked to, %(id)s,'
+                            ' does not exist.  If you received this error from'
+                            ' a link on the fedoraproject.org website, please'
+                            ' report it.') % {'id': collection_id})
             if request.params.get('tg_format', 'html') != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
 
-        # Get ownership information from the fas
-        try:
-            user = fas.cache[collection_entry.owner]
-        except KeyError:
-            user = {}
-            user['username'] = 'User ID %i' % collection_entry.owner
-            user['email'] = 'unknown@fedoraproject.org'
-
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
-        # 2) We need ownerName and statusname which are not in the specific
-        #    table.
+        # 2) We need statusname which is not in the specific table.
         collection = {'name': collection_entry.name,
                 'version': collection_entry.version,
                 'owner': collection_entry.owner,
-                'ownername': user['username'],
                 'summary': collection_entry.summary,
                 'description': collection_entry.description,
                 'statusname': collection_entry.status.locale['C'].statusname
@@ -146,7 +137,9 @@ class Collections(controllers.Controller):
         # pylint:disable-msg=E1101
         packages = Package.query.options(lazyload('listings2.people2'),
                 lazyload('listings2.groups2')).join('listings2'
-                        ).filter_by(collectionid = collection_id)
+                        ).filter_by(collectionid = collection_id
+                        ).filter(Package.statuscode !=
+                                STATUS['Removed'].statuscodeid)
         # pylint:enable-msg=E1101
 
         return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
@@ -156,15 +149,13 @@ class Collections(controllers.Controller):
     # Read-write methods
     #
 
-    def _mass_branch_worker(self, to_branch, devel_branch, pkgs, author_name,
-            author_id):
+    def _mass_branch_worker(self, to_branch, devel_branch, pkgs, author_name):
         '''Main worker for mass branching.
 
         :arg to_branch: Branch to put new PackageListings on
         :arg devel_branch: Branch for devel, where we're branching from
         :arg pkgs: List of packages to branch
         :arg author_name: username of person making the branch
-        :arg author_id: userid of person making the branch
         :returns: List of packages which had failures while trying to branch
 
         This method forks and invokes the branching in a child.  That prevents
@@ -189,8 +180,7 @@ class Collections(controllers.Controller):
                     # clone the package from the devel branch
                     try:
                         devel_branch.listings2[pkg['package_name']
-                                ].clone(to_branch.branchname, author_name,
-                                        author_id)
+                                ].clone(to_branch.branchname, author_name)
                     except InvalidRequestError:
                         # Exceptions will be handled later.
                         pass
@@ -221,14 +211,14 @@ class Collections(controllers.Controller):
             return []
 
     def _mass_branch(self, to_branch, devel_branch, pkgs, author_name,
-            author_id):
+            author_email):
         '''Performs a mass branching.  Intended to run in the background.
 
         :arg to_branch: Branch to put new PackageListings on
         :arg devel_branch: Branch for devel, where we're branching from
         :arg pkgs: List of packages to branch
         :arg author_name: username of person making the branch
-        :arg author_id: userid of person making the branch
+        :arg author_email: email of person making the branch
 
         This method branches all the packages given to it from devel_branch to
         to_branch.  It subdivides the package list and branches each set in a
@@ -241,10 +231,9 @@ class Collections(controllers.Controller):
         # Split this up and fork so we don't blow out all our memory
         for pkg_idx in range(MASS_BRANCH_SET, len(pkgs), MASS_BRANCH_SET):
             unbranched.extend(self._mass_branch_worker(to_branch, devel_branch,
-                pkgs[pkg_idx - MASS_BRANCH_SET:pkg_idx], author_name,
-                author_id))
+                pkgs[pkg_idx - MASS_BRANCH_SET:pkg_idx], author_name))
         unbranched.extend(self._mass_branch_worker(to_branch, devel_branch,
-            pkgs[pkg_idx:], author_name, author_id))
+            pkgs[pkg_idx:], author_name))
 
 
         if unbranched:
@@ -263,12 +252,12 @@ class Collections(controllers.Controller):
         eventlogger = EventLogger()
         eventlogger.send_msg(msg, _('Mass branching status for %(branch)s') %
                 {'branch': to_branch.branchname},
-                (fas.cache[author_id]['email'],))
+                (author_email,))
 
     @expose(allow_json=True)
     @json_or_redirect('/collections')
     # Check that we have a tg.identity, otherwise you can't set any acls.
-    @identity.require(identity.in_group('cvsadmin'))
+    @identity.require(identity.in_group(admin_grp))
     def mass_branch(self, branch):
         '''Mass branch all packages listed as non-blocked in koji to the pkgdb.
 
@@ -302,19 +291,27 @@ class Collections(controllers.Controller):
             to_branch = Branch.query.filter_by(branchname=branch).one()
         except InvalidRequestError, e:
             session.rollback()
-            flash(_('Unable to locate a branch for %(branch)s') % {'branch':
-                branch})
+            flash(_('Unable to locate a branch for %(branch)s') % {
+                'branch': branch})
+            return dict(exc='InvalidBranch')
+
+        if to_branch.statuscode == STATUS['EOL'].statuscodeid:
+            session.rollback()
+            flash(_('Will not branch packages in EOL collection %(branch)s') % {
+                'branch': branch})
             return dict(exc='InvalidBranch')
 
         # Retrieve the a koji session to get the lisst of packages from
         koji_name = to_branch.koji_name
         if not koji_name:
             session.rollback()
-            flash(_('Unable to mass branch for %(branch)s because it is not managed by koji') % {'branch': branch})
+            flash(_('Unable to mass branch for %(branch)s because it is not'
+                ' managed by koji') % {'branch': branch})
             return dict(exc='InvalidBranch')
 
         koji_session = koji.ClientSession(koji_url)
-        if not koji_session.ssl_login(cert=pkgdb_cert, ca=user_ca, serverca=server_ca):
+        if not koji_session.ssl_login(cert=pkgdb_cert, ca=user_ca,
+                serverca=server_ca):
             session.rollback()
             flash(_('Unable to log into koji'))
             return dict(exc='ServiceError')
@@ -337,9 +334,26 @@ class Collections(controllers.Controller):
         # server is likely to time out.
         brancher = threading.Thread(target=self._mass_branch,
                 args=[to_branch, devel_branch, pkgs,
-                    identity.current.user_name, identity.current.user.id])
+                    identity.current.user_name, identity.current.user.email])
         brancher.start()
         ### FIXME: Create a status page for this that we update the database
         # to see.
         flash(_('Mass branch started.  You will be emailed the results.'))
         return {}
+
+    @expose(allow_json=True)
+    def by_simple_name(self, collctn_name, collctn_ver):
+        '''
+        Retrieve a collection by its simple_name
+        '''
+        collection = Collection.query.filter_by(name=collctn_name,
+                version=collectn_ver).one()
+        return dict(name=collection.simple_name())
+
+    @expose(allow_json=True)
+    def by_canonical_name(self, collctn):
+        '''
+        Retrieve a collection by its canonical_name
+        '''
+        collection, version = Collection.by_simple_name(collctn)
+        return dict(collctn_name=collection, collctn_ver=version)

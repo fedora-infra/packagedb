@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -31,7 +31,9 @@ Module to be used for letter pagination and search.
 from sqlalchemy.sql import or_
 from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate, config
-from pkgdb.model import Package, StatusTranslation
+from pkgdb.model import Package
+from pkgdb.utils import STATUS
+from pkgdb import _
 
 from cherrypy import request
 
@@ -42,18 +44,15 @@ class Letters(controllers.Controller):
     def __init__(self, app_title=None):
         # pylint: disable-msg=E1101
         self.app_title = app_title
-        self.removedStatus = StatusTranslation.query.filter_by(
-                    statusname='Removed', language='C').first().statuscodeid
 
-    @expose(template='pkgdb.templates.pkgbugoverview')
+    @expose(template='pkgdb.templates.pkgbugoverview', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
-                allow_limit_override=True, max_pages=13)
+                max_limit=None, max_pages=13)
     def default(self, searchwords=''):
         '''Return a list of all packages in the database.
 
-           Arguments:
-           :searchwords: optional - string to restrict the list, can use % or * 
-           as wildcards
+           :kwarg searchwords: optional - string to restrict the list, can use
+           % or * as wildcards
         '''
         if searchwords != '':
             searchwords = searchwords.replace('*','%')
@@ -78,7 +77,8 @@ class Letters(controllers.Controller):
         searchwords = searchwords.replace('%','*')
         # minus removed packages
         packages = packages.filter(
-                        Package.c.statuscode!=self.removedStatus)
+                        Package.c.statuscode!=STATUS['Removed'].statuscodeid)
+
         # set the links for bugs or package info
         if request.path.startswith('/pkgdb/packages/index/'):
             mode = ''
@@ -86,6 +86,7 @@ class Letters(controllers.Controller):
         else:
             mode = 'bugs/'
             bzUrl = config.get('bugzilla.url', 'https://bugzilla.redhat.com/')
-        return dict(title=self.app_title + ' -- Packages Overview'+mode,
+        return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {
+            'app': self.app_title, 'mode': mode},
                        searchwords=searchwords, packages=packages, mode=mode,
                        bzurl=bzUrl)

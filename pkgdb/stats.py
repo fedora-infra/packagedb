@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2007  Ionuț Arțăriși
-# Copyright © 2007  Red Hat, Inc.
+# Copyright © 2007, 2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -29,9 +29,9 @@ from turbogears import controllers, expose, identity
 
 from pkgdb.model import PackageListing, PersonPackageListing, \
         PersonPackageListingAcl
-from pkgdb.utils import fas
 
-ORPHAN_ID = 9900
+from pkgdb import _
+
 DEVEL = 8 # collection id
 class Stats(controllers.Controller):
     '''Controller which calculates general stats about packages
@@ -42,7 +42,7 @@ class Stats(controllers.Controller):
     def __init__(self, app_title):
         '''Create a Stats Controller.
 
-        :app_title: Title of the web app.
+        :kwarg app_title: Title of the web app.
         '''
         self.app_title = app_title
 
@@ -55,12 +55,12 @@ class Stats(controllers.Controller):
         # attributes on mapper classes (E1101)
         # pylint: disable-msg=E1101
         if identity.current.anonymous:
-            own = 'need to be logged in'
+            own = _('need to be logged in')
         else:
             # SQLAlchemy mapped classes are monkey patched
             # pylint: disable-msg=E1101
             own = PackageListing.query.filter(and_(
-                PackageListing.owner==identity.current.user.id,
+                PackageListing.owner==identity.current.user_name,
                 PackageListing.statuscode==3,
                 PackageListing.collectionid==DEVEL)).count()
 
@@ -69,26 +69,26 @@ class Stats(controllers.Controller):
                 [func.count(PackageListing.owner).label('numpkgs'),
                     PackageListing.owner], and_(
                         PackageListing.collectionid==DEVEL,
-                        PackageListing.owner!=ORPHAN_ID)).group_by(
+                        PackageListing.owner!='orphan')).group_by(
                                 PackageListing.owner).order_by(
                                         desc('numpkgs')).limit(20)
         top_owners_names = []
         for listing in top_owners_select.execute():
-            top_owners_names.append(fas.cache[int(listing.owner)]['username'])
+            top_owners_names.append(listing.owner)
 
         # most packages owned or comaintained in DEVEL collection
         maintain_select = select(
-            [func.count(PersonPackageListing.userid).label('numpkgs'),
-                PersonPackageListing.userid,
+            [func.count(PersonPackageListing.username).label('numpkgs'),
+                PersonPackageListing.username,
             PackageListing.collectionid], and_(
             PersonPackageListing.packagelistingid==PackageListing.id,
             PackageListing.collectionid==DEVEL)).group_by(
-                PersonPackageListing.userid,
+                PersonPackageListing.username,
             PackageListing.collectionid).order_by(
             desc('numpkgs')).limit(20)
         maintain_names = []
         for listing in maintain_select.execute():
-            maintain_names.append(fas.cache[int(listing.userid)]['username'])
+            maintain_names.append(listing.username)
 
         # total number of packages in pkgdb
         total = PackageListing.query.count()
@@ -103,15 +103,16 @@ class Stats(controllers.Controller):
             PackageListing.id).execute().rowcount
         # orphan packages in DEVEL 
         orphan_devel = PackageListing.query.filter_by(
-            owner=ORPHAN_ID, collectionid=DEVEL).count()
-        # orphan packages in fedora 8
-        orphan_eight = PackageListing.query.filter_by(
-            owner=ORPHAN_ID, collectionid=14).count()
+            owner='orphan', collectionid=DEVEL).count()
+        # orphan packages in fedora 10
+        orphan_latest = PackageListing.query.filter_by(
+            owner='orphan', collectionid=19).count()
 
-        return dict(title=self.app_title + ' -- Package Stats',
+        return dict(title=_('%(app)s -- Package Stats') % {
+            'app': self.app_title},
             total=total,
             no_comaintainers=no_comaintainers,
-            orphan_devel=orphan_devel, orphan_eight=orphan_eight,
+            orphan_devel=orphan_devel, orphan_latest=orphan_latest,
             own=own,
             top_owners_names=top_owners_names,
             top_owners_list=top_owners_select.execute(),

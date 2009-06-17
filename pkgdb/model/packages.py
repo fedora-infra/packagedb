@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -20,9 +20,6 @@
 '''
 Mapping of package related database tables to python classes.
 
-.. data:: GROUP_MAP
-    Map groupids to group names and back.  It only has the groups that the
-    packagedb uses.
 .. data:: DEFAULT_GROUPS
     Groups that get acls on the Package Database by default (in 0.3.x, the
     groups have to be listed here in order for them to show up in the Package
@@ -56,10 +53,6 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
 
 get_engine()
 
-GROUP_MAP = {101197: 'cvsadmin',
-    107427: 'provenpackager',
-    'cvsadmin': 101197,
-    'provenpackager': 107427}
 DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
     'checkout': True}}
 
@@ -108,7 +101,7 @@ class Package(SABase):
                 self.reviewurl, self.shouldopen)
 
     def create_listing(self, collection, owner, status,
-            qacontact=None, author_name=None, author_id=None):
+            qacontact=None, author_name=None):
         '''Create a new PackageListing branch on this Package.
 
         :arg collection: Collection that the new PackageListing lives on
@@ -116,8 +109,6 @@ class Package(SABase):
         :arg status: Status to set the PackageListing to
         :kwarg qacontact: QAContact for this PackageListing in bugzilla.
         :kwarg author_name: Author of the change.  Note: will remove when
-            logging is made generic
-        :kwarg author_id: Author of the change.  Note: will remove when
             logging is made generic
         :returns: The new PackageListing object.
 
@@ -128,11 +119,12 @@ class Package(SABase):
         from pkgdb.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
         pkg_listing = PackageListing(owner, status.statuscodeid,
-                packageid=self.id, collectionid=collection.id,
+                collectionid=collection.id,
                 qacontact=qacontact)
+        pkg_listing.package = self
         for group in DEFAULT_GROUPS:
-            new_group = GroupPackageListing(GROUP_MAP[group])
-            pkg_listing.groups2[GROUP_MAP[group]] = new_group
+            new_group = GroupPackageListing(group)
+            pkg_listing.groups2[group] = new_group
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
                     acl_status = STATUS['Approved'].statuscodeid
@@ -146,7 +138,7 @@ class Package(SABase):
                 # pylint: enable-msg=W0201
 
         # Create a log message
-        log = PackageListingLog(author_id,
+        log = PackageListingLog(author_name,
                 STATUS['Added'].statuscodeid,
                 '%(user)s added a %(branch)s to %(pkg)s' %
                 {'user': author_name, 'branch': collection,
@@ -178,13 +170,11 @@ class PackageListing(SABase):
                 ' qacontact=%r)' % (self.owner, self.statuscode,
                         self.packageid, self.collectionid, self.qacontact)
 
-    def clone(self, branch, author_name, author_id):
+    def clone(self, branch, author_name):
         '''Clone the permissions on this PackageListing to another `Branch`.
 
         :arg branch: `branchname` to make a new clone for
         :arg author_name: Author of the change.  Note, will remove when logs
-            are made generic
-        :arg author_id: Author of the change.  Note, will remove when logs
             are made generic
         :raises sqlalchemy.exceptions.InvalidRequestError: when a request
             does something that violates the SQL integrity of the database
@@ -210,7 +200,7 @@ class PackageListing(SABase):
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
                     self.owner, STATUS['Approved'], qacontact=self.qacontact,
-                    author_id=author_id, author_name=author_name)
+                    author_name=author_name)
 
         log_params = {'user': author_name,
                 'pkg': self.package.name, 'branch': branch}
@@ -236,7 +226,7 @@ class PackageListing(SABase):
                 log_params['status'] = acl.status.locale['C'].statusname
                 log_msg = '%(user)s set %(acl)s status for %(group)s to' \
                         ' %(status)s on (%(pkg)s %(branch)s)' % log_params
-                log = GroupPackageListingAclLog(author_id,
+                log = GroupPackageListingAclLog(author_name,
                         acl.statuscode, log_msg)
                 log.acl = clone_group.acls2[acl_name]
 
@@ -261,7 +251,7 @@ class PackageListing(SABase):
                 log_params['status'] = acl.status.locale['C'].statusname
                 log_msg = '%(user)s set %(acl)s status for %(person)s to' \
                         ' %(status)s on (%(pkg)s %(branch)s)' % log_params
-                log = PersonPackageListingAclLog(author_id,
+                log = PersonPackageListingAclLog(author_name,
                         acl.statuscode, log_msg)
                 log.acl = clone_person.acls2[acl_name]
 
@@ -292,8 +282,8 @@ mapper(Package, PackageTable, properties={
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
     'people2': relation(PersonPackageListing, backref=backref('packagelisting'),
-        collection_class = attribute_mapped_collection('userid')),
+        collection_class = attribute_mapped_collection('username')),
     'groups': relation(GroupPackageListing),
     'groups2': relation(GroupPackageListing, backref=backref('packagelisting'),
-        collection_class = attribute_mapped_collection('groupid')),
+        collection_class = attribute_mapped_collection('groupname')),
     })

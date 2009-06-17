@@ -11,7 +11,7 @@
     <p>Packages in all Collections: $total</p>
     <p>Packages belonging to you: $own</p><br />
     <p>Orphan packages in devel: $orphan_devel</p>
-    <p>Orphan packages in Fedora 8: $orphan_eight</p>
+    <p>Orphan packages in Fedora 10: $orphan_latest</p>
     
     <h2>Top 20 package owners</h2>
     <table>
@@ -25,7 +25,7 @@
     <td py:content="id+1">
     </td>
     <td>
-      <a href="${tg.url('/users/packages/' + str(owner))}" py:content="owner">Owner name</a></td>
+      <a href="${tg.url('/users/packages/' + owner)}" py:content="owner">Owner name</a></td>
     <td py:content="listing.numpkgs">Number of packages owned</td>  
       </tr>
     </table>
@@ -38,11 +38,11 @@
         Packages
         </th>
       </tr>
-       <tr py:for="id, (userid,listing) in enumerate(zip(maintain_names,maintain_list))">
+       <tr py:for="id, (owner,listing) in enumerate(zip(maintain_names,maintain_list))">
       <td py:content="id+1">
       </td>
       <td>
-        <a href="${tg.url('/users/packages/' + str(userid))}" py:content="userid">User name</a></td>
+        <a href="${tg.url('/users/packages/' + owner)}" py:content="owner">User name</a></td>
     <td py:content="listing.numpkgs">Number of packages maintained</td>
        </tr> 
     </table>

@@ -3,56 +3,15 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
+  <xi:include href="${tg.fedora_template('login.html')}" />
 
   <head>
     <meta content="text/html; charset=UTF-8"
     http-equiv="content-type" py:replace="''"/>
-    <title>Login</title>
-    <style type="text/css">
-      #content th, #content td
-      {
-        padding: 0.25ex;
-        border: none!important;
-      }
-    </style>
+    <title>Login to the PackageDB</title>
   </head>
 
   <body>
-    <div id="loginBox">
-      <h2>Login</h2>
-      <form action="${previous_url}" method="POST">
-        <table>
-          <tr>
-            <td class="label">
-              <label for="user_name">User Name:</label>
-            </td>
-            <td class="field">
-              <input type="text" id="user_name" name="user_name"/>
-            </td>
-          </tr>
-          <tr>
-            <td class="label">
-              <label for="password">Password:</label>
-            </td>
-            <td class="field">
-              <input type="password" id="password" name="password"/>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2" class="buttons">
-              <input type="submit" name="login" value="Login"/>
-            </td>
-          </tr>
-        </table>
-
-        <p>You'll need a <a href="https://admin.fedoraproject.org/accounts/">Fedora Account</a> in order to login.</p>
-
-        <input py:if="forward_url" type="hidden" name="forward_url"
-        value="${forward_url}"/>
-
-        <input py:for="name,value in original_parameters.items()"
-        type="hidden" name="${name}" value="${value}"/>
-      </form>
-    </div>
+    <loginform>${message}</loginform>
   </body>
 </html>

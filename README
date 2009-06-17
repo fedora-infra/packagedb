@@ -4,8 +4,8 @@ Fedora PackageDB
 
 :Author: Toshio Kuratomi
 :Contact: toshio@fedoraproject.org
-:Date: Friday, 27 April, 2008
-:Version: 0.3.3
+:Date: Wed 13 May, 2009
+:Version: 0.4.x
 
 The `PackageDB` keeps track of package ownership within Fedora.
 
@@ -45,8 +45,8 @@ Installation
 
 Although it's not working yet, the goal is to be able to run::
 
-  python setup.py build
-  python setup.py install --root ${path to installation}
+  paver build
+  paver install --root ${path to installation}
 
 and have a working installation.
 
@@ -60,15 +60,16 @@ Install Prerequisites
 ::
   yum -y install python-genshi TurboGears python-turbojson postgresql-server \
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
-    python-psycopg2 python-sqlalchemy python-feedparser koji
+    python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi httpd \
+    babel
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ::
   bzr branch bzr://bzr.fedorahosted.org/bzr/packagedb/fedora-packagedb-devel
   cd fedora-packagedb-devel
-  python setup.py egg_info
-  python setup.py build --install-conf=`pwd` --install-data=`pwd`
+  paver egg_info
+  paver build --install-conf=`pwd` --install-data=`pwd` --install-sbin=`pwd`
 
 Setup the Database
 ~~~~~~~~~~~~~~~~~~
@@ -125,8 +126,42 @@ recent dump from http://fedorahosted.org/releases/p/a/packagedb like this::
 
 Your postgres server is now all set.
 
-Start the Server
-~~~~~~~~~~~~~~~~
+Start the Server (The new way)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+First copy the pkgdb.cfg.sample file to pkgdb.cfg.  Next, edit pkgdb.cfg to
+configure the server to see your database.  You'll need to set fas.username to
+a username (your Fedora Account System username will work), fas.password (if
+you use your username, your password will work), and sqlalchemy.dburi.  The
+dburi line will be something like this::
+
+  sqlalchemy.dburi="postgres://pkgdbadmin:bunbunbun@localhost/pkgdb"
+
+You'll need to change 'bunbunbun' to your password.
+
+Next copy the httpd-pkgdb.conf file to your apache conf.d directory::
+
+  cp httpd-pkgdb.conf /etc/httpd/conf.d/
+
+Restart apache::
+
+  sudo /etc/init.d/httpd restart
+
+In your favorite web browser, navigate to::
+  https://localhost/pkgdb/
+
+
+Start the Server (The old way)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+    This method of starting the server is deprecated.  It's helpful for
+    quickly bringing up a test instance but using the wsgi server with apache
+    is more scalable and how we run things in production.  This is currently
+    working (with the 0.4.0 release) but there's not going to be much testing
+    to make sure it continues to work.
+
 First copy the pkgdb.cfg.sample file to pkgdb.cfg.  Next, edit pkgdb.cfg to
 configure the server to see your database.  You'll need to set fas.username to
 a username (your Fedora Account System username will work), fas.password (if
@@ -183,4 +218,100 @@ Then start the server::
 In your favorite web browser, navigate to::
   http://localhost:8086/pkgdb/
 
+------------
+Translations
+------------
 
+You will need babel and setuptools to translate the messages in the packagedb::
+  yum install babel setuptools
+
+Updating the POT File
+=====================
+
+When you make changes that change the translatable strings in the package, you
+should update the POT file.  Use the following paver command to do that::
+  paver extract_messages -o po/fedora-packagedb.pot
+
+Then commit your changes to source control.
+
+Updating the PO Files
+=====================
+
+You should merge the new translatable strings into the PO files at the same
+time.  Until we build a single paver command for this, we want to do this::
+  for po_file in po/*.po ; do
+    paver update_catalog -D fedora_packagedb -i po/fedora-packagedb.pot -l `basename $po_file` -d po -o $po_file
+  done
+
+Creating a new PO File
+======================
+
+If you are working on a translation for the first time, you'll need to create
+the PO file.  Run this paver command substituting $LOCALE with the locale you
+wish to translate for::
+  paver init_catalog -D fedora_packagedb -i po/fedora-packagedb.pot -l $LOCALE -d po -o po/$LOCALE.po
+
+That will initialize a new PO file from the current POT file.  The PO will be
+located in po/$LOCALE.po
+
+After creation, this should be committed to the revision control system.
+
+Compiling Message Catalogs
+==========================
+
+Message catalogs can be compiled for testing and should always be compiled
+just prior to release.  Do this with the following paver command::
+  paver make_catalogs
+
+Compiled message catalogs should not be committed to source control.
+
+Installing Message Catalogs
+===========================
+
+``paver install_catalogs`` will install the catalogs.  This commmand has been
+added to ``paver install``.
+
+-------
+Release
+-------
+
+We want to get to the place where a release can be made via a paver target.
+Currently, this is more involved.
+
+1) Merge everything into the fedora-packagedb-stable branch.  Push the changes to
+   the server.  Eventually this should be the last manual step.  Everything
+   else should be automated::
+
+     bzr merge [from feature branches]
+     bzr commit
+     bzr push bzr+ssh://bzr.fedorahosted.org/bzr/packagedb/fedora-packagedb-stable
+
+2) Go to a temporary directory and checkout a copy of stable::
+     bzr checkout --lightweight bzr+ssh://bzr.fedorahosted.org/bzr/packagedb/fedora-packagedb-stable/ release
+
+3) Go to that directory and run::
+     paver sdist
+
+4) copy the dist/fedora-packagedb-VERSION.tar.gz and fedora-packagedb.spec files
+   to where you build Fedora RPMS.  Do a test build::
+     cp dist/fedora-packagedb-*.tar.gz fedora-packagedb.spec /srv/cvs/fedora-packagedb/
+     pushd /srv/cvs/fedora-packagedb/
+     rpmbuild -bs --nodeps fedora-packagedb.spec
+     mock -r epel-5-i386 *.src.rpm
+
+5) Make sure the build completes.  Run rpmlint on the results.  Install and
+   test the new packages::
+     rpmlint *rpm
+     sudo rpm -Uvh *noarch.rpm
+     [test]
+
+6) When satisfied that the build works, tag the repository::
+     popd
+     bzr tag VERSION
+     bzr push bzr+ssh://bzr.fedorahosted.org/bzr/packagedb/fedora-packagedb-stable
+
+7) Upload the tarball to fedorahosted.  Note: The directory is slightly
+   different if you're not a fedorahosted admin::
+     scp dist/fedora-packagedb*tar.gz fedorahosted.org:/srv/web/releases/p/a/packagedb/
+
+8) Finish building and pushing packages for Fedora.

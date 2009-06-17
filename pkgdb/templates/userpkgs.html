@@ -10,13 +10,20 @@
     action="${tg.url('/users/packages/' + fasname)}">
     Only packages with these acls:
 
-    <ul py:for="acl in acls">
-      <li>
+    <ul>
+      <li py:for="acl in acls">
       <label>
         <input type="checkbox" name="acls" value="${acl[0]}"
         py:attrs="{'checked': tg.checker(acl[1])}"/>
         ${acl[2]}
       </label>
+      </li>
+      <li>
+        <label>
+          <input type="checkbox" name="eol" value="eol"
+          py:attrs="{'checked': tg.checker(eol)}"/>
+          Include EOL Distributions
+        </label>
       </li>
     </ul>
     <button type="submit">Filter</button>
@@ -32,7 +39,15 @@
         ${acl_filter()}
       </div>
       <div py:when="'orphan'">
-        View: Orphaned Packages (${pkgCount})
+        View: Orphaned Packages (${pkgCount}) - 
+        <div py:choose="eol" py:strip="">
+          <div py:when="True" py:strip="">
+            <a href="${tg.url('/packages/orphans/')}">hide</a>
+          </div>
+          <div py:when="False" py:strip="">
+            <a href="${tg.url('/packages/orphans/eol')}">show</a>
+          </div>
+        </div> EOL packages
       </div>
       <div py:otherwise="">
         View: <a href="${tg.url('/users/info/' + fasname)}">${fasname}'s

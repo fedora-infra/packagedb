@@ -4,7 +4,7 @@ New PackageDB API
 
 :Author: Toshio Kuratomi
 :Date: 14 Oct, 2008
-:For Version: 0.4.x
+:For Version: 0.5.x
 
 The first version of the PackageDB API grew somewhat organically.  This document
 exlains what API changes are going into 0.4.x to create a more cohesive, easier
@@ -346,9 +346,10 @@ Names of public variables and parameters are unwieldy in several ways:
 1) They are too long.  This is especially seen in database column names.  This
    is bad because returning values as json has to repeat the column name
    multiple times.
-2) They do not comply with PEP8.  PEP8 specifies underscores to divide words.
+2) They do not comply with PEP8_.  PEP8_ specifies underscores to divide words.
    We presently use camelCase.
 
+.. _PEP8: http://python.org/dev/peps/pep-0008/
 
 New API Fixes
 -------------
@@ -357,7 +358,7 @@ Some of these changes will be fixed via `DB Changes`_.  Below
 is a list of changes to parameters and return values unrelated to the
 database.  In general the following rules are followed:
 
-1) If it's a db object, it folows the db object spelling
+1) If it's a db object, it follows the db object spelling
 2) If it's two words in standard usage, it becomes two words separated by
    underscore.
 3) If it is abbreviated in one place, it is abbreviated everywhere.
@@ -371,7 +372,7 @@ Current Name              New Name
 package                   pkg
 packageName               pkg_name
 package_name              pkg_name
-collection                collectn
+collection                collectn  (Use this for collection short name)
 collectionName            collectn_name
 collectionVersion         collectn_ver
 cc_list                   cc_list

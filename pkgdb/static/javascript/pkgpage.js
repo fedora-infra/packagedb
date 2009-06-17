@@ -1,5 +1,5 @@
 /*
- * Copyright © 2007  Red Hat, Inc.
+ * Copyright © 2007-2009  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use, modify,
  * copy, or redistribute it subject to the terms and conditions of the GNU
@@ -73,9 +73,9 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
         for (aclRowNum in aclRows) {
             var aclUser = getElementsByTagAndClassName('td', 'acluser',
                     aclRows[aclRowNum])[0];
-            var aclUserId = aclUser.getAttribute('name').split(':');
+            var aclUserName = aclUser.getAttribute('name').split(':');
             var createRequestBox = false;
-            if (aclUserId[1] == tgUserUserId) {
+            if (aclUserName[1] == fedora.identity.username) {
                 createRequestBox = true;
             }
             /* Loop through the aclcells, creating the spans and
@@ -165,33 +165,83 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
     }
 }
 
+function toggle_retirement(retirementDiv, data) {
+    logDebug('in toggle_retirement');
+    if (! data.status) {
+        display_error(null, data);
+        return;
+    }
+    var pkglTable = getFirstParentByTagAndClassName(retirementDiv, 'table', 'pkglist');
+    var statusBox = getElementsByTagAndClassName('td', 'status', pkglTable)[0];
+    var retirementButton = getElementsByTagAndClassName('input',
+            'retirementButton', retirementDiv)[0];
+    var ownerBox = getElementsByTagAndClassName('div', 'owner', pkglTable)[0];
+    var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
+                        ownerBox)[0];
+    var aclTable = getElementsByTagAndClassName('table', 'acls', pkglTable)[0];
+    var addMyselfButton = getElementsByTagAndClassName('input', 'addMyselfButton', pkglTable)[0];
+
+    if (data['retirement'] == 'Retired') {
+        /* Reflect the fact that the package is now retired */
+        swapElementClass(retirementDiv, 'not_retired', 'retired');
+        swapElementClass(retirementButton, 'retireButton', 'unretireButton');
+        swapElementClass(pkglTable, 'owned', 'orphan');
+        swapElementClass(ownerBox, 'owned', 'orphaned');
+        swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
+        retirementButton.value = 'Unretire package';
+        statusBox.innerHTML = 'Retired';
+        ownerButton.setAttribute('value', 'Take Ownership');
+        set_acl_approval_box(aclTable, false);
+        var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerBox)[0];
+        var newOwnerName = SPAN({'class' : 'ownerName'}, 'orphan');
+        insertSiblingNodesBefore(ownerName, newOwnerName);
+        removeElement(ownerName);
+        addElementClass(ownerButton, 'invisible');
+        addElementClass(addMyselfButton, 'invisible');
+    } else {
+        /* Reflect the fact that the package has been unretired */
+        swapElementClass(retirementDiv, 'retired', 'not_retired');
+        swapElementClass(retirementButton, 'unretireButton', 'retireButton');
+        swapElementClass(pkglTable, 'orphan', 'owned');
+        retirementButton.value = 'Retire package';
+        statusBox.innerHTML = 'Orphaned';
+        set_acl_approval_box(aclTable, true, data['aclStatusFields']);
+        removeElementClass(ownerButton, 'invisible');
+        removeElementClass(addMyselfButton, 'invisible');
+    }
+}
+
 function toggle_owner(ownerDiv, data) {
     logDebug('in toggle_owner');
     if (! data.status) {
         display_error(null, data);
         return;
     }
+    var pkglTable = getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist');
+    var statusBox = getElementsByTagAndClassName('td', 'status', pkglTable)[0];
     var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
             ownerDiv)[0];
-    var aclTable = getElementsByTagAndClassName('table', 'acls',
-            getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist'))[0];
-    if (data['ownerId'] === 9900) {
+    var aclTable = getElementsByTagAndClassName('table', 'acls', pkglTable)[0];
+
+    if (data['owner'] === 'orphan') {
         /* Reflect the fact that the package is now orphaned */
         swapElementClass(ownerDiv, 'owned', 'orphaned');
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
+        swapElementClass(pkglTable, 'owned', 'orphan');
         ownerButton.setAttribute('value', 'Take Ownership');
         set_acl_approval_box(aclTable, false);
-        /** FIXME: Need to find the Status box and update it as well */
+        statusBox.innerHTML = 'Orphaned';
     } else {
         /* Show the new owner information */
         swapElementClass(ownerDiv, 'orphaned', 'owned');
         swapElementClass(ownerButton, 'unorphanButton', 'orphanButton');
+        swapElementClass(pkglTable, 'orphan', 'owned');
         ownerButton.setAttribute('value', 'Release Ownership');
         set_acl_approval_box(aclTable, true, data['aclStatusFields']);
-        /** FIXME: Need to find the Status box and update it as well */
+        statusBox.innerHTML = 'Owned';
     }
     var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
-    var newOwnerName = SPAN({'class' : 'ownerName'}, data['ownerName']);
+    var newOwnerName = SPAN({'class' : 'ownerName'}, data['owner']);
     insertSiblingNodesBefore(ownerName, newOwnerName);
     removeElement(ownerName);
 }
@@ -338,12 +388,12 @@ function request_acl_gui(event) {
     var buttonRow = getFirstParentByTagAndClassName(event.target(), 'tr');
     var pkgListTable = getFirstParentByTagAndClassName(buttonRow, 'table',
             'pkglist');
-    
+
     /* Check that this user doesn't already have an acl GUI setup */
     var oldAclUsers = getElementsByTagAndClassName('td', 'acluser', pkgListTable);
     for (var aclNum in oldAclUsers) {
         idParts = oldAclUsers[aclNum].getAttribute('name').split(':');
-        if (idParts[1] == tgUserUserId) {
+        if (idParts[1] == fedora.identity.userid) {
             /* User already has an acl gui.  No need to create a new one. */
             return;
         }
@@ -356,9 +406,10 @@ function request_acl_gui(event) {
     acls = ['watchbugzilla', 'watchcommits', 'commit', 'approveacls'];
     var newAclRow = TR({'class' : 'aclrow'},
             TD({'class' : 'acluser',
-                'name': pkgListTable.getAttribute('name') + ':' + tgUserUserId},
-                tgUserDisplayName + ' (' + tgUserUserName + ')'
-            ))
+                'name': pkgListTable.getAttribute('name') + ':' +
+                    fedora.identity.username},
+                fedora.identity.display_name +
+                ' (' + fedora.identity.username + ')'))
     for (var aclNum in acls) {
         // FIXME: If the user is also the owner, create aclStatus as a select
         // list instead of a span so they can approve acls for themselves.
@@ -409,19 +460,16 @@ function request_status_change(event) {
     var requestContainer = getFirstParentByTagAndClassName(event.target(),
             'div', 'requestContainer');
     busy(requestContainer);
-    var form = getFirstParentByTagAndClassName(requestContainer, 'form');
-    var base = form.action;
-    if (base[base.length-1] == '/') {
-        base = base.slice(0,-1);
-    }
+    var url, query_params;
+    [url, query_params] = create_url(requestContainer, '/set_acl_status');
 
     /* Retrieve person to make the change for. */
     var aclRow = getFirstParentByTagAndClassName(requestContainer, 'tr',
             'aclrow');
     var aclUser = getElementsByTagAndClassName('td', 'acluser', aclRow)[0];
     logDebug(aclUser);
-    logDebug(aclUser.getAttribute('name'))
-    var personid = aclUser.getAttribute('name').split(':')[1];
+    logDebug(aclUser.getAttribute('name'));
+    var person_name = aclUser.getAttribute('name').split(':')[1];
 
     /* Retrieve the status to change to for this acl */
     var selectElement = getElementsByTagAndClassName('select', 'aclStatusList',
@@ -431,14 +479,16 @@ function request_status_change(event) {
     /* Retrieve pkgid and aclName */
     var idParts = requestContainer.getAttribute('name').split(':');
 
-    var req = loadJSONDoc(base + '/set_acl_status', {'pkgid': idParts[0],
-            'personid': personid, 'new_acl': idParts[1],
+    query_params = merge(query_params, {'pkgid': idParts[0],
+            'person_name': person_name, 'new_acl': idParts[1],
             'statusname': aclStatus});
+
+    var req = loadJSONDoc(url, query_params);
     req.addCallback(partial(check_acl_status, requestContainer));
     req.addErrback(partial(revert_acl_status, requestContainer));
     req.addErrback(partial(display_error, requestContainer));
     req.addBoth(unbusy, requestContainer);
-    logDebug(base+'/set_acl_status'+'?'+queryString({'pkgid':idParts[0], 'personid':personid,'new_acl':idParts[1],'statusname':aclStatus}));
+    logDebug(url+'?'+queryString(query_params));
 }
 
 /*
@@ -463,6 +513,13 @@ function init(event) {
         connect(ownerButtons[buttonNum], 'onclick', request_owner_change);
     }
 
+    var retirementButtons = getElementsByTagAndClassName('input', 'retirementButton');
+    for (var retNum in retirementButtons) {
+        var request_retirement_change = partial(
+                make_request, '/toggle_retirement', toggle_retirement, null);
+        connect(retirementButtons[retNum], 'onclick', request_retirement_change);
+    }
+    
     var statusBoxes = getElementsByTagAndClassName('select', 'aclStatusList');
     for (var statusNum in statusBoxes) {
         connect(statusBoxes[statusNum], 'onchange', request_status_change);
