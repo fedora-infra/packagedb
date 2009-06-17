@@ -179,7 +179,9 @@ function make_request(action, callback, errback, event) {
             'div', 'requestContainer');
     busy(requestContainer, event);
     var url, query_params;
-    [url, query_params] = create_url(requestContainer, action);
+    url = create_url(requestContainer, action);
+    query_params = url[1];
+    url = url[0];
 
     /* Make sure we have a single slash separating url and the positional
      * arguments
