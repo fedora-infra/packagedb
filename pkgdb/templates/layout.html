@@ -32,8 +32,9 @@
     <jsglobals />
     <script type="text/javascript">
         <!--
-         function jump(page, form_no){
-             window.location= page + document.forms[form_no].searchwords.value;
+         function jump(page, form){
+             urlparts = page.split('?_csrf_token');
+             window.location= urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf_token'+urlparts[1];
              return false
          }
         //-->
@@ -62,7 +63,7 @@
             <li><a href="https://fedorahosted.org/packagedb/report/3">PackageDB Bugs</a></li>
           </ul>
           <h2>Search</h2>
-          <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}', 0)">
+          <form name="layout_search" action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}', 'layout_search')">
             <p>
                 <input id="package" name="searchwords" size="9" type="text" />
                 <input id="go" type="submit" value="Go" />

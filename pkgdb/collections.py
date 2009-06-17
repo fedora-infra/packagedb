@@ -70,8 +70,8 @@ class Collections(controllers.Controller):
         # pylint: disable-msg=E1101
         collections = Collection.query.options(lazyload('listings'),
                 lazyload('status')).add_entity(CollectionPackage
-                        ).filter(Collection.id==CollectionPackage.id).order_by(
-                                (Collection.name, Collection.version))
+                ).filter(Collection.id==CollectionPackage.id).order_by(
+            Collection.name, Collection.version)
         # pylint: enable-msg=E1101
 
         return dict(title=_('%(app)s -- Collection Overview') %
