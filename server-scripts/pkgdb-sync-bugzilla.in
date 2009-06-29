@@ -128,7 +128,7 @@ class Bugzilla(object):
         except KeyError:
             product = {}
             try:
-                components = self.server.getcomponentsdetail(collection)
+                components = self.server.getcomponentsdetails(collection)
             except xmlrpclib.Fault, e:
                 # Output something useful in args
                 e.args = (e.faultCode, e.faultString)
