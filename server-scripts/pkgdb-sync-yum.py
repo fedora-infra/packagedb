@@ -11,8 +11,8 @@ from sqlalchemy.sql import insert
 from turbogears import config, update_config
 from turbogears.database import session
 
-CONFDIR='/home/mapleoin/fedora-packagedb-devel'
-PKGDBDIR=os.path.join('/home/mapleoin/fedora-packagedb-devel', 'fedora-packagedb')
+CONFDIR='@CONFDIR@'
+PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
 sys.path.append(PKGDBDIR)
 
 if len(sys.argv) > 1:
@@ -73,7 +73,7 @@ for repoid in repos: #Repo.query.all():
         else:
             # what's my packagelisting?
             collectionid = Branch.query.filter_by(
-                branchname='F-11').one().collectionid
+                branchname=repos[repoid]).one().collectionid
             listing_query = PackageListing.query.filter_by(
                                 packageid=package.id,
                                 collectionid=collectionid)

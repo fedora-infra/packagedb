@@ -292,7 +292,7 @@ class PackageBuild(SABase):
     '''
 
     def __init__(self, name, packageid, epoch, version, release, architecture,
-                 desktop, size, license, changelog, comittime, committer,
+                 desktop, size, license, changelog, committime, committer,
                  repoid):
         super(PackageBuild, self).__init__()
         self.name = name

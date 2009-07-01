@@ -1,4 +1,4 @@
-ALTER TABLE package ADD COLUMN upstreamurl text NOT NULL;
+ALTER TABLE package ADD COLUMN upstreamurl text NOT NULL DEFAULT '';
 
 ALTER TABLE packagebuild ADD COLUMN name text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN license text NOT NULL;
@@ -8,7 +8,7 @@ ALTER TABLE packagebuild ADD COLUMN size int NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN repoid int NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN changelog text NOT NULL;
 ALTER TABLE packagebuild DROP COLUMN statuscode;
-ALTER TABLE packagebuild ADD COLUMN timestamp timestamp with timezone NOT NULL;
+ALTER TABLE packagebuild ADD COLUMN committime timestamp with time zone NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN committer text NOT NULL;
 
 ALTER TABLE packagebuild DROP CONSTRAINT packagebuild_packageid_key;
@@ -20,8 +20,8 @@ CREATE TABLE repos (
     id serial NOT NULL PRIMARY KEY,
     name text NOT NULL,
     failovermethod text NOT NULL,
-    collectionid integer REFERENCES collections
-)
+    collectionid integer REFERENCES collection
+);
     
 CREATE TABLE rpmprovides (
     id serial NOT NULL PRIMARY KEY,
@@ -30,8 +30,9 @@ CREATE TABLE rpmprovides (
     epoch text,
     version text,
     release text,
-    packagebuildid integer REFERENCES packagebuild ON DELETE CASCADE,
+    packagebuildid integer REFERENCES packagebuild ON DELETE CASCADE
     );
+GRANT ALL ON TABLE rpmprovides TO pkgdbadmin;
 
 CREATE TABLE rpmrequires (
     id serial NOT NULL PRIMARY KEY,
@@ -41,8 +42,9 @@ CREATE TABLE rpmrequires (
     version text,
     release text,
     packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
-    prereq boolean NOT NULL DEFAULT FALSE,
+    prereq boolean NOT NULL DEFAULT FALSE
     );
+GRANT ALL ON TABLE rpmrequires TO pkgdbadmin;
 
 CREATE TABLE rpmobsoletes (
     id serial NOT NULL PRIMARY KEY,
@@ -51,8 +53,9 @@ CREATE TABLE rpmobsoletes (
     epoch text,
     version text,
     release text,
-    packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
+    packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE
     );
+GRANT ALL ON TABLE rpmobsoletes TO pkgdbadmin;
 
 CREATE TABLE rpmconflicts (
     id serial NOT NULL PRIMARY KEY,
@@ -61,14 +64,16 @@ CREATE TABLE rpmconflicts (
     epoch text,
     version text,
     release text,
-    packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
+    packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE
     );
+GRANT ALL ON TABLE rpmconflicts TO pkgdbadmin;
 
 CREATE TABLE rpmfiles (
     name text NOT NULL,
     packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
     PRIMARY KEY(name, packagebuildid)
     );
+GRANT ALL ON TABLE rpmfiles TO pkgdbadmin;
 
 ALTER TABLE packagebuild ADD FOREIGN KEY (repoid) REFERENCES repos;
 

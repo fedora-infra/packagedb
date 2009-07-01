@@ -120,7 +120,7 @@ Note:: If you don't have sudo, you can use su - instead::
     Enter it again: <password>
 
 Get some test data and import it into the database.  You want to grab the most
-recent dump from http://fedorahosted.org/releases/p/a/packagedb like this::
+recent dump from http://fedorahosted.org/releases/p/a/packagedb like this (look for a .dump.bz2 that looks recent in that directory)::
   wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-transition.dump.bz2
   bzcat pkgdb-transition.dump.bz2 | sudo -u postgres psql
 
