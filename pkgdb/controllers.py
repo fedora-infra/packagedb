@@ -37,6 +37,8 @@ from pkgdb.users import Users
 from pkgdb.stats import Stats
 from pkgdb.search import Search
 
+from pkgdb.model import PackageBuild
+
 from fedora.tg import controllers as f_ctrlers
 
 class Root(controllers.RootController):
@@ -71,7 +73,10 @@ class Root(controllers.RootController):
     def index(self):
         '''Overview of the PackageDB.
 
-        This page serves as an overview of the entire PackageDB.  It needs to
-        tell developers where to get more information on their packages.
+        This page serves as an overview of the entire PackageDB.  
         '''
-        return dict(title=self.app_title, version=release.VERSION)
+        newpackages = PackageBuild.query.filter_by(desktop=True).order_by(
+            PackageBuild.committime.desc()).limit(7).all()
+        
+        return dict(newpackages=newpackages,
+            title=self.app_title, version=release.VERSION)

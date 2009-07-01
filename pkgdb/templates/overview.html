@@ -17,6 +17,43 @@
     engineers need to create packages and spin them into a distribution.
     </p>
 
+    <h3>What's new and interesting</h3>
+    <table>
+      <tr>
+        <th class="ColumnHead" id="packagehead" title="Package Build">
+          Package 
+        </th>
+        <th class="ColumnHead" id="changeloghead" title="Package Changelog">
+          Changelog
+        </th>
+        <th class="ColumnHead" id="committerhead" title="Version Committer">
+          Committer
+        </th>
+        <th class="ColumnHead" id="committimehead" title="Time of Commit">
+          Commit Time
+        </th>
+      </tr>
+      <tr py:for="pkgb in newpackages">
+        <td class="package">
+          <a href="${tg.url('/packages/name/'+str(pkgb.name))}">$pkgb.name</a>
+          <br />${pkgb.version +'-'+ pkgb.release+'-'+pkgb.architecture}
+        </td>
+        <td class="changelog">
+          <?python changelog = pkgb.changelog.partition('\n') ?>
+          $changelog
+          <a py:if="changelog[2]!=''" href="http://BIGAJAXYCHANGELOG">More...</a>
+        </td>
+        <td class="committer">
+          $pkgb.committer
+        </td>
+        <td class="time">
+          <?python time = pkgb.committime.strftime("%H:%M %h %d") ?>
+          $time
+        </td>
+      </tr>
+    </table>
+
+      
     <h3>Search Packages</h3>
     <form name="overview_search" action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}', 'overview_search')">
         <p>Keywords: <input name="searchwords" size="20" type="text" />
