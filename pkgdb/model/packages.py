@@ -373,7 +373,8 @@ mapper(PackageBuild, PackageBuildTable, properties={
     'listings': relation(PackageListing, backref=backref('builds'),
         secondary = PackageBuildListingTable),
     'depends': relation(PackageBuildDepends, backref=backref('build'),
-        collection_class = attribute_mapped_collection('packagebuildname'))
+        collection_class = attribute_mapped_collection('packagebuildname'),
+        cascade='all, delete-orphan')
     })
 
     

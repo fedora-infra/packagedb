@@ -7,7 +7,7 @@ import sqlalchemy
 import logging
 import datetime
 
-from sqlalchemy.sql import insert
+from sqlalchemy.sql import insert, delete, and_
 from turbogears import config, update_config
 from turbogears.database import session
 
@@ -29,7 +29,7 @@ from pkgdb.model import Package, PackageListing, Branch, PackageBuild, \
                      PackageBuildTable, RpmProvidesTable, RpmRequiresTable, \
                      RpmConflictsTable, RpmObsoletesTable, RpmFilesTable, \
                      Repo, ReposTable, PackageBuildListingTable, \
-                     PackageBuildDependsTable
+                     PackageBuildDependsTable, PackageTable
 
 fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
 username = config.get('fas.username', 'admin')
@@ -171,19 +171,18 @@ for repoid in repos: #Repo.query.all():
 
                 # update the package information
 
-                if package.description != rpm.description:
-                    package.description = rpm.description
-                    
-                if package.summary != rpm.summary:
-                    package.summary = rpm.summary
-
-                if package.upstreamurl != rpm.url:
-                    package.upstreamurl = rpm.url
+                if (package.description != rpm.description) or \
+                   (package.summary != rpm.summary) or \
+                   (package.upstreamurl != rpm.url):
+                    PackageTable.update().where(PackageTable.c.id==package.id).values(
+                        description = rpm.description,
+                        summary = rpm.summary,
+                        upstreamurl = rpm.url).execute()
                 
                 # keep only the latest packagebuild from each repo
-                for expkg in PackageBuild.query.filter_by(name=rpm.name,
-                                             repoid=reponum).all():
-                    session.delete(expkg)
+                PackageBuildTable.delete().where(and_(
+                    PackageBuildTable.c.name==rpm.name,
+                    PackageBuildTable.c.repoid==reponum))
 
                 log.info('inserted %s-%s-%s' % (pkg_query.one().name,
                                              rpm.version, rpm.release))
