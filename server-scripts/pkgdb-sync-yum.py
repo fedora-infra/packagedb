@@ -171,19 +171,18 @@ for repoid in repos: #Repo.query.all():
 
                 # update the package information
 
-                if package.description != rpm.description:
-                    package.description = rpm.description
-                    
-                if package.summary != rpm.summary:
-                    package.summary = rpm.summary
+                if (package.description != rpm.description) or \
+                   (package.summary != rpm.summary) or \
+                   (package.upstreamurl != rpm.url):
+                    package.update().values(description = rpm.description,
+                                            summary = rpm.summary,
+                                            upstreamurl = rpm.url).execute()
 
-                if package.upstreamurl != rpm.url:
-                    package.upstreamurl = rpm.url
                 
                 # keep only the latest packagebuild from each repo
                 for expkg in PackageBuild.query.filter_by(name=rpm.name,
                                              repoid=reponum).all():
-                    session.delete(expkg)
+                    expkg.delete()
 
                 log.info('inserted %s-%s-%s' % (pkg_query.one().name,
                                              rpm.version, rpm.release))
