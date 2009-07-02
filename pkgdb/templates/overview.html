@@ -35,7 +35,7 @@
       </tr>
       <tr py:for="pkgb in newpackages">
         <td class="package">
-          <a href="${tg.url('/packages/name/'+str(pkgb.name))}">$pkgb.name</a>
+          <a href="${tg.url('/packages/index/'+str(pkgb.name))}">$pkgb.name</a>
           <br />${pkgb.version +'-'+ pkgb.release+'-'+pkgb.architecture}
         </td>
         <td class="changelog">
@@ -47,8 +47,7 @@
           $pkgb.committer
         </td>
         <td class="time">
-          <?python time = pkgb.committime.strftime("%H:%M %h %d") ?>
-          $time
+          ${pkgb.committime.strftime("%H:%M %h %d")}
         </td>
       </tr>
     </table>
