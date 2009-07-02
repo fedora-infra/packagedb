@@ -16,12 +16,20 @@ ALTER TABLE packagebuild ADD CONSTRAINT packagebuild_uniques UNIQUE(name, packag
 
 ALTER TABLE packagelisting ADD COLUMN specfile text;
 
+CREATE TABLE packagebuilddepends (
+    packagebuildid int NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
+    packagebuildname text NOT NULL,
+    PRIMARY KEY (packagebuildid, packagebuildname)
+    );
+GRANT ALL ON TABLE packagebuilddepends TO pkgdbadmin;
+
 CREATE TABLE repos (
     id serial NOT NULL PRIMARY KEY,
     name text NOT NULL,
     failovermethod text NOT NULL,
     collectionid integer REFERENCES collection
 );
+GRANT ALL ON TABLE repos TO pkgdbadmin;
     
 CREATE TABLE rpmprovides (
     id serial NOT NULL PRIMARY KEY,

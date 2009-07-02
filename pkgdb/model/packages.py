@@ -71,8 +71,9 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 PackageBuildTable = Table('packagebuild', metadata, autoload=True)
+PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
 
-# association table
+# association tables (many-to-many relationships)
 PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
@@ -282,7 +283,19 @@ def collection_alias(pkg_listing):
     '''
     return pkg_listing.collection.simple_name()
 
+class PackageBuildDepends(SABase):
+    '''Depends
 
+    '''
+    def __init__(self, packagebuildid, packagebuildname):
+        super(PackageBuildDepends, self).__init()
+        self.packagebuildid=packagebuildid
+        self.packagebuildname=packagebuildname
+
+    def __repr__(self):
+        return 'PackageBuildDepends(%r, %r)' % (
+            self.packagebuildid, self.packagebuildname)
+    
 class PackageBuild(SABase):
     '''Actual rpms
 
@@ -328,9 +341,9 @@ mapper(Package, PackageTable, properties={
     'listings2': relation(PackageListing,
         backref=backref('package'),
         collection_class=mapped_collection(collection_alias)),
-    'builds': relation(PackageBuild),
-    'builds2': relation(PackageBuild, backref=backref('package'),
-        collection_class = attribute_mapped_collection('name'))
+    'builds': relation(PackageBuild,
+        backref=backref('package'),
+        collection_class=attribute_mapped_collection('name'))
     })
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
@@ -340,23 +353,27 @@ mapper(PackageListing, PackageListingTable, properties={
     'groups2': relation(GroupPackageListing, backref=backref('packagelisting'),
         collection_class = attribute_mapped_collection('groupname')),
     })
+mapper(PackageBuildDepends, PackageBuildDependsTable)
 mapper(PackageBuild, PackageBuildTable, properties={
     'conflicts': relation(RpmConflicts, backref=backref('build'),
-         collection_class = attribute_mapped_collection('name'),
-         cascade='all, delete-orphan'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
     'requires': relation(RpmRequires, backref=backref('build'),
-         collection_class = attribute_mapped_collection('name'),
-         cascade='all, delete-orphan'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
     'provides': relation(RpmProvides, backref=backref('build'),
-         collection_class = attribute_mapped_collection('name'),
-         cascade='all, delete-orphan'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
     'obsoletes': relation(RpmObsoletes, backref=backref('build'),
-         collection_class = attribute_mapped_collection('name'),
-         cascade='all, delete-orphan'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
     'files': relation(RpmFiles, backref=backref('build'),
-         collection_class = attribute_mapped_collection('name'),
-         cascade='all, delete-orphan'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
     'listings': relation(PackageListing, backref=backref('builds'),
-         secondary = PackageBuildListingTable)
+        secondary = PackageBuildListingTable),
+    'depends': relation(PackageBuildDepends, backref=backref('build'),
+        collection_class = attribute_mapped_collection('packagebuildname'))
     })
 
+    
