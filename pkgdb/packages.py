@@ -34,7 +34,7 @@ from turbogears import controllers, expose, config, redirect, identity, \
         paginate
 
 from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
-        PackageListingTable
+        PackageListingTable, PackageBuild
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
@@ -56,9 +56,44 @@ class Packages(controllers.Controller):
         '''
         self.app_title = app_title
         self.bugs = Bugs(app_title)
-        self.index = Letters(app_title)
+        self.list = Letters(app_title)
         self.dispatcher = PackageDispatcher()
 
+    @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
+    def index(self, buildName=None):
+        '''Retrieve PackageBuild by their name.
+
+        This method returns general packagebuild/rpm information about a
+        package like: version, release, size, last changelog message,
+        committime etc. This information comes from yum and is stored in
+        the pkgdb.
+
+        :arg buildName: Name of the packagebuild/rpm to lookup
+        '''
+        if buildName==None:
+            raise redirect(config.get('base_url_filter.base_url') +
+                '/packages/list/')
+        try:
+            build = PackageBuild.query.filter_by(name=buildName).one()
+        except:
+            error = dict(status=False,
+                         title=_('%(app)s -- Invalid PackageBuild Name') % {
+                             'app': self.app_title},
+                             message=_('The packagebuild you were linked to'
+                             ' (%(pkg)s) does not appear in the Package Database.'
+                             ' If you received this error from a link on the'
+                             ' fedoraproject.org website, please report it.') % {
+                             'pkg': buildName})
+            if request_format() != 'json':
+                error['tg_template'] = 'pkgdb.templates.errors'
+                return error
+                                   
+
+        return dict(title=_('%(title)s -- %(pkg)s') % {
+            'title': self.app_title, 'pkg': buildName},
+             build = build)
+        
+        
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
         '''Retrieve Packages by their name.

@@ -34,6 +34,7 @@ from pkgdb.model.collections import *
 from pkgdb.model.acls import *
 from pkgdb.model.statuses import *
 from pkgdb.model.logs import *
+from pkgdb.model.prcof import *
 
 ### FIXME: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example
@@ -47,7 +48,5 @@ from pkgdb.model.logs import *
 # PackageListingLogStatusCode
 # PackageACLLogStatusCode
 # CollectionSet
-# PackageBuild
-# PackageBuildListing
 # CollectionLog
 # PackageBuildLog

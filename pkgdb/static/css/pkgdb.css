@@ -32,16 +32,6 @@
   margin-left: 25ex!important;
 }
 
-#content table th
-{
-  border: 1px solid #bbb;
-}
-
-#content table td
-{
-  border: 1px solid #ddd;
-}
-
 #content table
 {
   margin: 1ex 0;

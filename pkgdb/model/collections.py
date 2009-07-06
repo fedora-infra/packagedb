@@ -30,7 +30,7 @@ from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
-from pkgdb.model.packages import PackageListing
+from pkgdb.model.packages import PackageListing, PackageBuild
 
 get_engine()
 
@@ -46,6 +46,7 @@ get_engine()
 # pylint: disable-msg=C0103
 CollectionTable = Table('collection', metadata, autoload=True)
 BranchTable = Table('branch', metadata, autoload=True)
+ReposTable = Table('repos', metadata, autoload=True)
 
 collectionJoin = polymorphic_union (
         {'b' : select((CollectionTable.join(
@@ -162,6 +163,21 @@ class Branch(Collection):
                 self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
 
+class Repo(SABase):
+    '''Repos are actual yum repositories.
+
+    Table -- Repos
+    '''
+    def __init__(self, name, failovermethod, collectionid):
+        super(Repo, self).__init__()
+        self.name  = name
+        self.failovermethod = failovermethod
+        self.collectionid = collectionid
+
+    def __repr__(self):
+        return 'Repo(%r, %r, %r)' % (self.name, self.failovermethod,
+                                     self.collectionid)
+
 class CollectionPackage(SABase):
     '''Information about how many `Packages` are in a `Collection`
 
@@ -180,8 +196,9 @@ class CollectionPackage(SABase):
 #
 
 collectionMapper = mapper(Collection, CollectionTable,
-        select_table=collectionJoin, polymorphic_on=collectionJoin.c.kind,
-        polymorphic_identity='c',
+        polymorphic_on=collectionJoin.c.kind,
+        polymorphic_identity='collection',
+        with_polymorphic=('*',collectionJoin),
         properties={
             # listings is deprecated.  It will go away in 0.4.x
             'listings': relation(PackageListing),
@@ -193,8 +210,14 @@ collectionMapper = mapper(Collection, CollectionTable,
             'listings2': relation(PackageListing,
                 backref=backref('collection'),
                 collection_class=attribute_mapped_collection('packagename')),
-    })
+            'repos': relation(Repo, backref=backref('collection'),
+                collection_class = attribute_mapped_collection('name'))
+        })
 mapper(Branch, BranchTable, inherits=collectionMapper,
         inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
         polymorphic_identity='b')
 mapper(CollectionPackage, CollectionPackageTable)
+mapper(Repo, ReposTable, properties={
+    'builds': relation(PackageBuild, backref=backref('repo'),
+         collection_class = attribute_mapped_collection('name'))
+    })

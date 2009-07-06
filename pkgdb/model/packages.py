@@ -36,7 +36,7 @@ Mapping of package related database tables to python classes.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 
-from sqlalchemy import Table
+from sqlalchemy import Table, Column, Integer, ForeignKey
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
@@ -50,6 +50,8 @@ from fedora.tg.json import SABase
 
 from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
         GroupPackageListing, GroupPackageListingAcl
+from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
+        RpmObsoletes, RpmFiles
 
 get_engine()
 
@@ -68,6 +70,15 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 # pylint: disable-msg=C0103
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
+PackageBuildTable = Table('packagebuild', metadata, autoload=True)
+PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
+
+# association tables (many-to-many relationships)
+PackageBuildListingTable = Table('packagebuildlisting', metadata,
+        Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
+        Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
+        )
+
 # pylint: enable-msg=C0103
 
 #
@@ -85,7 +96,7 @@ class Package(SABase):
 
     # pylint: disable-msg=R0903,R0913
     def __init__(self, name, summary, statuscode, description=None,
-            reviewurl=None, shouldopen=None):
+            reviewurl=None, shouldopen=None, upstreamurl=None):
         super(Package, self).__init__()
         self.name = name
         self.summary = summary
@@ -93,12 +104,13 @@ class Package(SABase):
         self.description = description
         self.reviewurl = reviewurl
         self.shouldopen = shouldopen
+        self.upstreamurl = upstreamurl
 
     def __repr__(self):
-        return 'Package(%r, %r, %r, description=%r, reviewurl=%r, ' \
-               'shouldopen=%r)' % (
+        return 'Package(%r, %r, %r, description=%r, ' \
+               'upstreamurl=%r, reviewurl=%r, shouldopen=%r)' % (
                 self.name, self.summary, self.statuscode, self.description,
-                self.reviewurl, self.shouldopen)
+                self.upstreamurl, self.reviewurl, self.shouldopen)
 
     def create_listing(self, collection, owner, status,
             qacontact=None, author_name=None):
@@ -154,7 +166,7 @@ class PackageListing(SABase):
     '''
     # pylint: disable-msg=R0903
     def __init__(self, owner, statuscode, packageid=None, collectionid=None,
-            qacontact=None):
+            qacontact=None, specfile=None):
         # pylint: disable-msg=R0913
         super(PackageListing, self).__init__()
         self.packageid = packageid
@@ -162,13 +174,15 @@ class PackageListing(SABase):
         self.owner = owner
         self.qacontact = qacontact
         self.statuscode = statuscode
+        self.specfile = specfile
 
     packagename = association_proxy('package', 'name')
 
     def __repr__(self):
         return 'PackageListing(%r, %r, packageid=%r, collectionid=%r,' \
-                ' qacontact=%r)' % (self.owner, self.statuscode,
-                        self.packageid, self.collectionid, self.qacontact)
+               ' qacontact=%r, specfile=%r)' % (self.owner, self.statuscode,
+                        self.packageid, self.collectionid, self.qacontact,
+                        self.specfile)
 
     def clone(self, branch, author_name):
         '''Clone the permissions on this PackageListing to another `Branch`.
@@ -269,6 +283,55 @@ def collection_alias(pkg_listing):
     '''
     return pkg_listing.collection.simple_name()
 
+class PackageBuildDepends(SABase):
+    '''Depends
+
+    '''
+    def __init__(self, packagebuildid, packagebuildname):
+        super(PackageBuildDepends, self).__init()
+        self.packagebuildid=packagebuildid
+        self.packagebuildname=packagebuildname
+
+    def __repr__(self):
+        return 'PackageBuildDepends(%r, %r)' % (
+            self.packagebuildid, self.packagebuildname)
+    
+class PackageBuild(SABase):
+    '''Actual rpms
+
+    This is a very specific unitary package.
+
+    Table -- PackageBuild
+    '''
+
+    def __init__(self, name, packageid, epoch, version, release, architecture,
+                 desktop, size, license, changelog, committime, committer,
+                 repoid):
+        super(PackageBuild, self).__init__()
+        self.name = name
+        self.packageid = packageid
+        self.epoch = epoch
+        self.version = version
+        self.release = release
+        self.architecture = architecture
+        self.desktop = desktop
+        self.size = size
+        self.license = license
+        self.changelog = changelog
+        self.committime = committime
+        self.committer = committer
+        self.repoid = repoid
+
+        
+    def __repr__(self):
+        return 'PackageBuild(%r, %r, epoch=%r, version=%r, release=%r,' \
+               ' architecture=%r, desktop=%r, size=%r, license=%r,' \
+               ' changelog=%r, committime=%r, committer=%r, repoid=%r)' % (
+            self.name, self.packageid, self.epoch, self.version,
+            self.release, self.architecture, self.desktop, self.size,
+            self.license, self.changelog, self.committime, self.committer,
+            self.repoid)
+    
 #
 # Mappers
 #
@@ -277,7 +340,10 @@ mapper(Package, PackageTable, properties={
     'listings': relation(PackageListing),
     'listings2': relation(PackageListing,
         backref=backref('package'),
-        collection_class=mapped_collection(collection_alias))
+        collection_class=mapped_collection(collection_alias)),
+    'builds': relation(PackageBuild,
+        backref=backref('package'),
+        collection_class=attribute_mapped_collection('name'))
     })
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
@@ -287,3 +353,28 @@ mapper(PackageListing, PackageListingTable, properties={
     'groups2': relation(GroupPackageListing, backref=backref('packagelisting'),
         collection_class = attribute_mapped_collection('groupname')),
     })
+mapper(PackageBuildDepends, PackageBuildDependsTable)
+mapper(PackageBuild, PackageBuildTable, properties={
+    'conflicts': relation(RpmConflicts, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'requires': relation(RpmRequires, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'provides': relation(RpmProvides, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'obsoletes': relation(RpmObsoletes, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'files': relation(RpmFiles, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'listings': relation(PackageListing, backref=backref('builds'),
+        secondary = PackageBuildListingTable),
+    'depends': relation(PackageBuildDepends, backref=backref('build'),
+        collection_class = attribute_mapped_collection('packagebuildname'),
+        cascade='all, delete-orphan')
+    })
+
+    

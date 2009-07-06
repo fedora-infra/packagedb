@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      py:strip="">
+  <xi:include href="layout.html" />
+  <head />
+
+
+  <body>
+    <h2>$build.name</h2>
+    <p>$build.package.summary</p>
+    
+    <ul class="actions" style="float:right">
+      <li><a href="${tg.url('/packages/name/'+build.name)}" class="pkgdb">Package Admin</a></li>
+      <li><a href="http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=$build.name" class="koji">Build Status</a></li>
+      <li><a href="https://admin.fedoraproject.org/updates/$build.name" class="bodhi">Update Status</a></li>
+      <li><a href="http://cvs.fedoraproject.org/viewcvs/rpms/$build.name" class="cvs">Package Source</a></li>
+      <li><a href="${tg.url('/packages/bugs/'+build.name)}" class="bugz">Bug Reports</a></li>
+    </ul>
+
+    <table>
+      <tr>
+        <td>Project page:</td>
+        <td>
+          <a href="$build.package.upstreamurl">$build.package.upstreamurl</a>
+        </td>
+      </tr>
+      <tr>
+        <td>Version:</td>
+        <td>${build.version+'-'+build.release}</td>
+      </tr>
+      <tr>
+        <td>Size:</td>
+        <td>${round(build.size/(1024.0**2),2)} M</td>          
+      </tr>
+      <tr>
+        <td>License:</td>
+        <td>$build.license</td>  
+      </tr>
+      <tr>
+        <td>Owner:</td>
+        <td>
+          <a href="${tg.url('/users/packages/'+build.listings[0].owner)}">
+            ${build.listings[0].owner}
+          </a>
+        </td>        
+      </tr>
+      <tr>
+        <td>Repository:</td>
+        <td>$build.repo.name</td>
+      </tr>
+    </table>
+
+    <p>$build.package.description</p>
+
+    <br />
+    <p>dependencies: </p>
+    <p>
+      <py:for each="dep in build.depends">
+        <a href="${tg.url('/packages/index/'+dep)}">$dep</a>
+      </py:for>
+    </p>
+    <br />
+    <p>Last changelog entry:</p>
+    <table>
+      <tr>
+        <th class="ColumnHead">Changes</th>
+        <th class="ColumnHead">Committer</th>
+        <th class="ColumnHead">Commit Time</th>
+      </tr>
+      <tr>
+        <td>$build.changelog</td>
+        <?python (name, email) = build.committer.rsplit(' ',1)
+            email = email.strip('<>')
+        ?>
+        <td><a href="mailto:$email">$name</a></td>
+        <td>${build.committime.strftime("%h %d, %Y")}</td>
+      </tr>
+    </table>
+  </body>
+</html>
