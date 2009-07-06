@@ -78,9 +78,6 @@ class DataChangedError(Exception):
 class Bugzilla(object):
 
     def __init__(self, bzServer, username, password):
-        self.userCache = {}
-        self.userCache['extras-qa@fedoraproject.org'] = {}
-        self.userCache['extras-qa@fedoraproject.org']['email'] = 'extras-qa@fedoraproject.org'
         self.productCache = {}
         self.bzXmlRpcServer = bzServer
         self.username = username
@@ -91,6 +88,8 @@ class Bugzilla(object):
         # Connect to the fedora account system
         self.fas = AccountSystem(base_url=FASURL, username=FASUSER,
                 password=FASPASS)
+        self.userCache = self.fas.people_by_key(key='username',
+                fields=['bugzilla_email'])
 
     def _get_bugzilla_email(self, username):
         '''Return the bugzilla email address for a user.
@@ -99,12 +98,11 @@ class Bugzilla(object):
         reloads the cache from fas and tries again.
         '''
         try:
-            return self.userCache[username].lower()
+            return self.userCache[username]['bugzilla_email'].lower()
         except KeyError:
-            people = self.fas.people_by_id()
-            self.userCache = dict([(p['username'], p['bugzilla_email'])
-                            for p in people.values()])
-            return self.userCache[username].lower()
+            person = self.fas.person_by_username(username)
+            self.userCache[username] = {'bugzilla_email': person.bugzilla_email}
+            return self.userCache[username]['bugzilla_email'].lower()
 
     def add_edit_component(self, package, collection, owner, description,
             qacontact=None, cclist=None):
@@ -126,9 +124,8 @@ class Bugzilla(object):
         try:
             product = self.productCache[collection]
         except KeyError:
-            product = {}
             try:
-                components = self.server.getcomponentsdetails(collection)
+                product = self.server.getcomponentsdetails(collection)
             except xmlrpclib.Fault, e:
                 # Output something useful in args
                 e.args = (e.faultCode, e.faultString)
@@ -136,31 +133,9 @@ class Bugzilla(object):
             except xmlrpclib.ProtocolError, e:
                 e.args = ('ProtocolError', e.errcode, e.errmsg)
                 raise
-
-            # This changes from the form:
-            #   {'component': 'PackageName',
-            #   'initialowner': 'OwnerEmail',
-            #   'initialqacontact': 'QAContactEmail',
-            #   'description': 'One sentence summary'}
-            # to:
-            #   product['packagename'] = {'component': 'PackageName',
-            #     'initialowner': 'OwnerEmail',
-            #     'initialqacontact': 'QAContactEmail',
-            #     'description': 'One sentenct summary'}
-            # This allows us to check in a case insensitive manner for the
-            # package.
-            for record in components:
-                if not isinstance(record['component'], unicode):
-                    record['component'] = unicode(record['component'], 'utf-8')
-                try:
-                    record['description'] = unicode(record['description'], 'utf-8')
-                except TypeError:
-                    try:
-                        record['description'] = unicode(record['description'].data, 'utf-8')
-                    except:
-                        record['description'] = None
-                product[record['component'].lower()] = record
-
+            for pkg in product.keys():
+                if pkg.lower() != pkg:
+                    product[pkg.lower()] = product[pkg]
             self.productCache[collection] = product
 
         pkgKey = package.lower()
@@ -199,7 +174,7 @@ class Bugzilla(object):
 
                 # Changes occurred.  Submit a request to change via xmlrpc
                 data['product'] = collection
-                data['component'] = product[pkgKey]['component']
+                data['component'] = package
                 if DRY_RUN:
                     print '[EDITCOMP] Changing via editComponent(%s, %s, "xxxxx")' % (
                             data, self.username)
