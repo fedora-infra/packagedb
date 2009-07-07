@@ -88,6 +88,5 @@ ALTER TABLE packagebuild ADD FOREIGN KEY (repoid) REFERENCES repos;
 INSERT INTO repos (name, failovermethod, collectionid) VALUES
 ('Fedora 11 - i386', 'priority', 21),
 ('Fedora 11 - i386 - Updates', 'priority', 21),
-('Fedora 11 - i386 - Testing Updates', 'priority', 21),
-
+('Fedora 11 - i386 - Testing Updates', 'priority', 21)
 ;
