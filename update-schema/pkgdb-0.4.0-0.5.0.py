@@ -1,18 +1,20 @@
-ALTER TABLE package ADD COLUMN upstreamurl text NOT NULL DEFAULT '';
+ALTER TABLE package ADD COLUMN upstreamurl text;
 
 ALTER TABLE packagebuild ADD COLUMN name text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN license text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN architecture text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN desktop boolean NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN size int NOT NULL;
-ALTER TABLE packagebuild ADD COLUMN repoid int NOT NULL;
+ALTER TABLE packagebuild ADD COLUMN repoid int NOT NULL
+    REFERENCES packagebuild ON DELETE CASCADE;
 ALTER TABLE packagebuild ADD COLUMN changelog text NOT NULL;
 ALTER TABLE packagebuild DROP COLUMN statuscode;
 ALTER TABLE packagebuild ADD COLUMN committime timestamp with time zone NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN committer text NOT NULL;
 
 ALTER TABLE packagebuild DROP CONSTRAINT packagebuild_packageid_key;
-ALTER TABLE packagebuild ADD CONSTRAINT packagebuild_uniques UNIQUE(name, packageid, epoch, architecture, version, release);
+ALTER TABLE packagebuild ADD CONSTRAINT packagebuild_uniques
+    UNIQUE(name, packageid, epoch, architecture, version, release);
 
 ALTER TABLE packagelisting ADD COLUMN specfile text;
 
@@ -25,9 +27,10 @@ GRANT ALL ON TABLE packagebuilddepends TO pkgdbadmin;
 
 CREATE TABLE repos (
     id serial NOT NULL PRIMARY KEY,
+    shortname text NOT NULL,
     name text NOT NULL,
     failovermethod text NOT NULL,
-    collectionid integer REFERENCES collection
+    collectionid integer REFERENCES collection ON DELETE CASCADE,
 );
 GRANT ALL ON TABLE repos TO pkgdbadmin;
     

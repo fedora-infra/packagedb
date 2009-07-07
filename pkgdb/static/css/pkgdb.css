@@ -69,15 +69,15 @@
 }
 .actions
 {
-  list-style: none;
   line-height: 1;
   margin: 1ex 0!important;
 }
 
 .actions li
 {
-  display: inline;
-  margin-right: 1ex;
+    padding: .4em;
+    list-style: none;
+    margin-right: 7em;
 }
 
 #smalltext

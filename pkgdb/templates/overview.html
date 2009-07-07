@@ -35,19 +35,19 @@
       </tr>
       <tr py:for="pkgb in newpackages">
         <td class="package">
-          <a href="${tg.url('/packages/index/'+str(pkgb.name))}">$pkgb.name</a>
-          <br />${pkgb.version +'-'+ pkgb.release+'-'+pkgb.architecture}
+          <a href="${tg.url('/packages/index/'+pkgb.name+'/'+str(pkgb.repo.shortname))}">$pkgb.name</a>
+          <br />${pkgb.version+'-'+pkgb.release+'-'+pkgb.architecture}
         </td>
         <td class="changelog">
           <?python changelog = pkgb.changelog.partition('\n') ?>
-          $changelog
+          ${changelog[0]}
           <a py:if="changelog[2]!=''" href="http://BIGAJAXYCHANGELOG">More...</a>
         </td>
         <td class="committer">
           $pkgb.committer
         </td>
         <td class="time">
-          ${pkgb.committime.strftime("%H:%M %h %d")}
+          ${pkgb.committime.strftime("%h %d")}
         </td>
       </tr>
     </table>

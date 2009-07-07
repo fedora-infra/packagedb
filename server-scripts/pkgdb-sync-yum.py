@@ -55,9 +55,11 @@ def get_pkg_name(rpm):
     packagename = '-'.join(namelist)
     return packagename
 
-for repoid in repos: #Repo.query.all():
+# get sacks first, so we can search for dependencies
+for repoid in repos:
     yb.repos.enableRepo(repoid)
     yb._getSacks(thisrepo=repoid)
+for repoid in repos: #Repo.query.all():
     repo = yb.repos.getRepo(repoid)
     log.info('Refreshing repo: %s' % repoid)
     
