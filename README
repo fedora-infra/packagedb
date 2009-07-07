@@ -121,8 +121,17 @@ Note:: If you don't have sudo, you can use su - instead::
 
 Get some test data and import it into the database.  You want to grab the most
 recent dump from http://fedorahosted.org/releases/p/a/packagedb like this (look for a .dump.bz2 that looks recent in that directory)::
-  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-transition.dump.bz2
-  bzcat pkgdb-transition.dump.bz2 | sudo -u postgres psql
+  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20090619.dump.bz2
+  bzcat pkgdb-20090619.dump.bz2 | sudo -u postgres psql
+
+Update the Database Schema
+--------------------------
+
+Currently the database dump is not up to date with the latest changes in the
+devel branch.  Run the following scripts to bring it up to date::
+
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.4.0.1.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0.sql
 
 Your postgres server is now all set.
 
