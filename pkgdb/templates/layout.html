@@ -29,30 +29,15 @@
     </style>
 
     <script src="${tg.tg_js}/MochiKit_1_4.js" type="text/javascript"></script>
-    <jsglobals />
-
     <script type="text/javascript">
-
       function jump(page,form){
            urlparts = page.split('?_csrf');
            window.location = urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf'+urlparts[1];
            return false
       };
-
-      function toggle(hiddenId,buttonId){
-           e=document.getElementById(hiddenId);
-           but=document.getElementById(buttonId);
-
-           if(e.style.display=="none") {
-             e.style.display="";
-             but.innerHTML="(less)";
-           } else {
-             e.style.display="none";
-             but.innerHTML="(more)";
-           }
-      };
-
     </script>
+    <jsglobals />
+
   </head>
   </py:match>
   <py:match path="body" once="true">

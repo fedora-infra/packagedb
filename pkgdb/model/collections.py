@@ -18,7 +18,7 @@
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
-Mapping of collection related database tables to python classes
+Mapping of collection and repo related database tables to python classes
 '''
 
 from sqlalchemy import Table, Column, ForeignKey, Integer
