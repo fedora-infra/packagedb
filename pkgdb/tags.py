@@ -63,7 +63,6 @@ class Tags(controllers.Controller):
 
         return dict(title=self.app_title, tags=tags)
 
-
     @expose(allow_json=True)
     def scores(self, packageName, language='en_US'):
         '''Return a dictionary of tagname: score for a given package.
@@ -145,7 +144,7 @@ class Tags(controllers.Controller):
         Returns two lists: tags and pkgs.
         '''
         lang = self.language(language)
-        # if we got just one parameter, make it a list
+        # if we got just one argument, make it a list
         if tags.__class__ != [].__class__:
             tags = [tags]
         if pkgs.__class__ != [].__class__:
@@ -182,6 +181,7 @@ class Tags(controllers.Controller):
         '''Helper method to get a language from the db
 
         :arg language: string name or shortname for a language
+
         Returns the shortname if found, raises error otherwise.
         '''
         try:
