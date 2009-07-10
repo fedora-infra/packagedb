@@ -2,7 +2,7 @@
 %{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
 
 Name:           fedora-packagedb
-Version:        0.3.10.92
+Version:        0.4.0
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -89,6 +89,15 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Sun Jun 14 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.4.0-1
+- 0.4.0 final.
+
+* Sun Jun 14 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10.99-1
+- Release Candidate.  Mainly bug fixes.
+
+* Sat Jun 13 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10.93-1
+- New test release.  Mainly bug fixes.
+
 * Sat Jun 6 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.3.10.92-1
 - New test release.  Mainly bug fixes.
 

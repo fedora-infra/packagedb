@@ -696,6 +696,11 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Package Listing with id:'
                 ' %(pkg)s does not exist') % {'pkg': pkg_listing_id})
 
+        if pkg.statuscode == STATUS['Deprecated'].statuscodeid:
+            # Retired packages must be brought out of retirement first
+            return dict(status=False, message=_('This package is retired.  It'
+                ' must be unretired first'))
+
         # Only admins can change whether the provenpackager group can
         # commit.
         if not identity.in_group(admin_grp):
@@ -955,7 +960,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user_name, STATUS['APPROVED'].statuscodeid,
+                identity.current.user_name, STATUS['Approved'].statuscodeid,
                 pkg_log_msg)
         pkg_log.package = pkg
 
@@ -1202,6 +1207,14 @@ class PackageDispatcher(controllers.Controller):
 
                 # Save a reference to all pkg_listings
                 listings.append(pkg_listing)
+        else:
+            # Default to the devel branch
+            collection = Collection.query.filter_by(
+                    name='Fedora', version='devel').one()
+            pkg_listing = PackageListing.query.filter_by(
+                    collectionid=collection.id,
+                    packageid=pkg.id).one()
+            listings = [pkg_listing]
 
         # If ownership, change the owners
         if 'owner' in changes:
@@ -1308,7 +1321,7 @@ class PackageDispatcher(controllers.Controller):
 
                 # We don't let every group commit
                 try:
-                    group_name = self.groups[group]
+                    self.groups[group]
                 except KeyError:
                     if status == STATUS['Denied']:
                         # If we're turning it off we don't have to worry
@@ -1318,7 +1331,7 @@ class PackageDispatcher(controllers.Controller):
 
                 for pkg_listing in listings:
                     group_acl = self._create_or_modify_group_acl(pkg_listing,
-                            group_id, 'commit', status)
+                            group, 'commit', status)
 
                     # Make sure a log is created in the db as well.
                     log_msg = u'%s %s %s for commit access on %s' \

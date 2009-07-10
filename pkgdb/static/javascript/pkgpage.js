@@ -461,7 +461,9 @@ function request_status_change(event) {
             'div', 'requestContainer');
     busy(requestContainer);
     var url, query_params;
-    [url, query_params] = create_url(requestContainer, '/set_acl_status');
+    url = create_url(requestContainer, '/set_acl_status');
+    query_params = url[1];
+    url = url[0];
 
     /* Retrieve person to make the change for. */
     var aclRow = getFirstParentByTagAndClassName(requestContainer, 'tr',

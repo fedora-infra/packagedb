@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Ionuț Arțăriși
+# Copyright © 2007, 2009  Ionuț Arțăriși
 # Copyright © 2007, 2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,

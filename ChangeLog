@@ -1,3 +1,559 @@
+2009-06-14  Toshio Kuratomi <toshio@fedoraproject.org> - r355
+Update NEWS for new release.
+
+2009-06-14  Toshio Kuratomi <toshio@fedoraproject.org> - r354
+Update version of API changes to reflect 0.5.0 is the target.
+
+2009-06-14  Toshio Kuratomi <toshio@fedoraproject.org> - r353
+Prevent retired packages from having group acls changed.
+
+2009-06-14  Toshio Kuratomi <toshio@fedoraproject.org> - r352
+Fix sending group information -- optparse now generates a dict so we don't
+need to fix it up manually.
+
+2009-06-14  Toshio Kuratomi <toshio@fedoraproject.org> - r351
+edit_package(): Default to devel branch
+Fix group acl changes.
+
+2009-06-14  Toshio Kuratomi <toshio@fedoraproject.org> - r350
+Fix add package to save extra package information like groups, comaint, etc.
+
+2009-06-14  Toshio Kuratomi <toshio@fedoraproject.org> - r349
+* Can only add one package at a time (prevents typos from adding packages)
+* Must specify add or edit
+
+2009-06-14  Toshio Kuratomi <toshio@fedoraproject.org> - r348
+Fix case of status.
+
+2009-06-13  Toshio Kuratomi <toshio@fedoraproject.org> - r347
+Update to new test release.
+
+2009-06-12  Toshio Kuratomi <toshio@fedoraproject.org> - r346
+Change bugs listing so that it finds bugs in Fedora EPEL as well as Fedora.
+
+2009-06-09  Toshio Kuratomi <toshio@fedoraproject.org> - r345
+Includejavacript that goes at the bottom of pages too.
+
+2009-06-09  Toshio Kuratomi <toshio@fedoraproject.org> - r344
+Switch from mochikit 1.3 + a few scripts to mochikit-1.4.
+
+2009-06-09  Toshio Kuratomi <toshio@fedoraproject.org> - r343
+Fix issues with setting acls in the javascript code.
+
+2009-06-09  Toshio Kuratomi <toshio@fedoraproject.org> - r342
+Fix problem where unretiring a package showed blank boxes for package acls.
+
+2009-06-09  Toshio Kuratomi <toshio@fedoraproject.org> - r341
+Fix call to set_bugzilla_owner().
+
+2009-06-08  Toshio Kuratomi <toshio@fedoraproject.org> - r340
+Fix syntax error -- one too many parens.
+
+2009-06-08  Toshio Kuratomi <toshio@fedoraproject.org> - r339
+Make all options to pkgdb-client part of either the add or edit command.
+
+2009-06-06  Toshio Kuratomi <toshio@fedoraproject.org> - r338
+Update release and spec file for new test release.
+
+2009-06-06  Toshio Kuratomi <toshio@fedoraproject.org> - r337
+Change bugzilla list to display all non-removed packages.  Once a package has
+gone to the repositories it must have a bugzilla entry even if that directs to
+orphan.
+
+2009-06-06  Toshio Kuratomi <toshio@fedoraproject.org> - r336
+Use string formatting instead of concat to construct path.
+
+2009-06-06  Toshio Kuratomi <toshio@fedoraproject.org> - r335
+Have bugzilla list show orphans as well.
+
+2009-06-06  Toshio Kuratomi <toshio@fedoraproject.org> - r334
+Need to install babel as well.
+
+2009-06-02  Toshio Kuratomi <toshio@fedoraproject.org> - r333
+Fix for Throbber ids: ids can't begin with a number.
+
+2009-05-28  Toshio Kuratomi <toshio@fedoraproject.org> - r332
+Fix Status backrefs to work with sqlalchemy-0.5
+
+2009-05-19  Toshio Kuratomi <toshio@fedoraproject.org> - r331
+Merge kolesovdv's changes for autopromoting comaintainers and changing
+pkgdb-client to separate add from edit.
+
+2009-05-19  Toshio Kuratomi <toshio@fedoraproject.org> - r330
+Fix some issues with the pkgpage not updating correctlt when retired and
+unretired.
+
+2009-05-16  Toshio Kuratomi <toshio@fedoraproject.org> - r329
+Set the pkgpage to not display an ownership button while the package is
+retired and to show it again when the package is unretired.
+
+2009-05-16  Toshio Kuratomi <toshio@fedoraproject.org> - r328
+Prevent owner from changing while a package is retired.
+
+2009-05-15  Toshio Kuratomi <toshio@fedoraproject.org> - r327
+Add comment that python-bugzilla>= 0.5 is needed.
+
+2009-05-15  Toshio Kuratomi <toshio@fedoraproject.org> - r326
+Fix usercache to actually store user information.
+
+2009-05-15  Toshio Kuratomi <toshio@fedoraproject.org> - r325
+Require python-bugzilla>= 0.5
+
+2009-05-15  Toshio Kuratomi <toshio@fedoraproject.org> - r324
+Make AJAX calls handle query strings in the URLs.
+
+2009-05-15  Toshio Kuratomi <toshio@fedoraproject.org> - r323
+Convert from checking orphan user to checking orphan statuscode.
+
+2009-05-15  Toshio Kuratomi <toshio@fedoraproject.org> - r322
+Also take the opportunity to fix up packages which still have orphan statuscodes
+even though they are now owned.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r321
+* Make orphan page use status instead of owner
+* Make orphan page not display EOL distributions by default.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r320
+Redirect old orphan page to the new orphan page.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r319
+Fix syntax error.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r318
+Allow userpkg pages to turn off filtering on EOL distributions.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r317
+Also prevent EOL mass branching in the dispatcher.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r316
+Do not show mass branch UI for EOL distributions.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r315
+Fix traceback when returning json from /packages/name
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r314
+Fix quoting of create bug link: https://fedorahosted.org/packagedb/ticket/145
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r313
+Bump version for new test release.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r312
+Workaround an issue with TurboGears version of gettext.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r311
+Simplifysome code using the STATUS dict.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r310
+Change usage of status entries from the statustranslation table to use STATUS
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r309
+Convert all uses of a statuscodeid to use global utils.STATUS.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r308
+Instructions for running under mod_wsgi, working with translations, and making
+a release.
+
+2009-05-14  Toshio Kuratomi <toshio@fedoraproject.org> - r307
+Update pot file.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r306
+Change order of imports to break an unresolvable circular import.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r305
+Update Copyright date for files that have changed recently.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r304
+Fix synax error.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r303
+* Switch to global pgdb.utils.STATUS
+* Mark translatable strings.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r302
+GROUP_MAP is no longer needed.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r301
+Mark translatable strings.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r300
+Mark translatable strings
+Correct docstrings for sphinx.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r299
+Switch from locally defined status cache to global pkgdb.util.STATUS
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r298
+* Mark translatable strings
+* Fix docstring
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r297
+Mark translatable strings
+Fix up docstrings for sphinx
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r296
+Mark translatable strings and fix a typo.
+
+2009-05-13  Toshio Kuratomi <toshio@fedoraproject.org> - r295
+* Convert to use fedora.tg.util.request_format()
+* Mark translatable strings.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r294
+Explicitly import the pieces of the model that we need.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r293
+Switch from locally cached statuses to utils.STATUS.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r292
+* Change logging to use the global utils.LOG
+* Mark translatable strings.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r291
+* Mark translatable strings
+* Fix up docstrings for sphinx
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r290
+Fix imports to get _() and remove unused StatusTranslation
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r289
+Convert from caching statuscodes locally to pkgdb.utils.STATUS
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r288
+remove unused removedStatus cache.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r287
+Depend on python-fedora to have jsonify_validation_errors() now.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r286
+Switch from getting removedStatus locally to using STATUS['Removed']
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r285
+Fix construction of title now that parameters are passed in as lazystring.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r284
+Fix some syntax errors introduced when marking i18n'able strings.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r283
+Update paginate decorator from deprecated allow_limit_override to max_limit.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r282
+* Fix to invokation of init_globals()
+* Fix to import of fedora.tg.util
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r281
+require a newer python-fedora for jsonfas2 identity provider.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r280
+Fix build to substitute sbindir correctly.
+
+2009-05-12  Toshio Kuratomi <toshio@fedoraproject.org> - r279
+Fix a typo in pavement.py.
+
+2009-05-05  Toshio Kuratomi <toshio@fedoraproject.org> - r278
+Sphinxify docstring.
+
+2009-05-05  Toshio Kuratomi <toshio@fedoraproject.org> - r277
+* Mark translatable strings.
+* Correct docstrings
+
+2009-05-05  Toshio Kuratomi <toshio@fedoraproject.org> - r276
+Start writing install tasks for paver
+
+2009-05-05  Toshio Kuratomi <toshio@fedoraproject.org> - r275
+Correct typo in install of database schemas.
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r274
+Add update-schema files
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r273
+Include translations in tarball.
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r272
+Add pot file.  This is woefully incomplete at the moment.
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r271
+Add message_extractors so babel can extract messages.
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r270
+Import gettext.
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r269
+Mark strings for translation.
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r268
+Mark strings for translations
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r267
+Mark strings for translation
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r266
+Directories for l10n files.
+
+2009-04-22  Toshio Kuratomi <toshio@fedoraproject.org> - r265
+Still need setup.py in the tarball because install isn't ported yet.
+
+2009-04-21  Toshio Kuratomi <toshio@fedoraproject.org> - r264
+Use paver for the build step -- just have install left to port.
+Add things so mod_wsgi runs out of the box.
+
+2009-04-21  Toshio Kuratomi <toshio@fedoraproject.org> - r263
+Create a substitution task to edit path information in files at build time.
+
+2009-04-21  Toshio Kuratomi <toshio@fedoraproject.org> - r262
+Remove update-schema/* sfrom scripts target.  We don't want those to be
+installed in /usr/bin.
+
+2009-04-21  Toshio Kuratomi <toshio@fedoraproject.org> - r261
+Add python interpreter shebang.
+
+2009-04-21  Toshio Kuratomi <toshio@fedoraproject.org> - r260
+Add Apache configuration for mod_wsgi driven pkgdb.
+
+2009-04-20  Toshio Kuratomi <toshio@fedoraproject.org> - r259
+Merge fix to json return values from kolesovdv.
+
+2009-04-19  Toshio Kuratomi <toshio@fedoraproject.org> - r258
+Add wsgi script to pavement.py
+
+2009-04-19  Toshio Kuratomi <toshio@fedoraproject.org> - r257
+Update for paver-1.0.
+
+2009-04-19  Toshio Kuratomi <toshio@fedoraproject.org> - r256
+Move log formatters into pkgdb.cfg: site admins are likely to want to
+configure that.
+Make the default config more suited to running under mod_wsgi
+
+2009-04-19  Toshio Kuratomi <toshio@fedoraproject.org> - r255
+Fix a problem wiht how globals are defined when called from on_startup().
+
+2009-04-19  Toshio Kuratomi <toshio@fedoraproject.org> - r254
+Merge change to create branches via Package.create_listing() from kolesovdv.
+
+2009-04-18  Toshio Kuratomi <toshio@fedoraproject.org> - r253
+Fix bug where packages that were removed from Fedora were listed on the
+collection page.
+
+2009-04-18  Toshio Kuratomi <toshio@fedoraproject.org> - r252
+Workaround for new yum repodata.
+
+2009-04-18  Toshio Kuratomi <toshio@fedoraproject.org> - r251
+Note kolesovdv's new contributions.
+
+2009-04-18  Toshio Kuratomi <toshio@fedoraproject.org> - r250
+Add remove user functionality from kolesovdv
+
+2009-04-18  Toshio Kuratomi <toshio@fedoraproject.org> - r249
+Update the yum repos with repositories that are accessible from within PHX.
+
+2009-04-08  Toshio Kuratomi <toshio@fedoraproject.org> - r248
+Update extras repos since they've all been moved to archives.
+
+2009-03-20  Toshio Kuratomi <toshio@fedoraproject.org> - r247
+Add kolesovdv to the AUTHORs file.
+
+2009-03-18  Toshio Kuratomi <toshio@fedoraproject.org> - r246
+Need to append rather than call turbogears.startup.call_on_startup
+
+2009-03-18  Toshio Kuratomi <toshio@fedoraproject.org> - r245
+Update qa-contact schema as well.
+
+2009-03-18  Toshio Kuratomi <toshio@fedoraproject.org> - r244
+Merge mapleoin's branch with fixes for userid => username and db schema changes.
+
+2009-03-18  Toshio Kuratomi <toshio@fedoraproject.org> - r243
+Another place where id needs to be changed to username
+
+2009-03-18  Toshio Kuratomi <toshio@fedoraproject.org> - r242
+Update utils.startup() => utils.init_globals().
+
+2009-03-17  Toshio Kuratomi <toshio@fedoraproject.org> - r241
+Allow login() method to be used by json.
+
+2009-03-17  Toshio Kuratomi <toshio@fedoraproject.org> - r240
+* Set admin and pkger group at load time otherwise they will be set to None
+when identity decorators are created.
+* Set the groups in the config file.
+
+2009-03-17  Toshio Kuratomi <toshio@fedoraproject.org> - r239
+Branch.clone() no longer takes a userid.
+
+2009-03-17  Toshio Kuratomi <toshio@fedoraproject.org> - r238
+Remove ownername as it's no longer needed.
+
+2009-03-17  Toshio Kuratomi <toshio@fedoraproject.org> - r237
+Add the things that need to be invoked on startup to the wsgi script.
+Make the wsgi script get directory information from the build.
+Rename pkgd.utils.startup to init_globals()
+
+2009-03-17  Toshio Kuratomi <toshio@fedoraproject.org> - r236
+dos2unix
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r235
+* Remove GroupCache as it's no longer needed.
+* Rewrite UseraCache to only cache specific users on demand.
+* dispatcher: Change person_by_username() calls to use the cache instead.
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r234
+remove import of pkgdb.utils.fas as it's no longer used here.
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r233
+Remove fas.cache dependence.
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r232
+Remove use of fas.cache and no longer send the author_id through the
+massbranch() and clone() methods as we're able to use the author_name.
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r231
+No longer have to send ownerName specially since the db field is a username
+rather than userid.
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r230
+userid => username fix.
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r229
+Fix up packages to not use fas now that we have username and groupname in the
+pkgdb.
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r228
+Remove dependence on fas.cache now that we store username in the db.
+
+2009-03-16  Toshio Kuratomi <toshio@fedoraproject.org> - r227
+Use jsonfas2 as the identity provider.
+
+2009-03-04  Toshio Kuratomi <toshio@fedoraproject.org> - r226
+Another typo in a substitution pattern
+
+2009-03-04  Toshio Kuratomi <toshio@fedoraproject.org> - r225
+Set transform-ids.py to be built and installed.
+
+2009-03-04  Toshio Kuratomi <toshio@fedoraproject.org> - r224
+Fix missing @ for substitution.
+
+2009-03-04  Toshio Kuratomi <toshio@fedoraproject.org> - r223
+Merge maploins changes for retiring packages.
+
+2009-03-02  Toshio Kuratomi <toshio@fedoraproject.org> - r222
+Fix include of schema updates.
+
+2009-03-02  Toshio Kuratomi <toshio@fedoraproject.org> - r221
+Update MANIFEST.in to include doc files.
+
+2009-03-02  Toshio Kuratomi <toshio@fedoraproject.org> - r220
+Update version for a prerelease.
+
+2009-03-02  Toshio Kuratomi <toshio@fedoraproject.org> - r219
+First stab at csrf token handling in the dojo BaseClient.
+
+2009-03-02  Toshio Kuratomi <toshio@fedoraproject.org> - r218
+Stylesheets merged.
+
+2009-03-01  Toshio Kuratomi <toshio@fedoraproject.org> - r217
+Add the csrf token to the calls to the server.
+
+2009-03-01  Toshio Kuratomi <toshio@fedoraproject.org> - r216
+Get rid of compat javascript vars.
+
+2009-03-01  Toshio Kuratomi <toshio@fedoraproject.org> - r215
+Global identity variablesrenamed from things like: tgUserUserName =>
+fedora.identity.username
+
+2009-03-01  Toshio Kuratomi <toshio@fedoraproject.org> - r214
+Update to new form of python-fedora loginform
+
+2009-03-01  Toshio Kuratomi <toshio@fedoraproject.org> - r213
+Switch to using jsglobals from python-fedora.
+
+2009-03-01  Toshio Kuratomi <toshio@fedoraproject.org> - r212
+Add PEP8 link.
+
+2009-03-01  Toshio Kuratomi <toshio@fedoraproject.org> - r211
+Merge changes from maploin
+
+2009-02-24  Toshio Kuratomi <toshio@fedoraproject.org> - r210
+Remove NEEDINFO as it isn't really a bug state.
+
+2009-02-21  Toshio Kuratomi <toshio@fedoraproject.org> - r209
+Make use of login and logout methods from python-fedora.
+
+2009-02-21  Toshio Kuratomi <toshio@fedoraproject.org> - r208
+CSS for new login boxes and some merges have made it to fedora.css.
+
+2009-02-21  Toshio Kuratomi <toshio@fedoraproject.org> - r207
+Updated login and layout templates that load login sections from python-fedora.
+
+2009-02-21  Toshio Kuratomi <toshio@fedoraproject.org> - r206
+Call the enable_csrf() function on startup.
+
+2009-02-21  Toshio Kuratomi <toshio@fedoraproject.org> - r205
+Correct spelling.
+
+2009-02-21  Toshio Kuratomi <toshio@fedoraproject.org> - r204
+Initial wsgi script from mmcgrath.
+
+2009-02-16  Ionuț Arțăriși <mapleoin@fp.o> - r203
+merged with mapleoin-devel for userid>username and groupid>groupname change
+2009-02-14  Frank Chiulli <frank@flinux> - r202
+Merge and fix conflict in dispatcher.py
+
+2009-02-14  Toshio Kuratomi <toshio@fedoraproject.org> - r201
+Import the controllers LOG object so we can log when bugzilla is disabled.
+
+2009-02-14  Toshio Kuratomi <toshio@fedoraproject.org> - r200
+Add more information about the assignee.
+
+2009-02-14  Toshio Kuratomi <toshio@fedoraproject.org> - r199
+config option to not reassign ownership of bugs in bugzilla.  This is needed
+to turn off functionality when running a test server.
+
+2009-02-13  Toshio Kuratomi <toshio@fedoraproject.org> - r198
+Merge fix to email alias list generation.
+
+2009-02-08  Frank Chiulli <frank@flinux> - r197
+Fix rendering - blank area at top of page.
+
+2009-02-07  Toshio Kuratomi <toshio@fedoraproject.org> - r196
+Revert path => path_info change as it doesn't work with the production code.
+Have to wait for the updated identity controller with CSRF fixes.
+
+2009-02-03  Ionuț Arțăriși <mapleoin@fp.o> - r195
+* pkgdb/search.py: fix typo in search pagination
+2009-02-03  Toshio Kuratomi <toshio@fedoraproject.org> - r194
+Update the forward_url to use path_info.
+
+2009-02-03  Toshio Kuratomi <toshio@fedoraproject.org> - r193
+merge Frank Chiulli's doc fixes.
+
+2009-02-03  Toshio Kuratomi <toshio@fedoraproject.org> - r192
+We go to some trouble to give package name matches precedence over description
+matches.  So take out default order from paginate.
+
+2009-02-03  Toshio Kuratomi <toshio@fedoraproject.org> - r191
+Fix traceback in searching packages.
+
+2009-01-25  Toshio Kuratomi <toshio@fedoraproject.org> - r190
+Update the new variable names a little.
+
+2009-01-24  Toshio Kuratomi <toshio@fedoraproject.org> - r189
+Update to_unicode() to handle non-str objects.
+
+2009-01-22  Toshio Kuratomi <toshio@fedoraproject.org> - r188
+Update for 0.3.10.1 release.
+
+2009-01-22  Toshio Kuratomi <toshio@fedoraproject.org> - r187
+Call python-bugzilla so that it uses a temporary file for cookies.
+
+2009-01-22  Toshio Kuratomi <toshio@fedoraproject.org> - r186
+Have the bugs interface use pkgdb.utils.bugzilla.
+
+2009-01-22  Toshio Kuratomi <toshio@fedoraproject.org> - r185
+Create a temporary file for bugzilla cookies to be saved in.
+Setup onstartup and onshutdown handlers.
+
+2009-01-22  Toshio Kuratomi <toshio@fedoraproject.org> - r184
+We aren't ready to use an entrypoint yet.
+
+2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r183
+Update for 0.3.10 release.
+
 == 0.3.10 ==
 
 2009-01-21  Toshio Kuratomi <toshio@fedoraproject.org> - r182
