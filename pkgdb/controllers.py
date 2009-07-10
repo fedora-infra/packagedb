@@ -36,6 +36,7 @@ from pkgdb.packages import Packages
 from pkgdb.users import Users
 from pkgdb.stats import Stats
 from pkgdb.search import Search
+from pkgdb.tags import Tags
 
 from pkgdb.model import PackageBuild
 
@@ -56,6 +57,7 @@ class Root(controllers.RootController):
     stats = Stats(app_title)
     search = Search(app_title)
     lists = ListQueries(app_title)
+    tags = Tags(app_title)
     # For backwards compatibility:
     acls = lists
 

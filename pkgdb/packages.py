@@ -63,7 +63,7 @@ class Packages(controllers.Controller):
         self.dispatcher = PackageDispatcher()
 
     @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
-    def index(self, buildName=None, repoName='F-11-i386'):
+    def default(self, buildName=None, repoName='F-11-i386'):
         '''Retrieve PackageBuild by their name.
 
         This method returns general packagebuild/rpm information about a

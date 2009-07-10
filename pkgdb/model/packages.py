@@ -52,6 +52,7 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
         GroupPackageListing, GroupPackageListingAcl
 from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
         RpmObsoletes, RpmFiles
+from pkgdb.model.tags import Tag
 
 get_engine()
 
@@ -78,7 +79,11 @@ PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
         )
-
+PackageTagTable = Table('packagetag', metadata,
+        Column('packageid', Integer, ForeignKey('package.id'), primary_key=True),
+        Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),
+        Column('score', Integer)
+        )
 # pylint: enable-msg=C0103
 
 #
@@ -112,6 +117,23 @@ class Package(SABase):
                 self.name, self.summary, self.statuscode, self.description,
                 self.upstreamurl, self.reviewurl, self.shouldopen)
 
+    def score(self, tag):
+        '''Return the score of a given tag-package combination
+
+        :arg tag: An actual Tag object.
+
+        Returns an integer of the score or -1 otherwise.
+        '''
+
+        score = -1
+        if self in tag.packages:
+            result = PackageTagTable.select(and_(
+                PackageTagTable.c.tagid==tag.id,
+                PackageTagTable.c.packageid==self.id)
+                ).execute().fetchone()
+            score = result[2]
+        return score
+    
     def create_listing(self, collection, owner, status,
             qacontact=None, author_name=None):
         '''Create a new PackageListing branch on this Package.
@@ -284,18 +306,19 @@ def collection_alias(pkg_listing):
     return pkg_listing.collection.simple_name()
 
 class PackageBuildDepends(SABase):
-    '''Depends
+    '''PackageBuild Dependencies to one another.
 
+    Table(pivot) -- PackageBuildDepends
     '''
     def __init__(self, packagebuildid, packagebuildname):
         super(PackageBuildDepends, self).__init()
-        self.packagebuildid=packagebuildid
-        self.packagebuildname=packagebuildname
+        self.packagebuildid = packagebuildid
+        self.packagebuildname = packagebuildname
 
     def __repr__(self):
         return 'PackageBuildDepends(%r, %r)' % (
             self.packagebuildid, self.packagebuildname)
-    
+
 class PackageBuild(SABase):
     '''Actual rpms
 
@@ -335,6 +358,7 @@ class PackageBuild(SABase):
 #
 # Mappers
 #
+
 mapper(Package, PackageTable, properties={
     # listings is here for compatibility.  Will be removed in 0.4.x
     'listings': relation(PackageListing),
@@ -343,7 +367,9 @@ mapper(Package, PackageTable, properties={
         collection_class=mapped_collection(collection_alias)),
     'builds': relation(PackageBuild,
         backref=backref('package'),
-        collection_class=attribute_mapped_collection('name'))
+        collection_class=attribute_mapped_collection('name')),
+    'tags': relation(Tag, backref=backref('packages'),
+        secondary=PackageTagTable)
     })
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
@@ -376,5 +402,3 @@ mapper(PackageBuild, PackageBuildTable, properties={
         collection_class = attribute_mapped_collection('packagebuildname'),
         cascade='all, delete-orphan')
     })
-
-    
