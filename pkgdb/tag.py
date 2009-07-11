@@ -30,7 +30,7 @@ from turbogears import controllers, expose, redirect
 
 from pkgdb.model import Package, Tag, TagsTable, Language, PackageTagTable
 
-class Tags(controllers.Controller):
+class Tag(controllers.Controller):
     '''Retrieve and enter tags
 
     '''

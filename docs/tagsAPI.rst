@@ -6,7 +6,7 @@
 :Date: 10 Jul, 2009
 :For Version: 0.5.x
 
-The new tags API will be used to tag Package objects (generic packages that are independent of repos, versions etc.).
+The new tags (`/pkgdb/tag`)API will be used to tag Package objects (generic packages that are independent of repos, versions etc.).
 
 This API will be used by:
 * the pkgdb in its views to allow FAS users to tag packages via the WebUI
@@ -34,22 +34,22 @@ By default, each package/tag combination has a score showing how many times that
 Package Retrieval
 -----------------
 
-The API can retrieve tags belonging to one or more packages provided as arguments to the `tags/packages` method.
+The API can retrieve tags belonging to one or more packages provided as arguments to the `tag/packages` method.
 
 ---------------
 Package Tagging
 ---------------
 
-Packages can be tagged by sending a set of `packages` and `tags`, followed by a `language` to the `tags/add` method. PkgDB will automatically score the tags on each package. If the package has already been tagged with that specific tag, the score will be incremented, otherwise, the tag will first be associated to the package and the score will be set to 1.
+Packages can be tagged by sending a set of `packages` and `tags`, followed by a `language` to the `tag/add` method. PkgDB will automatically score the tags on each package. If the package has already been tagged with that specific tag, the score will be incremented, otherwise, the tag will first be associated to the package and the score will be set to 1.
 
 -----------------
 Package Searching
 -----------------
 
-The `tags/search` method receives one or more `tags`, an `operator` (OR|AND) and a `language`. If the operator is `OR` (default), the method will return all packages that contain at least ONE of the tags; using the `AND` operator will result in the method returning all packages that contain at least ALL of the tags.
+The `tag/search` method receives one or more `tags`, an `operator` (OR|AND) and a `language`. If the operator is `OR` (default), the method will return all packages that contain at least ONE of the tags; using the `AND` operator will result in the method returning all packages that contain at least ALL of the tags.
 
 --------------
 Package Scores
 --------------
 
-The `tags/scores` method will return a dictionary of tag : score items belonging to a given `packageName` given as argument. A `language` argument is also optional.
+The `tag/scores` method will return a dictionary of tag : score items belonging to a given `packageName` given as argument. A `language` argument is also optional.

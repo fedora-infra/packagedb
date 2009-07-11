@@ -36,7 +36,7 @@ from pkgdb.listqueries import ListQueries
 from pkgdb.packages import Package
 from pkgdb.stats import Stats
 from pkgdb.search import Search
-from pkgdb.tags import Tag
+from pkgdb.tag import Tag
 from pkgdb.users import Users
 
 from pkgdb.model import PackageBuild
