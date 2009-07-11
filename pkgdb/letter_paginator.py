@@ -80,13 +80,13 @@ class Letters(controllers.Controller):
                         Package.statuscode!=STATUS['Removed'].statuscodeid)
 
         # set the links for bugs or package info
-        if request.path.startswith('/pkgdb/packages/index/'):
-            mode = ''
-            bzUrl = ''
-        else:
+        if request.path.startswith('/pkgdb/packages/bugs/'):
             mode = 'bugs/'
             bzUrl = config.get('bugzilla.url', 'https://bugzilla.redhat.com/')
+        else:
+            mode = ''
+            bzUrl = ''
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {
-            'app': self.app_title, 'mode': mode},
+            'app': self.app_title, 'mode': mode.strip('/')},
                        searchwords=searchwords, packages=packages, mode=mode,
                        bzurl=bzUrl)

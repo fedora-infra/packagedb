@@ -8,7 +8,7 @@
     class="PackageList">
     <dl py:for="pkg in packages">
       <dt>
-        <a href="${tg.url('/packages/%s/%s' % (mode.strip('/') or 'name', pkg.name))}"
+        <a href="${tg.url('/acls/%s/%s' % (mode.strip('/') or 'name', pkg.name))}"
           py:content="pkg.name" class="PackageName">Package Name</a>
         -- ${pkg.summary}
       </dt>
@@ -17,7 +17,7 @@
         <div py:when="'orphaned'" py:strip="True">
           <span py:for="collection in sorted((plist.collection.name, plist.collection.version, plist.collection.branchname) for plist in sorted(pkg.listings2.values()) if plist.status.locale['C'].statusname=='Orphaned' and (eol or plist.collection.status.locale['C'].statusname!='EOL'))" py:strip="True">
           [<a py:content="collection[2]"
-            href="${tg.url('/packages/%s/%s#%s%s' %
+            href="${tg.url('/acls/%s/%s#%s%s' %
             (mode, pkg.name, collection[0], collection[1]))}">
             Collection shortname</a>]
           </span>
@@ -25,7 +25,7 @@
         <div py:otherwise="" py:strip="True">
           <span py:for="collection in (plist.collection for plist in sorted(pkg.listings2.values()))" py:strip="True">
           [<a py:content="collection.branchname"
-            href="${tg.url('/packages/%s/%s#%s%s' %
+            href="${tg.url('/acls/%s/%s#%s%s' %
             (mode, pkg.name, collection.name, collection.version))}">
             Collection shortname</a>]
           </span>

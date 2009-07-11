@@ -42,11 +42,11 @@
     <p>$build.package.summary</p>
     
     <ul class="actions" style="float:right">
-      <li><a href="${tg.url('/packages/name/'+build.name)}" class="pkgdb">Package Admin</a></li>
+      <li><a href="${tg.url('/acls/name/'+build.name)}" class="pkgdb">Package Admin</a></li>
       <li><a href="http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=$build.name" class="koji">Build Status</a></li>
       <li><a href="https://admin.fedoraproject.org/updates/$build.name" class="bodhi">Update Status</a></li>
       <li><a href="http://cvs.fedoraproject.org/viewcvs/rpms/$build.name/${build.repo.shortname}" class="cvs">Package Source</a></li>
-      <li><a href="${tg.url('/packages/bugs/'+build.name)}" class="bugz">Bug Reports</a></li>
+      <li><a href="${tg.url('/acls/bugs/'+build.name)}" class="bugz">Bug Reports</a></li>
     </ul>
 
     <table>
@@ -92,11 +92,11 @@
     <p>dependencies <a id="showdeps" py:if="len(build.depends)>10" onclick="toggle('moredeps','showdeps')" href="#">(more)</a>: </p>
     <p>
       <py:for each="dep in build.depends.keys()[:10]">
-        <a href="${tg.url('/packages/index/'+dep)}">$dep</a>
+        <a href="${tg.url('/packages/'+dep)}">$dep</a>
       </py:for>
       <span id="moredeps" >
         <py:for each="dep in build.depends.keys()[10:]">
-          <a href="${tg.url('/packages/index/'+dep)}">$dep</a>
+          <a href="${tg.url('/packages/'+dep)}">$dep</a>
         </py:for>
       </span>
 

@@ -19,7 +19,7 @@
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
-Controller for displaying Package Information.
+Controller for handling Package ownership information.
 '''
 
 #
@@ -36,7 +36,7 @@ from turbogears import controllers, expose, config, redirect, identity, \
         paginate
 
 from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
-        PackageListingTable, PackageBuild, Repo
+        PackageListingTable
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
@@ -48,12 +48,12 @@ from fedora.tg.util import request_format
 from cherrypy import request
 
 COLLECTION = 21
-class Packages(controllers.Controller):
-    '''Display information related to individual packages.
+class Acls(controllers.Controller):
+    '''Display ownership information related to individual packages.
     '''
 
     def __init__(self, app_title=None):
-        '''Create a Packages Controller.
+        '''Create an Aclsn Controller.
 
         :kwarg app_title: Title of the web app.
         '''
@@ -61,49 +61,6 @@ class Packages(controllers.Controller):
         self.bugs = Bugs(app_title)
         self.list = Letters(app_title)
         self.dispatcher = PackageDispatcher()
-
-    @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
-    def default(self, buildName=None, repoName='F-11-i386'):
-        '''Retrieve PackageBuild by their name.
-
-        This method returns general packagebuild/rpm information about a
-        package like: version, release, size, last changelog message,
-        committime etc. This information comes from yum and is stored in
-        the pkgdb.
-
-        :arg buildName: Name of the packagebuild/rpm to lookup
-        '''
-        if buildName==None:
-            raise redirect(config.get('base_url_filter.base_url') +
-                '/packages/list/')
-
-        # all the builds in all repos
-        builds_query = PackageBuild.query.filter_by(name=buildName)
-        # look for The One packagebuild
-        try:
-            build = builds_query.join(PackageBuild.repo).filter(
-                Repo.shortname==repoName).one()
-        except:
-            error = dict(status=False,
-                         title=_('%(app)s -- Invalid PackageBuild Name') % {
-                             'app': self.app_title},
-                             message=_('The packagebuild you were linked to'
-                             ' (%(pkg)s) does not appear in the Package '
-                             ' Database. If you received this error from a link'
-                             ' on the fedoraproject.org website, please report'
-                             ' it.') % {'pkg': buildName})
-            if request_format() != 'json':
-                error['tg_template'] = 'pkgdb.templates.errors'
-                return error
-        repos = []
-        arches = set()
-        for b in builds_query.all():
-            repos.append(b.repo)
-            arches.add(b.architecture)
-
-        return dict(title=_('%(title)s -- %(pkg)s') % {
-            'title': self.app_title, 'pkg': buildName},
-             build = build, repos=repos, arches=arches)
         
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None):
