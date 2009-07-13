@@ -6,7 +6,7 @@ ALTER TABLE packagebuild ADD COLUMN architecture text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN desktop boolean NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN size int NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN repoid int NOT NULL
-    REFERENCES packagebuild ON DELETE CASCADE;
+    REFERENCES repos ON DELETE CASCADE;
 ALTER TABLE packagebuild ADD COLUMN changelog text NOT NULL;
 ALTER TABLE packagebuild DROP COLUMN statuscode;
 ALTER TABLE packagebuild ADD COLUMN committime timestamp with time zone NOT NULL;
@@ -23,16 +23,16 @@ CREATE TABLE packagebuilddepends (
     packagebuildname text NOT NULL,
     PRIMARY KEY (packagebuildid, packagebuildname)
     );
-GRANT ALL ON TABLE packagebuilddepends TO pkgdbadmin;
+GRANT ALL ON packagebuilddepends TO pkgdbadmin;
 
 CREATE TABLE repos (
     id serial NOT NULL PRIMARY KEY,
     shortname text NOT NULL,
     name text NOT NULL,
     failovermethod text NOT NULL,
-    collectionid integer REFERENCES collection ON DELETE CASCADE,
+    collectionid integer REFERENCES collection ON DELETE CASCADE
 );
-GRANT ALL ON TABLE repos TO pkgdbadmin;
+GRANT ALL ON repos TO pkgdbadmin;
     
 CREATE TABLE rpmprovides (
     id serial NOT NULL PRIMARY KEY,
@@ -43,7 +43,8 @@ CREATE TABLE rpmprovides (
     release text,
     packagebuildid integer REFERENCES packagebuild ON DELETE CASCADE
     );
-GRANT ALL ON TABLE rpmprovides TO pkgdbadmin;
+GRANT ALL ON rpmprovides TO pkgdbadmin;
+
 
 CREATE TABLE rpmrequires (
     id serial NOT NULL PRIMARY KEY,
@@ -66,7 +67,7 @@ CREATE TABLE rpmobsoletes (
     release text,
     packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE
     );
-GRANT ALL ON TABLE rpmobsoletes TO pkgdbadmin;
+GRANT ALL ON rpmobsoletes TO pkgdbadmin;
 
 CREATE TABLE rpmconflicts (
     id serial NOT NULL PRIMARY KEY,
@@ -77,14 +78,14 @@ CREATE TABLE rpmconflicts (
     release text,
     packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE
     );
-GRANT ALL ON TABLE rpmconflicts TO pkgdbadmin;
+GRANT ALL ON rpmconflicts TO pkgdbadmin;
 
 CREATE TABLE rpmfiles (
     name text NOT NULL,
     packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
     PRIMARY KEY(name, packagebuildid)
     );
-GRANT ALL ON TABLE rpmfiles TO pkgdbadmin;
+GRANT ALL ON rpmfiles TO pkgdbadmin;
 
 ALTER TABLE packagebuild ADD FOREIGN KEY (repoid) REFERENCES repos;
 
@@ -102,34 +103,37 @@ CREATE TABLE tags (
     );
 GRANT ALL ON TABLE tags TO pkgdbadmin;
 
-CREATE TABLE packagetag (
-    packageid int NOT NULL REFERENCES package ON DELETE CASCADE,
+CREATE TABLE packagebuildtags (
+    packagebuildid int NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
     tagid int NOT NULL REFERENCES tags ON DELETE CASCADE,
     score int NOT NULL DEFAULT 1,
-    PRIMARY KEY (packageid, tagid)
+    PRIMARY KEY (packagebuildid, tagid)
     );
-GRANT ALL ON TABLE packagetag TO pkgdbadmin;
+GRANT ALL ON TABLE packagebuildtags TO pkgdbadmin;
 
-CREATE OR REPLACE FUNCTION packagetag_score() RETURNS trigger AS $packagetag_score$
+CREATE OR REPLACE FUNCTION packagebuildtags_score()
+RETURNS trigger AS $packagebuildtags_score$
     DECLARE
         old_score integer;
     BEGIN
-        SELECT score INTO old_score FROM packagetag WHERE
-            tagid = NEW.tagid AND packageid = NEW.packageid;
+        SELECT score INTO old_score FROM packagebuildtags WHERE
+            tagid = NEW.tagid AND packagebuildid = NEW.packagebuildid;
             
         IF NOT FOUND THEN
             RETURN NEW;
         ELSE
-            UPDATE packagetag SET tagid = NEW.tagid, packageid = NEW.packageid,
-                score = old_score + 1
-                WHERE tagid = NEW.tagid AND packageid = NEW.packageid;
+            UPDATE packagebuildtags SET tagid = NEW.tagid,
+                                        packagebuildid = NEW.packagebuildid,
+                                        score = old_score + 1
+                                    WHERE tagid = NEW.tagid AND
+                                          packagebuildid = NEW.packagebuildid;
             RETURN NULL;
         END IF;
     END;
-$packagetag_score$ LANGUAGE plpgsql;
+$packagebuildtags_score$ LANGUAGE plpgsql;
 
-CREATE TRIGGER packagetag_score BEFORE INSERT ON packagetag
-    FOR EACH ROW EXECUTE PROCEDURE packagetag_score();
+CREATE TRIGGER packagebuildtags_score BEFORE INSERT ON packagebuildtags
+    FOR EACH ROW EXECUTE PROCEDURE packagebuildtags_score();
 
 -- Got these from Transifex: https://translate.fedoraproject.org/languages/
 INSERT INTO languages VALUES('Afrikaans', 'af');
@@ -220,3 +224,4 @@ INSERT INTO languages VALUES('Welsh', 'cy');
 INSERT INTO languages VALUES('Zulu', 'zu');
 -- Also add American English:
 INSERT INTO languages VALUES('American English', 'en_US');
+
