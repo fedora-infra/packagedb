@@ -28,7 +28,7 @@ from sqlalchemy.sql import and_, or_
 
 from turbogears import controllers, expose, redirect
 
-from pkgdb.model import Package, Tag, TagsTable, Language, PackageTagTable
+from pkgdb.model import Package, Tag, TagsTable, Language, PackageBuildTagsTable
 
 class Tag(controllers.Controller):
     '''Retrieve and enter tags
@@ -58,7 +58,7 @@ class Tag(controllers.Controller):
 
         tags = set()
         for pkg in pkgs:
-            for tag in Package.query.filter_by(name=pkg).one().tags:
+            for tag in PackageBuild.query.filter_by(name=pkg).one().tags:
                 tags.add(tag)
 
         return dict(title=self.app_title, tags=tags)

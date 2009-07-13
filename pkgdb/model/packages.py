@@ -79,8 +79,9 @@ PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
         )
-PackageTagTable = Table('packagetag', metadata,
-        Column('packageid', Integer, ForeignKey('package.id'), primary_key=True),
+PackageBuildTagsTable = Table('packagebuildtags', metadata,
+        Column('packagebuildid', Integer,
+               ForeignKey('packagebuild.id'), primary_key=True),
         Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),
         Column('score', Integer)
         )
@@ -127,9 +128,9 @@ class Package(SABase):
 
         score = -1
         if self in tag.packages:
-            result = PackageTagTable.select(and_(
-                PackageTagTable.c.tagid==tag.id,
-                PackageTagTable.c.packageid==self.id)
+            result = PackageBuildTagsTable.select(and_(
+                PackageBuildTagsTable.c.tagid==tag.id,
+                PackageBuildTagsTable.c.packageid==self.id)
                 ).execute().fetchone()
             score = result[2]
         return score
@@ -308,7 +309,7 @@ def collection_alias(pkg_listing):
 class PackageBuildDepends(SABase):
     '''PackageBuild Dependencies to one another.
 
-    Table(pivot) -- PackageBuildDepends
+    Table(junction) -- PackageBuildDepends
     '''
     def __init__(self, packagebuildid, packagebuildname):
         super(PackageBuildDepends, self).__init()
@@ -367,9 +368,7 @@ mapper(Package, PackageTable, properties={
         collection_class=mapped_collection(collection_alias)),
     'builds': relation(PackageBuild,
         backref=backref('package'),
-        collection_class=attribute_mapped_collection('name')),
-    'tags': relation(Tag, backref=backref('packages'),
-        secondary=PackageTagTable)
+        collection_class=attribute_mapped_collection('name'))
     })
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
@@ -400,5 +399,7 @@ mapper(PackageBuild, PackageBuildTable, properties={
         secondary = PackageBuildListingTable),
     'depends': relation(PackageBuildDepends, backref=backref('build'),
         collection_class = attribute_mapped_collection('packagebuildname'),
-        cascade='all, delete-orphan')
+        cascade='all, delete-orphan'),
+    'tags': relation(Tag, backref=backref('builds'),
+        secondary=PackageBuildTagsTable)
     })
