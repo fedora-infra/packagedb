@@ -44,6 +44,7 @@ CREATE TABLE rpmprovides (
     packagebuildid integer REFERENCES packagebuild ON DELETE CASCADE
     );
 GRANT ALL ON rpmprovides TO pkgdbadmin;
+GRANT ALL ON rpmprovides_id_seq TO pkgdbadmin;
 
 
 CREATE TABLE rpmrequires (
@@ -57,6 +58,7 @@ CREATE TABLE rpmrequires (
     prereq boolean NOT NULL DEFAULT FALSE
     );
 GRANT ALL ON TABLE rpmrequires TO pkgdbadmin;
+GRANT ALL ON rpmrequires_id_seq TO pkgdbadmin;
 
 CREATE TABLE rpmobsoletes (
     id serial NOT NULL PRIMARY KEY,
@@ -68,6 +70,7 @@ CREATE TABLE rpmobsoletes (
     packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE
     );
 GRANT ALL ON rpmobsoletes TO pkgdbadmin;
+GRANT ALL ON rpmobsoletes_id_seq TO pkgdbadmin;
 
 CREATE TABLE rpmconflicts (
     id serial NOT NULL PRIMARY KEY,
@@ -79,6 +82,7 @@ CREATE TABLE rpmconflicts (
     packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE
     );
 GRANT ALL ON rpmconflicts TO pkgdbadmin;
+GRANT ALL ON rpmconflicts_id_seq TO pkgdbadmin;
 
 CREATE TABLE rpmfiles (
     name text NOT NULL,
@@ -86,6 +90,7 @@ CREATE TABLE rpmfiles (
     PRIMARY KEY(name, packagebuildid)
     );
 GRANT ALL ON rpmfiles TO pkgdbadmin;
+GRANT ALL ON rpmfiles_id_seq TO pkgdbadmin;
 
 ALTER TABLE packagebuild ADD FOREIGN KEY (repoid) REFERENCES repos;
 
@@ -102,6 +107,7 @@ CREATE TABLE tags (
     UNIQUE (name, language)
     );
 GRANT ALL ON TABLE tags TO pkgdbadmin;
+GRANT ALL ON tags_id_seq TO pkgdbadmin;
 
 CREATE TABLE packagebuildtags (
     packagebuildid int NOT NULL REFERENCES packagebuild ON DELETE CASCADE,

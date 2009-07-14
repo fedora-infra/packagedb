@@ -56,7 +56,7 @@ class Tag(SABase):
     def __repr__(self):
         return 'Tag(%r, language=%r)' % (
             self.name, self.language)
-                
+        
 class Language(SABase):
     '''Language.
 
@@ -73,6 +73,7 @@ class Language(SABase):
 
     def __repr__(self):
         return 'Language(%r, %r)' % (self.name, self.shortname)
+
 
 #
 # Mappers
