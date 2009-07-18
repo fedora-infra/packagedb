@@ -32,6 +32,32 @@
 
     </script>
     <script type="text/javascript">
+      function sendForm() {
+        var button = dojo.byId("tagsubmit");
+
+        dojo.connect(button, "onClick", function(event){
+        //Stop the submit event since we want to control form submission.
+        event.preventDefault();
+        event.stopPropagation();
+
+      var xhrArgs = {
+        form: dojo.byId("tagform"),
+        handleAs: "text",
+        load: function(data){
+          dojo.byId("response").innerHTML = "Form posted.";
+        },
+        error: function(error){
+
+        }
+      }
+      //Call the asynchronous xhrPost
+
+      var deferred = dojo.xhrPost(xhrArgs);
+      });
+      };
+      
+      dojo.addOnLoad(sendForm);
+
       dojo.addOnLoad(function(){
           document.getElementById("moredeps").style.display="none";
           document.getElementById("showdeps").innerHTML="(more)";
@@ -88,6 +114,24 @@
 
     <p>$build.package.description</p>
 
+    <div id="tags">
+      Tags: 
+      <py:for each="tag in tagscore.keys()">
+        <a href="${tg.url('/tag/list/%s' % tag)}">$tag</a>(${tagscore[tag]})
+      </py:for>
+      <py:choose test="tg.identity.anonymous">
+        <py:when test="True">
+          <p>You must be logged in in order to be able to tag packages.</p>
+        </py:when>
+        <py:when test="False">
+          <form id="tagform" method="POST"
+                action="${tg.url('/tag/add/'+build.name+'/')}">
+            <input type="text" name="tags" value="" size="9" />
+            <input id="tagsubmit" type="submit" value="Tag!" />
+          </form>
+        </py:when>
+      </py:choose>
+    </div>
     <br />
     <p>dependencies <a id="showdeps" py:if="len(build.depends)>10" onclick="toggle('moredeps','showdeps')" href="#">(more)</a>: </p>
     <p>

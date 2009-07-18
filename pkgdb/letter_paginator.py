@@ -28,10 +28,10 @@ Module to be used for letter pagination and search.
 #   noted, E1101 is disabled due to a static checker not having information
 #   about the monkey patches.
 
-from sqlalchemy.sql import or_
+from sqlalchemy.sql import or_, and_
 from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate, config
-from pkgdb.model import Package
+from pkgdb.model import Package, Tag
 from pkgdb.utils import STATUS
 from pkgdb import _
 
@@ -48,44 +48,60 @@ class Letters(controllers.Controller):
     @expose(template='pkgdb.templates.pkgbugoverview', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
                 max_limit=None, max_pages=13)
-    def default(self, searchwords=''):
+    def default(self, searchwords='', language='en_US'):
         '''Return a list of all packages in the database.
 
            :kwarg searchwords: optional - string to restrict the list, can use
            % or * as wildcards
         '''
-        if searchwords != '':
-            searchwords = searchwords.replace('*','%')
-            if searchwords.isdigit() and int(searchwords) < 10: # 0-9
+        if request.path.startswith('/pkgdb/acls/'):
+            if request.path.startswith('/pkgdb/acls/bugs/'):
+                mode = 'acls/bugs/'
+                bzUrl = config.get('bugzilla.url',
+                                   'https://bugzilla.redhat.com/')
+            else:
+                mode = 'acls/names/'
+                bzUrl = ''
+            if searchwords != '':
+                searchwords = searchwords.replace('*','%')
+                if searchwords.isdigit() and int(searchwords) < 10: # 0-9
+                    # pylint: disable-msg=E1101
+                    packages = Package.query.options(
+                            lazyload('listings2'), lazyload('status')
+                        ).filter(or_(Package.name.between('0','9'),
+                                     Package.name.like('9%')))
+                else: 
+                    # sanitize for ilike:
+                    searchwords =searchwords.replace('&','').replace('_','') 
+                    # pylint: disable-msg=E1101
+                    packages = Package.query.options(
+                        lazyload('listings2'),
+                        lazyload('status')).filter(
+                            Package.name.ilike(searchwords)
+                            ).order_by(Package.name.asc())
+            else:
                 # pylint: disable-msg=E1101
-                packages = Package.query.options(
-                        lazyload('listings2'), lazyload('status')).filter(or_(
-                               Package.name.between('0','9'),
-                                   Package.name.like('9%')))
-            else: 
-                # sanitize for ilike:
-                searchwords = searchwords.replace('&','').replace('_','') 
-                # pylint: disable-msg=E1101
-                packages = Package.query.options(
-                        lazyload('listings2'), lazyload('status')).filter(
-                        Package.name.ilike(searchwords)
-                        ).order_by(Package.name.asc())
+                packages = Package.query.options(lazyload('listings2'),
+                            lazyload('status'))
+            # minus removed packages
+            packages = packages.filter(
+                Package.statuscode!=STATUS['Removed'].statuscodeid)
         else:
-            # pylint: disable-msg=E1101
-            packages = Package.query.options(lazyload('listings2'),
-                    lazyload('status'))
-        searchwords = searchwords.replace('%','*')
-        # minus removed packages
-        packages = packages.filter(
-                        Package.statuscode!=STATUS['Removed'].statuscodeid)
-
-        # set the links for bugs or package info
-        if request.path.startswith('/pkgdb/packages/bugs/'):
-            mode = 'bugs/'
-            bzUrl = config.get('bugzilla.url', 'https://bugzilla.redhat.com/')
-        else:
-            mode = ''
+            if searchwords != '':
+                searchwords = searchwords.replace('*','%') \
+                              .replace('&','').replace('_','')
+                try:
+                    packages = Tag.query.options(lazyload('builds')).filter(
+                                and_(Tag.name.ilike(searchwords),
+                                     Tag.language.ilike(language))).one().builds
+                except:
+                    raise Exception(request.path)
+            else:
+                packages = Tag.query.options(lazyload('builds'))
+            mode = 'tag/'
             bzUrl = ''
+            
+        searchwords = searchwords.replace('%','*')            
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {
             'app': self.app_title, 'mode': mode.strip('/')},
                        searchwords=searchwords, packages=packages, mode=mode,

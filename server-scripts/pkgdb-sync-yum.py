@@ -104,19 +104,6 @@ for repoid in repos: #Repo.query.all():
                     if f.endswith('.desktop'):
                         desktop = True
                         
-                # insert the new pkgbuild
-                # TODO give the changelog part more thought
-                # pkgbuild = PackageBuild(
-                #     packageid=package.id, name=rpm.name,
-                #     epoch=rpm.epoch, version=rpm.version,
-                #     release=rpm.release, size=rpm.size,
-                #     architecture=rpm.arch, desktop=desktop,
-                #     license=rpm.license, changelog=rpm.changelog[0][0],
-                #     repoid=int(reponum))
-                # session.add(pkgbuild)
-                # session.begin()
-                # session.commit()
-
                 # do a bit of house-keeping
                 (committime, committer, changelog) = rpm.changelog[0]
                 committime = datetime.datetime.utcfromtimestamp(committime)
@@ -134,7 +121,6 @@ for repoid in repos: #Repo.query.all():
                     repoid=int(reponum)).execute().last_inserted_ids()[-1]
                 
                 # associate the listing with the packagebuild
-                #pkgbuild.listings.append(listing)
                 PackageBuildListingTable.insert().values(
                     packagebuildid=pkgbuildid, packagelistingid=listing.id
                     ).execute()

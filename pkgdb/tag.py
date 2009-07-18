@@ -26,10 +26,11 @@ add a tag should probably operate on a list of packages as well.
 '''
 from sqlalchemy.sql import and_, or_
 
-from turbogears import controllers, expose, redirect
+from turbogears import controllers, expose, redirect, identity
 
 from pkgdb.model import PackageBuild, Tag as TagObj, TagsTable, Language, \
      PackageBuildTagsTable, Branch
+from pkgdb.letter_paginator import Letters
 
 BRANCH = 'F-11'
 class Tag(controllers.Controller):
@@ -43,6 +44,7 @@ class Tag(controllers.Controller):
         :warg app_title: Title of the web app.
         '''
         self.app_title = app_title
+        self.list = Letters(app_title)
 
     @expose(allow_json=True)
     def packages(self, builds, branch=BRANCH):
@@ -107,6 +109,7 @@ class Tag(controllers.Controller):
         return dict(title=self.app_title, tags=tags, builds=builds)
 
     @expose(allow_json=True)
+    @identity.require(identity.not_anonymous())
     def add(self, builds, tags, language='en_US', branch=BRANCH):
         '''Add a set of tags to a specific PackageBuild.
 
@@ -119,8 +122,6 @@ class Tag(controllers.Controller):
 
         Returns two lists (unchanged): tags and builds.
         '''
-        
+
         PackageBuild.tag(builds, tags, language, branch)
-        
-        return dict(title=self.app_title, tags=tags, builds=builds)
     

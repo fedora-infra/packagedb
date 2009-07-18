@@ -35,7 +35,7 @@
       </tr>
       <tr py:for="pkgb in newpackages">
         <td class="package">
-          <a href="${tg.url('/packages/index/'+pkgb.name+'/'+str(pkgb.repo.shortname))}">$pkgb.name</a>
+          <a href="${tg.url('/packages/'+pkgb.name+'/'+str(pkgb.repo.shortname))}">$pkgb.name</a>
           <br />${pkgb.version+'-'+pkgb.release+'-'+pkgb.architecture}
         </td>
         <td class="changelog">

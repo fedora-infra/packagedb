@@ -290,6 +290,25 @@ def collection_alias(pkg_listing):
     '''
     return pkg_listing.collection.simple_name()
 
+def in_collection(builds, branchname):
+    '''Retrieves all the PackageBuilds matching the names in the builds
+    list and the branchname.
+
+    Returns a set with all the matching PackageBuilds
+
+    '''
+    from pkgdb.model.collections import Branch
+    
+    collectionid = Branch.query.filter_by(branchname=branchname).one().id
+    good_builds = set()
+    for build in builds:
+        packagebuilds = PackageBuild.query.filter_by(name=build).all()
+        for packagebuild in packagebuilds:
+            for listing in packagebuild.listings:
+                if listing.collectionid == collectionid:
+                    good_builds.add(packagebuild)
+    return good_builds
+
 class PackageBuildDepends(SABase):
     '''PackageBuild Dependencies to one another.
 
@@ -303,20 +322,19 @@ class PackageBuildDepends(SABase):
     def __repr__(self):
         return 'PackageBuildDepends(%r, %r)' % (
             self.packagebuildid, self.packagebuildname)
-
+            
 class PackageBuild(SABase):
-    '''Actual rpms
+    '''Package Builds - Actual rpms
 
-    This is a very specific unitary package.
+    This is a very specific unitary package with version, release and everything.
 
     Table -- PackageBuild
     '''
 
-    def __init__(self, name, packageid, epoch, version, release, architecture,
+    def __init__(self, packageid, epoch, version, release, architecture,
                  desktop, size, license, changelog, committime, committer,
                  repoid):
         super(PackageBuild, self).__init__()
-        self.name = name
         self.packageid = packageid
         self.epoch = epoch
         self.version = version
@@ -331,30 +349,13 @@ class PackageBuild(SABase):
         self.repoid = repoid
 
     def __repr__(self):
-        return 'PackageBuild(%r, %r, epoch=%r, version=%r, release=%r,' \
+        return 'PackageBuild(%r, epoch=%r, version=%r, release=%r,' \
                ' architecture=%r, desktop=%r, size=%r, license=%r,' \
-               ' changelog=%r, committime=%r, committer=%r, repoid=%r)' % (
-            self.name, self.packageid, self.epoch, self.version,
+               ' changelog=%r, committime=%r, committer=%r, repoid=%r' % (
+            self.packageid, self.epoch, self.version,
             self.release, self.architecture, self.desktop, self.size,
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
-
-    def __in_collection(self, builds, branchname):
-        '''Retrieves all the PackageBuilds matching the names in the builds
-        list and the branchname.
-
-        Returns a set with all the matching PackageBuilds
-
-        '''
-        collectionid = Branch.query.filter_by(branchname=branchname).one().id
-        good_builds = set()
-        for build in builds:
-            packagebuilds = PackageBuild.query.filter_by(name=build).all()
-            for packagebuild in packagebuilds:
-                for listing in packagebuild.listings:
-                    if listing.collectionid == collectionid:
-                        good_builds.add(packagebuild)
-        return good_builds
 
     @classmethod
     def tag(cls, builds, tags, language, branch):
@@ -379,7 +380,7 @@ class PackageBuild(SABase):
         if builds.__class__ != [].__class__:
             builds = [builds]
 
-        packagebuilds = self.__in_collection(builds, branch)
+        packagebuilds = in_collection(builds, branch)
         for tag in tags:
             try:
                 conn = TagsTable.select(and_(
@@ -450,7 +451,7 @@ class PackageBuild(SABase):
         if branch:
             for build in builds:
                 names.append(build.name)
-            builds = self.__in_collection(names, branch)
+            builds = in_collection(names, branch)
         
         return builds
 
@@ -475,7 +476,6 @@ class PackageBuild(SABase):
 
         :arg language (optional): Restrict the search to just one language.
         '''
-
         tags = self.tags
         lang = Language.query.filter(or_(Language.name==language,
                                          Language.shortname==language
@@ -527,11 +527,11 @@ mapper(PackageBuild, PackageBuildTable, properties={
     'files': relation(RpmFiles, backref=backref('build'),
         collection_class = attribute_mapped_collection('name'),
         cascade='all, delete-orphan'),
-    'listings': relation(PackageListing, backref=backref('builds'),
-        secondary = PackageBuildListingTable),
     'depends': relation(PackageBuildDepends, backref=backref('build'),
         collection_class = attribute_mapped_collection('packagebuildname'),
         cascade='all, delete-orphan'),
+    'listings': relation(PackageListing, backref=backref('builds'),
+        secondary = PackageBuildListingTable),
     'tags': relation(Tag, backref=backref('builds'),
         secondary=PackageBuildTagsTable)
     })

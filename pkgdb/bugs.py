@@ -116,7 +116,7 @@ class Bugs(controllers.Controller):
         '''
 
         self.app_title = app_title
-        self.index = Letters(app_title)
+        self.list = Letters(app_title)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
     def default(self, package_name, *args, **kwargs):

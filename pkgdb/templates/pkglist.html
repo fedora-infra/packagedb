@@ -8,9 +8,17 @@
     class="PackageList">
     <dl py:for="pkg in packages">
       <dt>
-        <a href="${tg.url('/acls/%s/%s' % (mode.strip('/') or 'name', pkg.name))}"
-          py:content="pkg.name" class="PackageName">Package Name</a>
-        -- ${pkg.summary}
+        <py:choose test="mode">
+          <py:when test="'tag/'">
+            <a href="${tg.url('/packages/%s/' % pkg.name)}"
+               py:content="pkg.name" class="PackageName">Build Name</a>
+          </py:when>
+          <py:otherwise>
+            <a href="${tg.url('/%s%s' % (mode, pkg.name))}"
+               py:content="pkg.name" class="PackageName">Package Name</a>
+            -- ${pkg.summary}
+          </py:otherwise>
+        </py:choose>
       </dt>
       <dd py:if="full_desc" py:content="pkg.description" />
       <dd py:if="release" py:choose="releasewhere">
@@ -25,7 +33,7 @@
         <div py:otherwise="" py:strip="True">
           <span py:for="collection in (plist.collection for plist in sorted(pkg.listings2.values()))" py:strip="True">
           [<a py:content="collection.branchname"
-            href="${tg.url('/acls/%s/%s#%s%s' %
+            href="${tg.url('%s/%s#%s%s' %
             (mode, pkg.name, collection.name, collection.version))}">
             Collection shortname</a>]
           </span>
