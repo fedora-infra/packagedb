@@ -29,7 +29,7 @@ from turbogears import controllers, validators
 
 from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
         GroupPackageListingAcl, PackageListing, PersonPackageListing,
-        PersonPackageListingAcl,)
+        PersonPackageListingAcl, Repo, PackageBuild)
 from pkgdb.model import PackageTable, CollectionTable
 from pkgdb.utils import STATUS
 from pkgdb import _
@@ -295,6 +295,38 @@ class ListQueries(controllers.Controller):
         return dict(title=_('%(app)s -- VCS ACLs') % {'app': self.app_title},
                 packageAcls=package_acls)
 
+    @expose(template='pkgdb.templates.buildtags', as_format='xml',
+            accept_format='application/xml', allow_json=True)
+    def buildtags(self, repos='F-11-i386', langs='en_US'):
+        '''Return an XML object with all the PackageBuild tags and their scores.
+
+        :arg repoName: A repo shortname to lookup packagebuilds into
+        :arg language: A language string, (e.g. 'American English' or 'en_US')
+        for tags
+
+        Returns:
+        :buildtags: a dictionary of buildaname : tagdict, where tagdict is a
+        dictionary of tag : score key-value pairs.
+        '''
+        if repos.__class__ != [].__class__:
+            repos = [repos]
+        if langs.__class__ != [].__class__:
+            langs = [langs]
+    
+        buildtags = {}
+        for repo in repos:
+            buildtags[repo] = {}
+            
+            repoid = Repo.query.filter_by(shortname=repo).one().id
+
+            builds = PackageBuild.query.filter_by(repoid=repoid)
+            for language in langs:
+                for build in builds:
+                    buildtags[repo][build.name] = build.scores(language)
+
+        return dict(buildtags=buildtags, repos=repos)
+            
+        
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
             as_format="plain", accept_format="text/plain",
             content_type="text/plain; charset=utf-8", format='text')
