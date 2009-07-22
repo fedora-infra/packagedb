@@ -22,15 +22,24 @@ Send acl information to third party tools.
 '''
 
 import itertools
+import os
 
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, create_engine
+from sqlalchemy.orm import sessionmaker, session
+
 from turbogears import expose, validate, error_handler
 from turbogears import controllers, validators
+
+from turbogears.database import get_engine
 
 from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
         GroupPackageListingAcl, PackageListing, PersonPackageListing,
         PersonPackageListingAcl, Repo, PackageBuild)
-from pkgdb.model import PackageTable, CollectionTable
+from pkgdb.model import (PackageTable, CollectionTable, ReposTable, 
+     YumLanguagesTable, YumTagsTable, YumPackageBuildTagsTable, YumReposTable,
+     YumPackageBuildTable, PackageBuildTable, LanguagesTable, TagsTable, 
+     PackageBuildTagsTable, CURRENTREPO)
+from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
 from pkgdb.utils import STATUS
 from pkgdb import _
 
@@ -297,7 +306,7 @@ class ListQueries(controllers.Controller):
 
     @expose(template='pkgdb.templates.buildtags', as_format='xml',
             accept_format='application/xml', allow_json=True)
-    def buildtags(self, repos='F-11-i386', langs='en_US'):
+    def buildtags(self, repos=CURRENTREPO, langs='en_US'):
         '''Return an XML object with all the PackageBuild tags and their scores.
 
         :arg repoName: A repo shortname to lookup packagebuilds into
@@ -325,7 +334,86 @@ class ListQueries(controllers.Controller):
                     buildtags[repo][build.name] = build.scores(language)
 
         return dict(buildtags=buildtags, repos=repos)
+
+    @expose(content_type='application/sqlite')
+    def sqlitebuildtags(self, repos=CURRENTREPO, langs='en_US'):
+        '''Return a sqlite database of packagebuilds and tags.
+
+        The database returned will contain copies or subsets of tables in the
+        pkgdb.
+
+        :kwarg repos: A list of repository shortnames (e.g. 'F-11-i386')
+
+        '''
+
+        if repos.__class__ != [].__class__:
+            repos = [repos]
+        if langs.__class__ != [].__class__:
+            langs = [langs]
+
+        # initialize/clear database
+        open(dbfile, 'w').close()
+        
+        yummeta.create_all()
+
+        default_engine = get_engine()
+        lite_session = sessionmaker(create_engine(sqliteconn))()
+        
+        # copy the repo
+        s = select([ReposTable.c.id, ReposTable.c.name,
+                               ReposTable.c.shortname],
+                              ReposTable.c.shortname.in_(repos))
+        e = default_engine.execute(s)
+        fetchedrepos = e.fetchall()
+        e.close()
+        lite_session.execute(YumReposTable.insert(), fetchedrepos)
+
+        # look for the needed values in PackageBuildTable and copy them
+        s = select([PackageBuildTable.c.id, PackageBuildTable.c.name,
+                    PackageBuildTable.c.repoid],
+                   and_(
+                       PackageBuildTable.c.repoid == ReposTable.c.id,
+                       ReposTable.c.shortname.in_(repos)))
+        e = default_engine.execute(s)
+        builds = e.fetchall()
+        e.close()
+        lite_session.execute(YumPackageBuildTable.insert(), builds)
             
+        # copy the languages
+        e = LanguagesTable.select(
+            LanguagesTable.c.shortname.in_(langs)).execute()
+        languages = e.fetchall()
+        e.close()
+        lite_session.execute(YumLanguagesTable.insert(), languages)
+
+        # copy all the corresponding tags
+        e = TagsTable.select(and_(\
+            PackageBuildTable.c.id==PackageBuildTagsTable.c.packagebuildid,\
+            PackageBuildTagsTable.c.tagid==TagsTable.c.id,\
+            TagsTable.c.language.in_(langs),\
+            PackageBuildTable.c.repoid==ReposTable.c.id,\
+            ReposTable.c.shortname.in_(repos))).distinct().execute()
+        tags = e.fetchall()
+        e.close()
+        lite_session.execute(YumTagsTable.insert(), tags)
+
+        # copy the PackageBuildTagsTable
+        e = PackageBuildTagsTable.select(and_(\
+            PackageBuildTagsTable.c.tagid==TagsTable.c.id,\
+            PackageBuildTable.c.id==PackageBuildTagsTable.c.packagebuildid,\
+            TagsTable.c.language.in_(langs),\
+            PackageBuildTable.c.repoid==ReposTable.c.id,\
+            ReposTable.c.shortname.in_(repos))).distinct().execute()
+        buildtags = e.fetchall()
+        e.close()
+        lite_session.execute(YumPackageBuildTagsTable.insert(), buildtags)
+
+        lite_session.commit()
+
+        f = open(dbfile, 'r')
+        dump = f.read()
+        f.close()
+        return dump
         
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
             as_format="plain", accept_format="text/plain",

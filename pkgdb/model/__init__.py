@@ -36,6 +36,7 @@ from pkgdb.model.statuses import *
 from pkgdb.model.logs import *
 from pkgdb.model.prcof import *
 from pkgdb.model.tags import *
+from pkgdb.model.yumdb import *
 
 ### FIXME: Create sqlalchemy schema.
 # By and large we'll follow steps similar to the Collection/Branch example
