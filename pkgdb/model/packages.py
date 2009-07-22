@@ -331,10 +331,11 @@ class PackageBuild(SABase):
     Table -- PackageBuild
     '''
 
-    def __init__(self, packageid, epoch, version, release, architecture,
+    def __init__(self, name, packageid, epoch, version, release, architecture,
                  desktop, size, license, changelog, committime, committer,
                  repoid):
         super(PackageBuild, self).__init__()
+        self.name = name
         self.packageid = packageid
         self.epoch = epoch
         self.version = version
@@ -349,10 +350,10 @@ class PackageBuild(SABase):
         self.repoid = repoid
 
     def __repr__(self):
-        return 'PackageBuild(%r, epoch=%r, version=%r, release=%r,' \
-               ' architecture=%r, desktop=%r, size=%r, license=%r,' \
+        return 'PackageBuild(%r, packageid=%r, epoch=%r, version=%r,' \
+               ' release=%r, architecture=%r, desktop=%r, size=%r, license=%r,' \
                ' changelog=%r, committime=%r, committer=%r, repoid=%r' % (
-            self.packageid, self.epoch, self.version,
+            self.name, self.packageid, self.epoch, self.version,
             self.release, self.architecture, self.desktop, self.size,
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
@@ -474,7 +475,7 @@ class PackageBuild(SABase):
     def scores(self, language='en_US'):
         '''Return a dictionary of tagname: score for a given PackageBuild
 
-        :arg language (optional): Restrict the search to just one language.
+        :kwarg language (optional): Restrict the search to just one language.
         '''
         tags = self.tags
         lang = Language.query.filter(or_(Language.name==language,

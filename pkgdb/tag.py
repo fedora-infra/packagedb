@@ -52,7 +52,7 @@ class Tag(controllers.Controller):
 
         :arg builds: The name (or list of names) of a generic PackageBuild
         to lookup
-        :arg branch: The branchname (e.g. 'F-11') where the packagebuilds are
+        :kwarg branch: The branchname (e.g. 'F-11') where the packagebuilds are
         located
 
         Returns:
@@ -75,6 +75,10 @@ class Tag(controllers.Controller):
         '''Return a dictionary of tagname: score for a given package build.
 
         :arg build: The PackageBuild object to lookup.
+        :kwarg language: A language, short ('en_US') or long ('American English')
+        format. Look for them on https://translate.fedoraproject.org/languages/
+        :kwarg branch: The branchname (e.g. 'F-11') where the packagebuilds are
+        located
         '''
         collectionid = Branch.query.filter_by(branchname=branch).one().id
         
@@ -95,11 +99,13 @@ class Tag(controllers.Controller):
         Can also be used with just one tag.
 
         :arg tags: One or more tag names to lookup
-        :arg operator: Can be one of 'OR' and 'AND', case insensitive, decides
+        :kwarg operator: Can be one of 'OR' and 'AND', case insensitive, decides
         how the search for tags is done.
-        :arg language: A language in short ('en_US') or long ('American English')
+        :kwarg language: A language, short ('en_US') or long ('American English')
         format. Look for them on https://translate.fedoraproject.org/languages/
-
+        :kwarg branch: The branchname (e.g. 'F-11') where the packagebuilds are
+        located
+        
         Returns:
         :tags: a list of Tag objects, filtered by :language:
         :builds: list of found PackageBuild objects
@@ -116,9 +122,9 @@ class Tag(controllers.Controller):
         This method will tag all packagebuilds in the specified branch.
         
         :arg builds: one or more PackageBuild names to add the tags to.
-        :arg tags: one or more tags to add to the packages.
-        :arg language: name or shortname for the language of the tags.
-        :arg branch: branchname of the packagebuild (e.g. 'F-11')
+        :kwarg tags: one or more tags to add to the packages.
+        :kwarg language: name or shortname for the language of the tags.
+        :kwarg branch: branchname of the packagebuild (e.g. 'F-11')
 
         Returns two lists (unchanged): tags and builds.
         '''

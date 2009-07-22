@@ -34,6 +34,7 @@ from pkgdb.model.packages import PackageListing, PackageBuild
 
 get_engine()
 
+CURRENTREPO='F-11-i386'
 #
 # Mapped Tables
 #
