@@ -477,13 +477,13 @@ class PackageBuild(SABase):
 
         :kwarg language (optional): Restrict the search to just one language.
         '''
-        tags = self.tags
+
         lang = Language.query.filter(or_(Language.name==language,
                                          Language.shortname==language
                                          )).one().shortname
-        for tag in tags:
-            if tag.language != lang:
-                tags.remove(tag)
+        tags = Tag.query.join(Tag.builds).filter(
+            and_(PackageBuild.id==self.id, Tag.language==lang)).all()
+        
         buildtags = {}
         for tag in tags:
             buildtags[tag.name] = self.score(tag)

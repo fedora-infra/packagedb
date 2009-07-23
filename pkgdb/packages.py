@@ -23,7 +23,7 @@ Controller for displaying PackageBuild(Rpm) related information
 
 from turbogears import controllers, expose, identity
 
-from pkgdb.model import PackageBuild, Repo
+from pkgdb.model import PackageBuild, Repo, Branch
 from pkgdb.tag import Tag
 
 from fedora.tg.util import request_format
@@ -46,7 +46,7 @@ class Package(controllers.Controller):
         return list
     
     @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
-    def default(self, buildName=None, repoName='F-11-i386', language='en_US'):
+    def default(self, buildName=None, branchName='F-11', language='en_US'):
         '''Retrieve PackageBuild by their name.
 
         This method returns general packagebuild/rpm information about a
@@ -55,19 +55,18 @@ class Package(controllers.Controller):
         the pkgdb.
 
         :arg buildName: Name of the packagebuild/rpm to lookup
-        :arg repoName: A repo shortname to look into.
+        :arg branchName: A branch shortname to look into.
         :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
         if buildName==None:
             raise redirect(config.get('base_url_filter.base_url') +
                 '/packages/list/')
 
-        # all the builds in all repos
         builds_query = PackageBuild.query.filter_by(name=buildName)
         # look for The One packagebuild
         try:
-            build = builds_query.join(PackageBuild.repo).filter(
-                Repo.shortname==repoName).one()
+            build = builds_query.join(PackageBuild.listings).filter(
+                Branch.branchname==branchName).one()
         except:
             error = dict(status=False,
                          title=_('%(app)s -- Invalid PackageBuild Name') % {
@@ -89,4 +88,5 @@ class Package(controllers.Controller):
 
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': buildName},
-             build = build, repos=repos, arches=arches, tagscore=tagscore)
+                    branch=branchName, build = build, repos=repos,
+                    arches=arches, tagscore=tagscore, language=language)

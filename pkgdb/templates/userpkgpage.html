@@ -97,7 +97,7 @@
       <tr>
         <td>Owner:</td>
         <td>
-          <a href="${tg.url('/users/packages/'+build.listings[0].owner)}">
+          <a href="${tg.url('/users/packages/%s' % build.listings[0].owner)}">
             ${build.listings[0].owner}
           </a>
         </td>
@@ -125,7 +125,7 @@
         </py:when>
         <py:when test="False">
           <form id="tagform" method="POST"
-                action="${tg.url('/tag/add/'+build.name+'/')}">
+                action="${tg.url('/tag/add/%s/?language=%s' % (build.name, language))}">
             <input type="text" name="tags" value="" size="9" />
             <input id="tagsubmit" type="submit" value="Tag!" />
           </form>
@@ -133,17 +133,16 @@
       </py:choose>
     </div>
     <br />
-    <p>dependencies <a id="showdeps" py:if="len(build.depends)>10" onclick="toggle('moredeps','showdeps')" href="#">(more)</a>: </p>
+    <p>dependencies <a id="showdeps" py:if="len(build.depends) >10" onclick="toggle('moredeps','showdeps')" href="#">(more)</a>: </p>
     <p>
       <py:for each="dep in build.depends.keys()[:10]">
-        <a href="${tg.url('/packages/'+dep)}">$dep</a>
+        <a href="${tg.url('/packages/%s/%s' % (dep, branch))}">$dep</a>
       </py:for>
       <span id="moredeps" >
         <py:for each="dep in build.depends.keys()[10:]">
-          <a href="${tg.url('/packages/'+dep)}">$dep</a>
+          <a href="${tg.url('/packages/%s/%s' % (dep, branch))}">$dep</a>
         </py:for>
       </span>
-
     </p>
     <br />
     <p id="changelog">Last changelog entry:</p>
