@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2009 Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -18,7 +18,7 @@
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
-Mapping of tag related database tables to python classes.
+Mapping of language related database tables to python classes.
 '''
 
 from sqlalchemy import Table
@@ -32,31 +32,30 @@ from fedora.tg.json import SABase
 # Tables
 #
 
-TagsTable = Table('tags', metadata, autoload=True)
+LanguagesTable = Table('languages', metadata, autoload=True)
 
 #
 # Mapped Classes
 #
 
-class Tag(SABase):
-    '''Package Tags.
+class Language(SABase):
+    '''Language.
 
-    These belong to a Package object. They are entered through the pkgdb
-    interface and also belong to a language.
+    A list of languages that currently have localizations in fedora and will
+    hopefully have localizations in pkgdb.
 
-    Table -- Tags
+    Table -- Languages
     '''
 
-    def __init__(self, name, language):
-        super(Tag, self).__init__()
+    def __init__(self, name, shortname):
+        super(Language, self).__init__()
         self.name = name
-        self.language = language
+        self.shortname = shortname
 
     def __repr__(self):
-        return 'Tag(%r, language=%r)' % (
-            self.name, self.language)
-        
+        return 'Language(%r, %r)' % (self.name, self.shortname)
 #
 # Mappers
 #
-mapper(Tag, TagsTable)
+
+mapper(Language, LanguagesTable)

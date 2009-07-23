@@ -1,6 +1,7 @@
 CREATE TABLE languages (
+    shortname text NOT NULL PRIMARY KEY,
     name text NOT NULL,
-    shortname text NOT NULL PRIMARY KEY
+    UNIQUE (name)
     );
 GRANT ALL ON TABLE languages TO pkgdbadmin;    
 
@@ -44,6 +45,18 @@ $packagebuildtags_score$ LANGUAGE plpgsql;
 
 CREATE TRIGGER packagebuildtags_score BEFORE INSERT ON packagebuildtags
     FOR EACH ROW EXECUTE PROCEDURE packagebuildtags_score();
+
+CREATE TABLE comments (
+       id serial NOT NULL PRIMARY KEY,
+       author text NOT NULL,
+       body text NOT NULL,
+       published boolean NOT NULL DEFAULT TRUE,
+       packagebuildid int NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
+       language text NOT NULL REFERENCES languages ON DELETE CASCADE,
+       time timestamp with time zone NOT NULL DEFAULT now()
+       );
+GRANT ALL ON comments TO pkgdbadmin;
+GRANT ALL ON comments_id_seq TO pkgdbadmin;
 
 -- Got these from Transifex: https://translate.fedoraproject.org/languages/
 INSERT INTO languages VALUES('Afrikaans', 'af');

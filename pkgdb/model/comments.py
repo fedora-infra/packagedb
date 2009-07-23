@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2009 Red Hat, Inc. All rights reserved.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -18,45 +18,51 @@
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
-Mapping of tag related database tables to python classes.
+Mapping of comments related database tables to python classes.
 '''
 
 from sqlalchemy import Table
 from sqlalchemy.orm import relation, backref
-
-from turbogears.database import metadata, mapper
+from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from fedora.tg.json import SABase
+
+from turbogears.database import mapper, metadata
 
 #
 # Tables
 #
 
-TagsTable = Table('tags', metadata, autoload=True)
+CommentsTable = Table('comments', metadata, autoload=True)
 
 #
 # Mapped Classes
-#
+# 
 
-class Tag(SABase):
-    '''Package Tags.
+class Comment(SABase):
+    '''Comments associated to PackageBuilds.
 
-    These belong to a Package object. They are entered through the pkgdb
-    interface and also belong to a language.
-
-    Table -- Tags
+    Users signed into FAS can comment on specific packagebuilds, each comment
+    belongs to a specific language.
     '''
-
-    def __init__(self, name, language):
-        super(Tag, self).__init__()
-        self.name = name
+    def __init__(self, author, body, published, packagebuildid, language, time):
+        super(Comment, self).__init__()
+        self.author = author
+        self.body = body
+        self.published = published
+        self.packagebuildid = packagebuildid
         self.language = language
-
+        self.time = time
     def __repr__(self):
-        return 'Tag(%r, language=%r)' % (
-            self.name, self.language)
-        
+        return 'Comment(author=%r, body=%r, published=%r, packagebuildid=%r, '\
+               'language=%r)' % (
+            self.author, self.body, self.published, self.packagebuildid,
+            self.language)
+
 #
 # Mappers
 #
-mapper(Tag, TagsTable)
+
+mapper(Comment, CommentsTable)
+
+            

@@ -53,7 +53,9 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
         GroupPackageListing, GroupPackageListingAcl
 from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
         RpmObsoletes, RpmFiles
-from pkgdb.model.tags import Tag, TagsTable, Language
+from pkgdb.model.tags import Tag, TagsTable
+from pkgdb.model.languages import Language
+from pkgdb.model.comments import Comment
 
 get_engine()
 
@@ -534,5 +536,7 @@ mapper(PackageBuild, PackageBuildTable, properties={
     'listings': relation(PackageListing, backref=backref('builds'),
         secondary = PackageBuildListingTable),
     'tags': relation(Tag, backref=backref('builds'),
-        secondary=PackageBuildTagsTable)
+        secondary=PackageBuildTagsTable),
+    'comments': relation(Comment, backref=backref('build'),
+        cascade='all, delete-orphan')
     })

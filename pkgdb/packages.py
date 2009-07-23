@@ -86,6 +86,8 @@ class Package(controllers.Controller):
             arches.add(b.architecture)
         tagscore = build.scores(language)
 
+        comments = build.comments
+        
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': buildName},
                     branch=branchName, build = build, repos=repos,
