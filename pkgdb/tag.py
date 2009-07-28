@@ -19,11 +19,8 @@
 #
 '''
 Controller for Tag related retrieval and updating of information.
-
-Be able to: add tags, retrieve tags on a package, all the package which have
-a set of tags, all packages that have any one of a set of tags, The method to
-add a tag should probably operate on a list of packages as well.
 '''
+
 from sqlalchemy.sql import and_, or_
 
 from turbogears import controllers, expose, redirect, identity
@@ -34,14 +31,14 @@ from pkgdb.letter_paginator import Letters
 
 BRANCH = 'F-11'
 class Tag(controllers.Controller):
-    '''Retrieve and enter tags
+    '''Retrieve/search and enter tags
 
     '''
 
     def __init__(self, app_title=None):
         '''Create a Tags Controller.
 
-        :warg app_title: Title of the web app.
+        :kwarg app_title: Title of the web app.
         '''
         self.app_title = app_title
         self.list = Letters(app_title)

@@ -45,14 +45,13 @@ class Comment(SABase):
     Users signed into FAS can comment on specific packagebuilds, each comment
     belongs to a specific language.
     '''
-    def __init__(self, author, body, published, packagebuildid, language, time):
+    def __init__(self, author, body, language, published, packagebuildid):
         super(Comment, self).__init__()
         self.author = author
         self.body = body
+        self.language = language
         self.published = published
         self.packagebuildid = packagebuildid
-        self.language = language
-        self.time = time
     def __repr__(self):
         return 'Comment(author=%r, body=%r, published=%r, packagebuildid=%r, '\
                'language=%r)' % (

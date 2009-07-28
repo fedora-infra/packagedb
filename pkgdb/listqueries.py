@@ -356,6 +356,7 @@ class ListQueries(controllers.Controller):
         
         yummeta.create_all()
 
+        # since we're using two databases, we'll need a new session
         default_engine = get_engine()
         lite_session = sessionmaker(create_engine(sqliteconn))()
         

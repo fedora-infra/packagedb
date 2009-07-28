@@ -23,8 +23,7 @@ Controller for displaying PackageBuild(Rpm) related information
 
 from turbogears import controllers, expose, identity
 
-from pkgdb.model import PackageBuild, Repo, Branch
-from pkgdb.tag import Tag
+from pkgdb.model import PackageBuild, Branch
 
 from fedora.tg.util import request_format
 
@@ -41,10 +40,6 @@ class Package(controllers.Controller):
         '''
         self.app_title = app_title
 
-    @expose(template='pkgdb.templates.list')
-    def list(self, list):
-        return list
-    
     @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
     def default(self, buildName=None, branchName='F-11', language='en_US'):
         '''Retrieve PackageBuild by their name.
@@ -86,9 +81,11 @@ class Package(controllers.Controller):
             arches.add(b.architecture)
         tagscore = build.scores(language)
 
+        # comments should be in chronological order
         comments = build.comments
         
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': buildName},
                     branch=branchName, build = build, repos=repos,
-                    arches=arches, tagscore=tagscore, language=language)
+                    arches=arches, tagscore=tagscore, language=language,
+                    comments=comments)

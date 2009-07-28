@@ -19,6 +19,7 @@ Generalities
 ------------
 
 Each tag belongs to a specific language. The same tag can exist in multiple languages at the same time. Tags don't get translated through a l10n process, instead they are entered through the pkgdb API. That way, different cultures/languages will tag builds differently according to their local IT culture.
+Arches don't matter. All arches of a packagebuild should be tagged the same.
 
 Language
 ========

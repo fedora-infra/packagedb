@@ -32,6 +32,7 @@ from pkgdb import release, _
 
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
+from pkgdb.comments import Comments
 from pkgdb.feeds import Feed
 from pkgdb.listqueries import ListQueries
 from pkgdb.packages import Package
@@ -56,6 +57,7 @@ class Root(controllers.RootController):
     feed = Feed()
     acls = Acls(app_title)
     collections = Collections(app_title)
+    comments = Comments(app_title)
     lists = ListQueries(app_title)
     packages = Package(app_title)
     stats = Stats(app_title)

@@ -45,7 +45,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.sql import and_, or_
 
-from turbogears.database import metadata, mapper, get_engine
+from turbogears.database import metadata, mapper, get_engine, session
 
 from fedora.tg.json import SABase
 
@@ -292,24 +292,6 @@ def collection_alias(pkg_listing):
     '''
     return pkg_listing.collection.simple_name()
 
-def in_collection(builds, branchname):
-    '''Retrieves all the PackageBuilds matching the names in the builds
-    list and the branchname.
-
-    Returns a set with all the matching PackageBuilds
-
-    '''
-    from pkgdb.model.collections import Branch
-    
-    collectionid = Branch.query.filter_by(branchname=branchname).one().id
-    good_builds = set()
-    for build in builds:
-        packagebuilds = PackageBuild.query.filter_by(name=build).all()
-        for packagebuild in packagebuilds:
-            for listing in packagebuild.listings:
-                if listing.collectionid == collectionid:
-                    good_builds.add(packagebuild)
-    return good_builds
 
 class PackageBuildDepends(SABase):
     '''PackageBuild Dependencies to one another.
@@ -359,12 +341,47 @@ class PackageBuild(SABase):
             self.release, self.architecture, self.desktop, self.size,
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
+    
+    @classmethod
+    def in_collection(self, buildnames, branchname):
+        '''Helper to retrieve all the matching PackageBuilds.
+
+        Retrieves the PackageBuilds matching the names in the builds
+        list and the branchname. If more than one PackageBuilds are found,
+        return a set.
+
+        :arg buildnames: a list or a single name as a string - PackageBuild names
+        :arg branchname: a Branch/Collection name
+
+        '''
+        from pkgdb.model.collections import Branch
+
+        return_set = True
+        if buildnames.__class__ != [].__class__:
+            return_set = False
+            buildnames = [buildnames]
+
+        collectionid = Branch.query.filter_by(branchname=branchname).one().id
+        good_builds = set()
+        for build in buildnames:
+            packagebuilds = PackageBuild.query.filter_by(name=build).all()
+            for packagebuild in packagebuilds:
+                for listing in packagebuild.listings:
+                    if listing.collectionid == collectionid:
+                        good_builds.add(packagebuild)
+        if return_set:
+            return good_builds
+        else:
+            return good_builds.pop()
+
 
     @classmethod
     def tag(cls, builds, tags, language, branch):
         '''Add a set of tags to a specific PackageBuild.
 
-        This method will tag all packagebuilds in the specified branch.
+        This method will tag all packagebuilds with matching name in the
+        specified branch. This also means that packages from different arches
+        will get tagged the same.
         
         :arg builds: one or more PackageBuild names to add the tags to.
         :arg tags: one or more tags to add to the packages.
@@ -373,15 +390,11 @@ class PackageBuild(SABase):
 
         Returns two lists (unchanged): tags and builds.
         '''
-        lang = Language.query.filter(or_(Language.name==language,
-                                         Language.shortname==language
-                                         )).one().shortname
+        lang = Language.find(language)
 
         # if we got just one argument, make it a list
         if tags.__class__ != [].__class__:
             tags = [tags]
-        if builds.__class__ != [].__class__:
-            builds = [builds]
 
         packagebuilds = in_collection(builds, branch)
         for tag in tags:
@@ -418,9 +431,7 @@ class PackageBuild(SABase):
         :builds: list of found PackageBuild objects
         '''
 
-        lang = Language.query.filter(or_(Language.name==language,
-                                         Language.shortname==language)
-                                     ).one().shortname
+        lang = Language.find(language)
         
         if tags.__class__ != [].__class__:
             tags = [tags]
@@ -444,12 +455,12 @@ class PackageBuild(SABase):
         elif operator.lower() == 'and':
             builds = set(tags[0].builds)
             if len(tags) > 0:
-                # intersect the first taglist with each one of the others
-                # in order to get the common tags
+                # do an intersection between all the taglists to get
+                # the common ones
                 for tag in tags[1:]:
                     builds = set(tags[0].builds) & set(tag.builds)
         # filter on branch
-        # __in_collection needs names, not PackageBuilds
+        # in_collection needs names, not PackageBuilds
         names = []
         if branch:
             for build in builds:
@@ -457,6 +468,21 @@ class PackageBuild(SABase):
             builds = in_collection(names, branch)
         
         return builds
+
+    def comment(self, author, body, language):
+        '''Add a new comment to a packagebuild.
+
+        :arg author: the FAS author
+        :arg body: text body of the comment
+        :arg language: name or shortname of the comment body`s language
+        '''
+
+        lang = Language.find(language)
+        
+        comment = Comment(author, body, language, published=True,
+                          packagebuildid=self.id)
+        self.comments.append(comment)
+        session.flush()
 
     def score(self, tag):
         '''Return the score of a given tag-package combination
@@ -480,9 +506,8 @@ class PackageBuild(SABase):
         :kwarg language (optional): Restrict the search to just one language.
         '''
 
-        lang = Language.query.filter(or_(Language.name==language,
-                                         Language.shortname==language
-                                         )).one().shortname
+        lang = Language.find(language)
+
         tags = Tag.query.join(Tag.builds).filter(
             and_(PackageBuild.id==self.id, Tag.language==lang)).all()
         

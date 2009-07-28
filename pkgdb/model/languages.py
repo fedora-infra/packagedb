@@ -23,6 +23,7 @@ Mapping of language related database tables to python classes.
 
 from sqlalchemy import Table
 from sqlalchemy.orm import relation, backref
+from sqlalchemy.sql import or_
 
 from turbogears.database import metadata, mapper
 
@@ -54,6 +55,17 @@ class Language(SABase):
 
     def __repr__(self):
         return 'Language(%r, %r)' % (self.name, self.shortname)
+
+    @classmethod
+    def find(self, language):
+        '''Returns a shortname after searching for both short and longname.
+
+        :arg name: a short or long Language name
+        '''
+
+        return Language.query.filter(or_(Language.name==language,
+                                         Language.shortname==language
+                                         )).one().shortname
 #
 # Mappers
 #
