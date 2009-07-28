@@ -30,7 +30,7 @@ from pkgdb.utils import mod_grp
 
 BRANCH = 'F-11'
 class Comments(controllers.Controller):
-    '''Retrieve, enter and moderate tags
+    '''Retrieve, enter and moderate comments.
 
     '''
 
@@ -43,7 +43,7 @@ class Comments(controllers.Controller):
 
     @identity.require(identity.not_anonymous())
     @expose(allow_json=True)
-    def new(self, author, body, build, branch=BRANCH, language='en_US'):
+    def add(self, author, body, build, branch=BRANCH, language='en_US'):
         '''Add a new comment to a packagebuild.
 
         :arg author: the FAS author of the comment

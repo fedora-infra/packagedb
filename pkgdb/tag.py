@@ -25,7 +25,7 @@ from sqlalchemy.sql import and_, or_
 
 from turbogears import controllers, expose, redirect, identity
 
-from pkgdb.model import PackageBuild, Tag as TagObj, TagsTable, Language, \
+from pkgdb.model import PackageBuild, TagsTable, Language, \
      PackageBuildTagsTable, Branch
 from pkgdb.letter_paginator import Letters
 
@@ -53,14 +53,11 @@ class Tag(controllers.Controller):
         located
 
         Returns:
-        :tags: A set of Tag objects
+        :tags: A SET of Tag objects
 
         '''
-        if builds.__class__ != [].__class__:
-            builds = [builds]
-
         tags = set()
-        builds = self.__in_collection(builds, branch)
+        builds = PackageBuild.in_collection(builds, branch)
         for build in builds:
             for tag in build.tags:
                 tags.add(tag)
@@ -117,6 +114,7 @@ class Tag(controllers.Controller):
         '''Add a set of tags to a specific PackageBuild.
 
         This method will tag all packagebuilds in the specified branch.
+        This is nice because it tags builds regardless of their architecture.
         
         :arg builds: one or more PackageBuild names to add the tags to.
         :kwarg tags: one or more tags to add to the packages.
@@ -127,4 +125,5 @@ class Tag(controllers.Controller):
         '''
 
         PackageBuild.tag(builds, tags, language, branch)
-    
+
+        

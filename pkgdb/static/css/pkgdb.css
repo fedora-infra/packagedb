@@ -126,6 +126,9 @@
   margin-left: 2em;
 }
 
+#comments {
+  width: 70%;
+}
 /* Want to merge somehow -- talk to mizmo and ricky */
 #head h1 {
   float: left;

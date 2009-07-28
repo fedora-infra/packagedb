@@ -121,11 +121,14 @@
       </py:for>
       <py:choose test="tg.identity.anonymous">
         <py:when test="True">
-          <p>You must be logged in in order to be able to tag packages.</p>
+          <p>You must be <a href="${tg.url('/login')}">logged in</a> in order to be able to tag packages.</p>
         </py:when>
         <py:when test="False">
           <form id="tagform" method="POST"
-                action="${tg.url('/tag/add/%s/?language=%s' % (build.name, language))}">
+                action="${tg.url('/tag/add/')}">
+            <input type="hidden" name="builds" value="$build.name" />
+            <input type="hidden" name="language" value="$language" />
+            <input type="hidden" name="branch" value="$branch" />
             <input type="text" name="tags" value="" size="9" />
             <input id="tagsubmit" type="submit" value="Tag!" />
           </form>
@@ -154,5 +157,56 @@
         <a href="mailto:$email">$name</a>
         $build.changelog
     </p>
+
+    <br />
+    <div id="comments">
+        <py:for each="comment in comments">
+          <?python if comment.published:
+                       color=''
+                   else:
+                       color='#fee'
+          ?>
+          <div class="comment" style="background-color: $color">
+            <div class="comment_head">
+              Comment by: $comment.author at
+              <em>${comment.time.strftime("%H:%M - %h %d, %Y")}</em>
+              <?python from pkgdb.utils import mod_grp ?>
+              <py:if test="mod_grp in tg.identity.groups">              
+                <a href="${tg.url('/comments/toggle_published/%s' % comment.id)}">
+                  <py:choose test="comment.published">
+                    <py:when test="True">
+                      unpublish
+                    </py:when>
+                    <py:when test="False">
+                      publish
+                    </py:when>
+                  </py:choose>
+                </a>
+              </py:if>
+            </div>
+            <p>$comment.body</p>
+          </div>
+          <br />
+        </py:for>
+      <py:choose test="tg.identity.anonymous">
+        <py:when test="True">
+          <p>Please <a href="${tg.url('/login')}">log in</a> if you want to be able to add comments.</p>
+        </py:when>
+        <py:when test="False">
+          Add a new comment:
+          <form id="commentform" method="post"
+                action="${tg.url('/comments/add/')}">
+            <input type="hidden" name="build" value="$build.name" />
+            <input type="hidden" name="branch" value="$branch" />
+            <input type="hidden" name="language" value="$language" />
+            <input type="hidden" name="author" value="$tg.identity.user_name" />
+            <p>
+              <textarea name="body" rows="10" cols="80"></textarea>
+            </p>
+            <input type="submit" value="Send" />
+          </form>
+        </py:when>
+      </py:choose>
+    </div>
   </body>
 </html>

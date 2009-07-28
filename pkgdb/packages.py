@@ -21,9 +21,12 @@
 Controller for displaying PackageBuild(Rpm) related information
 '''
 
+from sqlalchemy.sql import and_
+
 from turbogears import controllers, expose, identity
 
-from pkgdb.model import PackageBuild, Branch
+from pkgdb.model import Branch, Comment, PackageBuild
+from pkgdb.utils import mod_grp
 
 from fedora.tg.util import request_format
 
@@ -81,11 +84,18 @@ class Package(controllers.Controller):
             arches.add(b.architecture)
         tagscore = build.scores(language)
 
-        # comments should be in chronological order
-        comments = build.comments
-        
+        # Order comments and get hide the mean ones from ordinary users
+        comment_query = Comment.query.filter(and_(
+            Comment.packagebuildid==build.id,
+            Comment.language==language)).order_by(Comment.time)
+        if identity.in_group(mod_grp):
+            comments = comment_query.all()
+        else:
+            comments = comment_query.filter_by(published=True).all()
+            
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': buildName},
                     branch=branchName, build = build, repos=repos,
                     arches=arches, tagscore=tagscore, language=language,
                     comments=comments)
+

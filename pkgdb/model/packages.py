@@ -396,7 +396,7 @@ class PackageBuild(SABase):
         if tags.__class__ != [].__class__:
             tags = [tags]
 
-        packagebuilds = in_collection(builds, branch)
+        packagebuilds = [PackageBuild.in_collection(builds, branch)]
         for tag in tags:
             try:
                 conn = TagsTable.select(and_(
@@ -465,7 +465,7 @@ class PackageBuild(SABase):
         if branch:
             for build in builds:
                 names.append(build.name)
-            builds = in_collection(names, branch)
+            builds = PackageBuild.in_collection(names, branch)
         
         return builds
 
