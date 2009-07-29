@@ -16,32 +16,112 @@
 # permission of Red Hat, Inc.
 #
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
-#
 
+'''
+Feed Controller.
+
+All feeds are provided in all the default TurboGears FeedController formats:
+atom1.0, atom0.3, rss2.0.
+'''
 
 from turbogears import config, expose
 
 from turbogears.feed import FeedController
 
-from pkgdb.model import PackageBuild
+from pkgdb.model import PackageBuild, Comment
 
-class Feed(FeedController):
+class DesktopFeed(FeedController):
+    '''A feed of all the latest PackageBuilds.
+
+    These PackageBuilds are considered applications of general interest
+    because they have a .desktop file
+    '''
     def __init__(self):
          self.baseurl = config.get('base_url_filter.base_url')
 
-    def get_feed_data(self):
+    def get_feed_data(self, **kwargs):
         entries = []
-        repoid = 1
+        
+        # look for repoid
+        try:
+            repoid = int(kwargs.get('repoid', 1))
+        except:
+            repoid = 1
+            
+        # how many items to output
+        try:
+            num_items = int(kwargs.get('items', 20))
+        except:
+            num_items = 20
+            
         for build in PackageBuild.query.filter_by(
-            repoid=repoid, desktop=True).order_by(PackageBuild.id.desc())[:10]:
+                                        repoid=repoid, desktop=True
+                                        ).order_by(PackageBuild.id.desc()
+                                                   )[:num_items]:
             entry = {}
-            entry["title"] = build.name
-            entry["link"] = "/pkgdb/"
+            entry["title"] = '%s-%s-%s' % (
+                build.name, build.version, build.release)
+
+            # 'John Doe <john@doe.com>' is being split for the TG atom template
+            entry["author"] = {}
+            (entry["author"]["name"],
+             nothing,
+             entry["author"]["email"]) = build.committer.partition(' <')
+            entry["author"]["email"] = "<%s" % entry["author"]["email"]
+
             entry["summary"] = build.changelog
+
+            
+            entry["link"] = self.baseurl + '/packages/%s/%s' % (
+                                           build.name,
+                                           build.repo.collection.branchname)
             entries.append(entry)
         
         return dict(
             title = "Fedora Package Database - latest applications",
+            link = self.baseurl,
+            author = {"name":"Fedora Websites",
+                      "email":"webmaster@fedoraproject.org"},
+            id = self.baseurl,
+            entries = entries)
+
+class CommentsFeed(FeedController):
+    '''Provides a feed of the latest comments.
+
+    These are the ones that have not been `unpublished` by a moderator.
+
+    '''
+    def __init__(self):
+        self.baseurl = config.get('base_url_filter.base_url')
+    def get_feed_data(self, **kwargs):
+        entries = []
+
+        # how many items to output
+        try:
+            num_items = int(kwargs.get('items', 20))
+        except:
+            num_items = 20
+
+        for comment in Comment.query.filter_by(published=True
+                                               ).order_by(Comment.time):
+            entry = {}
+            build = PackageBuild.query.filter_by(id=comment.packagebuildid).one()
+            entry["title"] = 'On %s by %s at %s' % (
+                build.name,
+                comment.author,
+                comment.time.strftime('%H:%M - %h %d'))
+            
+            entry["author"] = {}
+            entry["author"]["name"] = comment.author
+            
+            entry["summary"] = comment.body
+            
+            entry["link"] = self.baseurl + '/packages/%s/%s#Comment %i' % (
+                build.name, build.repo.collection.branchname, comment.id)
+            entries.append(entry)
+            
+        return dict(
+            title = "Fedora Package Database - latest comments",
             link = self.baseurl,
             author = {"name":"Fedora Websites",
                       "email":"webmaster@fedoraproject.org"},

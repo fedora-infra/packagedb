@@ -33,7 +33,7 @@ from pkgdb import release, _
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
 from pkgdb.comments import Comments
-from pkgdb.feeds import Feed
+from pkgdb.feeds import DesktopFeed, CommentsFeed
 from pkgdb.listqueries import ListQueries
 from pkgdb.packages import Package
 from pkgdb.stats import Stats
@@ -54,7 +54,8 @@ class Root(controllers.RootController):
     # pylint: disable-msg=W0232
     app_title = _('Fedora Package Database')
 
-    feed = Feed()
+    desktopfeed = DesktopFeed()
+    commentsfeed = CommentsFeed()
     acls = Acls(app_title)
     collections = Collections(app_title)
     comments = Comments(app_title)
