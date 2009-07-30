@@ -346,9 +346,8 @@ class PackageBuild(SABase):
     def in_collection(self, buildnames, branchname):
         '''Helper to retrieve all the matching PackageBuilds.
 
-        Retrieves the PackageBuilds matching the names in the builds
-        list and the branchname. If more than one PackageBuilds are found,
-        return a set.
+        Retrieves the a set of PackageBuilds matching the names in the builds
+        list and the branchname. 
 
         :arg buildnames: a list or a single name as a string - PackageBuild names
         :arg branchname: a Branch/Collection name
@@ -356,9 +355,7 @@ class PackageBuild(SABase):
         '''
         from pkgdb.model.collections import Branch
 
-        return_set = True
         if buildnames.__class__ != [].__class__:
-            return_set = False
             buildnames = [buildnames]
 
         collectionid = Branch.query.filter_by(branchname=branchname).one().id
@@ -369,11 +366,7 @@ class PackageBuild(SABase):
                 for listing in packagebuild.listings:
                     if listing.collectionid == collectionid:
                         good_builds.add(packagebuild)
-        if return_set:
-            return good_builds
-        else:
-            return good_builds.pop()
-
+        return good_builds
 
     @classmethod
     def tag(cls, builds, tags, language, branch):
@@ -396,7 +389,7 @@ class PackageBuild(SABase):
         if tags.__class__ != [].__class__:
             tags = [tags]
 
-        packagebuilds = [PackageBuild.in_collection(builds, branch)]
+        packagebuilds = PackageBuild.in_collection(builds, branch)
         for tag in tags:
             try:
                 conn = TagsTable.select(and_(

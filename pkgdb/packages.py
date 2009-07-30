@@ -25,7 +25,7 @@ from sqlalchemy.sql import and_
 
 from turbogears import controllers, expose, identity
 
-from pkgdb.model import Branch, Comment, PackageBuild
+from pkgdb.model import Branch, Comment, PackageBuild, Repo
 from pkgdb.utils import mod_grp
 
 from fedora.tg.util import request_format
@@ -44,7 +44,7 @@ class Package(controllers.Controller):
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
-    def default(self, buildName=None, branchName='F-11', language='en_US'):
+    def default(self, buildName=None, repo='F-11-i386', language='en_US'):
         '''Retrieve PackageBuild by their name.
 
         This method returns general packagebuild/rpm information about a
@@ -53,7 +53,7 @@ class Package(controllers.Controller):
         the pkgdb.
 
         :arg buildName: Name of the packagebuild/rpm to lookup
-        :arg branchName: A branch shortname to look into.
+        :arg repo: shortname of the repository to look in
         :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
         if buildName==None:
@@ -63,8 +63,8 @@ class Package(controllers.Controller):
         builds_query = PackageBuild.query.filter_by(name=buildName)
         # look for The One packagebuild
         try:
-            build = builds_query.join(PackageBuild.listings).filter(
-                Branch.branchname==branchName).one()
+            build = builds_query.join(PackageBuild.repo).filter(
+                Repo.shortname==repo).one()
         except:
             error = dict(status=False,
                          title=_('%(app)s -- Invalid PackageBuild Name') % {
@@ -77,10 +77,10 @@ class Package(controllers.Controller):
             if request_format() != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
                 return error
-        repos = []
+        other_repos = []
         arches = set()
         for b in builds_query.all():
-            repos.append(b.repo)
+            other_repos.append(b.repo)
             arches.add(b.architecture)
         tagscore = build.scores(language)
 
@@ -92,10 +92,13 @@ class Package(controllers.Controller):
             comments = comment_query.all()
         else:
             comments = comment_query.filter_by(published=True).all()
+
+        branch = build.repo.collection.branchname
             
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': buildName},
-                    branch=branchName, build = build, repos=repos,
+                    branch=branch,
+                    repo=repo, build=build, other_repos=other_repos,
                     arches=arches, tagscore=tagscore, language=language,
                     comments=comments)
 

@@ -107,7 +107,12 @@
         </tr>
         <tr>
           <td>Repositories:</td>
-          <td><py:for each="repo in repos">$repo.shortname </py:for></td>
+          <td><py:for each="repo in other_repos">
+              <a href="${tg.url('/packages/%s/%s/' % (build.name, repo.shortname))}">
+                $repo.shortname
+              </a> 
+          </py:for>
+          </td>
         </tr>
       </tr>
     </table>
@@ -139,11 +144,11 @@
     <p>dependencies <a id="showdeps" py:if="len(build.depends) >10" onclick="toggle('moredeps','showdeps')" href="#">(more)</a>: </p>
     <p>
       <py:for each="dep in build.depends.keys()[:10]">
-        <a href="${tg.url('/packages/%s/%s' % (dep, branch))}">$dep</a>
+        <a href="${tg.url('/packages/%s/%s' % (dep, repo))}">$dep</a>
       </py:for>
       <span id="moredeps" >
         <py:for each="dep in build.depends.keys()[10:]">
-          <a href="${tg.url('/packages/%s/%s' % (dep, branch))}">$dep</a>
+          <a href="${tg.url('/packages/%s/%s' % (dep, repo))}">$dep</a>
         </py:for>
       </span>
     </p>
@@ -199,7 +204,7 @@
           <form id="commentform" method="post"
                 action="${tg.url('/comments/add/')}">
             <input type="hidden" name="build" value="$build.name" />
-            <input type="hidden" name="branch" value="$branch" />
+            <input type="hidden" name="repo" value="$repo" />
             <input type="hidden" name="language" value="$language" />
             <input type="hidden" name="author" value="$tg.identity.user_name" />
             <p>

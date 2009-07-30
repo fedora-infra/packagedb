@@ -74,7 +74,7 @@ class DesktopFeed(FeedController):
             
             entry["link"] = self.baseurl + '/packages/%s/%s' % (
                                            build.name,
-                                           build.repo.collection.branchname)
+                                           build.repo.shortname)
             entries.append(entry)
         
         return dict(
@@ -117,7 +117,7 @@ class CommentsFeed(FeedController):
             entry["summary"] = comment.body
             
             entry["link"] = self.baseurl + '/packages/%s/%s#Comment %i' % (
-                build.name, build.repo.collection.branchname, comment.id)
+                build.name, build.repo.shortname, comment.id)
             entries.append(entry)
             
         return dict(
