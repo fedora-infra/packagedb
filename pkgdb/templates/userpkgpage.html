@@ -153,10 +153,11 @@
       </span>
     </p>
     <br />
-    <p id="changelog">Last changelog entry:</p>
+    <p id="changelog"><a name="Changelog">Last changelog entry:</a></p>
     <p>
       <b>${build.committime.strftime("%h %d, %Y")}</b> - 
-        <?python (name, email) = build.committer.rsplit(' ',1)
+        <?python
+            (name, email) = build.committer.rsplit(' ',1)
             email = email.strip('<>')
         ?>
         <a href="mailto:$email">$name</a>
