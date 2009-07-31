@@ -30,12 +30,16 @@ from fedora.tg.util import request_format
 
 from pkgdb import release, _
 
-from pkgdb.listqueries import ListQueries
+from pkgdb.acls import Acls
 from pkgdb.collections import Collections
-from pkgdb.packages import Packages
-from pkgdb.users import Users
+from pkgdb.comments import Comments
+from pkgdb.feeds import DesktopFeed, CommentsFeed
+from pkgdb.listqueries import ListQueries
+from pkgdb.packages import Package
 from pkgdb.stats import Stats
 from pkgdb.search import Search
+from pkgdb.tag import Tag
+from pkgdb.users import Users
 
 from pkgdb.model import PackageBuild
 
@@ -50,14 +54,17 @@ class Root(controllers.RootController):
     # pylint: disable-msg=W0232
     app_title = _('Fedora Package Database')
 
+    desktopfeed = DesktopFeed()
+    commentsfeed = CommentsFeed()
+    acls = Acls(app_title)
     collections = Collections(app_title)
-    packages = Packages(app_title)
-    users = Users(app_title)
+    comments = Comments(app_title)
+    lists = ListQueries(app_title)
+    packages = Package(app_title)
     stats = Stats(app_title)
     search = Search(app_title)
-    lists = ListQueries(app_title)
-    # For backwards compatibility:
-    acls = lists
+    tag = Tag(app_title)
+    users = Users(app_title)
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, *args, **kwargs):

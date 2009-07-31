@@ -18,7 +18,7 @@
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
-Mapping of collection related database tables to python classes
+Mapping of collection and repo related database tables to python classes
 '''
 
 from sqlalchemy import Table, Column, ForeignKey, Integer
@@ -34,6 +34,7 @@ from pkgdb.model.packages import PackageListing, PackageBuild
 
 get_engine()
 
+CURRENTREPO='F-11-i386'
 #
 # Mapped Tables
 #
@@ -168,15 +169,16 @@ class Repo(SABase):
 
     Table -- Repos
     '''
-    def __init__(self, name, failovermethod, collectionid):
+    def __init__(self, name, shortname, failovermethod, collectionid):
         super(Repo, self).__init__()
         self.name  = name
+        self.shortname = shortname
         self.failovermethod = failovermethod
         self.collectionid = collectionid
 
     def __repr__(self):
-        return 'Repo(%r, %r, %r)' % (self.name, self.failovermethod,
-                                     self.collectionid)
+        return 'Repo(%r, %r, failovermethod=%r, collectionid=%r)' % (
+            self.name, self.shortname, self.failovermethod, self.collectionid)
 
 class CollectionPackage(SABase):
     '''Information about how many `Packages` are in a `Collection`
@@ -187,9 +189,8 @@ class CollectionPackage(SABase):
     def __repr__(self):
         # pylint: disable-msg=E1101
         return 'CollectionPackage(id=%r, name=%r, version=%r,' \
-                ' statuscode=%r, numpkgs=%r,' % (
-                self.id, self.name, self.version, self.statuscode,
-                self.numpkgs)
+            ' statuscode=%r, numpkgs=%r,' % (
+            self.id, self.name, self.version, self.statuscode, self.numpkgs)
 
 #
 # Mappers

@@ -44,6 +44,9 @@ admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
 # Get the packager group if one is specified.
 pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
 
+# Get the moderator group if one is specified.
+mod_grp = config.get('pkgdb.modgroup', 'sysadmin')
+
 def to_unicode(obj, encoding='utf-8', errors='strict'):
     '''return a unicode representation of the object.
 

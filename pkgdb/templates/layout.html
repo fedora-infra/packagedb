@@ -10,8 +10,8 @@
     _hostname = socket.gethostname()
     _version = pkgdb.release.VERSION
     ?>
-
-  <head py:match="head" py:attrs="select('@*')">
+  <py:match path="head" once="true">
+  <head py:attrs="select('@*')">
     <meta content="text/html; charset=UTF-8" http-equiv="content-type"
       py:replace="''" />
     <title>${title}</title>
@@ -21,7 +21,15 @@
     <link href="${tg.url('/static/images/favicon.ico')}"
       type="image/vnd.microsoft.icon" rel="shortcut icon" /> 
     <link href="${tg.url('/static/images/favicon.ico')}"
-      type="image/x-icon" rel="shortcut icon"/> 
+      type="image/x-icon" rel="shortcut icon"/>
+
+    <link rel="alternate" type="application/atom+xml"
+          href="${tg.url('/desktopfeed/atom1.0')}"
+          title="Atom 1.0 feed of Latest Applications" />
+    <link rel="alternate" type="application/atom+xml"
+          href="${tg.url('/commentsfeed/atom1.0')}"
+          title="Atom 1.0 feed of Latest Comments" />
+                
     <style type="text/css" media="screen">
       @import url("https://fedoraproject.org/static/css/fedora.css");
       @import url("${tg.url('/static/css/pkgdb.css')}");
@@ -29,18 +37,19 @@
     </style>
 
     <script src="${tg.tg_js}/MochiKit_1_4.js" type="text/javascript"></script>
-    <jsglobals />
     <script type="text/javascript">
-        <!--
-         function jump(page, form){
-             urlparts = page.split('?_csrf_token');
-             window.location= urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf_token'+urlparts[1];
-             return false
-         }
-        //-->
-    </script> 
+      function jump(page,form){
+           urlparts = page.split('?_csrf');
+           window.location = urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf'+urlparts[1];
+           return false
+      };
+    </script>
+    <jsglobals />
+
   </head>
-  <body py:match="body" py:attrs="select('@*')" class="tundra">
+  </py:match>
+  <py:match path="body" once="true">
+  <body py:attrs="select('@*')" class="tundra">
     <div py:for="js in tg_js_bodytop" py:replace="XML(js.display())" />
     <div id="wrapper">
       <div id="head">
@@ -55,10 +64,10 @@
           <ul>
             <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
             <li><a href="${tg.url('/collections/')}">View Collections</a></li>
-            <li><a href="${tg.url('/packages/index/a*')}">View Packages</a></li>
-            <li><a href="${tg.url('/packages/bugs/index/a*')}">View Bugs</a></li>
+            <li><a href="${tg.url('/acls/list/a*')}">View Packages</a></li>
+            <li><a href="${tg.url('/acls/bugs/list/a*')}">View Bugs</a></li>
             <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
-            <li><a href="${tg.url('/packages/orphans')}">Orphan Packages</a></li>
+            <li><a href="${tg.url('/acls/orphans')}">Orphan Packages</a></li>
             <li><a href="${tg.url('/stats/')}">Package Stats</a></li>
             <li><a href="https://fedorahosted.org/packagedb/report/3">PackageDB Bugs</a></li>
           </ul>
@@ -96,6 +105,7 @@
       </div>
     </div>
   </body>
+  </py:match>
 
   <xi:include href="${tg.fedora_template('login.html')}" />
   <xi:include href="${tg.fedora_template('jsglobals.html')}" />

@@ -10,9 +10,9 @@
     </div>
     <py:for each="letr in 'abcdefghijklmnopqrstuvwxyz'" py:choose="">
     <b py:when="searchwords == letr+'*' or searchwords == letr.upper()+'*'">${letr}</b>
-    <a py:otherwise="" href="${tg.url('/packages/' + mode + 'index/' + letr + '*')}">
+    <a py:otherwise="" href="${tg.url('/%slist/%s*' % (mode, letr))}">
         ${letr}</a> |
     </py:for>
-        <a href="${tg.url('/packages/' + mode + 'index/'  )}">[show all]</a>
+        <a href="${tg.url('/%slist/' % mode)}">[show all]</a>
   </div>
 </html>
