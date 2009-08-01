@@ -1,5 +1,3 @@
-# BEWARE - evil yum 3.2.23-5 requirement for changing releasever
-
 import os
 import sys
 import yum
@@ -11,6 +9,7 @@ from sqlalchemy.sql import insert, delete, and_
 from turbogears import config, update_config
 from turbogears.database import session
 
+MIRROR = 'http://download.fedoraproject.org/pub/fedora/linux'
 CONFDIR='@CONFDIR@'
 PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
 sys.path.append(PKGDBDIR)
@@ -25,26 +24,17 @@ else:
             modulename='pkgdb.config')
 config.update({'pkgdb.basedir': PKGDBDIR})
 
-from pkgdb.model import Package, PackageListing, Branch, PackageBuild, \
-                     PackageBuildTable, RpmProvidesTable, RpmRequiresTable, \
-                     RpmConflictsTable, RpmObsoletesTable, RpmFilesTable, \
-                     Repo, ReposTable, PackageBuildListingTable, \
-                     PackageBuildDependsTable, PackageTable
+from pkgdb.model import PackageBuildTable, RpmProvidesTable, RpmRequiresTable, \
+                        RpmConflictsTable, RpmObsoletesTable, RpmFilesTable, \
+                        ReposTable, PackageBuildListingTable, \
+                        PackageBuildDependsTable, PackageTable
+from pkgdb.model import Branch, Package, PackageListing, PackageBuild, Repo
 
 fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
 username = config.get('fas.username', 'admin')
 password = config.get('fas.password', 'admin')
 
 log = logging.getLogger('pkgdb')
-yb = yum.YumBase()
-
-# don't update the cache
-yb.conf.cache = os.geteuid() != 0 
-
-yb.repos.disableRepo('*')
-# A dictionary of repoid : branchname
-repos = {'fedora':'F-11'}
-reponum = 1
 
 def get_pkg_name(rpm):
     # get the name of the Package, ignore -devel/-doc tags, version etc.
@@ -55,18 +45,31 @@ def get_pkg_name(rpm):
     packagename = '-'.join(namelist)
     return packagename
 
+repos = Repo.query.all()
+
 # get sacks first, so we can search for dependencies
-for repoid in repos:
-    yb.repos.enableRepo(repoid)
-    yb._getSacks(thisrepo=repoid)
-for repoid in repos: #Repo.query.all():
-    repo = yb.repos.getRepo(repoid)
-    log.info('Refreshing repo: %s' % repoid)
+for repo in repos:
+    yb = yum.YumBase()
+
+    yb.cleanSqlite()
+    yb.cleanMetadata()
+    yb.cleanExpireCache()
+    
+    yb.repos.disableRepo('*')
+    yb.add_enable_repo(repo.shortname, ['%s%s' % (MIRROR, repo.url)])
+
+    yumrepo = yb.repos.getRepo(repo.shortname)
+    
+    yb._getSacks(thisrepo=yumrepo.id)
+    
+    log.info('\nRefreshing repo: %s' % yumrepo.name)
     
     # populate pkgdb with packagebuilds (rpms)
-    rpms = repo.sack.returnNewestByName();
+    rpms = yumrepo.sack.returnNewestByName()[:10]
+    if rpms == []:
+        log.warn("There were no packages in this repo!")
     for rpm in rpms:
-        # FIXME yb.close
+
         packagename = get_pkg_name(rpm)
         pkg_query = Package.query.filter_by(name=packagename)
         try:
@@ -77,8 +80,7 @@ for repoid in repos: #Repo.query.all():
                      (rpm.name, packagename))
         else:
             # what's my packagelisting?
-            collectionid = Branch.query.filter_by(
-                branchname=repos[repoid]).one().collectionid
+            collectionid = repo.collection.id
             listing_query = PackageListing.query.filter_by(
                                 packageid=package.id,
                                 collectionid=collectionid)
@@ -93,9 +95,10 @@ for repoid in repos: #Repo.query.all():
                                 packageid=package.id,
                                 version=rpm.version,
                                 architecture=rpm.arch,
-                                repoid=int(reponum),
+                                repoid=repo.id,
                                 release=rpm.release).count() != 0:
-                    log.warn("%s-%s - PackageBuild already in!" % (
+                    log.warn("%s-%s - PackageBuild already in! " \
+                             "Skipping to next repo." % (
                         pkg_query.one().name, rpm.version))
                     break
 
@@ -118,7 +121,7 @@ for repoid in repos: #Repo.query.all():
                     architecture=rpm.arch, desktop=desktop,
                     license=rpm.license, changelog=changelog,
                     committime=committime, committer=committer,
-                    repoid=int(reponum)).execute().last_inserted_ids()[-1]
+                    repoid=repo.id).execute().last_inserted_ids()[-1]
                 
                 # associate the listing with the packagebuild
                 PackageBuildListingTable.insert().values(
@@ -162,7 +165,9 @@ for repoid in repos: #Repo.query.all():
                 if (package.description != rpm.description) or \
                    (package.summary != rpm.summary) or \
                    (package.upstreamurl != rpm.url):
-                    PackageTable.update().where(PackageTable.c.id==package.id).values(
+                    PackageTable.update().where(
+                        PackageTable.c.id==package.id
+                        ).values(
                         description = rpm.description,
                         summary = rpm.summary,
                         upstreamurl = rpm.url).execute()
@@ -170,7 +175,14 @@ for repoid in repos: #Repo.query.all():
                 # keep only the latest packagebuild from each repo
                 PackageBuildTable.delete().where(and_(
                     PackageBuildTable.c.name==rpm.name,
-                    PackageBuildTable.c.repoid==reponum))
+                    PackageBuildTable.c.repoid==repo.id))
 
                 log.info('inserted %s-%s-%s' % (pkg_query.one().name,
                                              rpm.version, rpm.release))
+        # finish up for this repo
+        # yb.cleanMetadata()
+        # yb.cleanExpireCache()
+        # yb.cleanSqlite()
+
+    yb.close()
+    yumrepo.close()
