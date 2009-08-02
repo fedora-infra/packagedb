@@ -14,44 +14,47 @@ CREATE TABLE tags (
 GRANT ALL ON TABLE tags TO pkgdbadmin;
 GRANT ALL ON tags_id_seq TO pkgdbadmin;
 
-CREATE TABLE packagebuildtags (
-    packagebuildid int NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
+CREATE TABLE packagebuildnamestags (
+    packagebuildname text NOT NULL REFERENCES packagebuildnames
+                     ON DELETE CASCADE,
     tagid int NOT NULL REFERENCES tags ON DELETE CASCADE,
     score int NOT NULL DEFAULT 1,
-    PRIMARY KEY (packagebuildid, tagid)
+    PRIMARY KEY (packagebuildname, tagid)
     );
-GRANT ALL ON TABLE packagebuildtags TO pkgdbadmin;
+GRANT ALL ON packagebuildnamestags TO pkgdbadmin;
 
-CREATE OR REPLACE FUNCTION packagebuildtags_score()
-RETURNS trigger AS $packagebuildtags_score$
+-- updates score every time someone uses a tag/build combination
+CREATE OR REPLACE FUNCTION packagebuildnamestags_score()
+RETURNS trigger AS $packagebuildnamestags_score$
     DECLARE
         old_score integer;
     BEGIN
-        SELECT score INTO old_score FROM packagebuildtags WHERE
-            tagid = NEW.tagid AND packagebuildid = NEW.packagebuildid;
+        SELECT score INTO old_score FROM packagebuildnamestags WHERE
+            tagid = NEW.tagid AND packagebuildname = NEW.packagebuildname;
             
         IF NOT FOUND THEN
             RETURN NEW;
         ELSE
-            UPDATE packagebuildtags SET tagid = NEW.tagid,
-                                        packagebuildid = NEW.packagebuildid,
+            UPDATE packagebuildnamestags SET tagid = NEW.tagid,
+                                        packagebuildname = NEW.packagebuildname,
                                         score = old_score + 1
                                     WHERE tagid = NEW.tagid AND
-                                          packagebuildid = NEW.packagebuildid;
+                                          packagebuildname =NEW.packagebuildname;
             RETURN NULL;
         END IF;
     END;
-$packagebuildtags_score$ LANGUAGE plpgsql;
+$packagebuildnamestags_score$ LANGUAGE plpgsql;
 
-CREATE TRIGGER packagebuildtags_score BEFORE INSERT ON packagebuildtags
-    FOR EACH ROW EXECUTE PROCEDURE packagebuildtags_score();
+CREATE TRIGGER packagebuildnamestags_score BEFORE INSERT ON packagebuildnamestags
+    FOR EACH ROW EXECUTE PROCEDURE packagebuildnamestags_score();
 
 CREATE TABLE comments (
        id serial NOT NULL PRIMARY KEY,
        author text NOT NULL,
        body text NOT NULL,
        published boolean NOT NULL DEFAULT TRUE,
-       packagebuildid int NOT NULL REFERENCES packagebuild ON DELETE CASCADE,
+       packagebuildname text NOT NULL REFERENCES packagebuildnames
+                        ON DELETE CASCADE,
        language text NOT NULL REFERENCES languages ON DELETE CASCADE,
        time timestamp with time zone NOT NULL DEFAULT now()
        );

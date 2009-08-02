@@ -9,7 +9,7 @@ from sqlalchemy.sql import insert, delete, and_
 from turbogears import config, update_config
 from turbogears.database import session
 
-MIRROR = 'http://download.fedoraproject.org/pub/fedora/linux'
+MIRROR = 'http://download.fedoraproject.org/pub/fedora/linux/'
 CONFDIR='@CONFDIR@'
 PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
 sys.path.append(PKGDBDIR)
@@ -27,7 +27,8 @@ config.update({'pkgdb.basedir': PKGDBDIR})
 from pkgdb.model import PackageBuildTable, RpmProvidesTable, RpmRequiresTable, \
                         RpmConflictsTable, RpmObsoletesTable, RpmFilesTable, \
                         ReposTable, PackageBuildListingTable, \
-                        PackageBuildDependsTable, PackageTable
+                        PackageBuildDependsTable, PackageTable, \
+                        PackageBuildNamesTable
 from pkgdb.model import Branch, Package, PackageListing, PackageBuild, Repo
 
 fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
@@ -102,12 +103,21 @@ for repo in repos:
                         pkg_query.one().name, rpm.version))
                     break
 
+                # Make sure the buildname is in the db
+                conn = PackageBuildNamesTable.select(
+                    PackageBuildNamesTable.c.name==rpm.name).execute()
+                buildname = conn.fetchone()
+                if buildname == None:
+                    PackageBuildNamesTable.insert().values(name=rpm.name
+                                                           ).execute()
+                conn.close()
+                
                 desktop = False
                 for f in rpm.filelist:
                     if f.endswith('.desktop'):
                         desktop = True
                         
-                # do a bit of house-keeping
+                # Do a bit of house-keeping
                 (committime, committer, changelog) = rpm.changelog[0]
                 committime = datetime.datetime.utcfromtimestamp(committime)
                 committer = committer.replace('- ', '')
@@ -177,7 +187,7 @@ for repo in repos:
                     PackageBuildTable.c.name==rpm.name,
                     PackageBuildTable.c.repoid==repo.id))
 
-                log.info('inserted %s-%s-%s' % (pkg_query.one().name,
+                log.info('inserted %s-%s-%s' % (rpm.name,
                                              rpm.version, rpm.release))
         # finish up for this repo
         # yb.cleanMetadata()

@@ -37,7 +37,7 @@ Mapping of package related database tables to python classes.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 
-from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy import Table, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
@@ -55,7 +55,7 @@ from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
         RpmObsoletes, RpmFiles
 from pkgdb.model.tags import Tag, TagsTable
 from pkgdb.model.languages import Language
-from pkgdb.model.comments import Comment
+from pkgdb.model.comments import Comment, CommentsTable
 
 get_engine()
 
@@ -75,6 +75,7 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 PackageBuildTable = Table('packagebuild', metadata, autoload=True)
+PackageBuildNamesTable = Table('packagebuildnames', metadata, autoload=True)
 PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
 
 # association tables (many-to-many relationships)
@@ -82,9 +83,9 @@ PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
         )
-PackageBuildTagsTable = Table('packagebuildtags', metadata,
-        Column('packagebuildid', Integer,
-               ForeignKey('packagebuild.id'), primary_key=True),
+PackageBuildNamesTagsTable = Table('packagebuildnamestags', metadata,
+        Column('packagebuildname', String,
+               ForeignKey('packagebuildnames.name'), primary_key=True),
         Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),
         Column('score', Integer)
         )
@@ -292,7 +293,6 @@ def collection_alias(pkg_listing):
     '''
     return pkg_listing.collection.simple_name()
 
-
 class PackageBuildDepends(SABase):
     '''PackageBuild Dependencies to one another.
 
@@ -306,7 +306,19 @@ class PackageBuildDepends(SABase):
     def __repr__(self):
         return 'PackageBuildDepends(%r, %r)' % (
             self.packagebuildid, self.packagebuildname)
-            
+
+class PackageBuildName(SABase):
+    '''Package Build Names
+
+    We use this mainly to have something more generic to tie tags and comments
+    to instead of packagebuildid.
+    '''
+    def __init__(self, name):
+        super(PackageBuildName, self).__init__()
+        self.name = name
+    def __repr__(self):
+        return 'PackageBuildName(%r)' % self.name
+    
 class PackageBuild(SABase):
     '''Package Builds - Actual rpms
 
@@ -314,12 +326,10 @@ class PackageBuild(SABase):
 
     Table -- PackageBuild
     '''
-
-    def __init__(self, name, packageid, epoch, version, release, architecture,
+    def __init__(self, packageid, epoch, version, release, architecture,
                  desktop, size, license, changelog, committime, committer,
                  repoid):
         super(PackageBuild, self).__init__()
-        self.name = name
         self.packageid = packageid
         self.epoch = epoch
         self.version = version
@@ -336,50 +346,21 @@ class PackageBuild(SABase):
     def __repr__(self):
         return 'PackageBuild(%r, packageid=%r, epoch=%r, version=%r,' \
                ' release=%r, architecture=%r, desktop=%r, size=%r, license=%r,' \
-               ' changelog=%r, committime=%r, committer=%r, repoid=%r' % (
+               ' changelog=%r, committime=%r, committer=%r, repoid=%r)' % (
             self.name, self.packageid, self.epoch, self.version,
             self.release, self.architecture, self.desktop, self.size,
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
     
     @classmethod
-    def in_collection(self, buildnames, branchname):
-        '''Helper to retrieve all the matching PackageBuilds.
+    def tag(cls, builds, tags, language):
+        '''Add a set of tags to a list of PackageBuilds.
 
-        Retrieves the a set of PackageBuilds matching the names in the builds
-        list and the branchname. 
-
-        :arg buildnames: a list or a single name as a string - PackageBuild names
-        :arg branchname: a Branch/Collection name
-
-        '''
-        from pkgdb.model.collections import Branch
-
-        if buildnames.__class__ != [].__class__:
-            buildnames = [buildnames]
-
-        collectionid = Branch.query.filter_by(branchname=branchname).one().id
-        good_builds = set()
-        for build in buildnames:
-            packagebuilds = PackageBuild.query.filter_by(name=build).all()
-            for packagebuild in packagebuilds:
-                for listing in packagebuild.listings:
-                    if listing.collectionid == collectionid:
-                        good_builds.add(packagebuild)
-        return good_builds
-
-    @classmethod
-    def tag(cls, builds, tags, language, branch):
-        '''Add a set of tags to a specific PackageBuild.
-
-        This method will tag all packagebuilds with matching name in the
-        specified branch. This also means that packages from different arches
-        will get tagged the same.
+        This method will tag all packagebuilds with matching name. 
         
         :arg builds: one or more PackageBuild names to add the tags to.
         :arg tags: one or more tags to add to the packages.
         :arg language: name or shortname for the language of the tags.
-        :arg branch: branchname of the packagebuild (e.g. 'F-11')
 
         Returns two lists (unchanged): tags and builds.
         '''
@@ -388,9 +369,12 @@ class PackageBuild(SABase):
         # if we got just one argument, make it a list
         if tags.__class__ != [].__class__:
             tags = [tags]
+        if builds.__class__ != [].__class__:
+            builds = [builds]
 
-        packagebuilds = PackageBuild.in_collection(builds, branch)
+        packagebuilds = PackageBuild.query.filter(PackageBuild.name.in_(builds))
         for tag in tags:
+            # If the tag doesn't exist already, insert it
             try:
                 conn = TagsTable.select(and_(
                     TagsTable.c.name==tag, TagsTable.c.language==lang
@@ -404,11 +388,11 @@ class PackageBuild(SABase):
             for build in packagebuilds:
                 # the db knows to increment the score if the
                 # packageid - tagid pair is already there.
-                PackageBuildTagsTable.insert().values(
-                    packagebuildid=build.id, tagid=tagid).execute()
+                PackageBuildNamesTagsTable.insert().values(
+                    packagebuildname=build.name, tagid=tagid).execute()
         
     @classmethod
-    def search(cls, tags, operator, language, branch):
+    def search(cls, tags, operator, language):
         '''Retrieve all the builds which have a specified set of tags.
 
         Can also be used with just one tag.
@@ -452,14 +436,7 @@ class PackageBuild(SABase):
                 # the common ones
                 for tag in tags[1:]:
                     builds = set(tags[0].builds) & set(tag.builds)
-        # filter on branch
-        # in_collection needs names, not PackageBuilds
-        names = []
-        if branch:
-            for build in builds:
-                names.append(build.name)
-            builds = PackageBuild.in_collection(names, branch)
-        
+
         return builds
 
     def comment(self, author, body, language):
@@ -473,8 +450,12 @@ class PackageBuild(SABase):
         lang = Language.find(language)
         
         comment = Comment(author, body, language, published=True,
-                          packagebuildid=self.id)
-        self.comments.append(comment)
+                          packagebuildname=self.name)
+
+        # self.comments is just an illusion
+        buildname = PackageBuildName.query.filter_by(name=self.name).one()
+        buildname.comments.append(comment)
+        
         session.flush()
 
     def score(self, tag):
@@ -485,13 +466,16 @@ class PackageBuild(SABase):
         Returns an integer of the score or -1 otherwise.
         '''
         score = -1
-        if self in tag.builds:
-            result = PackageBuildTagsTable.select(and_(
-                PackageBuildTagsTable.c.tagid==tag.id,
-                PackageBuildTagsTable.c.packagebuildid==self.id)
-                ).execute().fetchone()
-            score = result[2]
-        return score
+        try:
+            if self.buildname in tag.buildnames:
+                result = PackageBuildNamesTagsTable.select(and_(
+                    PackageBuildNamesTagsTable.c.tagid==tag.id,
+                    PackageBuildNamesTagsTable.c.packagebuildname==self.name)
+                    ).execute().fetchone()
+                score = result[2]
+            return score
+        except AttributeError:
+            print 'This method receives a Tag object as argument!'
 
     def scores(self, language='en_US'):
         '''Return a dictionary of tagname: score for a given PackageBuild
@@ -501,8 +485,8 @@ class PackageBuild(SABase):
 
         lang = Language.find(language)
 
-        tags = Tag.query.join(Tag.builds).filter(
-            and_(PackageBuild.id==self.id, Tag.language==lang)).all()
+        tags = Tag.query.join(Tag.buildnames).filter(
+            and_(PackageBuildName.name==self.name, Tag.language==lang)).all()
         
         buildtags = {}
         for tag in tags:
@@ -553,8 +537,36 @@ mapper(PackageBuild, PackageBuildTable, properties={
         cascade='all, delete-orphan'),
     'listings': relation(PackageListing, backref=backref('builds'),
         secondary = PackageBuildListingTable),
-    'tags': relation(Tag, backref=backref('builds'),
-        secondary=PackageBuildTagsTable),
-    'comments': relation(Comment, backref=backref('build'),
+    # these are just shortcuts - with joins across multiple tables
+    # backrefs stayed home.
+    'tags': relation(Tag, secondary=PackageBuildNamesTagsTable,
+        primaryjoin=PackageBuildTable.c.name==\
+                     PackageBuildNamesTagsTable.c.packagebuildname,
+        secondaryjoin=PackageBuildNamesTagsTable.c.tagid==TagsTable.c.id,
+        foreign_keys=[PackageBuildNamesTagsTable.c.packagebuildname,
+                      TagsTable.c.id],
+        ),
+    'comments': relation(Comment, secondary=PackageBuildNamesTable,
+        backref=backref('build'),
+        primaryjoin=PackageBuildTable.c.name==PackageBuildNamesTable.c.name,
+        secondaryjoin=PackageBuildNamesTable.c.name==\
+                         CommentsTable.c.packagebuildname,
+        foreign_keys=[PackageBuildNamesTable.c.name],
+        )
+    })
+mapper(PackageBuildName, PackageBuildNamesTable, properties={
+    'builds': relation(PackageBuild, backref=backref('buildname'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'tags': relation(Tag, backref=backref('buildnames'),
+        secondary=PackageBuildNamesTagsTable),
+    'comments': relation(Comment, backref=backref('packagebuildnames'),
         cascade='all, delete-orphan')
     })
+# mapper(Comment, CommentsTable, properties={
+#     'build': relation(PackageBuild, secondary=PackageBuildNamesTable,
+#         primaryjoin=CommentsTable.c.packagebuildname==\
+#                       PackageBuildNamesTable.c.name,
+#         secondaryjoin=PackageBuildNamesTable.c.name==PackageBuildTable.c.name,
+#         foreign_keys=[PackageBuildNamesTable.c.name])
+#     })

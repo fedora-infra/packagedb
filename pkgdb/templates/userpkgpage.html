@@ -133,7 +133,6 @@
                 action="${tg.url('/tag/add/')}">
             <input type="hidden" name="builds" value="$build.name" />
             <input type="hidden" name="language" value="$language" />
-            <input type="hidden" name="branch" value="$branch" />
             <input type="text" name="tags" value="" size="9" />
             <input id="tagsubmit" type="submit" value="Tag!" />
           </form>
@@ -205,7 +204,6 @@
           <form id="commentform" method="post"
                 action="${tg.url('/comments/add/')}">
             <input type="hidden" name="build" value="$build.name" />
-            <input type="hidden" name="repo" value="$repo" />
             <input type="hidden" name="language" value="$language" />
             <input type="hidden" name="author" value="$tg.identity.user_name" />
             <p>

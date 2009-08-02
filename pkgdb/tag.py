@@ -25,11 +25,9 @@ from sqlalchemy.sql import and_, or_
 
 from turbogears import controllers, expose, redirect, identity
 
-from pkgdb.model import PackageBuild, TagsTable, Language, \
-     PackageBuildTagsTable, Branch
+from pkgdb.model import Tag, Language, PackageBuild, PackageBuildName
 from pkgdb.letter_paginator import Letters
 
-BRANCH = 'F-11'
 class Tag(controllers.Controller):
     '''Retrieve/search and enter tags
 
@@ -44,50 +42,35 @@ class Tag(controllers.Controller):
         self.list = Letters(app_title)
 
     @expose(allow_json=True)
-    def packages(self, builds, branch=BRANCH):
+    def packages(self, builds):
         '''Retrieve all tags belonging to one or more PackageBuilds.
 
         :arg builds: The name (or list of names) of a generic PackageBuild
         to lookup
-        :kwarg branch: The branchname (e.g. 'F-11') where the packagebuilds are
-        located
-
-        Returns:
-        :tags: A SET of Tag objects
-
         '''
-        tags = set()
-        builds = PackageBuild.in_collection(builds, branch)
-        for build in builds:
-            for tag in build.tags:
-                tags.add(tag)
+
+        if builds.__class__ != [].__class__:
+            builds = [builds]
+        tags = Tag.query.join(Tag.buildnames).filter(
+            PackageBuildName.name.in_(builds)).all()
                 
         return dict(title=self.app_title, tags=tags)
 
     @expose(allow_json=True)
-    def scores(self, build, language='en_US', branch=BRANCH):
+    def scores(self, build, language='en_US'):
         '''Return a dictionary of tagname: score for a given package build.
 
         :arg build: The PackageBuild object to lookup.
         :kwarg language: A language, short ('en_US') or long ('American English')
         format. Look for them on https://translate.fedoraproject.org/languages/
-        :kwarg branch: The branchname (e.g. 'F-11') where the packagebuilds are
-        located
         '''
-        collectionid = Branch.query.filter_by(branchname=branch).one().id
-        
-        builds = PackageBuild.query.filter_by(name=build).all()
-        # look for one of the packagebuilds that's in the same collection
-        for build in builds:
-            for listing in build.listings:
-                if listing.collectionid == collectionid:
-                    buildtags = build.scores(language)
 
+        buildtags = PackageBuild.query.filter_by(name=build).one().scores()
         return dict(title=self.app_title, buildtags=buildtags)
 
 
     @expose(allow_json=True)
-    def search(self, tags, operator='OR', language='en_US', branch=None):
+    def search(self, tags, operator='OR', language='en_US'):
         '''Retrieve all the builds which have a specified set of tags.
 
         Can also be used with just one tag.
@@ -97,33 +80,28 @@ class Tag(controllers.Controller):
         how the search for tags is done.
         :kwarg language: A language, short ('en_US') or long ('American English')
         format. Look for them on https://translate.fedoraproject.org/languages/
-        :kwarg branch: The branchname (e.g. 'F-11') where the packagebuilds are
-        located
         
         Returns:
         :tags: a list of Tag objects, filtered by :language:
         :builds: list of found PackageBuild objects
         '''
 
-        builds = PackageBuild.search(tags, operator, language, branch)
+        builds = PackageBuild.search(tags, operator, language)
         return dict(title=self.app_title, tags=tags, builds=builds)
 
     @expose(allow_json=True)
     @identity.require(identity.not_anonymous())
-    def add(self, builds, tags, language='en_US', branch=BRANCH):
+    def add(self, builds, tags, language='en_US'):
         '''Add a set of tags to a specific PackageBuild.
 
-        This method will tag all packagebuilds in the specified branch.
+        This method will tag all packagebuilds in the given list.
         This is nice because it tags builds regardless of their architecture.
         
         :arg builds: one or more PackageBuild names to add the tags to.
         :kwarg tags: one or more tags to add to the packages.
         :kwarg language: name or shortname for the language of the tags.
-        :kwarg branch: branchname of the packagebuild (e.g. 'F-11')
 
         Returns two lists (unchanged): tags and builds.
         '''
 
-        PackageBuild.tag(builds, tags, language, branch)
-
-        
+        PackageBuild.tag(builds, tags, language)

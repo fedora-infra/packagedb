@@ -1,6 +1,12 @@
 ALTER TABLE package ADD COLUMN upstreamurl text;
 
-ALTER TABLE packagebuild ADD COLUMN name text NOT NULL;
+CREATE TABLE packagebuildnames (
+       name text NOT NULL PRIMARY KEY
+       );
+GRANT ALL ON packagebuildnames TO pkgdbadmin;       
+
+ALTER TABLE packagebuild ADD COLUMN name text NOT NULL
+      REFERENCES packagebuildnames ON DELETE CASCADE;
 ALTER TABLE packagebuild ADD COLUMN license text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN architecture text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN desktop boolean NOT NULL;

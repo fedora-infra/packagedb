@@ -32,13 +32,15 @@ from turbogears import controllers, validators
 
 from turbogears.database import get_engine
 
-from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
-        GroupPackageListingAcl, PackageListing, PersonPackageListing,
-        PersonPackageListingAcl, Repo, PackageBuild)
-from pkgdb.model import (PackageTable, CollectionTable, ReposTable, 
-     YumLanguagesTable, YumTagsTable, YumPackageBuildTagsTable, YumReposTable,
-     YumPackageBuildTable, PackageBuildTable, LanguagesTable, TagsTable, 
-     PackageBuildTagsTable, CURRENTREPO)
+from pkgdb.model import Package, Branch, GroupPackageListing, Collection,\
+     GroupPackageListingAcl, PackageListing, PersonPackageListing,\
+     PersonPackageListingAcl, Repo, PackageBuild
+from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable,\
+     LanguagesTable, PackageBuildTable, PackageBuildNamesTable,\
+     PackageBuildNamesTagsTable
+from pkgdb.model import YumLanguagesTable, YumTagsTable,\
+     YumReposTable, YumPackageBuildTable, YumPackageBuildNamesTagsTable,\
+     YumPackageBuildNamesTable
 from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
 from pkgdb.utils import STATUS
 from pkgdb import _
@@ -46,6 +48,7 @@ from pkgdb import _
 from pkgdb.validators import BooleanValue, CollectionNameVersion
 
 from fedora.tg.util import jsonify_validation_errors
+
 
 #
 # Validators
@@ -306,7 +309,7 @@ class ListQueries(controllers.Controller):
 
     @expose(template='pkgdb.templates.buildtags', as_format='xml',
             accept_format='application/xml', allow_json=True)
-    def buildtags(self, repos=CURRENTREPO, langs='en_US'):
+    def buildtags(self, repos, langs='en_US'):
         '''Return an XML object with all the PackageBuild tags and their scores.
 
         :arg repoName: A repo shortname to lookup packagebuilds into
@@ -336,7 +339,7 @@ class ListQueries(controllers.Controller):
         return dict(buildtags=buildtags, repos=repos)
 
     @expose(content_type='application/sqlite')
-    def sqlitebuildtags(self, repos=CURRENTREPO, langs='en_US'):
+    def sqlitebuildtags(self, repos, langs='en_US'):
         '''Return a sqlite database of packagebuilds and tags.
 
         The database returned will contain copies or subsets of tables in the
@@ -361,9 +364,8 @@ class ListQueries(controllers.Controller):
         lite_session = sessionmaker(create_engine(sqliteconn))()
         
         # copy the repo
-        s = select([ReposTable.c.id, ReposTable.c.name,
-                               ReposTable.c.shortname],
-                              ReposTable.c.shortname.in_(repos))
+        s = select([ReposTable.c.id, ReposTable.c.name, ReposTable.c.shortname],
+                   ReposTable.c.shortname.in_(repos))
         e = default_engine.execute(s)
         fetchedrepos = e.fetchall()
         e.close()
@@ -387,10 +389,20 @@ class ListQueries(controllers.Controller):
         e.close()
         lite_session.execute(YumLanguagesTable.insert(), languages)
 
+        # copy the names table
+        e = PackageBuildNamesTable.select(and_(
+            PackageBuildNamesTable.c.name==PackageBuildTable.c.name,
+            PackageBuildTable.c.repoid==ReposTable.c.id,
+            ReposTable.c.shortname.in_(repos))).execute()
+        names = e.fetchall()
+        e.close()
+        lite_session.execute(YumPackageBuildNamesTable.insert(), names)
+
         # copy all the corresponding tags
         e = TagsTable.select(and_(\
-            PackageBuildTable.c.id==PackageBuildTagsTable.c.packagebuildid,\
-            PackageBuildTagsTable.c.tagid==TagsTable.c.id,\
+            PackageBuildTable.c.name==\
+                PackageBuildNamesTagsTable.c.packagebuildname,\
+            PackageBuildNamesTagsTable.c.tagid==TagsTable.c.id,\
             TagsTable.c.language.in_(langs),\
             PackageBuildTable.c.repoid==ReposTable.c.id,\
             ReposTable.c.shortname.in_(repos))).distinct().execute()
@@ -398,16 +410,17 @@ class ListQueries(controllers.Controller):
         e.close()
         lite_session.execute(YumTagsTable.insert(), tags)
 
-        # copy the PackageBuildTagsTable
-        e = PackageBuildTagsTable.select(and_(\
-            PackageBuildTagsTable.c.tagid==TagsTable.c.id,\
-            PackageBuildTable.c.id==PackageBuildTagsTable.c.packagebuildid,\
+        # copy the PackageBuildNamesTagsTable
+        e = PackageBuildNamesTagsTable.select(and_(\
+            PackageBuildNamesTagsTable.c.tagid==TagsTable.c.id,\
+            PackageBuildTable.c.name==\
+                PackageBuildNamesTagsTable.c.packagebuildname,\
             TagsTable.c.language.in_(langs),\
             PackageBuildTable.c.repoid==ReposTable.c.id,\
             ReposTable.c.shortname.in_(repos))).distinct().execute()
         buildtags = e.fetchall()
         e.close()
-        lite_session.execute(YumPackageBuildTagsTable.insert(), buildtags)
+        lite_session.execute(YumPackageBuildNamesTagsTable.insert(), buildtags)
 
         lite_session.commit()
 

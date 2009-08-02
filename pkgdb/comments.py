@@ -43,17 +43,15 @@ class Comments(controllers.Controller):
 
     @identity.require(identity.not_anonymous())
     @expose(allow_json=True)
-    def add(self, author, body, build, repo=REPO, language='en_US'):
+    def add(self, author, body, build, language='en_US'):
         '''Add a new comment to a packagebuild.
 
         :arg author: the FAS author of the comment
         :arg body: text body of the comment
         :arg build: the name of the packagebuild to search for
-        :kwarg repo: the shortname of the repository the packagebuild belongs to
         :kwarg language: the language that the comment was written in
         '''
-        packagebuild = PackageBuild.query.join(PackageBuild.repo).filter(and_(
-            PackageBuild.name==build, Repo.shortname==repo)).one()
+        packagebuild = PackageBuild.query.filter(PackageBuild.name==build).one()
 
         packagebuild.comment(author, body, language)
 
@@ -72,20 +70,18 @@ class Comments(controllers.Controller):
         return dict(title=self.app_title, comments=comments)
 
     @expose(allow_json=True)
-    def build(self, build, repo=REPO, language='en_US'):
+    def build(self, build, language='en_US'):
         '''Return all the comments on a given packagebuild.
 
         :arg build: the name of the packagebuild to search for
-        :kwarg repo: the shortname of the repository the packagebuild belongs to
         :kwarg language: the language that the comments were written in
         '''
         lang = Language.find(language)
         
-        packagebuild = PackageBuild.query.join(PackageBuild.repo).filter(and_(
-            PackageBuild.name==build, Repo.shortname==repo)).one()
+        packagebuild = PackageBuild.query.filter(PackageBuild.name==build).one()
 
         comments = Comment.query.filter(and_(
-            Comment.packagebuildid==packagebuild.id,
+            Comment.packagebuildname==packagebuild.name,
             Comment.language==lang)).all()
 
         return dict(title=self.app_title, comments=comments)

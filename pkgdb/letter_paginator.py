@@ -31,7 +31,7 @@ Module to be used for letter pagination and search.
 from sqlalchemy.sql import or_, and_
 from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate, config
-from pkgdb.model import Package, Tag
+from pkgdb.model import Package, PackageBuild, Tag
 from pkgdb.utils import STATUS
 from pkgdb import _
 
@@ -87,19 +87,19 @@ class Letters(controllers.Controller):
             packages = packages.filter(
                 Package.statuscode!=STATUS['Removed'].statuscodeid)
         else:
+            mode = 'tag/'
+            bzUrl = ''
             if searchwords != '':
                 searchwords = searchwords.replace('*','%') \
                               .replace('&','').replace('_','')
-                try:
-                    packages = Tag.query.options(lazyload('builds')).filter(
-                                and_(Tag.name.ilike(searchwords),
-                                     Tag.language.ilike(language))).one().builds
-                except:
-                    raise Exception(request.path)
+
+                packages = PackageBuild.query.join('tags').filter(and_(
+                        Tag.name.ilike(searchwords),
+                        Tag.language.ilike(language))).all()
+
+
             else:
-                packages = Tag.query.options(lazyload('builds'))
-            mode = 'tag/'
-            bzUrl = ''
+                packages = PackageBuild.query.all()
             
         searchwords = searchwords.replace('%','*')            
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {

@@ -25,7 +25,7 @@ from sqlalchemy.sql import and_
 
 from turbogears import controllers, expose, identity
 
-from pkgdb.model import Branch, Comment, PackageBuild, Repo
+from pkgdb.model import Comment, PackageBuild, Repo
 from pkgdb.utils import mod_grp
 
 from fedora.tg.util import request_format
@@ -84,20 +84,17 @@ class Package(controllers.Controller):
             arches.add(b.architecture)
         tagscore = build.scores(language)
 
-        # Order comments and get hide the mean ones from ordinary users
         comment_query = Comment.query.filter(and_(
-            Comment.packagebuildid==build.id,
+            Comment.packagebuildname==build.name,
             Comment.language==language)).order_by(Comment.time)
+        # hide the mean comments from ordinary users
         if identity.in_group(mod_grp):
             comments = comment_query.all()
         else:
             comments = comment_query.filter_by(published=True).all()
 
-        branch = build.repo.collection.branchname
-            
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': buildName},
-                    branch=branch,
                     repo=repo, build=build, other_repos=other_repos,
                     arches=arches, tagscore=tagscore, language=language,
                     comments=comments)
