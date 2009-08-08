@@ -5,12 +5,18 @@
       py:strip="">
   <xi:include href="layout.html" />
 
-  <head>caca</head>
-  <body>
-    <script type="text/javascript"
-            src="${tg.url('/static/js/dojo/dojo.js')}"
-            djConfig="parseOnLoad:true, isDebug:true">
+  <head>
+    <script type="text/javascript" src="${tg.url('/static/js/dojo/dojo.js')}"
+        djConfig="parseOnLoad: true" >
     </script>
+    <script type="text/javascript">
+      dojo.require("dojo.parser" );
+      dojo.require("dijit.layout.ContentPane" );
+      dojo.require("dijit.form.ValidationTextBox");
+      dojo.require("dijit.form.Form");
+      dojo.require("dijit.form.Button");
+    </script>
+
     <script type="text/javascript">
       function jump(page,form){
            urlparts = page.split('?_csrf');
@@ -19,8 +25,8 @@
       };
 
       function toggle(hiddenId,buttonId){
-           e=document.getElementById(hiddenId);
-           but=document.getElementById(buttonId);
+           e = dojo.byId(hiddenId);
+           but = dojo.byId(buttonId);
            if(e.style.display=="none") {
              e.style.display="";
              but.innerHTML="(less)";
@@ -29,49 +35,50 @@
              but.innerHTML="(more)";
            }
       };
+      function addTag(){
+          var tagForm = dijit.byId("tagform");
+
+          dojo.connect(tagForm, "onSubmit", function(e){
+              e.preventDefault();
+              var tag = tagForm.attr("value").tags;
+              var build = tagForm.containerNode.builds.value
+              if(tagForm.isValid()){
+                  dojo.xhrGet( {
+                      url: "${tg.url('/tag/add/"+build+"/"+tag+"/')}",
+                      handleAs: "text",
+                      load: function(response){
+                                dojo.byId("taglist").innerHTML=response;
+                                }
+                      });
+                  }
+              });
+      };
 
     </script>
     <script type="text/javascript">
-      function sendForm() {
-        var button = dojo.byId("tagsubmit");
-
-        dojo.connect(button, "onClick", function(event){
-        //Stop the submit event since we want to control form submission.
-        event.preventDefault();
-        event.stopPropagation();
-
-      var xhrArgs = {
-        form: dojo.byId("tagform"),
-        handleAs: "text",
-        load: function(data){
-          dojo.byId("response").innerHTML = "Form posted.";
-        },
-        error: function(error){
-
-        }
-      }
-      //Call the asynchronous xhrPost
-
-      var deferred = dojo.xhrPost(xhrArgs);
-      });
-      };
-      
-      dojo.addOnLoad(sendForm);
-
-      dojo.addOnLoad(function(){
+    dojo.addOnLoad(function(){
+          addTag();
           document.getElementById("moredeps").style.display="none";
           document.getElementById("showdeps").innerHTML="(more)";
       });
     </script>
+  </head>
+  
+  <body>
     <h2>$build.name</h2>
     <p>Repository: $build.repo.name</p>
     <p>$build.package.summary</p>
     
     <ul class="actions" style="float:right">
-      <li><a href="${tg.url('/acls/name/'+build.name)}" class="pkgdb">Package Admin</a></li>
-      <li><a href="http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=$build.name" class="koji">Build Status</a></li>
-      <li><a href="https://admin.fedoraproject.org/updates/$build.name" class="bodhi">Update Status</a></li>
-      <li><a href="http://cvs.fedoraproject.org/viewcvs/rpms/$build.name/${build.repo.shortname}" class="cvs">Package Source</a></li>
+      <li><a href="${tg.url('/acls/name/'+build.name)}" class="pkgdb">
+          Package Admin</a>
+      </li>
+      <li><a href="http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=$build.name" class="koji">Build Status</a>
+      </li>
+      <li><a href="https://admin.fedoraproject.org/updates/$build.name" class="bodhi">Update Status</a>
+      </li>
+      <li><a href="http://cvs.fedoraproject.org/viewcvs/rpms/$build.name/${build.repo.shortname}" class="cvs">Package Source</a>
+      </li>
       <li><a href="${tg.url('/acls/bugs/'+build.name)}" class="bugz">Bug Reports</a></li>
     </ul>
 
@@ -108,7 +115,8 @@
         <tr>
           <td>Repositories:</td>
           <td><py:for each="repo in other_repos">
-              <a href="${tg.url('/packages/%s/%s/' % (build.name, repo.shortname))}">
+              <a href="${tg.url('/packages/%s/%s/' %
+                       (build.name, repo.shortname))}">
                 $repo.shortname
               </a> 
           </py:for>
@@ -120,27 +128,36 @@
     <p>$build.package.description</p>
 
     <div id="tags">
-      Tags: 
-      <py:for each="tag in tagscore.keys()">
-        <a href="${tg.url('/tag/list/%s' % tag)}">$tag</a>(${tagscore[tag]})
-      </py:for>
+      Tags:
+      <div id="taglist">
+        <xi:include href="_tags.html" />
+      </div>
+
       <py:choose test="tg.identity.anonymous">
         <py:when test="True">
-          <p>You must be <a href="${tg.url('/login')}">logged in</a> in order to be able to tag packages.</p>
+          <p>You must be <a href="${tg.url('/login')}">logged in</a>
+            in order to be able to tag packages.</p>
         </py:when>
         <py:when test="False">
           <form id="tagform" method="POST"
-                action="${tg.url('/tag/add/')}">
+                action="${tg.url('/tag/add/')}"
+                dojoType="dijit.form.Form">
             <input type="hidden" name="builds" value="$build.name" />
             <input type="hidden" name="language" value="$language" />
-            <input type="text" name="tags" value="" size="9" />
-            <input id="tagsubmit" type="submit" value="Tag!" />
+            <input type="text" name="tags" value="" size="9"
+                   dojoType="dijit.form.ValidationTextBox" trim="true"
+                   required="true" missingMessage="Please enter a tag!" />
+            <button id="tagsubmit" type="submit"
+                    dojoType="dijit.form.Button">Tag!</button>
           </form>
         </py:when>
       </py:choose>
     </div>
     <br />
-    <p>dependencies <a id="showdeps" py:if="len(build.depends) >10" onclick="toggle('moredeps','showdeps')" href="#">(more)</a>: </p>
+    <p>dependencies
+      <a id="showdeps" py:if="len(build.depends) >10"
+         onclick="toggle('moredeps','showdeps')" href="#">(more)</a>:
+    </p>
     <p>
       <py:for each="dep in build.depends.keys()[:10]">
         <a href="${tg.url('/packages/%s/%s' % (dep, repo))}">$dep</a>
@@ -173,7 +190,7 @@
           ?>
           <div class="comment" style="background-color: $color">
             <div class="comment_head">
-              <a name="Comment $comment.id" href="#Comment $comment.id" title="permalink">#</a> 
+              <a name="Comment$comment.id" href="#Comment$comment.id" title="permalink">#</a> 
               Comment by: $comment.author at
               <em>${comment.time.strftime("%H:%M - %h %d, %Y")}</em>
               <?python from pkgdb.utils import mod_grp ?>

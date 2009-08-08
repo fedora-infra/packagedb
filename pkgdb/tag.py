@@ -23,10 +23,16 @@ Controller for Tag related retrieval and updating of information.
 
 from sqlalchemy.sql import and_, or_
 
-from turbogears import controllers, expose, redirect, identity
+from turbogears import controllers, expose, redirect, identity, flash
+
+from cherrypy import request
+
+from fedora.tg.util import request_format
 
 from pkgdb.model import Tag, Language, PackageBuild, PackageBuildName
 from pkgdb.letter_paginator import Letters
+
+from pkgdb.utils import is_xhr
 
 class Tag(controllers.Controller):
     '''Retrieve/search and enter tags
@@ -65,7 +71,7 @@ class Tag(controllers.Controller):
         format. Look for them on https://translate.fedoraproject.org/languages/
         '''
 
-        buildtags = PackageBuild.query.filter_by(name=build).one().scores()
+        buildtags = PackageBuildName.query.filter_by(name=build).one().scores()
         return dict(title=self.app_title, buildtags=buildtags)
 
 
@@ -89,19 +95,35 @@ class Tag(controllers.Controller):
         builds = PackageBuild.search(tags, operator, language)
         return dict(title=self.app_title, tags=tags, builds=builds)
 
-    @expose(allow_json=True)
+    @expose(template='pkgdb.templates._tags', allow_json=True)
     @identity.require(identity.not_anonymous())
     def add(self, builds, tags, language='en_US'):
         '''Add a set of tags to a specific PackageBuild.
 
-        This method will tag all packagebuilds in the given list.
-        This is nice because it tags builds regardless of their architecture.
+        This method will tag all packagebuilds in the given list. The tags are
+        added to all the packagebuilds with the same name.
         
         :arg builds: one or more PackageBuild names to add the tags to.
         :kwarg tags: one or more tags to add to the packages.
         :kwarg language: name or shortname for the language of the tags.
 
-        Returns two lists (unchanged): tags and builds.
+        Returns a dictionary of tag: score if only one packagebuild is given.
         '''
 
+        if tags == '' and request_format != 'json':
+            flash('Tag name can not be null.')
+            raise redirect(request.headers.get("Referer", "/"))
+        
         PackageBuild.tag(builds, tags, language)
+
+        # we only get one build from the webUI
+        if builds.__class__ != [].__class__:
+            # get the scores dict with the new tags
+            if is_xhr():
+                tagscore=PackageBuild.query.filter_by(name=builds
+                                                      ).first().scores()
+                return dict(tagscore=tagscore)
+            # return the user to the tagging page if all is well and no AJAX
+            elif request_format != 'json':
+                raise redirect(request.headers.get("Referer", "/"))
+

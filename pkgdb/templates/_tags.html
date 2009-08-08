@@ -1,0 +1,3 @@
+<py:for each="tag in tagscore.keys()" xmlns:py="http://genshi.edgewall.org/">
+  <a href="${tg.url('/tag/list/%s' % tag)}">$tag</a>(${tagscore[tag]})
+</py:for>

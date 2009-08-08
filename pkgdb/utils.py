@@ -26,6 +26,8 @@ import logging
 
 from turbogears import config
 
+from cherrypy import request
+
 from bugzilla import Bugzilla
 
 # The Fedora Account System Module
@@ -141,3 +143,12 @@ def init_globals():
 
 __all__ = [STATUS, admin_grp, pkger_grp, LOG, fas, bugzilla, refresh_status,
         init_globals, to_unicode]
+
+def is_xhr():
+    '''Check if the request is coming from AJAX
+    '''
+    
+    requested_with = request.headers.get('X-Requested-With')
+    return requested_with and requested_with.lower() == 'xmlhttprequest'
+
+    

@@ -34,9 +34,11 @@
       @import url("https://fedoraproject.org/static/css/fedora.css");
       @import url("${tg.url('/static/css/pkgdb.css')}");
       @import url("${tg.url('/static/js/dijit/themes/tundra/tundra.css')}");
+      @import url("${tg.url('/static/js/dojo/dojo.js')}");
     </style>
 
     <script src="${tg.tg_js}/MochiKit_1_4.js" type="text/javascript"></script>
+
     <script type="text/javascript">
       function jump(page,form){
            urlparts = page.split('?_csrf');
@@ -45,7 +47,7 @@
       };
     </script>
     <jsglobals />
-
+    ${select('*[local-name()!="title"]')}
   </head>
   </py:match>
   <py:match path="body" once="true">
@@ -72,12 +74,16 @@
             <li><a href="https://fedorahosted.org/packagedb/report/3">PackageDB Bugs</a></li>
           </ul>
           <h2>Search</h2>
-          <form name="layout_search" action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}', 'layout_search')">
+          <form name="layout_search"
+                action="${tg.url('/search/package/both/0/AND/')}"
+                method="get"
+                onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}',
+                          'layout_search')">
             <p>
                 <input id="package" name="searchwords" size="9" type="text" />
                 <input id="go" type="submit" value="Go" />
             </p>
-    </form>
+          </form>
 
         </div>
 

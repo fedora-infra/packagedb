@@ -368,11 +368,14 @@ class PackageBuild(SABase):
 
         # if we got just one argument, make it a list
         if tags.__class__ != [].__class__:
+            if tags == '':
+                raise Exception('Tag name missing.')
             tags = [tags]
         if builds.__class__ != [].__class__:
             builds = [builds]
 
-        packagebuilds = PackageBuild.query.filter(PackageBuild.name.in_(builds))
+        buildnames = PackageBuildName.query.filter(
+            PackageBuildName.name.in_(builds))
         for tag in tags:
             # If the tag doesn't exist already, insert it
             try:
@@ -385,7 +388,7 @@ class PackageBuild(SABase):
                 tagid = TagsTable.insert().values(name=tag, language=lang
                     ).execute().last_inserted_ids()[-1]
 
-            for build in packagebuilds:
+            for build in buildnames:
                 # the db knows to increment the score if the
                 # packageid - tagid pair is already there.
                 PackageBuildNamesTagsTable.insert().values(
