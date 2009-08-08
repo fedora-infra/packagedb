@@ -36,6 +36,8 @@ CREATE TABLE repos (
     shortname text NOT NULL,
     name text NOT NULL,
     url text NOT NULL,
+    mirror text NOT NULL,
+    active boolean default TRUE NOT NULL,
     collectionid integer REFERENCES collection ON DELETE CASCADE
 );
 GRANT ALL ON repos TO pkgdbadmin;

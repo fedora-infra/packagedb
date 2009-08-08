@@ -169,16 +169,19 @@ class Repo(SABase):
 
     Table -- Repos
     '''
-    def __init__(self, name, shortname, failovermethod, collectionid):
+    def __init__(self, name, shortname, url, mirror, active, collectionid):
         super(Repo, self).__init__()
         self.name  = name
         self.shortname = shortname
-        self.failovermethod = failovermethod
+        self.url = url
+        self.mirror = mirror
+        self.active = active
         self.collectionid = collectionid
 
     def __repr__(self):
-        return 'Repo(%r, %r, failovermethod=%r, collectionid=%r)' % (
-            self.name, self.shortname, self.failovermethod, self.collectionid)
+        return 'Repo(%r, %r, url=%r, mirror=%r, active=%r, collectionid=%r)' % (
+            self.name, self.shortname, self.url, self.mirror, self.active,
+            self.collectionid)
 
 class CollectionPackage(SABase):
     '''Information about how many `Packages` are in a `Collection`

@@ -1,3 +1,30 @@
+#!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
+#
+# Copyright © 2009  Red Hat, Inc. All rights reserved.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.  You should have
+# received a copy of the GNU General Public License along with this program;
+# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
+# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
+# incorporated in the source code or documentation are not subject to the GNU
+# General Public License and may only be used or replicated with the express
+# permission of Red Hat, Inc.
+#
+# Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+#
+'''
+sync information from yum into the packagedb
+
+Import PackageBuild(rpm) related information from all the `active` repos
+available in the pkgdb.
+'''
+
 import os
 import sys
 import yum
@@ -9,7 +36,6 @@ from sqlalchemy.sql import insert, delete, and_
 from turbogears import config, update_config
 from turbogears.database import session
 
-MIRROR = 'http://download.fedoraproject.org/pub/fedora/linux/'
 CONFDIR='@CONFDIR@'
 PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
 sys.path.append(PKGDBDIR)
@@ -46,29 +72,33 @@ def get_pkg_name(rpm):
     packagename = '-'.join(namelist)
     return packagename
 
-repos = Repo.query.all()
+repos = Repo.query.filter_by(active=True).all()
+
+# make a clean start
+yb = yum.YumBase()
+yb.cleanSqlite()
+yb.cleanMetadata()
+yb.cleanExpireCache()
+yb.close()
 
 # get sacks first, so we can search for dependencies
 for repo in repos:
     yb = yum.YumBase()
 
-    yb.cleanSqlite()
-    yb.cleanMetadata()
-    yb.cleanExpireCache()
-    
     yb.repos.disableRepo('*')
-    yb.add_enable_repo(repo.shortname, ['%s%s' % (MIRROR, repo.url)])
+    yb.add_enable_repo(repo.shortname, ['%s%s' % (repo.mirror, repo.url)])
 
     yumrepo = yb.repos.getRepo(repo.shortname)
     
     yb._getSacks(thisrepo=yumrepo.id)
     
-    log.info('\nRefreshing repo: %s' % yumrepo.name)
+    log.info('Refreshing repo: %s' % yumrepo.name)
     
     # populate pkgdb with packagebuilds (rpms)
     rpms = yumrepo.sack.returnNewestByName()[:10]
     if rpms == []:
-        log.warn("There were no packages in this repo!")
+        log.warn("There were no packages in this repo! %s%s" % (
+            repo.mirror, repo.url))
     for rpm in rpms:
 
         packagename = get_pkg_name(rpm)
@@ -189,10 +219,9 @@ for repo in repos:
 
                 log.info('inserted %s-%s-%s' % (rpm.name,
                                              rpm.version, rpm.release))
-        # finish up for this repo
-        # yb.cleanMetadata()
-        # yb.cleanExpireCache()
-        # yb.cleanSqlite()
-
+    # finish up for this repo
+    yb.cleanMetadata()
+    yb.cleanExpireCache()
+    yb.cleanSqlite()
     yb.close()
     yumrepo.close()
