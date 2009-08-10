@@ -6,11 +6,12 @@
   <xi:include href="layout.html" />
 
   <head>
-    <script type="text/javascript" src="${tg.url('/static/js/dojo/dojo.js')}"
-        djConfig="parseOnLoad: true" >
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true" >
     </script>
     <script type="text/javascript">
-      dojo.require("dojo.parser" );
+      dojo.require("dojo.parser");
       dojo.require("dijit.layout.ContentPane" );
       dojo.require("dijit.form.ValidationTextBox");
       dojo.require("dijit.form.Form");
@@ -37,16 +38,24 @@
       };
       function addTag(){
           var tagForm = dijit.byId("tagform");
-
           dojo.connect(tagForm, "onSubmit", function(e){
               e.preventDefault();
               var tag = tagForm.attr("value").tags;
-              var build = tagForm.containerNode.builds.value
+              var build = tagForm.attr("value").builds;
+              var lang = tagForm.attr("value").language;
               if(tagForm.isValid()){
+                  dojo.fadeIn({
+                      node: "tagloader",
+                      duration: 2000
+                  }).play();
                   dojo.xhrGet( {
-                      url: "${tg.url('/tag/add/"+build+"/"+tag+"/')}",
+                      url: "${tg.url('/tag/add/"+build+"/"+tag+"/"+lang+"/')}",
                       handleAs: "text",
                       load: function(response){
+                                dojo.fadeOut({
+                                    node: "tagloader",
+                                    duration: 1000
+                                }).play();
                                 dojo.byId("taglist").innerHTML=response;
                                 }
                       });
@@ -75,11 +84,14 @@
       </li>
       <li><a href="http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=$build.name" class="koji">Build Status</a>
       </li>
-      <li><a href="https://admin.fedoraproject.org/updates/$build.name" class="bodhi">Update Status</a>
+      <li><a href="https://admin.fedoraproject.org/updates/$build.name"
+             class="bodhi">Update Status</a>
       </li>
       <li><a href="http://cvs.fedoraproject.org/viewcvs/rpms/$build.name/${build.repo.shortname}" class="cvs">Package Source</a>
       </li>
-      <li><a href="${tg.url('/acls/bugs/'+build.name)}" class="bugz">Bug Reports</a></li>
+      <li><a href="${tg.url('/acls/bugs/'+build.name)}" class="bugz">
+          Bug Reports</a>
+      </li>
     </ul>
 
     <table>
@@ -114,12 +126,13 @@
         </tr>
         <tr>
           <td>Repositories:</td>
-          <td><py:for each="repo in other_repos">
+          <td>
+            <py:for each="repo in other_repos">
               <a href="${tg.url('/packages/%s/%s/' %
                        (build.name, repo.shortname))}">
                 $repo.shortname
               </a> 
-          </py:for>
+            </py:for>
           </td>
         </tr>
       </tr>
@@ -142,8 +155,10 @@
           <form id="tagform" method="POST"
                 action="${tg.url('/tag/add/')}"
                 dojoType="dijit.form.Form">
-            <input type="hidden" name="builds" value="$build.name" />
-            <input type="hidden" name="language" value="$language" />
+            <input type="hidden" name="builds" value="$build.name"
+                   dojoType="dijit.form.TextBox" />
+            <input type="hidden" name="language" value="$language"
+                   dojoType="dijit.form.TextBox" />
             <input type="text" name="tags" value="" size="9"
                    dojoType="dijit.form.ValidationTextBox" trim="true"
                    required="true" missingMessage="Please enter a tag!" />
@@ -152,8 +167,8 @@
           </form>
         </py:when>
       </py:choose>
+      <div id="tagloader" style="opacity: 0">Loading...</div>
     </div>
-    <br />
     <p>dependencies
       <a id="showdeps" py:if="len(build.depends) >10"
          onclick="toggle('moredeps','showdeps')" href="#">(more)</a>:
@@ -190,12 +205,13 @@
           ?>
           <div class="comment" style="background-color: $color">
             <div class="comment_head">
-              <a name="Comment$comment.id" href="#Comment$comment.id" title="permalink">#</a> 
+              <a name="Comment$comment.id" href="#Comment$comment.id"
+                 title="permalink">#</a> 
               Comment by: $comment.author at
               <em>${comment.time.strftime("%H:%M - %h %d, %Y")}</em>
               <?python from pkgdb.utils import mod_grp ?>
               <py:if test="mod_grp in tg.identity.groups">              
-                <a href="${tg.url('/comments/toggle_published/%s' % comment.id)}">
+                <a href="${tg.url('/comments/toggle_published/%s'% comment.id)}">
                   <py:choose test="comment.published">
                     <py:when test="True">
                       unpublish
@@ -214,12 +230,13 @@
         </py:for>
       <py:choose test="tg.identity.anonymous">
         <py:when test="True">
-          <p>Please <a href="${tg.url('/login')}">log in</a> if you want to be able to add comments.</p>
+          <p>Please <a href="${tg.url('/login')}">log in</a> to add comments.</p>
         </py:when>
         <py:when test="False">
           Add a new comment:
           <form id="commentform" method="post"
-                action="${tg.url('/comments/add/')}">
+                action="${tg.url('/comments/add/')}"
+                dojoType="dijit.form.Form">
             <input type="hidden" name="build" value="$build.name" />
             <input type="hidden" name="language" value="$language" />
             <input type="hidden" name="author" value="$tg.identity.user_name" />
