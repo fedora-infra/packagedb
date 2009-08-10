@@ -23,10 +23,14 @@ Controller for displaying Comments related information.
 
 from sqlalchemy.sql import and_, or_
 
-from turbogears import controllers, expose, identity
+from turbogears import controllers, expose, identity, redirect
+
+from cherrypy import request
+
+from fedora.tg.util import request_format
 
 from pkgdb.model import Branch, Comment, Language, PackageBuild, Repo
-from pkgdb.utils import mod_grp
+from pkgdb.utils import mod_grp, is_xhr
 
 REPO = 'F-11-i386'
 class Comments(controllers.Controller):
@@ -51,9 +55,16 @@ class Comments(controllers.Controller):
         :arg build: the name of the packagebuild to search for
         :kwarg language: the language that the comment was written in
         '''
-        packagebuild = PackageBuild.query.filter(PackageBuild.name==build).one()
-
+        packagebuild = PackageBuild.query.filter(PackageBuild.name==build
+                                                 ).first()
         packagebuild.comment(author, body, language)
+
+        if is_xhr():
+            # give AJAX the new comments
+            return dict(comments = packagebuild.comments)
+        elif request_format != 'json':
+            # reload the page we came from
+            raise redirect(request.headers.get("Referer", "/"))
 
     @expose(allow_json=True)
     def author(self, author, language='en_US'):
@@ -78,7 +89,8 @@ class Comments(controllers.Controller):
         '''
         lang = Language.find(language)
         
-        packagebuild = PackageBuild.query.filter(PackageBuild.name==build).one()
+        packagebuild = PackageBuild.query.filter(PackageBuild.name==build
+                                                 ).first()
 
         comments = Comment.query.filter(and_(
             Comment.packagebuildname==packagebuild.name,
@@ -99,3 +111,7 @@ class Comments(controllers.Controller):
             comment.published=False
         else:
             comment.published=True
+
+        if request_format != 'json':
+            # reload the page we came from
+            raise redirect(request.headers.get("Referer", "/"))
