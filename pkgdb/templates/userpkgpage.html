@@ -1,8 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:py="http://genshi.edgewall.org/"
-      xmlns:xi="http://www.w3.org/2001/XInclude"
-      py:strip="">
+      xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
 
   <head>
@@ -14,6 +13,7 @@
       dojo.require("dojo.parser");
       dojo.require("dijit.layout.ContentPane" );
       dojo.require("dijit.form.ValidationTextBox");
+      dojo.require("dijit.form.Textarea");
       dojo.require("dijit.form.Form");
       dojo.require("dijit.form.Button");
     </script>
@@ -36,37 +36,35 @@
              but.innerHTML="(more)";
            }
       };
-      function addTag(){
-          var tagForm = dijit.byId("tagform");
-          dojo.connect(tagForm, "onSubmit", function(e){
+
+      function tagComment(formId, loaderId, destinationId){
+          var form = dijit.byId(formId);
+          dojo.connect(form, "onSubmit", function(e){
               e.preventDefault();
-              var tag = tagForm.attr("value").tags;
-              var build = tagForm.attr("value").builds;
-              var lang = tagForm.attr("value").language;
-              if(tagForm.isValid()){
+              if(form.isValid()){
                   dojo.fadeIn({
-                      node: "tagloader",
+                      node: loaderId,
                       duration: 2000
                   }).play();
-                  dojo.xhrGet( {
-                      url: "${tg.url('/tag/add/"+build+"/"+tag+"/"+lang+"/')}",
+                  dojo.xhrPost( {
+                      form: formId,
                       handleAs: "text",
                       load: function(response){
                                 dojo.fadeOut({
-                                    node: "tagloader",
+                                    node: loaderId,
                                     duration: 1000
-                                }).play();
-                                dojo.byId("taglist").innerHTML=response;
+                                    }).play();
+                                dojo.byId(destinationId).innerHTML = response;
                                 }
                       });
                   }
               });
       };
-
     </script>
     <script type="text/javascript">
     dojo.addOnLoad(function(){
-          addTag();
+          tagComment("tagForm", "tagLoader", "tagList");
+          tagComment("commentForm", "commentLoader", "commentList");
           document.getElementById("moredeps").style.display="none";
           document.getElementById("showdeps").innerHTML="(more)";
       });
@@ -142,32 +140,28 @@
 
     <div id="tags">
       Tags:
-      <div id="taglist">
+      <div id="tagList">
         <xi:include href="_tags.html" />
       </div>
-
       <py:choose test="tg.identity.anonymous">
         <py:when test="True">
           <p>You must be <a href="${tg.url('/login')}">logged in</a>
             in order to be able to tag packages.</p>
         </py:when>
         <py:when test="False">
-          <form id="tagform" method="POST"
+          <form id="tagForm" method="POST"
                 action="${tg.url('/tag/add/')}"
                 dojoType="dijit.form.Form">
-            <input type="hidden" name="builds" value="$build.name"
-                   dojoType="dijit.form.TextBox" />
-            <input type="hidden" name="language" value="$language"
-                   dojoType="dijit.form.TextBox" />
+            <input type="hidden" name="builds" value="$build.name" />
+            <input type="hidden" name="language" value="$language" />
             <input type="text" name="tags" value="" size="9"
                    dojoType="dijit.form.ValidationTextBox" trim="true"
                    required="true" missingMessage="Please enter a tag!" />
-            <button id="tagsubmit" type="submit"
-                    dojoType="dijit.form.Button">Tag!</button>
+            <button type="submit" dojoType="dijit.form.Button">Tag!</button>
           </form>
         </py:when>
       </py:choose>
-      <div id="tagloader" style="opacity: 0">Loading...</div>
+      <div id="tagLoader" style="opacity: 0">Loading...</div>
     </div>
     <p>dependencies
       <a id="showdeps" py:if="len(build.depends) >10"
@@ -197,54 +191,26 @@
 
     <br />
     <div id="comments">
-        <py:for each="comment in comments">
-          <?python if comment.published:
-                       color=''
-                   else:
-                       color='#fee'
-          ?>
-          <div class="comment" style="background-color: $color">
-            <div class="comment_head">
-              <a name="Comment$comment.id" href="#Comment$comment.id"
-                 title="permalink">#</a> 
-              Comment by: $comment.author at
-              <em>${comment.time.strftime("%H:%M - %h %d, %Y")}</em>
-              <?python from pkgdb.utils import mod_grp ?>
-              <py:if test="mod_grp in tg.identity.groups">              
-                <a href="${tg.url('/comments/toggle_published/%s'% comment.id)}">
-                  <py:choose test="comment.published">
-                    <py:when test="True">
-                      unpublish
-                    </py:when>
-                    <py:when test="False">
-                      publish
-                    </py:when>
-                  </py:choose>
-                </a>
-              </py:if>
-
-            </div>
-            <p>$comment.body</p>
-          </div>
-          <br />
-        </py:for>
+      <div id="commentList">
+        <xi:include href="_comments.html" />
+      </div>
       <py:choose test="tg.identity.anonymous">
         <py:when test="True">
           <p>Please <a href="${tg.url('/login')}">log in</a> to add comments.</p>
         </py:when>
         <py:when test="False">
           Add a new comment:
-          <form id="commentform" method="post"
+          <form id="commentForm" method="post"
                 action="${tg.url('/comments/add/')}"
                 dojoType="dijit.form.Form">
             <input type="hidden" name="build" value="$build.name" />
             <input type="hidden" name="language" value="$language" />
             <input type="hidden" name="author" value="$tg.identity.user_name" />
-            <p>
-              <textarea name="body" rows="10" cols="80"></textarea>
-            </p>
-            <input type="submit" value="Send" />
+            <p><textarea name="body" rows="10" cols="80"
+                        dojoType="dijit.form.Textarea"></textarea></p>
+            <button type="submit" dojoType="dijit.form.Button">Send</button>
           </form>
+          <div id="commentLoader" style="opacity: 0">Loading...</div>
         </py:when>
       </py:choose>
     </div>

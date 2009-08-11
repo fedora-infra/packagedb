@@ -1,0 +1,37 @@
+<py:for each="comment in comments"
+        xmlns:py="http://genshi.edgewall.org/"
+        xmlns="http://www.w3.org/1999/xhtml"> 
+  <?python if comment.published:
+               color=''
+           else:
+               color='#fee'
+           ?>
+  <div class="comment" style="background-color: $color">
+    <div class="comment_head">
+      <a name="Comment$comment.id" href="#Comment$comment.id"
+         title="permalink">#</a> 
+      Comment by: $comment.author at
+      <em>${comment.time.strftime("%H:%M - %h %d, %Y")}</em>
+      <?python from pkgdb.utils import mod_grp ?>
+      <py:if test="mod_grp in tg.identity.groups">              
+        <a href="${tg.url('/comments/toggle_published/%s' % comment.id)}">
+          <py:choose test="comment.published">
+            <py:when test="True">
+              unpublish
+            </py:when>
+            <py:when test="False">
+              publish
+            </py:when>
+          </py:choose>
+        </a>
+      </py:if>
+    </div>
+    <?python
+       # there's got to be a standard way of doing this..
+       body = ''.join("<p>%s</p>" % line \
+                  for line in comment.body.splitlines() if line)
+       ?>
+    <blockquote xml:space="preserve">${HTML(body)}</blockquote>
+  </div>
+  <br />
+</py:for>

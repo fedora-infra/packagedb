@@ -46,7 +46,7 @@ class Comments(controllers.Controller):
         self.app_title = app_title
 
     @identity.require(identity.not_anonymous())
-    @expose(allow_json=True)
+    @expose(template='pkgdb.templates._comments', allow_json=True)
     def add(self, author, body, build, language='en_US'):
         '''Add a new comment to a packagebuild.
 
