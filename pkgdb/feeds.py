@@ -44,20 +44,20 @@ class DesktopFeed(FeedController):
         
         # look for repoid
         try:
-            repoid = int(kwargs.get('repoid', 181))
+            repoid = int(kwargs.get('repoid', 1))
         except:
             repoid = 1
             
         # how many items to output
         try:
-            num_items = int(kwargs.get('items', 20))
+            items = int(kwargs.get('items', 20))
         except:
-            num_items = 20
+            items = 20
             
         for build in PackageBuild.query.filter_by(
                                         repoid=repoid, desktop=True
                                         ).order_by(PackageBuild.id.desc()
-                                                   )[:num_items]:
+                                                   )[:items]:
             entry = {}
             entry["title"] = '%s-%s-%s' % (
                 build.name, build.version, build.release)
@@ -99,9 +99,9 @@ class CommentsFeed(FeedController):
 
         # how many items to output
         try:
-            num_items = int(kwargs.get('items', 20))
+            items = int(kwargs.get('items', 20))
         except:
-            num_items = 20
+            items = 20
 
         # build specific
         try:
@@ -117,7 +117,7 @@ class CommentsFeed(FeedController):
             entry = {}
             build = PackageBuild.query.filter_by(name=comment.packagebuildname
                                                  ).first()
-            # maybe it should also say what language it's in later.
+            # maybe it should also say what language it's in. Later.
             entry["title"] = 'On %s by %s at %s' % (
                 build.name,
                 comment.author,
@@ -128,7 +128,7 @@ class CommentsFeed(FeedController):
             
             entry["summary"] = comment.body
             
-            entry["link"] = self.baseurl + '/packages/%s/%s/%s#Comment %i' % (
+            entry["link"] = self.baseurl + '/packages/%s/%s/%s#Comment%i' % (
                 build.name, build.repo.shortname, comment.language, comment.id)
             entries.append(entry)
             

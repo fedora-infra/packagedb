@@ -24,7 +24,14 @@
     engineers need to create packages and spin them into a distribution.
     </p>
 
-    <h3>What's new and interesting</h3>
+
+    <h3>
+      <a style="float: right" href="${tg.url('/desktopfeed/atom1.0')}">
+        <img src="${tg.url('/static/images/feed.png')}"
+           alt="Applications Feed" />
+      </a>
+      What's new and interesting
+    </h3>
     <div class="header-list list">
       <table>
         <thead>
@@ -44,7 +51,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr py:for="pkgb in newpackages">
+          <tr py:for="pkgb in packages">
             <td class="package">
               <a href="${tg.url('/packages/%s/%s/' %
                        (pkgb.name, pkgb.repo.shortname))}">
@@ -53,9 +60,9 @@
               <br />${pkgb.version+'-'+pkgb.release+'-'+pkgb.architecture}
             </td>
             <td class="changelog">
-              <?python changelog = pkgb.changelog.partition('\n') ?>
+              <?python changelog = pkgb.changelog.split('\n') ?>
               ${changelog[0]}
-              <a py:if="changelog[2]!=''"
+              <a py:if="len(changelog)!=1"
                  href="${tg.url('/packages/%s/%s#Changelog' %
                        (pkgb.name, pkgb.repo.shortname))}">
                 More...
@@ -67,6 +74,51 @@
             <td class="time">
               ${pkgb.committime.strftime("%h %d")}
             </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>
+      <a style="float: right" href="${tg.url('/commentsfeed/atom1.0')}">
+        <img src="${tg.url('/static/images/feed.png')}"
+           alt="Comments Feed" />
+      </a>
+      Latest Comments
+    </h3>
+    <div class="header-list list">
+      <table>
+        <thead>
+          <tr>
+            <th class="ColumnHead" id="author" title="Comment Author">
+              Author
+            </th>
+            <th class="ColumnHead" id="commentbody" title="Comment Body"
+                width="80%">
+              Body
+            </th>
+            <th class="ColumnHead" id="commenttime" title="Comment Time">
+              Time
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr py:for="comment in comments">
+            <td class="author">$comment.author</td>
+            <?python
+                # show only the first 3 sentences.
+                # only sentences end in dots, right?
+                cbody = comment.body.split('.', 3)
+                if len(cbody) == 4:
+                   more = True
+                else:
+                   more = False
+                cbody = ''.join(cbody[:3])
+                ?>
+            <td class="body">$cbody
+              <a py:if="more">(write this code)</a>
+            </td>
+            <td class="time">${comment.time.strftime("%H:%M - %h %d")}</td>
           </tr>
         </tbody>
       </table>

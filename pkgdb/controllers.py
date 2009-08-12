@@ -41,7 +41,7 @@ from pkgdb.search import Search
 from pkgdb.tag import Tag
 from pkgdb.users import Users
 
-from pkgdb.model import PackageBuild
+from pkgdb.model import PackageBuild, Comment
 
 from fedora.tg import controllers as f_ctrlers
 
@@ -82,8 +82,11 @@ class Root(controllers.RootController):
 
         This page serves as an overview of the entire PackageDB.  
         '''
-        newpackages = PackageBuild.query.filter_by(desktop=True).order_by(
+        packages = PackageBuild.query.filter_by(desktop=True).order_by(
             PackageBuild.committime.desc()).limit(7).all()
+
+        comments = Comment.query.filter_by(published=True).order_by(
+            Comment.time.desc()).limit(7).all()
         
-        return dict(newpackages=newpackages,
+        return dict(packages=packages, comments=comments,
             title=self.app_title, version=release.VERSION)
