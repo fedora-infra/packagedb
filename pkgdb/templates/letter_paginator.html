@@ -9,7 +9,8 @@
         <a py:otherwise="" href="${tg.url('0')}">0-9</a> |
     </div>
     <py:for each="letr in 'abcdefghijklmnopqrstuvwxyz'" py:choose="">
-    <b py:when="searchwords == letr+'*' or searchwords == letr.upper()+'*'">${letr}</b>
+    <b py:when="searchwords == letr+'*' or searchwords == letr.upper()+'*'">
+      ${letr}</b>
     <a py:otherwise="" href="${tg.url('/%slist/%s*' % (mode, letr))}">
         ${letr}</a> |
     </py:for>

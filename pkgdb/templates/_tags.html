@@ -1,3 +1,22 @@
-<py:for each="tag in tagscore.keys()" xmlns:py="http://genshi.edgewall.org/">
-  <a href="${tg.url('/tag/list/%s' % tag)}">$tag</a>(${tagscore[tag]})
-</py:for>
+<html xmlns:py="http://genshi.edgewall.org/"
+      py:strip="">
+  <?python
+     # get the biggest value and size the other tags relative to it and the MAX
+     values = tagscore.values()
+     MAX = 22.0
+     if values:
+       values.sort()
+       big = values[-1]
+     ?>
+  <p>
+    <py:for each="tag in tagscore.keys()" xmlns:py="http://genshi.edgewall.org/">
+      <?python
+         fsize = (tagscore[tag] * MAX)/big
+         ?>
+      <span style="font-size: ${'%spt' % fsize}">
+        <a href="${tg.url('/tag/list/%s' % tag)}"
+           title="tagged ${tagscore[tag]} times">$tag</a>
+      </span>
+    </py:for>
+  </p>
+</html>

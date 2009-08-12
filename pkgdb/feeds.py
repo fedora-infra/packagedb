@@ -44,7 +44,7 @@ class DesktopFeed(FeedController):
         
         # look for repoid
         try:
-            repoid = int(kwargs.get('repoid', 1))
+            repoid = int(kwargs.get('repoid', 181))
         except:
             repoid = 1
             
@@ -74,7 +74,8 @@ class DesktopFeed(FeedController):
             
             entry["link"] = self.baseurl + '/packages/%s/%s' % (
                                            build.name,
-                                           build.repo.shortname)
+                                           build.repo.shortname
+                                           )
             entries.append(entry)
         
         return dict(
@@ -102,10 +103,21 @@ class CommentsFeed(FeedController):
         except:
             num_items = 20
 
-        for comment in Comment.query.filter_by(published=True
-                                               ).order_by(Comment.time):
+        # build specific
+        try:
+            buildName = kwargs.get('build', None)
+        except:
+            buildName = None
+
+        comment_query = Comment.query.filter_by(published=True
+                                               ).order_by(Comment.time)
+        if buildName:
+            comment_query = comment_query.filter_by(packagebuildname=buildName)
+        for comment in comment_query:
             entry = {}
-            build = PackageBuild.query.filter_by(id=comment.packagebuildid).one()
+            build = PackageBuild.query.filter_by(name=comment.packagebuildname
+                                                 ).first()
+            # maybe it should also say what language it's in later.
             entry["title"] = 'On %s by %s at %s' % (
                 build.name,
                 comment.author,
@@ -116,8 +128,8 @@ class CommentsFeed(FeedController):
             
             entry["summary"] = comment.body
             
-            entry["link"] = self.baseurl + '/packages/%s/%s#Comment %i' % (
-                build.name, build.repo.shortname, comment.id)
+            entry["link"] = self.baseurl + '/packages/%s/%s/%s#Comment %i' % (
+                build.name, build.repo.shortname, comment.language, comment.id)
             entries.append(entry)
             
         return dict(

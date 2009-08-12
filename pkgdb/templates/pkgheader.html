@@ -4,7 +4,7 @@
       xmlns:xi="http://www.w3.org/2001/XInclude"
       py:strip="">
 
-  <ul py:def="pkgheader(packageName, action=None)" class="actions"
+  <ul py:def="pkgheader(packageName, action=None)" id="actions"
     py:with="pkgUrlName=tg.quote_plus(packageName)">
     <li><a class="koji" href="${'http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=' + pkgUrlName}">Build Status</a></li>
     <li><a class="bodhi" href="${'https://admin.fedoraproject.org/updates/'

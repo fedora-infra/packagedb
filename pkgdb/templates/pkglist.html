@@ -10,8 +10,10 @@
       <dt>
         <py:choose test="mode">
           <py:when test="'tag/'">
-            <a href="${tg.url('/packages/%s/' % pkg.name)}"
-               py:content="pkg.name" class="PackageName">Build Name</a>
+            <a href="${tg.url('/packages/%s/%s' %
+                     (pkg.name, pkg.repo.shortname))}"
+               py:content="'%s (%s)' % (pkg.name, pkg.repo.shortname)"
+               class="PackageName">Build Name</a>
           </py:when>
           <py:otherwise>
             <a href="${tg.url('/%s%s' % (mode, pkg.name))}"

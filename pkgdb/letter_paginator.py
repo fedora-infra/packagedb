@@ -96,8 +96,6 @@ class Letters(controllers.Controller):
                 packages = PackageBuild.query.join('tags').filter(and_(
                         Tag.name.ilike(searchwords),
                         Tag.language.ilike(language))).all()
-
-
             else:
                 packages = PackageBuild.query.all()
             

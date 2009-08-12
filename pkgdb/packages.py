@@ -82,6 +82,8 @@ class Package(controllers.Controller):
         for b in builds_query.all():
             other_repos.append(b.repo)
             arches.add(b.architecture)
+        other_repos.remove(build.repo)
+        
         tagscore = build.scores(language)
 
         comment_query = Comment.query.filter(and_(

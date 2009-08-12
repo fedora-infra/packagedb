@@ -67,17 +67,17 @@
 {
   float: right;
 }
-.actions
+#actions
 {
   line-height: 1;
+  list-style: none;
   margin: 1ex 0!important;
 }
 
-.actions li
+#actions li
 {
-    padding: .4em;
-    list-style: none;
-    margin-right: 7em;
+    margin-right: 1ex;
+    display: inline;
 }
 
 #smalltext
@@ -126,8 +126,13 @@
   margin-left: 2em;
 }
 
-#comments {
-  width: 70%;
+#left-pane {
+  width: 90%;
+}
+#tags {
+    width: 40%;
+    float: right;
+    margin-right: 10%;
 }
 /* Want to merge somehow -- talk to mizmo and ricky */
 #head h1 {
