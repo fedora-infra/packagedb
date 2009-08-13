@@ -68,23 +68,46 @@ groups = [
      'http://archives.fedoraproject.org/pub/archive/fedora/linux/'
      ],
     ]
+# this works for newer postgresqls, but not the one on publictest3 (8.1.11)
+#
+# s = 'INSERT INTO REPOS (shortname, name, collectionid, url, mirror) VALUES \n'
+# for group in groups:
+#     [[sname, lname], vers, arches, urlschemes, mirror] = group
+#     for ver in vers:
+#         for arch in arches:
+#             for url in urlschemes:
+#                 s += "('%(sname)s-%(ver)s-%(arch)s%(sdesc)s',"\
+#                      "'%(lname)s %(ver)s - %(arch)s%(ldesc)s', "\
+#                      "%(coll)s, \n"\
+#                      "'%(urlpart)s', "\
+#                      "'%(mirror)s'),\n\n" % {
+#                         'lname':lname, 'sname':sname,
+#                         'ver':ver[0], 'coll': ver[1],
+#                         'arch':arch, 'sdesc':url[0], 'ldesc':url[1],
+#                         'urlpart': url[2] % {
+#                             'ver':ver[0], 'arch':arch}, 'mirror':mirror}
+# # replace the two newlines and comma
+# s = s[:-3] + ';'
+# print s
 
-s = 'INSERT INTO REPOS (shortname, name, collectionid, url, mirror) VALUES \n'
+# this is suboptimal. It generates a separate insert statement for every row.
+# Please use the above version where possible.
+s = ''
 for group in groups:
     [[sname, lname], vers, arches, urlschemes, mirror] = group
     for ver in vers:
         for arch in arches:
             for url in urlschemes:
-                s += "('%(sname)s-%(ver)s-%(arch)s%(sdesc)s',"\
+                s += "INSERT INTO REPOS (shortname, name, collectionid,"\
+                     "url, mirror) VALUES \n"\
+                     "('%(sname)s-%(ver)s-%(arch)s%(sdesc)s',"\
                      "'%(lname)s %(ver)s - %(arch)s%(ldesc)s', "\
                      "%(coll)s, \n"\
                      "'%(urlpart)s', "\
-                     "'%(mirror)s'),\n\n" % {
+                     "'%(mirror)s');\n\n" % {
                         'lname':lname, 'sname':sname,
                         'ver':ver[0], 'coll': ver[1],
                         'arch':arch, 'sdesc':url[0], 'ldesc':url[1],
                         'urlpart': url[2] % {
                             'ver':ver[0], 'arch':arch}, 'mirror':mirror}
-# replace the two newlines and comma
-s = s[:-3] + ';'
 print s

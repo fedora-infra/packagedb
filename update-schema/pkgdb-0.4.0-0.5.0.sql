@@ -11,8 +11,7 @@ ALTER TABLE packagebuild ADD COLUMN license text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN architecture text NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN desktop boolean NOT NULL;
 ALTER TABLE packagebuild ADD COLUMN size int NOT NULL;
-ALTER TABLE packagebuild ADD COLUMN repoid int NOT NULL
-    REFERENCES repos ON DELETE CASCADE;
+
 ALTER TABLE packagebuild ADD COLUMN changelog text NOT NULL;
 ALTER TABLE packagebuild DROP COLUMN statuscode;
 ALTER TABLE packagebuild ADD COLUMN committime timestamp with time zone NOT NULL;
@@ -98,8 +97,6 @@ CREATE TABLE rpmfiles (
     PRIMARY KEY(name, packagebuildid)
     );
 GRANT ALL ON rpmfiles TO pkgdbadmin;
-GRANT ALL ON rpmfiles_id_seq TO pkgdbadmin;
 
-ALTER TABLE packagebuild ADD FOREIGN KEY (repoid) REFERENCES repos;
-
-
+ALTER TABLE packagebuild ADD COLUMN repoid int NOT NULL
+    REFERENCES repos ON DELETE CASCADE;
