@@ -60,7 +60,7 @@ class Letters(controllers.Controller):
                 bzUrl = config.get('bugzilla.url',
                                    'https://bugzilla.redhat.com/')
             else:
-                mode = 'acls/names/'
+                mode = 'acls/name/'
                 bzUrl = ''
             if searchwords != '':
                 searchwords = searchwords.replace('*','%')

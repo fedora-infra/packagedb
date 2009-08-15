@@ -214,8 +214,7 @@ collectionMapper = mapper(Collection, CollectionTable,
             'listings2': relation(PackageListing,
                 backref=backref('collection'),
                 collection_class=attribute_mapped_collection('packagename')),
-            'repos': relation(Repo, backref=backref('collection'),
-                collection_class = attribute_mapped_collection('name'))
+            'repos': relation(Repo, backref=backref('collection'))
         })
 mapper(Branch, BranchTable, inherits=collectionMapper,
         inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,

@@ -80,11 +80,11 @@
     display: inline;
 }
 
-#smalltext
+.smalltext
 {
     line-height: 80%;
     font-size: 80%;
-    background-color: #efefef;
+    background-color: #f4f4f4;;
     padding: .3em;
 }
 

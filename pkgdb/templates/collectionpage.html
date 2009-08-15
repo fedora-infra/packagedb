@@ -34,7 +34,7 @@ TODO='Not yet implemented'
     <p py:content="collection['summary']">Summary</p>
     <p py:content="collection['description']">Description</p>
     ${paginate_nav()}
-    ${pkglist(packages)}
+    ${pkglist(packages, mode='package/name/')}
     ${paginate_nav()}
   </body>
 </html>

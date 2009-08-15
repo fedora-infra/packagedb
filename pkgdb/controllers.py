@@ -38,7 +38,7 @@ from pkgdb.listqueries import ListQueries
 from pkgdb.packages import Package
 from pkgdb.stats import Stats
 from pkgdb.search import Search
-from pkgdb.tag import Tag
+from pkgdb.tag import Tags
 from pkgdb.users import Users
 
 from pkgdb.model import PackageBuild, Comment
@@ -63,7 +63,7 @@ class Root(controllers.RootController):
     packages = Package(app_title)
     stats = Stats(app_title)
     search = Search(app_title)
-    tag = Tag(app_title)
+    tag = Tags(app_title)
     users = Users(app_title)
 
     @expose(template="pkgdb.templates.login", allow_json=True)

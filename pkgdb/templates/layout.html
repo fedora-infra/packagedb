@@ -64,13 +64,14 @@
             <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
             <li><a href="${tg.url('/acls/orphans')}">Orphan Packages</a></li>
             <li><a href="${tg.url('/stats/')}">Package Stats</a></li>
-            <li><a href="https://fedorahosted.org/packagedb/report/3">PackageDB Bugs</a></li>
+            <li><a href="https://fedorahosted.org/packagedb/report/3">
+                PackageDB Bugs</a></li>
           </ul>
           <h2>Search</h2>
           <form id="layout_search"
-                action="${tg.url('/search/package/both/0/AND/')}"
+                action="${tg.url('/search/package/')}"
                 method="get"
-                onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}',
+                onsubmit="return jump('${tg.url('/search/package/')}',
                           'layout_search')">
             <p>
                 <input id="package" name="searchwords" size="9" type="text" />
@@ -80,7 +81,8 @@
         </div>
       </div>
       <div id="content">
-        <div id="status_block" py:if="tg_flash" class="flash" py:content="tg_flash"></div>
+        <div id="status_block" py:if="tg_flash"
+             class="flash" py:content="tg_flash"></div>
         <div py:replace="select('*|text()')" />
       </div>
     </div>
@@ -89,15 +91,20 @@
       <div id="footer">
         <p>PackageDB Version: ${_version} -- Server: ${_hostname}</p>
         <p class="copy">
-        Copyright &copy; 2007-2009 Red Hat, Inc. and others.  All Rights Reserved.
-        Please send any comments or corrections to the <a href="mailto:webmaster@fedoraproject.org">websites team</a>.
+          Copyright &copy; 2007-2009 Red Hat, Inc. and others.  All Rights
+          Reserved. Please send any comments or corrections to the
+          <a href="mailto:webmaster@fedoraproject.org">websites team</a>.
         </p>
         <p class="disclaimer">
-        The Fedora Project is maintained and driven by the community and sponsored by Red Hat.  This is a community maintained site.  Red Hat is not responsible for content.
+          The Fedora Project is maintained and driven by the community and
+          sponsored by Red Hat.  This is a community maintained site.  Red Hat is
+          not responsible for content.
         </p>
         <ul>
-          <li class="first"><a href="http://fedoraproject.org/wiki/Legal">Legal</a></li>
-          <li><a href="http://fedoraproject.org/wiki/Legal/TrademarkGuidelines">Trademark Guidelines</a></li>
+          <li class="first">
+            <a href="http://fedoraproject.org/wiki/Legal">Legal</a></li>
+          <li><a href="http://fedoraproject.org/wiki/Legal/TrademarkGuidelines">
+              Trademark Guidelines</a></li>
         </ul>
       </div>
     </div>

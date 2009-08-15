@@ -11,14 +11,14 @@
     <p py:if="mode=='bugs/'">Click on a package to view the bug reports opened against 
     it. Or go to the <a href="$bzurl">bugzilla main page</a> to construct your 
     own search.</p>
-    <form action="${tg.url(mode + 'list/')}" method="get" onsubmit="return jump('${tg.url(mode+'list/')}', 1)">
+    <form action="${tg.url('/%slist/' % mode.replace('name/',''))}" method="get" onsubmit="return jump('${tg.url('/%slist/' % mode.replace('name/',''))}', 1)">
         <input id="searchplist" name="searchwords" size="9" type="text" value='$searchwords' />
         <input id="search" type="submit" value="Search" />
     </form>
-    ${letter_paginate_nav(mode)}<br />
+    ${letter_paginate_nav(mode.replace('name/', ''))}<br />
     ${paginate_nav()}<br />
     ${pkglist(packages,mode)}
     ${paginate_nav()}<br />
-    ${letter_paginate_nav(mode)}
+    ${letter_paginate_nav(mode.replace('name/', ''))}
   </body>
 </html>
