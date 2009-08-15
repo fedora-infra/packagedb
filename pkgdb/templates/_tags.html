@@ -2,16 +2,14 @@
       py:strip="">
   <?python
      # get the biggest value and size the other tags relative to it and the MAX
-     values = tagscore.values()
      MAX = 22.0
-     if values:
-       values.sort()
-       big = values[-1]
+     if tagscore.values():
+       biggest = sorted(tagscore.values())[-1]
      ?>
   <p>
     <py:for each="tag in tagscore.keys()" xmlns:py="http://genshi.edgewall.org/">
       <?python
-         fsize = (tagscore[tag] * MAX)/big
+         fsize = (tagscore[tag] * MAX)/biggest
          ?>
       <span style="font-size: ${'%spt' % fsize}">
         <a href="${tg.url('/tag/list/%s' % tag)}"

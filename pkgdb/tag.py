@@ -22,19 +22,16 @@ Controller for Tag related retrieval and updating of information.
 '''
 
 from sqlalchemy.sql import and_, or_
-
-from turbogears import controllers, expose, redirect, identity, flash
-
+from turbogears import controllers, expose, redirect, identity, flash, \
+                       validate, validators
 from cherrypy import request
-
 from fedora.tg.util import request_format
 
 from pkgdb.model import Tag, Language, PackageBuild, PackageBuildName
 from pkgdb.letter_paginator import Letters
-
 from pkgdb.utils import is_xhr
 
-class Tag(controllers.Controller):
+class Tags(controllers.Controller):
     '''Retrieve/search and enter tags
 
     '''
@@ -48,6 +45,9 @@ class Tag(controllers.Controller):
         self.list = Letters(app_title)
 
     @expose(allow_json=True)
+    @validate(validators={
+        # get a list even if only one string is provided
+        "builds": validators.Set()})
     def packages(self, builds):
         '''Retrieve all tags belonging to one or more PackageBuilds.
 
