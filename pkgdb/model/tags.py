@@ -23,6 +23,7 @@ Mapping of tag related database tables to python classes.
 
 from sqlalchemy import Table
 from sqlalchemy.orm import relation, backref
+from sqlalchemy.ext.associationproxy import association_proxy
 
 from turbogears.database import metadata, mapper
 
@@ -55,7 +56,9 @@ class Tag(SABase):
     def __repr__(self):
         return 'Tag(%r, language=%r)' % (
             self.name, self.language)
-        
+
+    # Link to builds, through PackageBuildName
+    builds = association_proxy('buildnames', 'builds')
 #
 # Mappers
 #

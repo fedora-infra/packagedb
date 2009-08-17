@@ -495,6 +495,10 @@ class PackageBuild(SABase):
         for tag in tags:
             buildtags[tag.name] = self.score(tag)
         return buildtags
+
+    # Link to comments/tags, through PackageBuildName
+    comments = association_proxy('buildname', 'comments')
+    tags = association_proxy('buildname', 'tags')
         
 #
 # Mappers
@@ -539,23 +543,7 @@ mapper(PackageBuild, PackageBuildTable, properties={
         collection_class = attribute_mapped_collection('packagebuildname'),
         cascade='all, delete-orphan'),
     'listings': relation(PackageListing, backref=backref('builds'),
-        secondary = PackageBuildListingTable),
-    # these are just shortcuts - with joins across multiple tables
-    # backrefs stayed home.
-    'tags': relation(Tag, secondary=PackageBuildNamesTagsTable,
-        primaryjoin=PackageBuildTable.c.name==\
-                     PackageBuildNamesTagsTable.c.packagebuildname,
-        secondaryjoin=PackageBuildNamesTagsTable.c.tagid==TagsTable.c.id,
-        foreign_keys=[PackageBuildNamesTagsTable.c.packagebuildname,
-                      TagsTable.c.id],
-        ),
-    'comments': relation(Comment, secondary=PackageBuildNamesTable,
-        backref=backref('build'),
-        primaryjoin=PackageBuildTable.c.name==PackageBuildNamesTable.c.name,
-        secondaryjoin=PackageBuildNamesTable.c.name==\
-                         CommentsTable.c.packagebuildname,
-        foreign_keys=[PackageBuildNamesTable.c.name],
-        )
+        secondary = PackageBuildListingTable)
     })
 mapper(PackageBuildName, PackageBuildNamesTable, properties={
     'builds': relation(PackageBuild, backref=backref('buildname'),
@@ -563,13 +551,6 @@ mapper(PackageBuildName, PackageBuildNamesTable, properties={
         cascade='all, delete-orphan'),
     'tags': relation(Tag, backref=backref('buildnames'),
         secondary=PackageBuildNamesTagsTable),
-    'comments': relation(Comment, backref=backref('packagebuildnames'),
+    'comments': relation(Comment, backref=backref('buildnames'),
         cascade='all, delete-orphan')
     })
-# mapper(Comment, CommentsTable, properties={
-#     'build': relation(PackageBuild, secondary=PackageBuildNamesTable,
-#         primaryjoin=CommentsTable.c.packagebuildname==\
-#                       PackageBuildNamesTable.c.name,
-#         secondaryjoin=PackageBuildNamesTable.c.name==PackageBuildTable.c.name,
-#         foreign_keys=[PackageBuildNamesTable.c.name])
-#     })

@@ -24,6 +24,7 @@ Mapping of comments related database tables to python classes.
 from sqlalchemy import Table
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.ext.associationproxy import association_proxy
 
 from fedora.tg.json import SABase
 
@@ -57,7 +58,9 @@ class Comment(SABase):
                'language=%r)' % (
             self.author, self.body, self.published, self.packagebuildname,
             self.language)
-
+    
+    # Link to build, through PackageBuildName
+    build = association_proxy('buildnames', 'build')
 #
 # Mappers
 #
