@@ -142,6 +142,18 @@ Run the following scripts to bring it up to date::
 
 Your postgres server is now all set.
 
+TG FeedController bug
+---------------------
+
+We're using an old version of TG (1.0) that no longer gets any updates so
+we'll have to modify the local TG everytime.
+
+Apply this patch to turbogears/feeds/feed.py
+http://trac.turbogears.org/attachment/ticket/2348/feedkid.diff
+
+And here's the link to the upstream ticket:
+http://trac.turbogears.org/ticket/2348
+
 Start the Server (The new way)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
