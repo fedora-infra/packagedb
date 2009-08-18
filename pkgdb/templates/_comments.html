@@ -1,4 +1,5 @@
-<py:for each="comment in comments" xmlns:py="http://genshi.edgewall.org/">
+<py:for each="(comment, cid) in zip(comments, range(1, len(comments)+1))"
+        xmlns:py="http://genshi.edgewall.org/">
   <?python if comment.published:
              color=''
            else:
@@ -6,7 +7,7 @@
            ?>
   <div class="comment" style="background-color: $color">
     <div class="comment_head">
-      <a name="Comment$comment.id" href="#Comment$comment.id"
+      <a name="Comment$cid" href="#Comment$cid"
          title="permalink">#</a> 
       Comment by: $comment.author at
       <em>${comment.time.strftime("%H:%M - %h %d, %Y")}</em>

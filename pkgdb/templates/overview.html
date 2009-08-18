@@ -24,7 +24,6 @@
     engineers need to create packages and spin them into a distribution.
     </p>
 
-
     <h3>
       <a style="float: right" href="${tg.url('/desktopfeed/atom1.0')}">
         <img src="${tg.url('/static/images/feed.png')}"
@@ -103,7 +102,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr py:for="comment in comments">
+          <tr py:for="(comment, cid) in zip(comments, range(1,len(comments)+1))">
             <td class="author">$comment.author</td>
             <?python
                 # show only the first 3 sentences.
@@ -116,7 +115,10 @@
                 cbody = ''.join(cbody[:3])
                 ?>
             <td class="body">$cbody
-              <a py:if="more">(write this code)</a>
+              <a py:if="more" href="${tg.url('/packages/%s/%s/#Comment%i' %
+                                    (comment.packagebuildname,
+                                    comment.builds.values()[0].repo.shortname,
+                                    cid))}">(more)</a>
             </td>
             <td class="time">${comment.time.strftime("%H:%M - %h %d")}</td>
           </tr>
@@ -152,4 +154,3 @@
     <a href="http://fedorahosted.org/packagedb">Project Page</a>.
   </body>
 </html>
-
