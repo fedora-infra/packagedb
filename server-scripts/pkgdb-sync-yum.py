@@ -86,9 +86,10 @@ for repo in repos:
     yb = yum.YumBase()
 
     yb.repos.disableRepo('*')
-    yb.add_enable_repo(repo.shortname, ['%s%s' % (repo.mirror, repo.url)])
+    yb.add_enable_repo('pkgdb-%s' % repo.shortname,
+                       ['%s%s' % (repo.mirror, repo.url)])
 
-    yumrepo = yb.repos.getRepo(repo.shortname)
+    yumrepo = yb.repos.getRepo('pkgdb-%s' % repo.shortname)
     
     yb._getSacks(thisrepo=yumrepo.id)
     
@@ -148,10 +149,14 @@ for repo in repos:
                         desktop = True
                         
                 # Do a bit of house-keeping
-                (committime, committer, changelog) = rpm.changelog[0]
-                committime = datetime.datetime.utcfromtimestamp(committime)
-                committer = committer.replace('- ', '')
-                committer = committer.rpartition(' ')[0]
+                if rpm.changelog:
+                    (committime, committer, changelog) = rpm.changelog[0]
+                    committime = datetime.datetime.utcfromtimestamp(committime)
+                    committer = committer.replace('- ', '')
+                    committer = committer.rsplit(' ',1)[0]
+                else:
+                    (committime, committer, changelog) = (
+                        datetime.datetime.now(),'','')
 
                 # insert the new packagebuild and get its id
                 pkgbuildid = PackageBuildTable.insert().values(
