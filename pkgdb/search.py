@@ -82,8 +82,11 @@ class Search(controllers.Controller):
         This method returns a list of PackageBuilds that match the given
         searchwords. Other information useful to the view is also returned:
         :query: words that were used for the search, unchanged
-        :collection: the matching Collection object
-        :builds: a nested list of packagebuilds grouped by packagebuildname
+        :active_collection: the matching Collection object
+        :collections: all the Collections in the pkgdb
+        :builds: a list of all the found PackageBuilds
+        :buildrepos: a dictionary of 'buildname': list of corresponding Repo
+                     key-value pairs.
         :operator: 'AND'/'OR' unchanged
         :searchon: same as the argument, unchanged
 

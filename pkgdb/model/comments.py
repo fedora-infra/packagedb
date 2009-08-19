@@ -52,15 +52,15 @@ class Comment(SABase):
         self.body = body
         self.language = language
         self.published = published
-        self.packagebuildname = packagebuildname
+        self.buildname = packagebuildname
     def __repr__(self):
         return 'Comment(author=%r, body=%r, published=%r, buildname=%r, '\
                'language=%r)' % (
             self.author, self.body, self.published, self.packagebuildname,
             self.language)
     
-    # Link to build, through PackageBuildName
-    build = association_proxy('buildnames', 'build')
+    # Link to builds, through PackageBuildName
+    builds = association_proxy('buildnames', 'builds')
 #
 # Mappers
 #
