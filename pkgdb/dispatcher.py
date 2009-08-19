@@ -749,7 +749,7 @@ class PackageDispatcher(controllers.Controller):
         log_msg = '%s has set the %s acl on %s (%s %s) to %s for %s' % (
                     identity.current.user_name, acl_name, pkg.package.name,
                     pkg.collection.name, pkg.collection.version, acl_status,
-                    self.groups[group_name])
+                    group_name)
         log = GroupPackageListingAclLog(identity.current.user_name,
                 status.statuscodeid, log_msg)
         log.acl = group_acl # pylint: disable-msg=W0201
@@ -974,7 +974,7 @@ class PackageDispatcher(controllers.Controller):
                         statuscodeid=change_acl.statuscode).one().statusname,
                     # pylint: enable-msg=E1101
 
-                    self.groups[change_acl.grouppackagelisting.groupname],
+                    change_acl.grouppackagelisting.groupname,
                     pkg.name,
                     devel_collection.name,
                     devel_collection.version)
@@ -1193,8 +1193,7 @@ class PackageDispatcher(controllers.Controller):
                                     statuscodeid = change_acl.statuscode
                                     ).one().statusname,
                                 # pylint: enable-msg=E1101
-                                self.groups[
-                                    change_acl.grouppackagelisting.groupname],
+                                change_acl.grouppackagelisting.groupname,
                                 pkg.name,
                                 collection.name,
                                 collection.version)
