@@ -1,1 +1,7 @@
 pkgdb.cfg
+build
+fedora_packagedb.egg-info/
+*.dump
+start-pkgdb
+httpd-pkgdb.conf
+
