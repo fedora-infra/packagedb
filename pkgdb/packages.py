@@ -23,7 +23,7 @@ Controller for displaying PackageBuild(Rpm) related information
 
 from sqlalchemy.sql import and_
 
-from turbogears import controllers, expose, identity
+from turbogears import controllers, expose, identity, redirect
 
 from pkgdb.model import Comment, PackageBuild, Repo
 from pkgdb.utils import mod_grp
