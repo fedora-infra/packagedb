@@ -1,5 +1,6 @@
 #!/usr/bin/python -tt
-__requires__ = 'fedora_packagedb'
+import __main__
+__main__.__requires__ = 'fedora_packagedb'
 
 import sys
 import os
