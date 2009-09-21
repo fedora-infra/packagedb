@@ -267,8 +267,7 @@ class Packages(controllers.Controller):
                     ' fedoraproject.org website, please report it.') % {
                         'pkg': package_id})
 
-        raise redirect(config.get('base_url_filter.base_url') +
-                '/packages/name/' + pkg.name)
+        raise redirect('/packages/name/%s' % pkg.name)
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name',
