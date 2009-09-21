@@ -61,8 +61,8 @@ server.thread_pool=1
 #server.socket_queue_size=30
 
 base_url_filter.on = True
-base_url_filter.use_x_forwarded_host = True
-base_url_filter.base_url = "https://localhost/pkgdb"
+base_url_filter.use_x_forwarded_host = False
+base_url_filter.base_url = "https://localhost/"
 
 visit.cookie.secure = True
 #jsonfas.debug = True
