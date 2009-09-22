@@ -74,6 +74,8 @@ visit.cookie.secure = True
 # (not under mod_wsgi)
 server.environment="production"
 autoreload.package="pkgdb"
+autoreload.on = False
+server.log_to_screen = False
 
 # session_filter.on = True
 
