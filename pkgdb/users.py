@@ -66,7 +66,7 @@ class Users(controllers.Controller):
     def index(self):
         '''Dish some dirt on the requesting user
         '''
-        raise redirect(config.get('base_url_filter.base_url') + '/users/info/')
+        raise redirect('/users/info/')
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=100, default_order='name',

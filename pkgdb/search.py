@@ -101,7 +101,7 @@ class Search(controllers.Controller):
         # pylint: disable-msg=E1101
 
         if searchwords == '' or searchwords.isspace():
-            raise redirect(config.get('base_url_filter.base_url') + '/search/')
+            raise redirect('/search/')
 
         # case insensitive
         query = searchwords.lower()
