@@ -294,13 +294,8 @@ class PackageDispatcher(controllers.Controller):
         '''
         # Create the ACL
 
-        # for person in pkg_listing.people:
-        #     # Check for the person who's acl we're setting
-        #     if person_name == person.username:
-        #         change_person = person
-        #         break
         change_person = pkg_listing.people2.get(person_name, None)
-        If not change_person:
+        if not change_person:
             # Person has no ACLs on this Package yet.  Create a record
             change_person = PersonPackageListing(person_name)
             pkg_listing.people.append(change_person)
@@ -854,7 +849,7 @@ class PackageDispatcher(controllers.Controller):
         try:
             # pylint: disable-msg=E1101
             acl = PersonPackageListingAcl.query.options(
-a                    eagerload('status.locale')).filter(and_(
+                    eagerload('status.locale')).filter(and_(
                     PersonPackageListingAcl.c.personpackagelistingid == \
                             PersonPackageListing.c.id,
                     PersonPackageListing.c.username == \
