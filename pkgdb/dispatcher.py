@@ -54,6 +54,7 @@ from fedora.tg.util import tg_url
 
 MAXSYSTEMUID = 9999
 
+AWAITING_REVIEW = 'Awaiting Review'
 class AclNotAllowedError(Exception):
     '''The entity specified is not allowed to hold the requested acl.
     '''
@@ -292,14 +293,14 @@ class PackageDispatcher(controllers.Controller):
         :arg status: Status DB Object we're setting the ACL to.
         '''
         # Create the ACL
-        change_person = None
-        for person in pkg_listing.people:
-            # Check for the person who's acl we're setting
-            if person.username == person_name:
-                change_person = person
-                break
 
-        if not change_person:
+        # for person in pkg_listing.people:
+        #     # Check for the person who's acl we're setting
+        #     if person_name == person.username:
+        #         change_person = person
+        #         break
+        change_person = pkg_listing.people2.get(person_name, None)
+        If not change_person:
             # Person has no ACLs on this Package yet.  Create a record
             change_person = PersonPackageListing(person_name)
             pkg_listing.people.append(change_person)
@@ -320,15 +321,21 @@ class PackageDispatcher(controllers.Controller):
                 person_acl = PersonPackageListingAcl(new_acl,
                         status.statuscodeid)
                 change_person.acls.append(person_acl)
+            
+            if status == STATUS['Awaiting Review'] and (
+                new_acl == 'watchbugzilla' or new_acl == 'watchcommits'):
+                
+                status = STATUS['Approved']
+                self._create_or_modify_acl(pkg_listing, person_name, new_acl, status)
 
             # For now, we specialcase the build acl to reflect the commit
             # this is because we need to remove notifications and UI that
             # depend on any acl being set adn for now, the commit acl is being
             # used for build and push
+
             if new_acl == 'commit':
                 self._create_or_modify_acl(pkg_listing, person_name, 'build',
                         status)
-
         return person_acl
 
     def _create_or_modify_group_acl(self, pkg_listing, group_name, new_acl,
@@ -847,7 +854,7 @@ class PackageDispatcher(controllers.Controller):
         try:
             # pylint: disable-msg=E1101
             acl = PersonPackageListingAcl.query.options(
-                    eagerload('status.locale')).filter(and_(
+a                    eagerload('status.locale')).filter(and_(
                     PersonPackageListingAcl.c.personpackagelistingid == \
                             PersonPackageListing.c.id,
                     PersonPackageListing.c.username == \
