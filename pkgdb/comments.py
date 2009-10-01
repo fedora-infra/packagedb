@@ -60,11 +60,12 @@ class Comments(controllers.Controller):
         '''
         application = session.query(Application).filter_by(name=app).first()
         application.comment(author, body, language)
-        session.flush()
+        #session.flush()
 
         if is_xhr():
             # give AJAX the new comments
-            return dict(comments = application.comments)
+            # FIXME: though it is just once in the db, the last inserted comment is in application.comments twice
+            return dict(comments = application.comments, app=application)
         elif request_format != 'json': # FIXME: request_format issue again
             # reload the page we came from
             raise redirect(request.headers.get("Referer", "/"))

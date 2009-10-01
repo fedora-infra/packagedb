@@ -410,8 +410,8 @@ class Application(SABase):
         
         comment = Comment(author, body, lang.shortname, published=True,
                           application=self)
-        session.flush()
         self.comments.append(comment)
+        session.flush()
 
 
     @classmethod

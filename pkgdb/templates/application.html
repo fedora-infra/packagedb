@@ -106,13 +106,6 @@
             <a href="${tg.url('/login')}"
                style="float: right">please log in to comment</a>
           </py:when>
-          <a style="float: left"
-             href="${tg.url('/commentsfeed/atom1.0?app=%s' % app.name)}">
-            <img src="${tg.url('/static/images/feed.png')}"
-                 alt="(${len(comments)}) Comments" />
-          </a>&nbsp; ${len(comments)} Comments:
-          <hr /><br />
-          
           <div id="commentList">
             <xi:include href="_comments.html" />
           </div>

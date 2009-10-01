@@ -1,6 +1,9 @@
 <html py:strip=""
       xmlns:py="http://genshi.edgewall.org/">
-  &nbsp; ${len(comments)} Comments:
+          <a  href="${tg.url('/commentsfeed/atom1.0?app=%s' % app.name)}">
+            <img src="${tg.url('/static/images/feed.png')}"
+                 alt="(${len(comments)}) Comments" />
+  &nbsp; ${len(comments)} Comments:</a>
   <hr /><br />
   <py:for each="(comment, cid) in zip(comments, range(1, len(comments)+1))">
           <?python if comment.published:
