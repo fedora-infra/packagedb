@@ -90,14 +90,10 @@ for repo in repos:
     yb = yum.YumBase()
 
     yb.repos.disableRepo('*')
-    yb.add_enable_repo(repo.shortname, [
-            '%s%s' % ('http://ucho.ignum.cz/fedora/linux/', repo.url),
-            '%s%s' % (repo.mirror, repo.url), 
-            '%s%s' % ('http://ftp.linux.cz/pub/linux/fedora/linux/', repo.url)
-            ])
+    yb.add_enable_repo('pkgdb-%s' % repo.shortname,
+                       ['%s%s' % (repo.mirror, repo.url)])
+    yumrepo = yb.repos.getRepo('pkgdb-%s' % repo.shortname)
 
-    yumrepo = yb.repos.getRepo(repo.shortname)
-    
     log.info('Refreshing repo: %s' % yumrepo.name)
 
     yb._getSacks(thisrepo=yumrepo.id)
@@ -142,10 +138,14 @@ for repo in repos:
                     break
                
                 # Do a bit of house-keeping
-                (committime, committer, changelog) = rpm.changelog[0]
-                committime = datetime.datetime.utcfromtimestamp(committime)
-                committer = committer.replace('- ', '')
-                committer = committer.rpartition(' ')[0]
+                if rpm.changelog:
+                    (committime, committer, changelog) = rpm.changelog[0]
+                    committime = datetime.datetime.utcfromtimestamp(committime)
+                    committer = committer.replace('- ', '')
+                    committer = committer.rsplit(' ',1)[0]
+                else:
+                    (committime, committer, changelog) = (
+                        datetime.datetime.now(),'','')
 
                 # insert the new packagebuild and get its id
                 pkgbuild = PackageBuild(

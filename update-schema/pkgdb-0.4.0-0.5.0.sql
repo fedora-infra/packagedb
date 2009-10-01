@@ -20,7 +20,8 @@ ALTER TABLE packagebuild ADD COLUMN committer text NOT NULL;
 ALTER TABLE packagebuild DROP CONSTRAINT packagebuild_packageid_key;
 ALTER TABLE packagebuild ADD CONSTRAINT packagebuild_uniques
     UNIQUE(name, packageid, epoch, architecture, version, release);
-
+GRANT ALL ON packagebuild_id_seq to pkgdbadmin;
+    
 ALTER TABLE packagelisting ADD COLUMN specfile text;
 
 CREATE TABLE packagebuilddepends (

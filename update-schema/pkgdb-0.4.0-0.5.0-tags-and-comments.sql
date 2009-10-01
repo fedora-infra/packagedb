@@ -8,7 +8,7 @@ GRANT ALL ON TABLE languages TO pkgdbadmin;
 CREATE TABLE tags (
     id serial NOT NULL PRIMARY KEY,
     name text NOT NULL,
-    language text NOT NULL REFERENCES languages ON DELETE CASCADE,
+    language text NOT NULL REFERENCES languages(shortname) ON DELETE CASCADE,
     UNIQUE (name, language)
     );
 GRANT ALL ON TABLE tags TO pkgdbadmin;

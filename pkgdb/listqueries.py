@@ -436,7 +436,7 @@ class ListQueries(controllers.Controller):
 
         Note: The data returned by this function is for the way the current
         Fedora bugzilla is setup as of (2007/6/25).  In the future, bugzilla
-        will change to have separate products for each collection-version.
+        may change to have separate products for each collection-version.
         When that happens we'll have to change what this function returns.
 
         The returned data looks like this:
