@@ -24,13 +24,16 @@ Controller for displaying Comments related information.
 from sqlalchemy.sql import and_, or_
 
 from turbogears import controllers, expose, identity, redirect
+from turbogears.database import session
 
 from cherrypy import request
 
 from fedora.tg.util import request_format
 
-from pkgdb.model import Branch, Comment, Language, PackageBuild, Repo
+from pkgdb.model import Branch, Comment, Language, PackageBuild, Repo, Application
 from pkgdb.utils import mod_grp, is_xhr
+import logging
+log = logging.getLogger('pkgdb.comments')
 
 REPO = 'F-11-i386'
 class Comments(controllers.Controller):
@@ -47,22 +50,22 @@ class Comments(controllers.Controller):
 
     @identity.require(identity.not_anonymous())
     @expose(template='pkgdb.templates._comments', allow_json=True)
-    def add(self, author, body, build, language='en_US'):
+    def add(self, author, body, app, language='en_US'):
         '''Add a new comment to a packagebuild.
 
         :arg author: the FAS author of the comment
         :arg body: text body of the comment
-        :arg build: the name of the packagebuild to search for
+        :arg app: the name of the application to search for
         :kwarg language: the language that the comment was written in
         '''
-        packagebuild = PackageBuild.query.filter(PackageBuild.name==build
-                                                 ).first()
-        packagebuild.comment(author, body, language)
+        application = session.query(Application).filter_by(name=app).first()
+        application.comment(author, body, language)
+        session.flush()
 
         if is_xhr():
             # give AJAX the new comments
-            return dict(comments = packagebuild.comments)
-        elif request_format != 'json':
+            return dict(comments = application.comments)
+        elif request_format != 'json': # FIXME: request_format issue again
             # reload the page we came from
             raise redirect(request.headers.get("Referer", "/"))
 

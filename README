@@ -61,7 +61,7 @@ Install Prerequisites
   yum -y install python-genshi TurboGears python-turbojson postgresql-server \
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
     python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi \
-    python-paver httpd mod_ssl babel
+    python-paver httpd mod_ssl babel python-cpio
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -138,6 +138,7 @@ Run the following scripts to bring it up to date::
   python update-schema/repos.py > repos.sql
   sudo -u postgres psql pkgdb < repos.sql
   rm repos.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-2.applications.sql
   
 
 Your postgres server is now all set.

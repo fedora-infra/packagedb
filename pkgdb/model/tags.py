@@ -22,7 +22,6 @@ Mapping of tag related database tables to python classes.
 '''
 
 from sqlalchemy import Table
-from sqlalchemy.orm import relation, backref
 
 from turbogears.database import metadata, mapper
 
@@ -31,8 +30,13 @@ from fedora.tg.json import SABase
 #
 # Tables
 #
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
 
 TagsTable = Table('tags', metadata, autoload=True)
+
+# pylint: enable-msg=C0103
 
 #
 # Mapped Classes
@@ -60,3 +64,4 @@ class Tag(SABase):
 # Mappers
 #
 mapper(Tag, TagsTable)
+

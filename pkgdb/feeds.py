@@ -25,12 +25,14 @@ atom1.0, atom0.3, rss2.0.
 '''
 
 from turbogears import config, expose
+from sqlalchemy.orm import eagerload
 
 from turbogears.feed import FeedController
+from turbogears.database import session
 
-from pkgdb.model import PackageBuild, Comment
+from pkgdb.model import PackageBuild, Comment, PackageBuildTable, Application
 
-class DesktopFeed(FeedController):
+class ApplicationFeed(FeedController):
     '''A feed of all the latest PackageBuilds.
 
     These PackageBuilds are considered applications of general interest
@@ -53,23 +55,26 @@ class DesktopFeed(FeedController):
             items = int(kwargs.get('items', 20))
         except:
             items = 20
-            
-        for build in PackageBuild.query.filter_by(
-                                        repoid=repoid, desktop=True
-                                        ).order_by(PackageBuild.id.desc()
-                                                   )[:items]:
+        
+        # TODO apps
+
+        for app in Application.query\
+                    .options(eagerload('builds'))\
+                    .join('builds')\
+                    .filter(PackageBuildTable.c.repoid==repoid)\
+                    .order_by(Application.id.desc())[:items]:
             entry = {}
             entry["title"] = '%s-%s-%s' % (
-                build.name, build.version, build.release)
+                app.name, app.builds[0].version, apps.builds[0].release)
 
             # 'John Doe <john@doe.com>' is being split for the TG atom template
             entry["author"] = {}
             (entry["author"]["name"],
              nothing,
-             entry["author"]["email"]) = build.committer.partition(' <')
+             entry["author"]["email"]) = app.builds[0].committer.partition(' <')
             entry["author"]["email"] = "<%s" % entry["author"]["email"]
 
-            entry["summary"] = build.changelog
+            entry["summary"] = app.builds[0].changelog
 
             
             entry["link"] = self.baseurl + '/packages/%s/%s' % (
@@ -94,6 +99,8 @@ class CommentsFeed(FeedController):
     '''
     def __init__(self):
         self.baseurl = config.get('base_url_filter.base_url')
+
+
     def get_feed_data(self, **kwargs):
         entries = []
 
@@ -105,21 +112,25 @@ class CommentsFeed(FeedController):
 
         # build specific
         try:
-            buildName = kwargs.get('build', None)
+            app_name = kwargs.get('app', None)
         except:
-            buildName = None
+            app_name = None
 
-        comment_query = Comment.query.filter_by(published=True
-                                               ).order_by(Comment.time)
-        if buildName:
-            comment_query = comment_query.filter_by(packagebuildname=buildName)
+        comment_query = session.query(Comment) \
+                    .join('application') \
+                    .options(eagerload('application')) \
+                    .filter(Comment.published==True) \
+                    .order_by(Comment.time)
+
+        if app_name:
+            comment_query = comment_query.filter(Application.name==app_name)
+
         for comment in comment_query:
             entry = {}
-            build = PackageBuild.query.filter_by(name=comment.packagebuildname
-                                                 ).first()
+
             # maybe it should also say what language it's in. Later.
             entry["title"] = 'On %s by %s at %s' % (
-                build.name,
+                comment.application.name,
                 comment.author,
                 comment.time.strftime('%H:%M - %h %d'))
             
@@ -128,8 +139,8 @@ class CommentsFeed(FeedController):
             
             entry["summary"] = comment.body
             
-            entry["link"] = self.baseurl + '/packages/%s/%s/%s#Comment%i' % (
-                build.name, build.repo.shortname, comment.language, comment.id)
+            entry["link"] = self.baseurl + '/applications/%s/%s/#Comment%i' % (
+                comment.application.name, comment.language, comment.id)
             entries.append(entry)
             
         return dict(
