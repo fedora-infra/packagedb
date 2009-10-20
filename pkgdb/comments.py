@@ -66,7 +66,7 @@ class Comments(controllers.Controller):
             # give AJAX the new comments
             # FIXME: though it is just once in the db, the last inserted comment is in application.comments twice
             return dict(comments = application.comments, app=application)
-        elif request_format != 'json': # FIXME: request_format issue again
+        elif request_format() != 'json':
             # reload the page we came from
             raise redirect(request.headers.get("Referer", "/"))
 

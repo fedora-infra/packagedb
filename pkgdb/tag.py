@@ -115,8 +115,7 @@ class Tags(controllers.Controller):
         Returns a dictionary of tag: score if only one packagebuild is given.
         '''
         
-        # FIXME: should prolly be 'json' in request_format()
-        if tags == '' and request_format != 'json':
+        if tags == '' and request_format() != 'json':
             flash('Tag name can not be null.')
             raise redirect(request.headers.get("Referer", "/"))
        
