@@ -53,9 +53,7 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
         GroupPackageListing, GroupPackageListingAcl
 from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
         RpmObsoletes, RpmFiles
-from pkgdb.model.tags import Tag, TagsTable
 from pkgdb.model.languages import Language
-from pkgdb.model.comments import Comment, CommentsTable
 
 import logging
 error_log = logging.getLogger('pkgdb.model.packages')
@@ -78,8 +76,6 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 PackageBuildTable = Table('packagebuild', metadata, autoload=True)
-ApplicationsTable = Table('applications', metadata, autoload=True)
-AppTypesTable = Table('apptypes', metadata, autoload=True)
 PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
 
 # association tables (many-to-many relationships)
@@ -87,21 +83,6 @@ PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
 )
-ApplicationsTagsTable = Table('applicationstags', metadata, autoload=True)
-"""
-ApplicationsTagsTable = Table('applicationstags', metadata,
-        Column('applicationid', Integer, ForeignKey('applications.id'),
-                primary_key=True),
-        Column('tagid', Integer, ForeignKey('tags.id'),
-                primary_key=True),
-        Column('score', Integer)
-        )
-"""
-PackageBuildApplicationsTable = Table('packagebuildapplications', metadata,
-        Column('applicationid', Integer,
-               ForeignKey('applications.id')),
-        Column('packagebuildid', Integer, ForeignKey('packagebuild.id')),
-        )
 # pylint: enable-msg=C0103
 
 #
@@ -321,165 +302,6 @@ class PackageBuildDepends(SABase):
             self.packagebuildid, self.packagebuildname)
 
 
-def _create_apptag(tag, score):
-    """Creator function for apptags association proxy """
-    apptag = ApplicationTag(tag=tag, score=score)
-    session.add(apptag)
-    return apptag
-
-class Application(SABase):
-    '''Application
-
-    We take .desktop file as an application definition. Also packages without .desktop
-    file will have application record (we will presume that the whole package is application)
-    Apptype column indicates the type of the record.
-    '''
-    def __init__(self, name, description, url, apptype, desktoptype=None):
-        super(Application, self).__init__()
-        self.name = name
-        self.description = description
-        self.url = url
-        self.apptype = apptype
-        self.desktoptype = desktoptype
-
-    scores = association_proxy('by_tag', 'score', creator=_create_apptag)
-
-    def __repr__(self):
-        return 'Application(%r, description=%r, url=%r, apptype=%r )' % (
-            self.name, self.description, self.url, self.apptype)
-
-    @classmethod
-    def tag(cls, apps, tags, language):
-        '''Add a set of tags to a list of Applications.
-
-        :arg apps: one or more Application names to add the tags to.
-        :arg tags: one or more tags to add to the packages.
-        :arg language: name or shortname for the language of the tags.
-
-        #? Returns two lists (unchanged): tags and builds.
-        '''
-        lang = Language.find(language)
-
-        # if we got just one argument, make it a list
-        if not isinstance(tags, (list, tuple)):
-            if tags == '':
-                raise Exception('Tag name missing.')
-            tags = [tags]
-        if not isinstance(apps, (list, tuple)):
-            apps = [apps]
-
-        applications = session.query(Application).filter(
-            Application.name.in_(apps))
-
-        for tag_name in tags:
-            try:
-                tag = session.query(Tag).filter_by(name=tag_name, language=lang.shortname).one()
-            except:
-                tag = Tag(name=tag_name, language=lang.shortname)
-                session.add(tag)
-
-            for application in applications:
-                application.scores[tag] = application.scores.get(tag, 0)+1
-    
-
-    def scores_by_language(self, language='en_US'):
-        '''Return a dictionary of tagname: score for a given application
-
-        :kwarg language: Select tag language (default: 'en_US').
-        '''
-
-        apptags = {}
-        lang = Language.find(language)
-
-        for (tag, score) in self.scores.iteritems():
-            if tag.language == lang.shortname:
-                apptags[tag.name] = score 
-        
-        return apptags
-
-
-    def comment(self, author, body, language):
-        '''Add a new comment to a packagebuild.
-
-        :arg author: the FAS author
-        :arg body: text body of the comment
-        :arg language: name or shortname of the comment body`s language
-        '''
-
-        lang = Language.find(language)
-        
-        comment = Comment(author, body, lang.shortname, published=True,
-                          application=self)
-        self.comments.append(comment)
-        session.flush()
-
-
-    @classmethod
-    def search(cls, tags, operator, language):
-        '''Retrieve all the apps which have a specified set of tags.
-
-        Can also be used with just one tag.
-
-        :arg tags: One or more tag names to lookup
-        :arg operator: Can be one of 'OR' and 'AND', case insensitive, decides
-        how the search for tags is done.
-        :arg language: A language in short ('en_US') or long ('American English')
-        format. Look for them on https://translate.fedoraproject.org/languages/
-
-        Returns:
-        :apps: list of found Application objects
-        '''
-        # :tags: a list of Tag objects, filtered by :language:
-
-        lang = Language.find(language)
-        
-        if isinstance(tags, (tuple, list)):
-            tags = [tags]
-        applications = set()
-
-        # get the actual Tag objects
-        object_tags = []
-        for tag in tags:
-            try:
-             object_tags.append(
-                    Tag.query.filter_by(name=tag, language=lang).one())
-            except:
-                raise Exception(tag, language)
-        tags = object_tags
-                        
-        if operator.lower() == 'or':
-            for tag in tags:
-                apps = tag.applications
-                for app in apps:
-                    applications.add(app)
-        elif operator.lower() == 'and':
-            applications = set(tags[0].applications)
-            if len(tags) > 0:
-                # do an intersection between all the taglists to get
-                # the common ones
-                for tag in tags[1:]:
-                    applications = set(tags[0].applications) & set(tag.applications)
-
-        return applications
-
-class ApplicationTag(SABase):
-    '''Application tag association.
-
-    The association holds score which indicates how many users assigned 
-    related tag to the application.
-
-    '''
-
-    def __init__(self, application=None, tag=None, score=1):
-        super(ApplicationTag, self).__init__()
-        self.application = application
-        self.tag = tag
-        self.score = score
-
-    def __repr__(self):
-        return 'ApplicationTag(applicationid=%r, tagid=%r, score=%r)' % (
-            self.applicationid, self.tagid, self.score)
-
 
 class PackageBuild(SABase):
     '''Package Builds - Actual rpms
@@ -544,6 +366,7 @@ mapper(Package, PackageTable, properties={
         backref=backref('package'),
         collection_class=attribute_mapped_collection('name'))
     })
+
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
     'people2': relation(PersonPackageListing, backref=backref('packagelisting'),
@@ -552,7 +375,9 @@ mapper(PackageListing, PackageListingTable, properties={
     'groups2': relation(GroupPackageListing, backref=backref('packagelisting'),
         collection_class = attribute_mapped_collection('groupname')),
     })
+
 mapper(PackageBuildDepends, PackageBuildDependsTable)
+
 mapper(PackageBuild, PackageBuildTable, properties={
     'conflicts': relation(RpmConflicts, backref=backref('build'),
         collection_class = attribute_mapped_collection('name'),
@@ -574,23 +399,5 @@ mapper(PackageBuild, PackageBuildTable, properties={
         cascade='all, delete-orphan'),
     'listings': relation(PackageListing, backref=backref('builds'),
         secondary = PackageBuildListingTable),
-    })
-
-mapper(Application, ApplicationsTable, properties={
-    'builds': relation(PackageBuild, backref=backref('applications'),
-        secondary=PackageBuildApplicationsTable,
-        cascade='all'),
-    'by_tag': relation(ApplicationTag,
-        collection_class=attribute_mapped_collection('tag'),
-        cascade='all'),
-    'comments': relation(Comment, backref=backref('application'),
-        cascade='all, delete-orphan')
-    })
-
-mapper(ApplicationTag, ApplicationsTagsTable, 
-    primary_key=[ ApplicationsTagsTable.c.applicationid, ApplicationsTagsTable.c.tagid], 
-    properties={
-        'tag': relation(Tag, cascade='all'),
-        'application': relation(Application),
     })
 

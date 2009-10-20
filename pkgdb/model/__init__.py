@@ -31,13 +31,12 @@ Mapping of python classes to Database Tables.
 # pylint: disable-msg=W0401,W0614
 from pkgdb.model.acls import *
 from pkgdb.model.collections import *
-from pkgdb.model.comments import *
 from pkgdb.model.languages import *
 from pkgdb.model.logs import *
 from pkgdb.model.packages import *
 from pkgdb.model.prcof import *
 from pkgdb.model.statuses import *
-from pkgdb.model.tags import *
+from pkgdb.model.apps import *
 from pkgdb.model.yumdb import *
 
 ### FIXME: Create sqlalchemy schema.
