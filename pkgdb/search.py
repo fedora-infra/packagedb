@@ -115,9 +115,9 @@ class Search(controllers.Controller):
                             lazyload('people2'), lazyload('groups2'),
                             lazyload('status')).filter(
                                     and_(PackageListing.packageid==Package.id,
-                                        PackageListing.statuscodeid!= \
+                                        PackageListing.statuscode!= \
                                                 STATUS['Removed'].statuscodeid,
-                                        Package.statuscodeid!= \
+                                        Package.statuscode!= \
                                                 STATUS['Removed'].statuscodeid,
                                         func.lower(Package.description).like(
                                             '%'+searchword+'%')))
@@ -125,18 +125,18 @@ class Search(controllers.Controller):
                     exact += PackageListing.query.options(lazyload('people2'),
                             lazyload('groups2'), lazyload('status')).filter(
                                     and_(PackageListing.packageid==Package.id,
-                                        PackageListing.statuscodeid!= \
+                                        PackageListing.statuscode!= \
                                                 STATUS['Removed'].statuscodeid,
-                                        Package.statuscodeid!= \
+                                        Package.statuscode!= \
                                                 STATUS['Removed'].statuscodeid,
                                         func.lower(Package.name).like(
                                             searchword)))
                     names += PackageListing.query.options(lazyload('people2'),
                             lazyload('groups2'), lazyload('status')).filter(
                                     and_(PackageListing.packageid==Package.id,
-                                        PackageListing.statuscodeid!= \
+                                        PackageListing.statuscode!= \
                                                 STATUS['Removed'].statuscodeid,
-                                        Package.statuscodeid!= \
+                                        Package.statuscode!= \
                                                 STATUS['Removed'].statuscodeid,
                                         func.lower(Package.name).like(
                                             '%'+searchword+'%')))
@@ -145,9 +145,9 @@ class Search(controllers.Controller):
                                 lazyload('people2'), lazyload('groups2'),
                                 lazyload('status')).filter(and_(
                                     PackageListing.packageid==Package.id,
-                                    PackageListing.statuscodeid!= \
+                                    PackageListing.statuscode!= \
                                             STATUS['Removed'].statuscodeid,
-                                    Package.statuscodeid!= \
+                                    Package.statuscode!= \
                                             STATUS['Removed'].statuscodeid,
                                     func.lower(Package.description).like(
                                         '%'+searchword+'%')))
@@ -157,9 +157,9 @@ class Search(controllers.Controller):
                 exact = PackageListing.query.options(lazyload('people2'),
                         lazyload('groups2'), lazyload('status')).filter(and_(
                             PackageListing.packageid==Package.id,
-                            PackageListing.statuscodeid!= \
+                            PackageListing.statuscode!= \
                                     STATUS['Removed'].statuscodeid,
-                            Package.statuscodeid!= \
+                            Package.statuscode!= \
                                     STATUS['Removed'].statuscodeid,
                             func.lower(Package.name).like(query))).all()
                 # query the DB for every searchword and build a Query object
@@ -168,9 +168,9 @@ class Search(controllers.Controller):
                 names = PackageListing.query.options(lazyload('people2'),
                         lazyload('groups2'), lazyload('status')).filter(and_(
                             PackageListing.packageid==Package.id,
-                            PackageListing.statuscodeid!= \
+                            PackageListing.statuscode!= \
                                     STATUS['Removed'].statuscodeid,
-                            Package.statuscodeid!= \
+                            Package.statuscode!= \
                                     STATUS['Removed'].statuscodeid,
                             func.lower(Package.name).like(
                                 '%' + query[0] + '%')))
@@ -184,9 +184,9 @@ class Search(controllers.Controller):
                             lazyload('people2'), lazyload('groups2'),
                             lazyload('status')).filter(and_(
                                 PackageListing.packageid==Package.id,
-                                PackageListing.statuscodeid!= \
+                                PackageListing.statuscode!= \
                                         STATUS['Removed'].statuscodeid,
-                                Package.statuscodeid!= \
+                                Package.statuscode!= \
                                         STATUS['Removed'].statuscodeid,
                                 func.lower(Package.description).like(
                                     '%' + query[0] + '%')))
@@ -203,9 +203,9 @@ class Search(controllers.Controller):
                         lazyload('people2'), lazyload('groups2'),
                         lazyload('status')).filter(and_(
                             PackageListing.packageid==Package.id,
-                            PackageListing.statuscodeid!= \
+                            PackageListing.statuscode!= \
                                     STATUS['Removed'].statuscodeid,
-                            Package.statuscodeid!= \
+                            Package.statuscode!= \
                                     STATUS['Removed'].statuscodeid,
                             func.lower(Package.description).like(
                                 '%' + query[0] + '%')))
