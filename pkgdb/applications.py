@@ -29,6 +29,7 @@ from turbogears.database import session
 
 from pkgdb.model import Comment, PackageBuild, Repo, Application
 from pkgdb.utils import mod_grp
+from pkgdb import _
 
 from fedora.tg.util import request_format
 

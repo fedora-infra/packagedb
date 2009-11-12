@@ -60,12 +60,19 @@ class Comments(controllers.Controller):
         '''
         application = session.query(Application).filter_by(name=app).first()
         application.comment(author, body, language)
-        #session.flush()
+
+        comment_query = session.query(Comment).filter(and_(
+            Comment.application==application,
+            Comment.language==language)).order_by(Comment.time)
+        # hide the mean comments from ordinary users
+        if identity.in_group(mod_grp):
+            comments = comment_query.all()
+        else:
+            comments = comment_query.filter_by(published=True).all()
 
         if is_xhr():
             # give AJAX the new comments
-            # FIXME: though it is just once in the db, the last inserted comment is in application.comments twice
-            return dict(comments = application.comments, app=application)
+            return dict(comments = comments, app=application)
         elif request_format() != 'json':
             # reload the page we came from
             raise redirect(request.headers.get("Referer", "/"))

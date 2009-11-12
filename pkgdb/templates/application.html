@@ -1,7 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:py="http://genshi.edgewall.org/"
-      xmlns:xi="http://www.w3.org/2001/XInclude">
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xml:lang="en" lang="en">
   <xi:include href="layout.html" />
 
   <head>
@@ -11,6 +12,7 @@
     </script>
     <script type="text/javascript">
       dojo.require("dojo.parser");
+      dojo.require("dijit._base.manager");
       dojo.require("dijit.layout.ContentPane" );
       dojo.require("dijit.form.ValidationTextBox");
       dojo.require("dijit.form.Textarea");
@@ -54,6 +56,8 @@
                                     node: loaderId,
                                     duration: 1000
                                     }).play();
+                                var textarea = dojo.query('#'+formId+' textarea')[0];
+                                dijit.getEnclosingWidget(textarea).reset();
                                 dojo.byId(destinationId).innerHTML = response;
                                 }
                       });
@@ -63,74 +67,68 @@
     </script>
     <script type="text/javascript">
     dojo.addOnLoad(function(){
-          tagComment("tagForm", "tagLoader", "tagList");
+          /*tagComment("tagForm", "tagLoader", "tagList");*/
           tagComment("commentForm", "commentLoader", "commentList");
-          document.getElementById("moredeps").style.display="none";
-          document.getElementById("showdeps").innerHTML="(more)";
       });
     </script>
   </head>
-  
   <body>
-    <h2>$app.name</h2>
 
-    <div id="tags">
-      <py:choose test="tg.identity.anonymous">
-        <div id="tagList">
-          <xi:include href="_tags.html" />
-        </div>
-        <py:when test="True">
-          <p><a href="${tg.url('/login')}">log in to tag</a></p>
-        </py:when>
-
-        <py:when test="False">
-          <form id="tagForm" method="POST"
-                action="${tg.url('/tag/add/')}"
-                dojoType="dijit.form.Form">
-            <input type="hidden" name="apps" value="$app.name" />
-            <input type="hidden" name="language" value="$language" />
-            <input type="text" name="tags" value="" size="9"
-                   dojoType="dijit.form.ValidationTextBox" trim="true"
-                   required="true" missingMessage="Please enter a tag!" />
-            <button type="submit" dojoType="dijit.form.Button">Tag!</button>
-          </form>
-          <div id="tagLoader" style="opacity: 0">Loading...</div>
-        </py:when>
-      </py:choose>
+  <div id="info-bar" style="float:right; width: 220px;">
+     Screenshot
+    <br />
+    Appinfo
+    <br />
+    Related stuff
+  </div>
+  <div id="main-pannel" style="margin-right: 220px;">
+    <py:choose test="app.icon">
+    <img py:when="None" style="float:left;padding-right:10px;" src="${tg.url('/static/images/noicon.png')}" />
+    <img py:otherwise="True" style="float:left;padding-right:10px;" src="${tg.url('/static/images/totem.png')}" />
+    </py:choose>
+    <div style="margin-left:150;">
+        <h2 style="color: #337acc;">${app.name}</h2>
+        ${app.summary}
     </div>
 
-      <br />
-      <div id="comments">
-        <py:choose test="tg.identity.anonymous">
-          <py:when test="True">
-            <a href="${tg.url('/login')}"
-               style="float: right">please log in to comment</a>
-          </py:when>
-          <div id="commentList">
-            <xi:include href="_comments.html" />
-          </div>
+    <p>
+    Something | <a href="#user_comments"><img style="padding-right:5px;" src="${tg.url('/static/images/comments_small.png')}" />User Comments (${len(comments)})</a>
+    </p>
+
+    <p>
+    ${app.description}
+    </p>
+    <p>
+    User ratings
+    </p>
+    <a name="user_comments" />
+    <div id="comments">
+      <div id="commentList">
+        <xi:include href="_comments.html" />
+      </div>
+      <py:choose test="tg.identity.anonymous">
+      <py:when test="True">
+        <a href="${tg.url('/login')}">please log in to comment</a>
+      </py:when>
           
-          <py:when test="False">
-            Add a new comment:
+      <py:when test="False">
+            <h4>Post a comment</h4>
             <form id="commentForm" method="post"
                   action="${tg.url('/comments/add/')}"
                   dojoType="dijit.form.Form">
               <input type="hidden" name="app" value="$app.name" />
               <input type="hidden" name="language" value="$language" />
               <input type="hidden" name="author" value="$tg.identity.user_name"/>
-              <p><textarea name="body" rows="10" cols="80"
-                           dojoType="dijit.form.Textarea"></textarea></p>
-              <button type="submit" dojoType="dijit.form.Button">Send</button>
+              <p><textarea name="body" rows="10" cols="60"
+                           style="min-height:50px;" dojoType="dijit.form.Textarea"></textarea></p>
+              <button type="submit" dojoType="dijit.form.Button">Post</button>
             </form>
             <div id="commentLoader" style="opacity: 0">Loading...</div>
-          </py:when>
-        </py:choose>
-      </div>
+      </py:when>
+      </py:choose>
+    </div>
+  </div>
 
-    <h3>Recent builds</h3>
-    <ul>
-    <li py:for="build in app.builds" ><a href="${tg.url('/packages/%s/%s' % (build.name, build.repo.shortname))}">$build.name ($build.repo.shortname)</a></li>
-    </ul>
 
   </body>
 </html>
