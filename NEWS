@@ -6,7 +6,34 @@ NEWS
 :Date: 14 Jun 2009
 :Version: 0.4.0
 
-------
+-----
+0.4.1
+-----
+
+Minor bugfix and feature update.
+
+Features
+========
+
+* Auto approve watchcommit and watchbugzilla acls.
+* pkgdb-client: massbranching has been made a subcommand.
+
+Bugfixes
+========
+
+* Fix unpacking return values in JavaScript for WebKit-based browsers.
+* Fixes for search and stats.
+* pkgdb-sync-bugzilla bugfixes, updates for new return values, and optimization
+  allowed by new FAS API.
+* Fix a typo in the build_agreement trigger.
+* Pass the _csrf_token when calling bodhi
+* Remove "All Rights Reserved" text -- it's not needed under current Copyright
+  law.
+* Correct usage of base_url.
+* Move configuration information out of wsgi script and into the config file.
+* Properly set orphan status when a package is orphaned.
+
+-----
 0.4.0
 -----
 
