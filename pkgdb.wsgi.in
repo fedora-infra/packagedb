@@ -19,6 +19,8 @@ import fedora.tg.util
 
 turbogears.update_config(configfile=os.path.join('@CONFDIR@', 'pkgdb.cfg'),
         modulename="pkgdb.config")
+# This must always be off when used with mod_wsgi
+turbogears.config.update({'global': {'autoreload.on': False}})
 
 import pkgdb.utils
 pkgdb.utils.init_globals()
