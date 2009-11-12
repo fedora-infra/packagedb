@@ -290,7 +290,9 @@ class PackageDispatcher(controllers.Controller):
         :arg new_acl: ACL name to set.
         :arg status: Status DB Object we're setting the ACL to.
         '''
-        # Create the ACL
+        # watchbugzilla and watchcommits are autocommit
+        if new_acl in ('watchbugzilla', 'watchcommits') and status == STATUS['Awaiting Review']:
+            status = STATUS['Approved']
 
         change_person = pkg_listing.people2.get(person_name, None)
         if not change_person:
@@ -314,21 +316,15 @@ class PackageDispatcher(controllers.Controller):
                 person_acl = PersonPackageListingAcl(new_acl,
                         status.statuscodeid)
                 change_person.acls.append(person_acl)
-            
-            if status == STATUS['Awaiting Review'] and (
-                new_acl == 'watchbugzilla' or new_acl == 'watchcommits'):
-                
-                status = STATUS['Approved']
-                self._create_or_modify_acl(pkg_listing, person_name, new_acl, status)
 
             # For now, we specialcase the build acl to reflect the commit
             # this is because we need to remove notifications and UI that
-            # depend on any acl being set adn for now, the commit acl is being
+            # depend on any acl being set and for now, the commit acl is being
             # used for build and push
-
             if new_acl == 'commit':
                 self._create_or_modify_acl(pkg_listing, person_name, 'build',
                         status)
+
         return person_acl
 
     def _create_or_modify_group_acl(self, pkg_listing, group_name, new_acl,
