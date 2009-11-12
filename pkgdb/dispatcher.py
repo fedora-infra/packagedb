@@ -28,7 +28,6 @@ Controller to process requests to change package information.
 # :E1101: SQLAlchemy monkey patches the ORM Mappers so we have to disable this
 #   check whenever we use a db mapped class.
 
-from datetime import datetime
 import xmlrpclib
 
 from sqlalchemy import and_
@@ -54,7 +53,6 @@ from fedora.tg.util import tg_url
 
 MAXSYSTEMUID = 9999
 
-AWAITING_REVIEW = 'Awaiting Review'
 class AclNotAllowedError(Exception):
     '''The entity specified is not allowed to hold the requested acl.
     '''
