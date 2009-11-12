@@ -445,7 +445,7 @@ class PackageDispatcher(controllers.Controller):
         queryResults = bugzilla.query(bzQuery)
         for bug in queryResults:
             if config.get('bugzilla.enable_modification', False):
-                bug.setassignee(assigned_to=bzMail, comment=bzComments)
+                bug.setassignee(assigned_to=bzMail, comment=bzComment)
             else:
                 LOG.debug(_('Would have reassigned bug #%(bug_num)s'
                 ' from %(former)s to %(current)s') % {
@@ -1216,7 +1216,7 @@ class PackageDispatcher(controllers.Controller):
                             ' PackageListing for %(pkg)s(Fedora devel),'
                             ' %(user)s), %(status)s') % {
                                 'pkg': package, 'user': person['username'],
-                                'status': STATUS['Approved'].statuscodeid})
+                                'status': status})
                     changed_acls = []
                     for group in ('provenpackager',):
                         changed_acls.append(GroupPackageListingAcl.query.filter(
