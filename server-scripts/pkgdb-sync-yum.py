@@ -28,6 +28,7 @@ available in the pkgdb.
 import os
 import sys
 import yum
+import re
 import sqlalchemy
 import logging
 import datetime
@@ -36,7 +37,7 @@ from sqlalchemy.sql import insert, delete, and_
 from turbogears import config, update_config
 from turbogears.database import session
 
-from pkgdb.lib.rpm import RPMParser
+from pkgdb.lib.rpm import RPMParser, RE_APP_ICON_FILE
 
 CONFDIR='@CONFDIR@'
 PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
@@ -56,7 +57,7 @@ from pkgdb.model import PackageBuildTable, RpmProvidesTable, RpmRequiresTable, \
                         RpmConflictsTable, RpmObsoletesTable, RpmFilesTable, \
                         ReposTable, PackageBuildListingTable, \
                         PackageBuildDependsTable, PackageTable, \
-                        ApplicationsTable
+                        ApplicationsTable, IconName, Theme, Icon
 from pkgdb.model import Branch, Package, PackageListing, PackageBuild, Repo, Application, \
                         ApplicationTag, Tag, RpmFiles, PackageBuildDepends, RpmRequires, \
                         RpmProvides, RpmConflicts, RpmObsoletes
@@ -65,7 +66,7 @@ fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
 username = config.get('fas.username', 'admin')
 password = config.get('fas.password', 'admin')
 
-log = logging.getLogger('pkgdb')
+log = logging.getLogger('pkgdb-sync-yum')
 
 def get_pkg_name(rpm):
     # get the name of the Package, ignore -devel/-doc tags, version etc.
@@ -85,6 +86,8 @@ yb.cleanMetadata()
 yb.cleanExpireCache()
 yb.close()
 
+log.debug('Yum related stuff was cleaned')
+
 # get sacks first, so we can search for dependencies
 for repo in repos:
     yb = yum.YumBase()
@@ -96,8 +99,11 @@ for repo in repos:
 
     log.info('Refreshing repo: %s' % yumrepo.name)
 
-    yb._getSacks(thisrepo=yumrepo.id)
-    
+    try:
+        yb._getSacks(thisrepo=yumrepo.id)
+    except:
+        log.warning('Repo %s failed to read! Skipping...' % yumrepo)
+        continue
     
     # populate pkgdb with packagebuilds (rpms)
     rpms = yumrepo.sack.returnNewestByName()[:10]
@@ -137,6 +143,22 @@ for repo in repos:
                         pkg_query.one().name, rpm.version))
                     break
                
+                applications = []
+                has_desktop = False
+                has_icon = False
+                
+                check_icon = re.compile("^.*/(icons|pixmaps).*/apps/([^/]*)\.png$")
+
+                # Look for apps and icons
+                for f in rpm.filelist:
+                    if f.endswith('.desktop'):
+                        has_desktop = True
+                        break
+                    if RE_APP_ICON_FILE.match(f):
+                        has_icon = True
+                        log.debug('Icon found')
+                        break
+
                 # Do a bit of house-keeping
                 if rpm.changelog:
                     (committime, committer, changelog) = rpm.changelog[0]
@@ -160,55 +182,68 @@ for repo in repos:
                 
                 
                 # FIXME: We should behave differently for various entry types 
-                applications = []
-                has_desktop = False
-
-                # Look for apps
-                for f in rpm.filelist:
-                    if f.endswith('.desktop'):
-                        has_desktop = True
-
                 # download and process .desktop to create app
-                if has_desktop:
+                if has_desktop or has_icon:
 
                     desktop_entries = ()
+                    app_icons = {}
                     try:
+                        log.info("Loading %s..." % rpm.name)
                         rpm_file = yumrepo.getPackage(rpm)
                         log.info("%s was downloaded" % rpm.name)
                         parser = RPMParser(rpm_file)
                         desktop_entries = parser.desktop_entries()
+                        app_icons = parser.get_app_icons()
+                        log.debug(app_icons)
                     except Exception, e:
-                        log.error("Error occured while downloading rpm from repo %s. %s" % (yumrepo.name, e))
+                        log.error("Error occured while processing rpm from repo %s. %s" % (yumrepo.name, e))
 
                     for entry in desktop_entries:
                         if entry.has_option('Desktop Entry', 'name'):
                             try:
                                 app = Application.query.filter_by(name=entry.get('Desktop Entry', 'name')).one()
                             except:
+                                # FIXME: app updates
                                 if entry.has_option('Desktop Entry', 'type'):
                                     desktoptype = entry.get('Desktop Entry', 'type')
                                 else:
                                     desktoptype = None
+
                                 app = Application(
                                     name=entry.get('Desktop Entry', 'name'),
                                     description=rpm.description,
+                                    summary=rpm.summary,
                                     url=rpm.url,
                                     apptype='desktop',
                                     desktoptype=desktoptype,
                                 )
                                 session.add(app)
                                 log.debug(repr(app))
+
+                            # create iconname record
+                            if entry.has_option('Desktop Entry', 'icon'):
+                                iname = entry.get('Desktop Entry', 'icon')
+                                try:
+                                    icon_name = session.query(IconName).filter_by(name=iname).one()
+                                except:
+                                    icon_name = IconName(name=iname)
+                                    session.add(icon_name)
+                                    # save into DB so that icon creation does not fail on dupes
+                                    session.flush()
+                                app.iconname = icon_name
+
                             applications.append(app)
+
+
 
                             # add .desktop categories as well as groups from comps as prefiled tags
                             if entry.has_option('Desktop Entry', 'Categories'):
                                 cats = entry.get('Desktop Entry', 'Categories')
                                 for cat in cats.split(';'):
                                     if cat:  # Sometimes the category ends up empty: Categories = Foo;Bar;Baz;
-                                        # FIXME hendle localized keys properly
+                                        # FIXME handle localized keys properly
                                         # TODO: filter futile tags
                                         # FIXME: use Application.tag()
-                                        log.debug("Tag: %s" % cat)
                                         try:
                                             tag = session.query(Tag).filter_by(name=cat, language='en_US').one()
                                         except:
@@ -222,6 +257,58 @@ for repo in repos:
                                             apptag = ApplicationTag()
                                             apptag.tag = tag
                                             apptag.application = app
+                            
+
+                    # store icons...
+                    for (iname, icon_data) in app_icons.iteritems():
+                        log.debug('Theme: %s' % icon_data)
+                        log.debug('Name: %s' % iname)
+                        try:
+                            icon = session.query(Icon, IconName, Theme)\
+                                .filter_by(collectionid==collectionid)\
+                                .filter(Icon.nameid==IconName.id)\
+                                .filter(IconName.name==iname)\
+                                .filter(Icon.themeid==Theme.id)\
+                                .filter(Theme.name==icon_data['theme'])\
+                                .one()
+                        except:
+
+                            try:
+                                icon_name = session.query(IconName).filter_by(name=iname).one()
+                            except:
+                                icon_name = IconName(name=iname)
+                                session.add(icon_name)
+                                # this is necessary for avoiding 
+                                # of duplicite theme and iconname records
+                                # or is it?
+                                session.flush()
+
+                            try:
+                                icon_theme = session.query(Theme).filter_by(name=icon_data['theme']).one()
+                            except:
+                                icon_theme = Theme(name=icon_data['theme'])
+                                session.add(icon_theme)
+                                session.flush()
+
+                            icon = Icon(
+                               name=icon_name,
+                               theme=icon_theme,
+                                )
+                            log.debug(icon)
+
+                            icon.collectionid = collectionid
+                            session.add(icon)
+
+                        # update icon data
+                        icon.icon = icon_data['data'].getvalue()
+
+                        try:
+                            icon_data['data'].close()
+                        except:
+                            pass
+
+                        session.flush()
+
 
                 # create application record for packagebuild if there is no .desktop file
                 if not has_desktop \
@@ -232,6 +319,7 @@ for repo in repos:
                         app = Application(
                             name=rpm.name,
                             description=rpm.description,
+                            summary=rpm.summary,
                             url=rpm.url,
                             apptype='unknown',
                         )
