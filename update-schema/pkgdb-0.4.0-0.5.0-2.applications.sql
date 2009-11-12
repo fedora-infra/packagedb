@@ -1,3 +1,44 @@
+CREATE TABLE iconnames (
+    id serial NOT NULL PRIMARY KEY,
+    name text NOT NULL UNIQUE, 
+); 
+
+GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE iconnames TO pkgdbadmin;
+GRANT SELECT, UPDATE ON iconnames_id_seq TO pkgdbadmin;
+GRANT SELECT ON iconnames TO pkgdbreadonly;
+GRANT SELECT, UPDATE ON iconnames_id_seq TO pkgdbreadonly;
+
+CREATE TABLE themes (
+    id serial NOT NULL PRIMARY KEY,
+    name text NOT NULL UNIQUE, 
+);                      
+
+GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE themes TO pkgdbadmin;
+GRANT SELECT, UPDATE ON themes_id_seq TO pkgdbadmin;
+GRANT SELECT ON themes TO pkgdbreadonly;
+GRANT SELECT, UPDATE ON themes_id_seq TO pkgdbreadonly;
+
+CREATE TABLE icons (
+    id serial NOT NULL PRIMARY KEY,
+    nameid integer NOT NULL,
+    collectionid integer NOT NULL,
+    themeid integer NOT NULL,     
+    icon bytea NOT NULL           
+);                                
+
+ALTER TABLE ONLY icons
+    ADD CONSTRAINT icons_collectionid_fkey FOREIGN KEY (collectionid) REFERENCES collection(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY icons
+    ADD CONSTRAINT icons_nameid_fkey FOREIGN KEY (nameid) REFERENCES iconnames(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY icons
+    ADD CONSTRAINT icons_themeid_fkey FOREIGN KEY (themeid) REFERENCES themes(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE icons TO pkgdbadmin;
+GRANT SELECT, UPDATE ON icons_id_seq TO pkgdbadmin;
+GRANT SELECT ON icons TO pkgdbreadonly;
+GRANT SELECT, UPDATE ON icons_id_seq TO pkgdbreadonly;
+
+
 CREATE TABLE apptypes (
     apptype varchar(32) NOT NULL PRIMARY KEY
     );
@@ -5,7 +46,8 @@ INSERT INTO apptypes (apptype) VALUES ('desktop');
 INSERT INTO apptypes (apptype) VALUES ('unknown');
 INSERT INTO apptypes (apptype) VALUES ('commandline');
 
-GRANT ALL ON TABLE apptypes TO pkgdbadmin;
+GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE apptypes TO pkgdbadmin;
+GRANT SELECT ON apptypes TO pkgdbreadonly;
 
 CREATE TABLE applications (
     id serial NOT NULL PRIMARY KEY,
@@ -14,11 +56,22 @@ CREATE TABLE applications (
     url text,
     apptype varchar(32) NOT NULL REFERENCES apptypes
             ON UPDATE CASCADE,
-    desktoptype text
+    desktoptype text,
+    iconnameid integer,                    
+    iconid integer,                        
+    summary text                           
     );
-    
-GRANT ALL ON TABLE applications TO pkgdbadmin;
-GRANT ALL ON applications_id_seq TO pkgdbadmin;
+   
+ALTER TABLE ONLY applications
+    ADD CONSTRAINT applications_iconid_fkey FOREIGN KEY (iconid) REFERENCES icons(id);
+ALTER TABLE ONLY applications
+    ADD CONSTRAINT applications_iconnameid_fkey FOREIGN KEY (iconnameid) REFERENCES iconnames(id);
+
+
+GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE applications TO pkgdbadmin;
+GRANT SELECT, UPDATE ON applications_id_seq TO pkgdbadmin;
+GRANT SELECT ON applications TO pkgdbreadonly;
+GRANT SELECT, UPDATE ON applications_id_seq TO pkgdbreadonly;
 
 
 CREATE TABLE packagebuildapplications (
@@ -27,7 +80,8 @@ CREATE TABLE packagebuildapplications (
     packagebuildid integer NOT NULL REFERENCES packagebuild ON DELETE CASCADE
     );
 
-GRANT ALL ON packagebuildapplications TO pkgdbadmin;
+GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE packagebuildapplications TO pkgdbadmin;
+GRANT SELECT ON packagebuildapplications TO pkgdbreadonly;
 
 -- packagebuild updates
 GRANT ALL ON TABLE packagebuild TO pkgdbadmin;
@@ -42,7 +96,8 @@ CREATE TABLE applicationstags (
     tagid int NOT NULL REFERENCES tags ON DELETE CASCADE,
     score int NOT NULL DEFAULT 1
     );
-GRANT ALL ON applicationstags TO pkgdbadmin;
+GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE applicationstags TO pkgdbadmin;
+GRANT SELECT ON applicationstags TO pkgdbreadonly;
 
 DROP TABLE packagebuildnamestags;
 

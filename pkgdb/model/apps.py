@@ -34,7 +34,7 @@ Application related part of the model.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 from sqlalchemy import Table, Column, ForeignKey, ForeignKeyConstraint, Sequence
-from sqlalchemy import Integer, String, Text, Boolean, DateTime
+from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
@@ -43,7 +43,8 @@ from turbogears.database import metadata, mapper, get_engine, session
 
 from fedora.tg.json import SABase
 
-from pkgdb.model import PackageBuild, Language
+from pkgdb.model import PackageBuild, Language, Collection
+from pkgdb.lib.dt_utils import FancyDateTimeDelta
 
 from datetime import datetime
 
@@ -55,10 +56,15 @@ ApplicationsTable = Table('applications', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),    
     Column('name', Text, nullable=False),
     Column('description', Text, nullable=False),
+    Column('summary', Text, nullable=False),
     Column('url', Text),
     Column('apptype', String(32), nullable=False),
     Column('desktoptype', Text),
+    Column('iconid', nullable=True),
+    Column('iconnameid', nullable=True),
     ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 ApplicationsTagsTable = Table('applicationstags', metadata,
@@ -99,6 +105,28 @@ TagsTable = Table('tags', metadata,
     ForeignKeyConstraint(['language'],['languages.shortname'], onupdate="CASCADE", ondelete="CASCADE"),
 )
 
+IconNamesTable = Table('iconnames', metadata,
+    Column('id', Integer, autoincrement=True, primary_key=True),
+    Column('name', Text, nullable=False, unique=True),
+)
+                        
+ThemesTable = Table('themes', metadata,
+    Column('id', Integer, autoincrement=True, primary_key=True),
+    Column('name', Text, nullable=False, unique=True),
+)
+                        
+IconsTable = Table('icons', metadata,
+    Column('id', Integer, autoincrement=True, primary_key=True),
+    Column('nameid', nullable=False),
+    Column('collectionid', nullable=False),                   
+    Column('themeid', nullable=False),                   
+    Column('icon', Binary, nullable=False),
+    ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['collectionid'], ['collection.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['themeid'], ['themes.id'], onupdate="CASCADE", ondelete="CASCADE"),
+)                  
+
+
 def _create_apptag(tag, score):
     """Creator function for apptags association proxy """
     apptag = ApplicationTag(tag=tag, score=score)
@@ -116,19 +144,22 @@ class Application(SABase):
     file will have application record (we will presume that the whole package is application)
     Apptype column indicates the type of the record.
     '''
-    def __init__(self, name, description, url, apptype, desktoptype=None):
+    def __init__(self, name, description, url, apptype, summary, desktoptype=None, iconname=None, icon=None ):
         super(Application, self).__init__()
         self.name = name
         self.description = description
         self.url = url
         self.apptype = apptype
         self.desktoptype = desktoptype
+        self.iconname = iconname
+        self.summary = summary
+        self.icon = icon
 
     scores = association_proxy('by_tag', 'score', creator=_create_apptag)
 
     def __repr__(self):
-        return 'Application(%r, description=%r, url=%r, apptype=%r )' % (
-            self.name, self.description, self.url, self.apptype)
+        return 'Application(%r, summary=%r, url=%r, apptype=%r )' % (
+            self.name, self.summary, self.url, self.apptype)
 
     @classmethod
     def tag(cls, apps, tags, language):
@@ -283,6 +314,10 @@ class Comment(SABase):
             self.author, self.body, self.published, self.application.name,
             self.language, self.time)
 
+    def fancy_delta(self, precision=2):
+        fancy_delta = FancyDateTimeDelta(self.time)
+        return fancy_delta.format(precision)
+
 
 class Tag(SABase):
     '''Package Tags.
@@ -302,19 +337,50 @@ class Tag(SABase):
         return 'Tag(%r, language=%r)' % (
             self.name, self.language)
         
+class IconName(SABase):
+
+    def __init__(self, name):
+        super(IconName, self).__init__()
+        self.name = name
+
+    def __repr__(self):
+        return 'IconName(%r)' % (self.name)
+        
+class Theme(SABase):
+
+    def __init__(self, name):
+        super(Theme, self).__init__()
+        self.name = name
+
+    def __repr__(self):
+        return 'Theme(%r)' % (self.name)
+        
+class Icon(SABase):
+
+    def __init__(self, icon=None, name=None, collection=None, theme=None):
+        super(Icon, self).__init__()
+        self.icon = icon
+        self.name = name
+        self.collection = collection
+        self.theme = theme
+
+    def __repr__(self):
+        return 'Icon(%r, collection=%r, theme=%r)' % (
+            self.name, self.collection.name, self.theme.name)
+        
 #
 # Mappers
 #
 
 mapper(Application, ApplicationsTable, properties={
     'builds': relation(PackageBuild, backref=backref('applications'),
-        secondary=PackageBuildApplicationsTable,
-        cascade='all'),
+        secondary=PackageBuildApplicationsTable, cascade='all'),
     'by_tag': relation(ApplicationTag,
-        collection_class=attribute_mapped_collection('tag'),
-        cascade='all'),
+        collection_class=attribute_mapped_collection('tag')),
     'comments': relation(Comment, backref=backref('application'),
-        cascade='all, delete-orphan')
+        cascade='all, delete-orphan'),
+    'iconname': relation(IconName, backref=backref('applications')),
+    'icon': relation(Icon),
     })
 
 mapper(ApplicationTag, ApplicationsTagsTable, 
@@ -326,3 +392,13 @@ mapper(ApplicationTag, ApplicationsTagsTable,
 mapper(Comment, CommentsTable)
 
 mapper(Tag, TagsTable)
+
+mapper(IconName, IconNamesTable)
+
+mapper(Theme, ThemesTable)
+
+mapper(Icon, IconsTable, properties = {
+    'name': relation(IconName),
+    'collection': relation(Collection),
+    'theme': relation(Theme),
+    })
