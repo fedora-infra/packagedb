@@ -1201,9 +1201,13 @@ class PackageDispatcher(controllers.Controller):
                             collectionid=collection.id,
                             packageid=pkg.id).one()
                 except InvalidRequestError:
+                    if owner_name == 'orphan':
+                        status = STATUS['Orphaned']
+                    else:
+                        status = STATUS['Approved']
                     pkg_listing = pkg.create_listing(collection,
                             owner_name,
-                            STATUS['Approved'],
+                            status,
                             author_name = identity.current.user_name)
                     try:
                         session.flush()
@@ -1273,11 +1277,15 @@ class PackageDispatcher(controllers.Controller):
                         pkg_listing.package.name,
                         pkg_listing.collection.name,
                         pkg_listing.collection.version,
-                        person['username']
+                        person['username'],
                         )
+                if person['username'] == 'orphan':
+                    status = STATUS['Orphaned']
+                else:
+                    status = STATUS['Owned']
                 pkg_log = PackageListingLog(
                         identity.current.user_name,
-                        STATUS['Owned'].statuscodeid,
+                        status.statuscodeid,
                         log_msg
                         )
                 pkg_log.listing = pkg_listing
