@@ -19,11 +19,8 @@ import fedora.tg.util
 
 turbogears.update_config(configfile=os.path.join('@CONFDIR@', 'pkgdb.cfg'),
         modulename="pkgdb.config")
-turbogears.config.update({'global': {'server.environment': 'production'}})
+# This must always be off when used with mod_wsgi
 turbogears.config.update({'global': {'autoreload.on': False}})
-turbogears.config.update({'global': {'server.log_to_screen': False}})
-#turbogears.config.update({'global': {'server.webpath': None}})
-
 
 import pkgdb.utils
 pkgdb.utils.init_globals()

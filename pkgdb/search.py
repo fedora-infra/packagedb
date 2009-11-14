@@ -41,6 +41,7 @@ from turbogears import controllers, expose, validate, paginate, redirect, \
 from turbogears.validators import Int
 
 from pkgdb.model import Collection, PackageListing, Package
+from pkgdb.utils import STATUS
 from pkgdb import _
 
 class Search(controllers.Controller):
@@ -100,7 +101,7 @@ class Search(controllers.Controller):
         # pylint: disable-msg=E1101
 
         if searchwords == '' or searchwords.isspace():
-            raise redirect(config.get('base_url_filter.base_url') + '/search/')
+            raise redirect('/search/')
 
         # case insensitive
         query = searchwords.lower()
@@ -114,17 +115,29 @@ class Search(controllers.Controller):
                             lazyload('people2'), lazyload('groups2'),
                             lazyload('status')).filter(
                                     and_(PackageListing.packageid==Package.id,
+                                        PackageListing.statuscode!= \
+                                                STATUS['Removed'].statuscodeid,
+                                        Package.statuscode!= \
+                                                STATUS['Removed'].statuscodeid,
                                         func.lower(Package.description).like(
                                             '%'+searchword+'%')))
                 elif searchon in ['name', 'both']:
                     exact += PackageListing.query.options(lazyload('people2'),
                             lazyload('groups2'), lazyload('status')).filter(
                                     and_(PackageListing.packageid==Package.id,
+                                        PackageListing.statuscode!= \
+                                                STATUS['Removed'].statuscodeid,
+                                        Package.statuscode!= \
+                                                STATUS['Removed'].statuscodeid,
                                         func.lower(Package.name).like(
                                             searchword)))
                     names += PackageListing.query.options(lazyload('people2'),
                             lazyload('groups2'), lazyload('status')).filter(
                                     and_(PackageListing.packageid==Package.id,
+                                        PackageListing.statuscode!= \
+                                                STATUS['Removed'].statuscodeid,
+                                        Package.statuscode!= \
+                                                STATUS['Removed'].statuscodeid,
                                         func.lower(Package.name).like(
                                             '%'+searchword+'%')))
                     if searchon == 'both':
@@ -132,6 +145,10 @@ class Search(controllers.Controller):
                                 lazyload('people2'), lazyload('groups2'),
                                 lazyload('status')).filter(and_(
                                     PackageListing.packageid==Package.id,
+                                    PackageListing.statuscode!= \
+                                            STATUS['Removed'].statuscodeid,
+                                    Package.statuscode!= \
+                                            STATUS['Removed'].statuscodeid,
                                     func.lower(Package.description).like(
                                         '%'+searchword+'%')))
 
@@ -140,6 +157,10 @@ class Search(controllers.Controller):
                 exact = PackageListing.query.options(lazyload('people2'),
                         lazyload('groups2'), lazyload('status')).filter(and_(
                             PackageListing.packageid==Package.id,
+                            PackageListing.statuscode!= \
+                                    STATUS['Removed'].statuscodeid,
+                            Package.statuscode!= \
+                                    STATUS['Removed'].statuscodeid,
                             func.lower(Package.name).like(query))).all()
                 # query the DB for every searchword and build a Query object
                 # to filter succesively
@@ -147,6 +168,10 @@ class Search(controllers.Controller):
                 names = PackageListing.query.options(lazyload('people2'),
                         lazyload('groups2'), lazyload('status')).filter(and_(
                             PackageListing.packageid==Package.id,
+                            PackageListing.statuscode!= \
+                                    STATUS['Removed'].statuscodeid,
+                            Package.statuscode!= \
+                                    STATUS['Removed'].statuscodeid,
                             func.lower(Package.name).like(
                                 '%' + query[0] + '%')))
                 for searchword in query:
@@ -159,6 +184,10 @@ class Search(controllers.Controller):
                             lazyload('people2'), lazyload('groups2'),
                             lazyload('status')).filter(and_(
                                 PackageListing.packageid==Package.id,
+                                PackageListing.statuscode!= \
+                                        STATUS['Removed'].statuscodeid,
+                                Package.statuscode!= \
+                                        STATUS['Removed'].statuscodeid,
                                 func.lower(Package.description).like(
                                     '%' + query[0] + '%')))
                     for searchword in query:
@@ -174,6 +203,10 @@ class Search(controllers.Controller):
                         lazyload('people2'), lazyload('groups2'),
                         lazyload('status')).filter(and_(
                             PackageListing.packageid==Package.id,
+                            PackageListing.statuscode!= \
+                                    STATUS['Removed'].statuscodeid,
+                            Package.statuscode!= \
+                                    STATUS['Removed'].statuscodeid,
                             func.lower(Package.description).like(
                                 '%' + query[0] + '%')))
                 for searchword in query:

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -70,8 +70,8 @@ class Collections(controllers.Controller):
         # pylint: disable-msg=E1101
         collections = Collection.query.options(lazyload('listings'),
                 lazyload('status')).add_entity(CollectionPackage
-                        ).filter(Collection.id==CollectionPackage.id).order_by(
-                                (Collection.name, Collection.version))
+                ).filter(Collection.id==CollectionPackage.id).order_by(
+            Collection.name, Collection.version)
         # pylint: enable-msg=E1101
 
         return dict(title=_('%(app)s -- Collection Overview') %

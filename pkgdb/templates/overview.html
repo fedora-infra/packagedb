@@ -18,8 +18,8 @@
     </p>
 
     <h3>Search Packages</h3>
-    <form action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}', 1)">
-        <p>Keywords: <input id="package" name="searchwords" size="20" type="text" />
+    <form name="overview_search" action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}', 'overview_search')">
+        <p>Keywords: <input name="searchwords" size="20" type="text" />
         <input type="submit" value="Search" /> 
         </p>
     </form>

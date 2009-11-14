@@ -1,13 +1,10 @@
-RewriteEngine on
-RewriteRule ^/pkgdb(.*) https://%{SERVER_NAME}/pkgdb$1 [R,L]
-RewriteRule ^/pkgdb/static/(.*) @DATADIR@/fedora-packagedb/pkgdb/static/$1 [last]
 Alias /pkgdb/static @DATADIR@/fedora-packagedb/pkgdb/static
 
-WSGIDaemonProcess pkgdb user=apache group=apache maximum-requests=1000 display-name=pkgdb processes=2 threads=2
+WSGIDaemonProcess pkgdb user=apache group=apache maximum-requests=1000 display-name=pkgdb processes=4 threads=1
 WSGISocketPrefix run/wsgi
 WSGIRestrictStdout On
 WSGIRestrictSignal Off
-WSGIPythonOptimize 2
+WSGIPythonOptimize 1
 
 WSGIScriptAlias /pkgdb @SBINDIR@/pkgdb.wsgi/pkgdb
 

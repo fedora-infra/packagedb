@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -28,7 +28,6 @@ Controller to process requests to change package information.
 # :E1101: SQLAlchemy monkey patches the ORM Mappers so we have to disable this
 #   check whenever we use a db mapped class.
 
-from datetime import datetime
 import xmlrpclib
 
 from sqlalchemy import and_
@@ -49,6 +48,8 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 from pkgdb import _
 from pkgdb.notifier import EventLogger
 from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, LOG, STATUS
+
+from fedora.tg.util import tg_url
 
 MAXSYSTEMUID = 9999
 
@@ -165,9 +166,9 @@ class PackageDispatcher(controllers.Controller):
 
         # Append a link to the package to the message
         msg = _('%(msg)s\n\nTo make changes to this package see:\n'
-                ' %(url)s\n') % {'msg': msg, 'url':'  %s/packages/name/%s' %
-                      (config.get('base_url_filter.base_url'),
-                      listings[0].package.name)}
+                '  %(url)s\n') % {'msg': msg,
+                        'url': config.get('base_url_filter.base_url') +
+                        tg_url('/packages/name/%s' % listings[0].package.name)}
 
         # Send the log
         self.eventLogger.send_msg(msg, subject, recipients.keys())
@@ -289,14 +290,11 @@ class PackageDispatcher(controllers.Controller):
         :arg new_acl: ACL name to set.
         :arg status: Status DB Object we're setting the ACL to.
         '''
-        # Create the ACL
-        change_person = None
-        for person in pkg_listing.people:
-            # Check for the person who's acl we're setting
-            if person.username == person_name:
-                change_person = person
-                break
+        # watchbugzilla and watchcommits are autocommit
+        if new_acl in ('watchbugzilla', 'watchcommits') and status == STATUS['Awaiting Review']:
+            status = STATUS['Approved']
 
+        change_person = pkg_listing.people2.get(person_name, None)
         if not change_person:
             # Person has no ACLs on this Package yet.  Create a record
             change_person = PersonPackageListing(person_name)
@@ -321,11 +319,13 @@ class PackageDispatcher(controllers.Controller):
 
             # For now, we specialcase the build acl to reflect the commit
             # this is because we need to remove notifications and UI that
-            # depend on any acl being set adn for now, the commit acl is being
+            # depend on any acl being set and for now, the commit acl is being
             # used for build and push
             if new_acl == 'commit':
                 self._create_or_modify_acl(pkg_listing, person_name, 'build',
                         status)
+        person_acl.status = session.query(PackageAclStatus).filter(
+                PackageAclStatus.statuscodeid==status.statuscodeid).one()
 
         return person_acl
 
@@ -443,7 +443,7 @@ class PackageDispatcher(controllers.Controller):
         queryResults = bugzilla.query(bzQuery)
         for bug in queryResults:
             if config.get('bugzilla.enable_modification', False):
-                bug.setassignee(assigned_to=bzMail, comment=bzComments)
+                bug.setassignee(assigned_to=bzMail, comment=bzComment)
             else:
                 LOG.debug(_('Would have reassigned bug #%(bug_num)s'
                 ' from %(former)s to %(current)s') % {
@@ -870,6 +870,7 @@ class PackageDispatcher(controllers.Controller):
         # Assign person to package
         person_acl = self._create_or_modify_acl(pkg_listing,
                 identity.current.user_name, acl_name, status)
+        acl_status = person_acl.status.translations[0].statusname
 
         # Make sure a log is created in the db as well.
         if acl_status == 'Awaiting Review':
@@ -1203,9 +1204,13 @@ class PackageDispatcher(controllers.Controller):
                             collectionid=collection.id,
                             packageid=pkg.id).one()
                 except InvalidRequestError:
+                    if owner_name == 'orphan':
+                        status = STATUS['Orphaned']
+                    else:
+                        status = STATUS['Approved']
                     pkg_listing = pkg.create_listing(collection,
                             owner_name,
-                            STATUS['Approved'],
+                            status,
                             author_name = identity.current.user_name)
                     try:
                         session.flush()
@@ -1214,7 +1219,7 @@ class PackageDispatcher(controllers.Controller):
                             ' PackageListing for %(pkg)s(Fedora devel),'
                             ' %(user)s), %(status)s') % {
                                 'pkg': package, 'user': person['username'],
-                                'status': STATUS['Approved'].statuscodeid})
+                                'status': status})
                     changed_acls = []
                     for group in ('provenpackager',):
                         changed_acls.append(GroupPackageListingAcl.query.filter(
@@ -1275,11 +1280,15 @@ class PackageDispatcher(controllers.Controller):
                         pkg_listing.package.name,
                         pkg_listing.collection.name,
                         pkg_listing.collection.version,
-                        person['username']
+                        person['username'],
                         )
+                if person['username'] == 'orphan':
+                    status = STATUS['Orphaned']
+                else:
+                    status = STATUS['Owned']
                 pkg_log = PackageListingLog(
                         identity.current.user_name,
-                        STATUS['Owned'].statuscodeid,
+                        status.statuscodeid,
                         log_msg
                         )
                 pkg_log.listing = pkg_listing
@@ -1432,8 +1441,8 @@ class PackageDispatcher(controllers.Controller):
         for pkg_listing in pkg_list_log_msgs.keys():
             self._send_log_msg('\n'.join(pkg_list_log_msgs[pkg_listing]),
                     _('%(pkg)s (%(collctn)s, %(ver)s) updated by %(user)s') % {
-                        'pkg': pkg.name, 'collctn': collection.name,
-                        'ver': collection.version,
+                        'pkg': pkg.name, 'collctn': pkg_listing.collection.name,
+                        'ver': pkg_listing.collection.version,
                         'user': identity.current.user_name},
                     identity.current.user, (pkg_listing,))
         return dict(status=True)
