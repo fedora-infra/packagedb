@@ -1438,8 +1438,8 @@ class PackageDispatcher(controllers.Controller):
         for pkg_listing in pkg_list_log_msgs.keys():
             self._send_log_msg('\n'.join(pkg_list_log_msgs[pkg_listing]),
                     _('%(pkg)s (%(collctn)s, %(ver)s) updated by %(user)s') % {
-                        'pkg': pkg.name, 'collctn': collection.name,
-                        'ver': collection.version,
+                        'pkg': pkg.name, 'collctn': pkg_listing.collection.name,
+                        'ver': pkg_listing.collection.version,
                         'user': identity.current.user_name},
                     identity.current.user, (pkg_listing,))
         return dict(status=True)
