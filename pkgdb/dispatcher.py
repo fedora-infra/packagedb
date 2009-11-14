@@ -324,6 +324,8 @@ class PackageDispatcher(controllers.Controller):
             if new_acl == 'commit':
                 self._create_or_modify_acl(pkg_listing, person_name, 'build',
                         status)
+        person_acl.status = session.query(PackageAclStatus).filter(
+                PackageAclStatus.statuscodeid==status.statuscodeid).one()
 
         return person_acl
 
@@ -868,6 +870,7 @@ class PackageDispatcher(controllers.Controller):
         # Assign person to package
         person_acl = self._create_or_modify_acl(pkg_listing,
                 identity.current.user_name, acl_name, status)
+        acl_status = person_acl.status.translations[0].statusname
 
         # Make sure a log is created in the db as well.
         if acl_status == 'Awaiting Review':
