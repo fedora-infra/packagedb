@@ -167,8 +167,8 @@ class PackageDispatcher(controllers.Controller):
         # Append a link to the package to the message
         msg = _('%(msg)s\n\nTo make changes to this package see:\n'
                 '  %(url)s\n') % {'msg': msg,
-                        'url': tg_url('/packages/name/%s' %
-                            listings[0].package.name)}
+                        'url': config.get('base_url_filter.base_url') +
+                        tg_url('/packages/name/%s' % listings[0].package.name)}
 
         # Send the log
         self.eventLogger.send_msg(msg, subject, recipients.keys())
