@@ -92,31 +92,6 @@
       
     <p>$build.package.summary</p>
 
-    <div id="tags">
-      <py:choose test="tg.identity.anonymous">
-        <div id="tagList">
-          <xi:include href="_tags.html" />
-        </div>
-        <py:when test="True">
-          <p><a href="${tg.url('/login')}">log in to tag</a></p>
-        </py:when>
-
-        <py:when test="False">
-          <form id="tagForm" method="POST"
-                action="${tg.url('/tag/add/')}"
-                dojoType="dijit.form.Form">
-            <input type="hidden" name="builds" value="$build.name" />
-            <input type="hidden" name="language" value="$language" />
-            <input type="text" name="tags" value="" size="9"
-                   dojoType="dijit.form.ValidationTextBox" trim="true"
-                   required="true" missingMessage="Please enter a tag!" />
-            <button type="submit" dojoType="dijit.form.Button">Tag!</button>
-          </form>
-          <div id="tagLoader" style="opacity: 0">Loading...</div>
-        </py:when>
-      </py:choose>
-    </div>
-
     <div class="header-list">
       <table>
         <tr>
@@ -196,40 +171,6 @@
         $build.changelog
       </p>
 
-      <br />
-      <div id="comments">
-        <py:choose test="tg.identity.anonymous">
-          <py:when test="True">
-            <a href="${tg.url('/login')}"
-               style="float: right">please log in to comment</a>
-          </py:when>
-
-          <a style="float: left"
-             href="${tg.url('/commentsfeed/atom1.0?build=%s' % build.name)}">
-            <img src="${tg.url('/static/images/feed.png')}"
-                 alt="Comments Feed" />
-          </a>
-          
-          <div id="commentList">
-            <xi:include href="_comments.html" />
-          </div>
-          
-          <py:when test="False">
-            Add a new comment:
-            <form id="commentForm" method="post"
-                  action="${tg.url('/comments/add/')}"
-                  dojoType="dijit.form.Form">
-              <input type="hidden" name="build" value="$build.name" />
-              <input type="hidden" name="language" value="$language" />
-              <input type="hidden" name="author" value="$tg.identity.user_name"/>
-              <p><textarea name="body" rows="10" cols="80"
-                           dojoType="dijit.form.Textarea"></textarea></p>
-              <button type="submit" dojoType="dijit.form.Button">Send</button>
-            </form>
-            <div id="commentLoader" style="opacity: 0">Loading...</div>
-          </py:when>
-        </py:choose>
-      </div>
     </div>
   </body>
 </html>

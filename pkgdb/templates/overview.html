@@ -25,7 +25,7 @@
     </p>
 
     <h3>
-      <a style="float: right" href="${tg.url('/desktopfeed/atom1.0')}">
+      <a style="float: right" href="${tg.url('/appfeed/atom1.0')}">
         <img src="${tg.url('/static/images/feed.png')}"
            alt="Applications Feed" />
       </a>
@@ -35,8 +35,8 @@
       <table>
         <thead>
           <tr>
-            <th class="ColumnHead" id="packagehead" title="Package Build">
-              Package 
+            <th class="ColumnHead" id="applicationhead" title="Application">
+              Application
             </th>
             <th class="ColumnHead" id="changeloghead" title="Package Changelog">
               Changelog
@@ -52,20 +52,20 @@
         <tbody>
           <tr py:for="pkgb in packages">
             <td class="package">
-              <a href="${tg.url('/packages/%s/%s/' %
-                       (pkgb.name, pkgb.repo.shortname))}">
-                $pkgb.name
+              <a href="${tg.url('/applications/%s/' %
+                       (pkgb.applications[0].name))}">
+                ${pkgb.applications[0].name}
               </a>
               <br />${pkgb.version+'-'+pkgb.release+'-'+pkgb.architecture}
             </td>
             <td class="changelog">
               <?python changelog = pkgb.changelog.split('\n') ?>
               ${changelog[0]}
-              <a py:if="len(changelog)!=1"
+              <!--a py:if="len(changelog)!=1"
                  href="${tg.url('/packages/%s/%s#Changelog' %
                        (pkgb.name, pkgb.repo.shortname))}">
                 More...
-              </a>
+              </a-->
             </td>
             <td class="committer">
               $pkgb.committer

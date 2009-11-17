@@ -16,6 +16,7 @@
 # permission of Red Hat, Inc.
 #
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+#                           Martin Bacovsky <mbacovsk@redhat.com>
 #
 '''
 Controller for displaying PackageBuild(Rpm) related information
@@ -23,71 +24,73 @@ Controller for displaying PackageBuild(Rpm) related information
 
 from sqlalchemy.sql import and_
 
-from turbogears import controllers, expose, identity, redirect
+from turbogears import controllers, expose, identity
+from turbogears.database import session
 
-from pkgdb.model import Comment, PackageBuild, Repo
+from pkgdb.model import Comment, PackageBuild, Repo, Application
 from pkgdb.utils import mod_grp
+from pkgdb import _
 
 from fedora.tg.util import request_format
 
 from cherrypy import request
 
-class Package(controllers.Controller):
-    '''Display general information related to PackageBuilds.
+import logging
+log = logging.getLogger('pkgdb.applications')
+
+class ApplicationController(controllers.Controller):
+    '''Display general information related to Applicaiton.
     '''
 
     def __init__(self, app_title=None):
-        '''Create a Packages Controller
+        '''Create a Applications Controller
 
         :kwarg app_title: Title of the web app.
         '''
         self.app_title = app_title
 
-    @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
-    def default(self, buildName=None, repo='F-11-i386', language='en_US'):
-        '''Retrieve PackageBuild by their name.
+    @expose(template='pkgdb.templates.application', allow_json=True)
+    def default(self, app_name=None, repo='F-11-i386', language='en_US'):
+        '''Retrieve application by its name.
 
-        This method returns general packagebuild/rpm information about a
-        package like: version, release, size, last changelog message,
-        committime etc. This information comes from yum and is stored in
-        the pkgdb.
-
-        :arg buildName: Name of the packagebuild/rpm to lookup
+        :arg app_name: Name of the packagebuild/rpm to lookup
         :arg repo: shortname of the repository to look in
         :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
-        if buildName==None:
+        if app_name==None:
             raise redirect(config.get('base_url_filter.base_url') +
-                '/packages/list/')
+                '/')
 
-        builds_query = PackageBuild.query.filter_by(name=buildName)
-        # look for The One packagebuild
+        # look for The One application
         try:
-            build = builds_query.join(PackageBuild.repo).filter(
-                Repo.shortname==repo).one()
-        except:
+            application = session.query(Application).filter_by(name=app_name).one()
+        except Exception, e:
             error = dict(status=False,
-                         title=_('%(app)s -- Invalid PackageBuild Name') % {
+                         title=_('%(app)s -- Invalid Application Name') % {
                              'app': self.app_title},
-                             message=_('The package build you were linked to'
-                             ' (%(pkg)s) does not appear in the Package '
+                             message=_('The application you were linked to'
+                             ' (%(app)s) does not exist in the Package '
                              ' Database. If you received this error from a link'
                              ' on the fedoraproject.org website, please report'
-                             ' it.') % {'pkg': buildName})
+                             ' it.') % {'app': app_name})
             if request_format() != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
                 return error
-        other_repos = []
-        arches = set()
-        for b in builds_query.all():
-            other_repos.append(b.repo)
-            arches.add(b.architecture)
-        other_repos.remove(build.repo)
         
+        tagscore = application.scores_by_language(language)
 
+        comment_query = session.query(Comment).filter(and_(
+            Comment.application==application,
+            Comment.language==language)).order_by(Comment.time)
+        # hide the mean comments from ordinary users
+        if identity.in_group(mod_grp):
+            comments = comment_query.all()
+        else:
+            comments = comment_query.filter_by(published=True).all()
 
-        return dict(title=_('%(title)s -- %(pkg)s') % {
-            'title': self.app_title, 'pkg': buildName},
-                    repo=repo, build=build, other_repos=other_repos,
-                    arches=arches, language=language)
+        return dict(title=_('%(title)s -- %(app)s') % {
+            'title': self.app_title, 'app': application.name},
+                    tagscore=tagscore, language=language,
+                    app=application,
+                    comments=comments)
 

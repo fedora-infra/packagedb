@@ -24,6 +24,8 @@ indirectly from here.
 
 from turbogears import controllers, expose, config, flash
 from turbogears import identity, redirect
+from turbogears.database import session
+from sqlalchemy.orm import eagerload
 from cherrypy import request, response
 
 from fedora.tg.util import request_format
@@ -33,17 +35,21 @@ from pkgdb import release, _
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
 from pkgdb.comments import Comments
-from pkgdb.feeds import DesktopFeed, CommentsFeed
+from pkgdb.feeds import ApplicationFeed, CommentsFeed
 from pkgdb.listqueries import ListQueries
 from pkgdb.packages import Package
+from pkgdb.applications import ApplicationController
 from pkgdb.stats import Stats
 from pkgdb.search import Search
 from pkgdb.tag import Tags
 from pkgdb.users import Users
 
-from pkgdb.model import PackageBuild, Comment
+from pkgdb.model import PackageBuild, Comment, ApplicationsTable
 
 from fedora.tg import controllers as f_ctrlers
+
+import logging
+log = logging.getLogger(__name__)
 
 class Root(controllers.RootController):
     '''Toplevel controller for the PackageDB
@@ -54,13 +60,14 @@ class Root(controllers.RootController):
     # pylint: disable-msg=W0232
     app_title = _('Fedora Package Database')
 
-    desktopfeed = DesktopFeed()
+    appfeed = ApplicationFeed()
     commentsfeed = CommentsFeed()
     acls = Acls(app_title)
     collections = Collections(app_title)
     comments = Comments(app_title)
     lists = ListQueries(app_title)
     packages = Package(app_title)
+    applications = ApplicationController(app_title)
     stats = Stats(app_title)
     search = Search(app_title)
     tag = Tags(app_title)
@@ -82,8 +89,11 @@ class Root(controllers.RootController):
 
         This page serves as an overview of the entire PackageDB.  
         '''
-        packages = PackageBuild.query.filter_by(desktop=True).order_by(
-            PackageBuild.committime.desc()).limit(7).all()
+        packages = session.query(PackageBuild)\
+                .options(eagerload('applications'))\
+                .join('applications')\
+                .filter(ApplicationsTable.c.apptype == 'desktop')\
+                .order_by(PackageBuild.committime.desc()).limit(7).all()
 
         comments = Comment.query.filter_by(published=True).order_by(
             Comment.time.desc()).limit(7).all()

@@ -8,6 +8,7 @@ from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
+
 #
 # Mapped Tables
 #
@@ -27,7 +28,7 @@ class RpmProvides(SABase):
 
     Table -- RpmProvides
     '''
-    def __init__(self, name, packagebuildid, flags=None, epoch=None,
+    def __init__(self, name, packagebuildid = None, flags=None, epoch=None,
                  version=None, release=None):
         super(RpmProvides, self).__init__()
         self.name = name
@@ -47,7 +48,7 @@ class RpmRequires(SABase):
 
     Table -- RpmRequires
     '''
-    def __init__(self, name, packagebuildid, flags=None, epoch=None,
+    def __init__(self, name, packagebuildid=None, flags=None, epoch=None,
                  version=None, release=None, prereq=None):
         super(RpmRequires, self).__init__()
         self.name = name
@@ -69,7 +70,7 @@ class RpmObsoletes(SABase):
 
     Table -- RpmObsoletes
     '''
-    def __init__(self, name, packagebuildid, flags=None, epoch=None,
+    def __init__(self, name, packagebuildid=None, flags=None, epoch=None,
                  version=None, release=None):
         super(RpmObsoletes, self).__init__()
         self.name = name
@@ -89,7 +90,7 @@ class RpmConflicts(SABase):
 
     Table -- RpmConflicts
     '''
-    def __init__(self, name, packagebuildid, flags=None, epoch=None,
+    def __init__(self, name, packagebuildid=None, flags=None, epoch=None,
                  version=None, release=None):
         super(RpmConflicts, self).__init__()
         self.name = name
@@ -109,7 +110,7 @@ class RpmFiles(SABase):
 
     Table -- RpmFiles
     '''
-    def __init__(self, name, packagebuildid):
+    def __init__(self, name, packagebuildid=None):
         super(RpmFiles, self).__init__()
         self.name = name
         self.packagebuildid
@@ -121,8 +122,8 @@ class RpmFiles(SABase):
 # Mappers
 #
 
+mapper(RpmProvides, RpmProvidesTable)
 mapper(RpmObsoletes, RpmObsoletesTable)
 mapper(RpmConflicts, RpmConflictsTable)
 mapper(RpmRequires, RpmRequiresTable)
-mapper(RpmProvides, RpmProvidesTable)
 mapper(RpmFiles, RpmFilesTable)

@@ -93,7 +93,7 @@ class Letters(controllers.Controller):
                 searchwords = searchwords.replace('*','%') \
                               .replace('&','').replace('_','')
 
-                packages = PackageBuild.query.join('tags').filter(and_(
+                packages = session.query(Application).join('tags').filter(and_(
                         Tag.name.ilike(searchwords),
                         Tag.language.ilike(language))).all()
             else:

@@ -36,8 +36,8 @@ from pkgdb.model import Package, Branch, GroupPackageListing, Collection,\
      GroupPackageListingAcl, PackageListing, PersonPackageListing,\
      PersonPackageListingAcl, Repo, PackageBuild
 from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable,\
-     LanguagesTable, PackageBuildTable, PackageBuildNamesTable,\
-     PackageBuildNamesTagsTable
+     LanguagesTable, PackageBuildTable, ApplicationsTable,\
+     ApplicationsTagsTable
 from pkgdb.model import YumLanguagesTable, YumTagsTable,\
      YumReposTable, YumPackageBuildTable, YumPackageBuildNamesTagsTable,\
      YumPackageBuildNamesTable
@@ -311,6 +311,9 @@ class ListQueries(controllers.Controller):
             accept_format='application/xml', allow_json=True)
     def buildtags(self, repos, langs='en_US'):
         '''Return an XML object with all the PackageBuild tags and their scores.
+        The PackageBuild tags are tags binded to applications belonging to 
+        the packagebuild. When there are more apps with same tag within one 
+        packaebuild, the maximum score is taken.
 
         :arg repoName: A repo shortname to lookup packagebuilds into
         :arg language: A language string, (e.g. 'American English' or 'en_US')
@@ -318,7 +321,7 @@ class ListQueries(controllers.Controller):
 
         Returns:
         :buildtags: a dictionary of buildaname : tagdict, where tagdict is a
-        dictionary of tag : score key-value pairs.
+        dictionary of tag : score key-value pairs. 
         '''
         if repos.__class__ != [].__class__:
             repos = [repos]
@@ -371,17 +374,6 @@ class ListQueries(controllers.Controller):
         e.close()
         lite_session.execute(YumReposTable.insert(), fetchedrepos)
 
-        # look for the needed values in PackageBuildTable and copy them
-        s = select([PackageBuildTable.c.id, PackageBuildTable.c.name,
-                    PackageBuildTable.c.repoid],
-                   and_(
-                       PackageBuildTable.c.repoid == ReposTable.c.id,
-                       ReposTable.c.shortname.in_(repos)))
-        e = default_engine.execute(s)
-        builds = e.fetchall()
-        e.close()
-        lite_session.execute(YumPackageBuildTable.insert(), builds)
-            
         # copy the languages
         e = LanguagesTable.select(
             LanguagesTable.c.shortname.in_(langs)).execute()
@@ -389,39 +381,45 @@ class ListQueries(controllers.Controller):
         e.close()
         lite_session.execute(YumLanguagesTable.insert(), languages)
 
-        # copy the names table
-        e = PackageBuildNamesTable.select(and_(
-            PackageBuildNamesTable.c.name==PackageBuildTable.c.name,
-            PackageBuildTable.c.repoid==ReposTable.c.id,
-            ReposTable.c.shortname.in_(repos))).execute()
-        names = e.fetchall()
-        e.close()
-        lite_session.execute(YumPackageBuildNamesTable.insert(), names)
+        pacakagebuilds = PackageBuild.query.join('repos').filter(
+                    ReposTable.c.shortname.in_(repos))
 
-        # copy all the corresponding tags
-        e = TagsTable.select(and_(\
-            PackageBuildTable.c.name==\
-                PackageBuildNamesTagsTable.c.packagebuildname,\
-            PackageBuildNamesTagsTable.c.tagid==TagsTable.c.id,\
-            TagsTable.c.language.in_(langs),\
-            PackageBuildTable.c.repoid==ReposTable.c.id,\
-            ReposTable.c.shortname.in_(repos))).distinct().execute()
-        tags = e.fetchall()
-        e.close()
-        lite_session.execute(YumTagsTable.insert(), tags)
+        unique_tags={}
 
-        # copy the PackageBuildNamesTagsTable
-        e = PackageBuildNamesTagsTable.select(and_(\
-            PackageBuildNamesTagsTable.c.tagid==TagsTable.c.id,\
-            PackageBuildTable.c.name==\
-                PackageBuildNamesTagsTable.c.packagebuildname,\
-            TagsTable.c.language.in_(langs),\
-            PackageBuildTable.c.repoid==ReposTable.c.id,\
-            ReposTable.c.shortname.in_(repos))).distinct().execute()
-        buildtags = e.fetchall()
-        e.close()
-        lite_session.execute(YumPackageBuildNamesTagsTable.insert(), buildtags)
+        for packagebuild in pacakagebuilds:
+            build = [(packagebuild.id, packagebuild.name, packagebuild.repoid)]
+            lite_session.execute(YumPackageBuildTable.insert(), build)
+            name = [(packagebuild.name)]
+            lite_session.execute(YumPackageBuildNameTable.insert(), name)
 
+            build_tags = {}
+            
+            # collect tags
+            for app in build.applications:
+                tags = ApplicationTag.query.join('tag').filter(
+                        ApplicationsTagsTable.c.applicationid==app.id, 
+                        TagsTable.c.language._in(langs))
+                for tag in tags:
+                    sc = build_tags.get((tag.tag.name, tag.tag.language), None)
+                    if sc is None or sc < tag.score:
+                        build_tags[(tag.tag.name, tag.tag.language)] = tag.score
+
+            # write tags
+            for tag, score in iteritems(build_tags):
+                tag_id = unique_tags.get(tag, None)
+                if not tag_id:
+                    tag_id = YumTagsTable.query.insert().values(
+                        name=tag[0], 
+                        language=tag[1]
+                        ).execute().last_inserted_ids()[-1]
+                    unique_tags[tag] = tag_id
+
+                YumPackageBuildNamesTagsTable.query.insert().values(
+                    packagebuildname=packagebuild.name, 
+                    tagid=tag_id, score=score
+                    ).execute()
+
+                    
         lite_session.commit()
 
         f = open(dbfile, 'r')

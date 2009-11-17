@@ -1,7 +1,22 @@
 <html py:strip=""
       xmlns:py="http://genshi.edgewall.org/">
-  &nbsp; ${len(comments)} Comments:
-  <hr /><br />
+    <!--a  href="${tg.url('/commentsfeed/atom1.0?app=%s' % app.name)}">
+            <img src="${tg.url('/static/images/feed.png')}"
+                 alt="(${len(comments)}) Comments" />
+  &nbsp; ${len(comments)} Comments:</a-->
+
+  <py:choose test="len(comments)">
+  <py:when test="0">
+    <h3>No User Comments</h3>
+    <hr style="color:#666;"/>
+    Be the first to comment...
+  </py:when>
+  <py:otherwise>
+    <h3>User Comments (${len(comments)})</h3>
+    <hr />
+  </py:otherwise>
+  </py:choose>
+
   <py:for each="(comment, cid) in zip(comments, range(1, len(comments)+1))">
           <?python if comment.published:
                        color=''
@@ -10,10 +25,8 @@
                    ?>
           <div class="comment" style="background-color: $color">
             <div class="comment_head">
-              <a name="Comment$cid" href="#Comment$cid"
-                 title="permalink">#</a> 
-              Comment by: $comment.author at
-              <em>${comment.time.strftime("%H:%M - %h %d, %Y")}</em>
+              <div style="float:right;">${comment.fancy_delta()}</div>
+              <b style="color:#337acc;">${comment.author}</b> says:
               <?python from pkgdb.utils import mod_grp ?>
               <py:if test="mod_grp in tg.identity.groups">              
                 <a href="${tg.url('/comments/toggle_published/%s' %comment.id)}">
@@ -35,7 +48,7 @@
                ?>
             <blockquote xml:space="preserve">${HTML(body)}</blockquote>
           </div>
-          <br />
+          <hr />
   </py:for>
 </html>
 

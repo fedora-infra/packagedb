@@ -25,7 +25,7 @@ from sqlalchemy import Table
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.sql import or_
 
-from turbogears.database import metadata, mapper
+from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
 
@@ -63,9 +63,9 @@ class Language(SABase):
         :arg name: a short or long Language name
         '''
 
-        return Language.query.filter(or_(Language.name==language,
+        return session.query(Language).filter(or_(Language.name==language,
                                          Language.shortname==language
-                                         )).one().shortname
+                                         )).one()
 #
 # Mappers
 #

@@ -53,9 +53,10 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
         GroupPackageListing, GroupPackageListingAcl
 from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
         RpmObsoletes, RpmFiles
-from pkgdb.model.tags import Tag, TagsTable
 from pkgdb.model.languages import Language
-from pkgdb.model.comments import Comment, CommentsTable
+
+import logging
+error_log = logging.getLogger('pkgdb.model.packages')
 
 get_engine()
 
@@ -75,20 +76,13 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 PackageBuildTable = Table('packagebuild', metadata, autoload=True)
-PackageBuildNamesTable = Table('packagebuildnames', metadata, autoload=True)
 PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
 
 # association tables (many-to-many relationships)
 PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
-        )
-PackageBuildNamesTagsTable = Table('packagebuildnamestags', metadata,
-        Column('packagebuildname', String,
-               ForeignKey('packagebuildnames.name'), primary_key=True),
-        Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),
-        Column('score', Integer)
-        )
+)
 # pylint: enable-msg=C0103
 
 #
@@ -298,8 +292,8 @@ class PackageBuildDepends(SABase):
 
     Table(junction) -- PackageBuildDepends
     '''
-    def __init__(self, packagebuildid, packagebuildname):
-        super(PackageBuildDepends, self).__init()
+    def __init__(self, packagebuildname, packagebuildid=None):
+        super(PackageBuildDepends, self).__init__()
         self.packagebuildid = packagebuildid
         self.packagebuildname = packagebuildname
 
@@ -307,18 +301,8 @@ class PackageBuildDepends(SABase):
         return 'PackageBuildDepends(%r, %r)' % (
             self.packagebuildid, self.packagebuildname)
 
-class PackageBuildName(SABase):
-    '''Package Build Names
 
-    We use this mainly to have something more generic to tie tags and comments
-    to instead of packagebuildid.
-    '''
-    def __init__(self, name):
-        super(PackageBuildName, self).__init__()
-        self.name = name
-    def __repr__(self):
-        return 'PackageBuildName(%r)' % self.name
-    
+
 class PackageBuild(SABase):
     '''Package Builds - Actual rpms
 
@@ -326,16 +310,16 @@ class PackageBuild(SABase):
 
     Table -- PackageBuild
     '''
-    def __init__(self, packageid, epoch, version, release, architecture,
-                 desktop, size, license, changelog, committime, committer,
+    def __init__(self, name, packageid, epoch, version, release, architecture,
+                 size, license, changelog, committime, committer,
                  repoid):
         super(PackageBuild, self).__init__()
+        self.name = name
         self.packageid = packageid
         self.epoch = epoch
         self.version = version
         self.release = release
         self.architecture = architecture
-        self.desktop = desktop
         self.size = size
         self.license = license
         self.changelog = changelog
@@ -345,161 +329,29 @@ class PackageBuild(SABase):
 
     def __repr__(self):
         return 'PackageBuild(%r, packageid=%r, epoch=%r, version=%r,' \
-               ' release=%r, architecture=%r, desktop=%r, size=%r, license=%r,' \
+               ' release=%r, architecture=%r, size=%r, license=%r,' \
                ' changelog=%r, committime=%r, committer=%r, repoid=%r)' % (
             self.name, self.packageid, self.epoch, self.version,
-            self.release, self.architecture, self.desktop, self.size,
+            self.release, self.architecture, self.size,
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
     
-    @classmethod
-    def tag(cls, builds, tags, language):
-        '''Add a set of tags to a list of PackageBuilds.
-
-        This method will tag all packagebuilds with matching name. 
-        
-        :arg builds: one or more PackageBuild names to add the tags to.
-        :arg tags: one or more tags to add to the packages.
-        :arg language: name or shortname for the language of the tags.
-
-        Returns two lists (unchanged): tags and builds.
-        '''
-        lang = Language.find(language)
-
-        # if we got just one argument, make it a list
-        if tags.__class__ != [].__class__:
-            if tags == '':
-                raise Exception('Tag name missing.')
-            tags = [tags]
-        if builds.__class__ != [].__class__:
-            builds = [builds]
-
-        buildnames = PackageBuildName.query.filter(
-            PackageBuildName.name.in_(builds))
-        for tag in tags:
-            # If the tag doesn't exist already, insert it
-            try:
-                conn = TagsTable.select(and_(
-                    TagsTable.c.name==tag, TagsTable.c.language==lang
-                    )).execute()
-                tagid = conn.fetchone()[0]
-                conn.close()
-            except:
-                tagid = TagsTable.insert().values(name=tag, language=lang
-                    ).execute().last_inserted_ids()[-1]
-
-            for build in buildnames:
-                # the db knows to increment the score if the
-                # packageid - tagid pair is already there.
-                PackageBuildNamesTagsTable.insert().values(
-                    packagebuildname=build.name, tagid=tagid).execute()
-        
-    @classmethod
-    def search(cls, tags, operator, language):
-        '''Retrieve all the builds which have a specified set of tags.
-
-        Can also be used with just one tag.
-
-        :arg tags: One or more tag names to lookup
-        :arg operator: Can be one of 'OR' and 'AND', case insensitive, decides
-        how the search for tags is done.
-        :arg language: A language in short ('en_US') or long ('American English')
-        format. Look for them on https://translate.fedoraproject.org/languages/
-
-        Returns:
-        :tags: a list of Tag objects, filtered by :language:
-        :builds: list of found PackageBuild objects
-        '''
-
-        lang = Language.find(language)
-        
-        if tags.__class__ != [].__class__:
-            tags = [tags]
-        builds = set()
-
-        # get the actual Tag objects
-        object_tags = []
-        for tag in tags:
-            try:
-             object_tags.append(
-                    Tag.query.filter_by(name=tag, language=lang).one())
-            except:
-                raise Exception(tag, language)
-        tags = object_tags
-                        
-        if operator.lower() == 'or':
-            for tag in tags:
-                pkgs = tag.builds
-                for pkg in pkgs:
-                    builds.add(pkg)
-        elif operator.lower() == 'and':
-            builds = set(tags[0].builds)
-            if len(tags) > 0:
-                # do an intersection between all the taglists to get
-                # the common ones
-                for tag in tags[1:]:
-                    builds = set(tags[0].builds) & set(tag.builds)
-
-        return builds
-
-    def comment(self, author, body, language):
-        '''Add a new comment to a packagebuild.
-
-        :arg author: the FAS author
-        :arg body: text body of the comment
-        :arg language: name or shortname of the comment body`s language
-        '''
-
-        lang = Language.find(language)
-        
-        comment = Comment(author, body, language, published=True,
-                          packagebuildname=self.name)
-
-        # self.comments is just an illusion
-        buildname = PackageBuildName.query.filter_by(name=self.name).one()
-        buildname.comments.append(comment)
-        
-        session.flush()
-
-    def score(self, tag):
-        '''Return the score of a given tag-package combination
-
-        :arg tag: An actual Tag object.
-
-        Returns an integer of the score or -1 otherwise.
-        '''
-        score = -1
-        try:
-            if self.buildname in tag.buildnames:
-                result = PackageBuildNamesTagsTable.select(and_(
-                    PackageBuildNamesTagsTable.c.tagid==tag.id,
-                    PackageBuildNamesTagsTable.c.packagebuildname==self.name)
-                    ).execute().fetchone()
-                score = result[2]
-            return score
-        except AttributeError:
-            print 'This method receives a Tag object as argument!'
-
     def scores(self, language='en_US'):
-        '''Return a dictionary of tagname: score for a given PackageBuild
+        '''Return a dictionary of tagname: score for a given packegebuild
 
-        :kwarg language (optional): Restrict the search to just one language.
+        :kwarg language: Select tag language (default: 'en_US').
         '''
 
-        lang = Language.find(language)
+        scores = {}
+        for app in self.applications:
+            tags = app.scores_by_language(language)
+            for tag,score in tags.iteritems():
+                sc = scores.get(tag, None)
+                if sc is None or sc < score:
+                    scores[tag] = score
 
-        tags = Tag.query.join(Tag.buildnames).filter(
-            and_(PackageBuildName.name==self.name, Tag.language==lang)).all()
-        
-        buildtags = {}
-        for tag in tags:
-            buildtags[tag.name] = self.score(tag)
-        return buildtags
+        return scores
 
-    # Link to comments/tags, through PackageBuildName
-    comments = association_proxy('buildname', 'comments')
-    tags = association_proxy('buildname', 'tags')
-        
 #
 # Mappers
 #
@@ -514,6 +366,7 @@ mapper(Package, PackageTable, properties={
         backref=backref('package'),
         collection_class=attribute_mapped_collection('name'))
     })
+
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
     'people2': relation(PersonPackageListing, backref=backref('packagelisting'),
@@ -522,7 +375,9 @@ mapper(PackageListing, PackageListingTable, properties={
     'groups2': relation(GroupPackageListing, backref=backref('packagelisting'),
         collection_class = attribute_mapped_collection('groupname')),
     })
+
 mapper(PackageBuildDepends, PackageBuildDependsTable)
+
 mapper(PackageBuild, PackageBuildTable, properties={
     'conflicts': relation(RpmConflicts, backref=backref('build'),
         collection_class = attribute_mapped_collection('name'),
@@ -543,13 +398,6 @@ mapper(PackageBuild, PackageBuildTable, properties={
         collection_class = attribute_mapped_collection('packagebuildname'),
         cascade='all, delete-orphan'),
     'listings': relation(PackageListing, backref=backref('builds'),
-        secondary = PackageBuildListingTable)
+        secondary = PackageBuildListingTable),
     })
-mapper(PackageBuildName, PackageBuildNamesTable, properties={
-    'builds': relation(PackageBuild, backref=backref('buildname'),
-        cascade='all, delete-orphan'),
-    'tags': relation(Tag, backref=backref('buildnames'),
-        secondary=PackageBuildNamesTagsTable),
-    'comments': relation(Comment, backref=backref('buildnames'),
-        cascade='all, delete-orphan')
-    })
+
