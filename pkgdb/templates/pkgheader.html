@@ -7,8 +7,9 @@
   <ul py:def="pkgheader(packageName, action=None)" id="actions"
     py:with="pkgUrlName=tg.quote_plus(packageName)">
     <li><a class="koji" href="${'http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=' + pkgUrlName}">Build Status</a></li>
-    <li><a class="bodhi" href="${'https://admin.fedoraproject.org/updates/'
-      + pkgUrlName}">Update Status</a></li>
+    <li><a class="bodhi" href="${tg.url(
+      'https://admin.fedoraproject.org/updates/%s' % (pkgUrlName,))}"
+      >Update Status</a></li>
     <li><a class="cvs" href="${'http://cvs.fedoraproject.org/viewcvs/rpms/'
       + pkgUrlName}">Package Source</a></li>
     <li py:if="action != 'bugz'"><a class="bugz"

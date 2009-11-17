@@ -34,12 +34,11 @@ Controller to search for packages and eventually users.
 #   know that we have a filter() method on the returned type.
 
 from sqlalchemy.sql import func, and_, select
-from sqlalchemy.orm import lazyload
-from turbogears import controllers, expose, validate, paginate, redirect, config
+from turbogears import controllers, expose, validate, paginate, redirect
 from turbogears.validators import Int
-from fedora.tg.util import request_format
 
 from pkgdb.model import Collection, Package, PackageBuild, Repo
+from pkgdb.utils import STATUS
 from pkgdb import _
 
 
@@ -98,7 +97,7 @@ class Search(controllers.Controller):
         '''
 
         if searchwords == '' or searchwords.isspace():
-            raise redirect(config.get('base_url_filter.base_url')+ '/search/')
+            raise redirect('/search/')
 
         # case insensitive
         query = searchwords.lower()
@@ -109,31 +108,53 @@ class Search(controllers.Controller):
             for searchword in query:
                 if searchon == 'description':
                     descriptions += PackageBuild.query.join(
-                        PackageBuild.package).filter(func.lower(
-                        Package.description).like('%'+searchword+'%'))
+                        PackageBuild.package).filter(and_(
+                            PackageBuild.statuscode!=
+                                STATUS['Removed'].statuscodeid,
+                            Package.statuscode!=STATUS['Removed'].statuscodeid,
+                            func.lower(Package.description).like(
+                                '%' + searchword + '%')))
                 elif searchon in ['name', 'both']:
-                    exact += PackageBuild.query.filter_by(name=searchword)
-                    names += PackageBuild.query.filter(func.lower(
-                        PackageBuild.name).like('%'+searchwords+'%'))
+                    exact += PackageBuild.query.filter_by(name=searchword
+                            ).filter(PackageBuild.statuscode!= \
+                                    STATUS['Removed'].statuscodeid)
+                    names += PackageBuild.query.filter(and_(
+                        PackageBuild.statuscode!= \
+                                STATUS['Removed'].statuscodeid,
+                    func.lower(PackageBuild.name).like('%'+searchwords+'%')))
                     if searchon == 'both':
                         descriptions += PackageBuild.query.join(
-                            PackageBuild.package).filter(func.lower(
-                            Package.description).like('%'+searchwords+'%'))
+                            PackageBuild.package).filter(and_(
+                                    PackageBuild.statuscode!= \
+                                            STATUS['Removed'].statuscodeid,
+                                    Package.statuscode!= \
+                                            STATUS['Removed'].statuscodeid,
+                                            func.lower(Package.description
+                                                ).like('%'+searchwords+'%')))
         else: # AND operator
             if searchon in ['name', 'both']:
-                exact = PackageBuild.query.filter_by(name=query)
+                exact = PackageBuild.query.filter_by(name=query).filter(
+                        PackageBuild.statuscode!=STATUS['Removed'].statuscodeid)
                 # query the db for every searchword and build a Query object
                 # to filter succesively
                 query = query.split()
-                names = PackageBuild.query.filter(func.lower(
-                    PackageBuild.name).like('%'+query[0]+'%'))
+                names = PackageBuild.query.filter(and_(
+                    PackageBuild.statuscode!= \
+                            STATUS['Removed'].statuscodeid,
+                            func.lower(PackageBuild.name).like(
+                                '%' + query[0] + '%')))
                 for searchword in query:
                     names = names.filter(func.lower(PackageBuild.name).like(
-                        '%'+searchword+'%'))
+                        '%' + searchword + '%'))
                 if searchon == 'both':
                     descriptions = PackageBuild.query.join(
-                        PackageBuild.package).filter(func.lower(
-                        Package.description).like('%'+query[0]+'%'))
+                        PackageBuild.package).filter(and_(
+                                PackageBuild.statuscode!= \
+                                        STATUS['Removed'].statuscodeid,
+                                Package.statuscode!= \
+                                        STATUS['Removed'].statuscodeid,
+                                func.lower(Package.description).like(
+                                    '%' + query[0] + '%')))
                     for searchword in query:
                         descriptions = descriptions.filter(func.lower(
                             Package.description).like('%'+searchword+'%'))
@@ -141,9 +162,20 @@ class Search(controllers.Controller):
             elif searchon == 'description':
                 query = query.split()
                 descriptions = PackageBuild.query.join(
-                    PackageBuild.package).filter(func.lower(
-                    Package.description).like('%'+searchwords+'%'))
+                    PackageBuild.package).filter(and_(
+                            PackageBuild.statuscode!= \
+                                    STATUS['Removed'].statuscodeid,
+                            Package.statuscode!= \
+                                    STATUS['Removed'].statuscodeid,
+                            func.lower(Package.description).like(
+                                '%' + searchwords + '%')))
 
+#                for searchword in query:
+#                    # pylint: disable-msg=E1103
+#                    descriptions = descriptions.filter(
+#                            func.lower(Package.description).like(
+#                                '%' + searchword + '%'))
+#                descriptions = descriptions.all()
 
         # Return a list of all packages but keeping the order
         buildset = set()

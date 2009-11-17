@@ -319,14 +319,16 @@ Currently, this is more involved.
      bzr checkout --lightweight bzr+ssh://bzr.fedorahosted.org/bzr/packagedb/fedora-packagedb-stable/ release
 
 3) Go to that directory and run::
-     paver sdist
+     paver sdist --format bztar
 
-4) copy the dist/fedora-packagedb-VERSION.tar.gz and fedora-packagedb.spec files
+4) copy the dist/fedora-packagedb-VERSION.tar.bz2 and fedora-packagedb.spec files
    to where you build Fedora RPMS.  Do a test build::
-     cp dist/fedora-packagedb-*.tar.gz fedora-packagedb.spec /srv/cvs/fedora-packagedb/
+     cp dist/fedora-packagedb-*.tar.bz2 fedora-packagedb.spec /srv/cvs/fedora-packagedb/
      pushd /srv/cvs/fedora-packagedb/
-     rpmbuild -bs --nodeps fedora-packagedb.spec
+     rpmbuild-md5 -bs --nodeps fedora-packagedb.spec
      mock -r epel-5-i386 *.src.rpm
+
+   (rpmbuild-md5 is in the fedora-packager package.)
 
 5) Make sure the build completes.  Run rpmlint on the results.  Install and
    test the new packages::

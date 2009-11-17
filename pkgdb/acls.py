@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -270,8 +270,7 @@ class Acls(controllers.Controller):
                     ' fedoraproject.org website, please report it.') % {
                         'pkg': package_id})
 
-        raise redirect(config.get('base_url_filter.base_url') +
-                '/packages/name/' + pkg.name)
+        raise redirect('/packages/name/%s' % pkg.name)
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name',
