@@ -37,6 +37,11 @@ interface to correct those problems.  A few of the issues:
      instance, people can be in the perl-sig but not be able to commit to perl
      packages. (requires db work)
 
+Mockup
+======
+
+Here's a mockup of the new UI:
+
 .. image:: new-owners-page.svg
 
 
