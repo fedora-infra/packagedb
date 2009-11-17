@@ -85,7 +85,7 @@ options(
     sphinx = Bunch(
         docroot='.',
         builddir='build-doc',
-        sourcedir='doc'
+        sourcedir='docs'
         ),
     pylint = Bunch(
         module=['pkgdb']
