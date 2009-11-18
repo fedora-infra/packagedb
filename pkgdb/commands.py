@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """This module contains functions called from console script entry points."""
 
+import sys
 import pkgdata
-
 sys.path.append(pkgdata.get_location('public_code'))
 
 from pkgdb.utils import startup
