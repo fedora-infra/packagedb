@@ -47,17 +47,17 @@ $BODY$
   COST 100;
 ALTER FUNCTION package_build_agreement() OWNER TO postgres;
 
-drop trigger package_build_agreement_trigger on table PackageBuildListing;
+drop trigger if exists package_build_agreement_trigger on PackageBuildListing;
 create trigger package_build_agreement_trigger before update or insert
   on PackageBuildListing
   for each row execute procedure package_build_agreement();
 
-drop trigger package_build_agreement_trigger on table PackageListing;
+drop trigger if exists package_build_agreement_trigger on PackageListing;
 create trigger package_build_agreement_trigger before update
   on PackageListing
   for each row execute procedure package_build_agreement();
 
-drop trigger package_build_agreement_trigger on table PackageBuild;
+drop trigger if exists package_build_agreement_trigger on PackageBuild;
 create trigger package_build_agreement_trigger before update
   on PackageBuild
   for each row execute procedure package_build_agreement();
