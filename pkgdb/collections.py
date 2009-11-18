@@ -347,7 +347,7 @@ class Collections(controllers.Controller):
         Retrieve a collection by its simple_name
         '''
         collection = Collection.query.filter_by(name=collctn_name,
-                version=collectn_ver).one()
+                version=collctn_ver).one()
         return dict(name=collection.simple_name())
 
     @expose(allow_json=True)
