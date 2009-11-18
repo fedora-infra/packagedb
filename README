@@ -132,7 +132,7 @@ Currently the database dump is not up to date with the latest changes in the
 devel branch. These steps won't be required after we get a healthy 0.5.x dbdump.
 Run the following scripts to bring it up to date::
 
-  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.4.0.1.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.4.1-packagebuild.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-tags-and-comments.sql
   python update-schema/repos.py > repos.sql
@@ -154,6 +154,8 @@ http://trac.turbogears.org/attachment/ticket/2348/feedkid.diff
 
 And here's the link to the upstream ticket:
 http://trac.turbogears.org/ticket/2348
+
+Note: this has been applied to the Fedora and EPEL packages.
 
 Start the Server (The new way)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
