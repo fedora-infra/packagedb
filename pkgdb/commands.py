@@ -5,10 +5,9 @@ import sys
 import pkgdata
 sys.path.append(pkgdata.get_location('public_code'))
 
-from pkgdb.utils import startup
-startup()
+from pkgdb.utils import init_globals
+init_globals()
 
-import sys
 from os import getcwd
 from os.path import dirname, exists, join
 import os.path
