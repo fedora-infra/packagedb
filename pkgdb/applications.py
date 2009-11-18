@@ -59,8 +59,7 @@ class ApplicationController(controllers.Controller):
         :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
         if app_name==None:
-            raise redirect(config.get('base_url_filter.base_url') +
-                '/')
+            raise redirect('/')
 
         # look for The One application
         try:

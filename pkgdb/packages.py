@@ -57,10 +57,12 @@ class Package(controllers.Controller):
         :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
         if buildName==None:
-            raise redirect(config.get('base_url_filter.base_url') +
-                '/packages/list/')
+            raise redirect('/packages/list/')
 
+        #pylint:disable-msg=E1101
         builds_query = PackageBuild.query.filter_by(name=buildName)
+        #pylint:enable-msg=E1101
+
         # look for The One packagebuild
         try:
             build = builds_query.join(PackageBuild.repo).filter(
