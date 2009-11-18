@@ -77,9 +77,9 @@ class UserCache(dict):
     Use clear() to remove all entries from the cache.
     Use del cache[username] to remove a specific entry.
     '''
-    def __init__(self, fas):
+    def __init__(self, fas_connection):
         super(UserCache, self).__init__()
-        self.fas = fas
+        self.fas = fas_connection
 
     def __getitem__(self, username):
         '''Retrieve a user for a username.
