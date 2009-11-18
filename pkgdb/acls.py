@@ -201,37 +201,6 @@ class Acls(controllers.Controller):
             packageListings=pkg_listings, statusMap = status_map,
             aclNames=acl_names, aclStatus=acl_status_translations)
 
-    @expose(template='pkgdb.templates.pkgpage')
-    # :C0103: id is an appropriate name for this method
-    def id(self, package_id): # pylint: disable-msg=C0103
-        '''Return the package with the given id
-
-        :arg package_id: Numeric id of the package to return information for
-        '''
-        try:
-            package_id = int(package_id)
-        except ValueError:
-            return dict(tg_template='pkgdb.templates.errors', status=False,
-                    title=_('%(app)s -- Invalid Package Id') % {
-                        'app': self.app_title},
-                    message=_('The packageId you were linked to is not a valid'
-                    ' id.  If you received this error from a link on the'
-                    ' fedoraproject.org website, please report it.'))
-
-        # pylint: disable-msg=E1101
-        pkg = Package.query.filter_by(id=package_id).first()
-        # pylint: enable-msg=E1101
-        if not pkg:
-            return dict(tg_template='pkgdb.templates.errors', status=False,
-                    title=_('%(app)s -- Unknown Package') % {
-                        'app': self.app_title},
-                    message=_('The packageId you were linked to, %(pkg)s, does'
-                    ' not exist. If you received this error from a link on the'
-                    ' fedoraproject.org website, please report it.') % {
-                        'pkg': package_id})
-
-        raise redirect('/packages/name/%s' % pkg.name)
-
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name',
             max_limit=None, max_pages=13)
