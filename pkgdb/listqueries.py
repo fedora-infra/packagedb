@@ -399,7 +399,7 @@ class ListQueries(controllers.Controller):
             for app in build.applications:
                 tags = ApplicationTag.query.join('tag').filter(
                         ApplicationsTagsTable.c.applicationid==app.id, 
-                        TagsTable.c.language._in(langs))
+                        TagsTable.c.language.in_(langs))
                 for tag in tags:
                     sc = build_tags.get((tag.tag.name, tag.tag.language), None)
                     if sc is None or sc < tag.score:
