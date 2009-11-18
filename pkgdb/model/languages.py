@@ -57,7 +57,7 @@ class Language(SABase):
         return 'Language(%r, %r)' % (self.name, self.shortname)
 
     @classmethod
-    def find(self, language):
+    def find(cls, language):
         '''Returns a shortname after searching for both short and longname.
 
         :arg name: a short or long Language name
