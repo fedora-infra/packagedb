@@ -375,10 +375,11 @@ class ListQueries(controllers.Controller):
         lite_session.execute(YumReposTable.insert(), fetchedrepos)
 
         # copy the languages
-        e = LanguagesTable.select(
-            LanguagesTable.c.shortname.in_(langs)).execute()
-        languages = e.fetchall()
-        e.close()
+        lang_select = select(LanguagesTable,
+            LanguagesTable.c.shortname.in_(langs))
+        query_results = default_engine.execute(lang_select)
+        languages = query_results.fetchall()
+        query_results.close()
         lite_session.execute(YumLanguagesTable.insert(), languages)
 
         pacakagebuilds = PackageBuild.query.join('repos').filter(
