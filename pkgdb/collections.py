@@ -35,12 +35,13 @@ import sys
 
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import lazyload, eagerload
+from sqlalchemy.sql import select, and_
 from turbogears import controllers, expose, paginate, config, identity, flash
 from turbogears.database import session
 from cherrypy import request
 
 import koji
-from fedora.tg.util import json_or_redirect
+from fedora.tg.util import json_or_redirect, request_format, tg_url
 
 from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
@@ -80,12 +81,66 @@ class Collections(controllers.Controller):
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100,
             max_limit=None, max_pages=13)
-    # :C0103: id is an appropriate name for this function
-    def id(self, collection_id): # pylint: disable-msg=C0103
+    def name(self, collctn):
+        '''Return a page with information on a particular Collection
+
+        :arg collctn: Collection shortname
+        '''
+        ### FIXME: Want to return additional info:
+        # date it was created (join log table: creation date)
+        # The initial import doesn't have this information, though.
+        try:
+            #pylint:disable-msg=E1101
+            collection = Collection.by_simple_name(collctn)
+        except InvalidRequestError:
+            # Either the name doesn't exist or somehow it references more than
+            # one value
+            flash(_('The collection name you were linked to, %(collctn)s,'
+                    ' does not exist.  If you received this error from'
+                    ' a link on the fedoraproject.org website, please'
+                    ' report it.') % {'collctn': collctn})
+            if request_format() == 'json':
+                error = dict(exc='InvalidCollection')
+            else:
+                error = dict(title=_('%(app)s -- Invalid Collection Name') % {
+                            'app': self.app_title},
+                        tg_template='pkgdb.templates.errors')
+            return error
+
+        # Why do we reformat the data returned from the database?
+        # 1) We don't need all the information in the collection object
+        # 2) We need statusname which is not in the specific table.
+        collection_entry = {'name': collection.name,
+                'version': collection.version,
+                'owner': collection.owner,
+                'summary': collection.summary,
+                'description': collection.description,
+                'statusname': collection.status.locale['C'].statusname
+                }
+
+        # Retrieve the package list for this collection
+        # pylint:disable-msg=E1101
+        packages = select((Package), and_(Package.id==PackageListing.packageid,
+                PackageListing.collectionid==collection.id,
+                Package.stauscode!=STATUS['Removed'].statuscodeid),
+                order_by=(Package.name,))
+        # pylint:enable-msg=E1101
+
+        return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
+            collection['version']), collection=collection_entry,
+            packages=packages)
+
+    @expose(template='pkgdb.templates.collectionpage', allow_json=True)
+    @paginate('packages', default_order='name', limit=100,
+            max_limit=None, max_pages=13)
+    def id(self, collection_id): #pylint:disable-msg=C0103
         '''Return a page with information on a particular Collection
 
         :arg collection_id: Numeric id of the collection
         '''
+        flash(_('This page is deprecated.  Use %(url)s instead.') %
+                {'url': config.get('base_url_filter.base_url',
+                    'http://localhost') + tg_url('/collection/name')})
         collectionEntry = collection_id
         try:
             collection_id = int(collection_id)
