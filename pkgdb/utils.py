@@ -120,7 +120,7 @@ def init_globals():
     '''
     # Things to do on startup
     refresh_status()
-    global fas, LOG, bugzilla, admin_grp, pkger_grp
+    global fas, LOG, bugzilla
     LOG = logging.getLogger('pkgdb.controllers')
 
     # Get a connection to the Account System server
