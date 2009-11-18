@@ -72,7 +72,7 @@ class Letters(controllers.Controller):
                                      Package.name.like('9%')))
                 else: 
                     # sanitize for ilike:
-                    searchwords =searchwords.replace('&','').replace('_','') 
+                    searchwords = searchwords.replace('&','').replace('_','') 
                     # pylint: disable-msg=E1101
                     packages = Package.query.options(
                         lazyload('listings2'),
