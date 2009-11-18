@@ -113,7 +113,7 @@ class RpmFiles(SABase):
     def __init__(self, name, packagebuildid=None):
         super(RpmFiles, self).__init__()
         self.name = name
-        self.packagebuildid
+        self.packagebuildid = packagebuildid
 
     def __repr__(self):
         return 'RpmFiles(%r, %r)' % (self.name, self.packagebuildid)
