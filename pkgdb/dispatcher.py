@@ -1001,41 +1001,6 @@ class PackageDispatcher(controllers.Controller):
         # Return the new values
         return dict(status=True, package=pkg, packageListing=pkg_listing)
 
-
-    @expose(allow_json=True)
-    @identity.require(identity.not_anonymous())
-    def toggle_shouldopen(self, pkg_name):
-        '''Toggle whether the acls for the package should be opened to the
-        provenpackager group.
-
-        :arg pkg_name: Name of the package to toggle the shouldopen flag for.
-        '''
-        # Make sure the package exists
-        try:
-            # pylint: disable-msg=E1101
-            pkg = Package.query.filter_by(name=pkg_name).one()
-        except InvalidRequestError:
-            return dict(status=False, message=_('Package %(pkg)s does not'
-                ' exist') % {'pkg': pkg_name})
-
-        # Check that the user has rights to set this field
-        # admin_grp, owner on any branch, or approveacls holder
-        if not identity.in_any_group(admin_grp):
-            owners = [x.owner for x in pkg.listings]
-            if not (self._user_in_approveacls(pkg) or
-                    identity.current.user_name in owners):
-                return dict(status=False, message=_('Permission denied'))
-
-        pkg.shouldopen = not pkg.shouldopen
-        try:
-            session.flush()
-        except SQLError:
-            # An error was generated
-            return dict(status=False, message=_('Unable to set shouldopen on'
-                ' Package %(pkg)s') % {'pkg': pkg_name})
-
-        return dict(status=True, shouldopen=pkg.shouldopen)
-
     def _user_in_approveacls(self, pkg):
         '''Check that the current user is listed in approveacls.
 
@@ -1059,7 +1024,7 @@ class PackageDispatcher(controllers.Controller):
                                 == STATUS['Approved'].statuscodeid:
                             return True
             except StopIteration:
-                # Exhausted the list, approveaclswas not found
+                # Exhausted the list, approveacls was not found
                 return False
 
     @expose(allow_json=True)

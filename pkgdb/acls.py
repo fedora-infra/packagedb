@@ -161,45 +161,6 @@ class Acls(controllers.Controller):
 
         pkg_listings = pkg_listings.all()
 
-        # Check for shouldopen perms
-        if identity.current.user == None:
-            # Anonymous users cannot set shouldopen
-            can_set_shouldopen = False
-        else:
-            # admins and owners of any branch can set shouldopen
-            can_set_shouldopen = admin_grp in identity.current.groups or \
-                    identity.current.user_name in [
-                            x.owner for x in pkg_listings]
-            if not can_set_shouldopen:
-                # Set up a bunch of generators to iterate through the acls
-                # on this package
-
-                # Each iteration, retrieve a list of people with acls on this
-                # package.
-                people_lists = (listing.people for listing in pkg_listings)
-                while True:
-                    try:
-                        # Each iteration, retrieve a set of people from the
-                        # list
-                        people = people_lists.next()
-                        # Retrieve all the lists of acls for the current user
-                        # for each PackageListing
-                        acl_lists = (p.acls for p in people \
-                                    if p.username == identity.current.user_name)
-                        # For each list of acls...
-                        for acls in acl_lists:
-                            # ...check each acl
-                            for acl in acls:
-                                if acl.acl == 'approveacls' and acl.statuscode \
-                                        == STATUS['Approved'].statuscodeid:
-                                    # If the user has approveacls we're done
-                                    can_set_shouldopen = True
-                                    raise StopIteration
-                    except StopIteration:
-                        # When we get StopIteration because the peopleList is
-                        # exhausted or we've found a match, exit the loop
-                        break
-
         for pkg in pkg_listings:
             pkg.json_props = {'PackageListing': ('package', 'collection',
                     'people', 'groups', 'qacontact', 'owner'),
@@ -238,8 +199,7 @@ class Acls(controllers.Controller):
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': package.name},
             packageListings=pkg_listings, statusMap = status_map,
-            aclNames=acl_names, aclStatus=acl_status_translations,
-            can_set_shouldopen=can_set_shouldopen)
+            aclNames=acl_names, aclStatus=acl_status_translations)
 
     @expose(template='pkgdb.templates.pkgpage')
     # :C0103: id is an appropriate name for this method
