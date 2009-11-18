@@ -15,7 +15,8 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Martin Bacovsky <mbacovsk@redhat.com>
+# Author(s): Martin Bacovsky <mbacovsk@redhat.com>
+#            Toshio Kuratomi <toshio@redhat.com>
 #
 
 import sys, os, re
@@ -120,7 +121,9 @@ class RPMParser(object):
         return desktop_entries
 
 
-    def get_app_icons(self, exc=[]):
+    def get_app_icons(self, exc=None):
+        if exc == None:
+            exc = []
 
         app_icon_data = {}
 
