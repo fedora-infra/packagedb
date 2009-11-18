@@ -23,6 +23,7 @@ Controller for displaying PackageBuild(Rpm) related information
 '''
 
 from sqlalchemy.sql import and_
+from sqlalchemy.exceptions import InvalidRequestError
 
 from turbogears import controllers, expose, identity
 from turbogears.database import session
@@ -64,7 +65,7 @@ class ApplicationController(controllers.Controller):
         # look for The One application
         try:
             application = session.query(Application).filter_by(name=app_name).one()
-        except Exception, e:
+        except InvalidRequestError, e:
             error = dict(status=False,
                          title=_('%(app)s -- Invalid Application Name') % {
                              'app': self.app_title},
