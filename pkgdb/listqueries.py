@@ -20,6 +20,17 @@
 '''
 Send acl information to third party tools.
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+# :W0232: no __init__ method: This only applies to a validator schema.  Those
+#   don't have methods, just attributes so it's expected.
+# :R0903: Too few public methods: This only applies to the validator schema
+#   and two classes that we're using as data structures that can return json.
+#   So this is fine.
 
 import itertools
 import os
@@ -57,7 +68,7 @@ from fedora.tg.util import jsonify_validation_errors
 class NotifyList(validators.Schema):
     '''Validator schema for the notify method.'''
     # validator schemas don't have methods (R0903, W0232)
-    # pylint: disable-msg=R0903,W0232
+    #pylint:disable-msg=R0903,W0232
 
     # We don't use a more specific validator for collection or version because
     # the chained validator does it for us and we don't want to hit the
@@ -76,7 +87,7 @@ class AclList(object):
     '''
     # This class is just a data structure that can convert itself to json so
     # there's no need for a lot of methods.
-    # pylint: disable-msg=R0903
+    #pylint:disable-msg=R0903
 
     ### FIXME: Reevaluate whether we need this data structure at all.  Once
     # jsonified, it is transformed into a dict of lists so it might not be
@@ -95,7 +106,7 @@ class BugzillaInfo(object):
     '''
     # This class is just a data structure that can convert itself to json so
     # there's no need for a lot of methods.
-    # pylint: disable-msg=R0903
+    #pylint:disable-msg=R0903
 
     ### FIXME: Reevaluate whether we need this data structure at all.  Once
     # jsonified, it is transformed into a dict of lists so it might not be
