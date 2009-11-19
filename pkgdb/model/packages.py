@@ -32,10 +32,12 @@ Mapping of package related database tables to python classes.
 
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
-# :R0903: Mapped classes will have few methods as SQLAlchemy will monkey patch
-#   more methods in later.
+# :W0201: some attributes are added to the model by SQLAlchemy so they don't
+#   appear in __init__
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+#   is not to name them with all uppercase
 
 from sqlalchemy import Table, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relation, backref
@@ -72,7 +74,7 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
-# pylint: disable-msg=C0103
+#pylint:disable-msg=C0103
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 PackageBuildTable = Table('packagebuild', metadata, autoload=True)
@@ -83,7 +85,7 @@ PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
 )
-# pylint: enable-msg=C0103
+#pylint:enable-msg=C0103
 
 #
 # Mapped Classes
@@ -97,10 +99,9 @@ class Package(SABase):
 
     Table -- Package
     '''
-
-    # pylint: disable-msg=R0903,R0913
     def __init__(self, name, summary, statuscode, description=None,
             reviewurl=None, shouldopen=None, upstreamurl=None):
+        #pylint:disable-msg=R0913
         super(Package, self).__init__()
         self.name = name
         self.summary = summary
@@ -131,7 +132,6 @@ class Package(SABase):
         This creates a new PackageListing for this Package.  The PackageListing
         has default values set for group acls.
         '''
-        # pylint: disable-msg=E1101
         from pkgdb.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
         pkg_listing = PackageListing(owner, status.statuscodeid,
@@ -149,9 +149,9 @@ class Package(SABase):
                 group_acl = GroupPackageListingAcl(acl, acl_status)
                 # :W0201: grouppackagelisting is added to the model by
                 #   SQLAlchemy so it doesn't appear in __init__
-                # pylint: disable-msg=W0201
+                #pylint:disable-msg=W0201
                 group_acl.grouppackagelisting = new_group
-                # pylint: enable-msg=W0201
+                #pylint:enable-msg=W0201
 
         # Create a log message
         log = PackageListingLog(author_name,
@@ -168,10 +168,9 @@ class PackageListing(SABase):
 
     Table -- PackageListing
     '''
-    # pylint: disable-msg=R0903
     def __init__(self, owner, statuscode, packageid=None, collectionid=None,
             qacontact=None, specfile=None):
-        # pylint: disable-msg=R0913
+        #pylint:disable-msg=R0913
         super(PackageListing, self).__init__()
         self.packageid = packageid
         self.collectionid = collectionid
