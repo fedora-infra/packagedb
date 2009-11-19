@@ -393,12 +393,12 @@ class ListQueries(controllers.Controller):
         query_results.close()
         lite_session.execute(YumLanguagesTable.insert(), languages)
 
-        pacakagebuilds = PackageBuild.query.join('repos').filter(
+        packagebuilds = PackageBuild.query.join('repos').filter(
                     ReposTable.c.shortname.in_(repos))
 
         unique_tags={}
 
-        for packagebuild in pacakagebuilds:
+        for packagebuild in packagebuilds:
             build = [(packagebuild.id, packagebuild.name, packagebuild.repoid)]
             lite_session.execute(YumPackageBuildTable.insert(), build)
             name = [(packagebuild.name)]
