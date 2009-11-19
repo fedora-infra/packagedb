@@ -21,6 +21,13 @@
 Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+# :W0232: Controller methods don't need an __init__()
 
 from turbogears import controllers, expose, config, flash
 from turbogears import identity, redirect
@@ -57,7 +64,7 @@ class Root(controllers.RootController):
     All URLs to be served must be mounted somewhere under this controller.
     '''
     # Controller methods don't need an __init__()
-    # pylint: disable-msg=W0232
+    #pylint:disable-msg=W0232
     app_title = _('Fedora Package Database')
 
     appfeed = ApplicationFeed()
