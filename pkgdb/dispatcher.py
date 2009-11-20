@@ -302,6 +302,7 @@ class PackageDispatcher(controllers.Controller):
             # Person has no ACLs on this Package yet.  Create a record
             change_person = PersonPackageListing(person_name)
             pkg_listing.people.append(change_person)
+            pkg_listing.people2[change_person.username] = change_person
             person_acl = PersonPackageListingAcl(new_acl,
                     status.statuscodeid)
             change_person.acls.append(person_acl) #pylint:disable-msg=E1101
