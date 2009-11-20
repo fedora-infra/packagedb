@@ -1187,6 +1187,7 @@ class PackageDispatcher(controllers.Controller):
                 # Save a reference to all pkg_listings
                 listings.append(pkg_listing)
         else:
+            pass # pylint bug
             #pylint:disable-msg=E1101
             # Default to the devel branch
             collection = Collection.query.filter_by(
