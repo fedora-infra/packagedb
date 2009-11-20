@@ -27,6 +27,7 @@ Module to be used for letter pagination and search.
 # :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
 #   noted, E1101 is disabled due to a static checker not having information
 #   about the monkey patches.
+# :C0322: Disable space around operator checking in multiline decorators
 
 from sqlalchemy.sql import or_, and_
 from sqlalchemy.orm import lazyload

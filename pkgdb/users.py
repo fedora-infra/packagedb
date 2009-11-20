@@ -29,6 +29,7 @@ Controller to show information about packages by user.
 
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
+# :C0322: Disable space around operator checking in multiline decorators
 
 import urllib
 

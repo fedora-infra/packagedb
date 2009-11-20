@@ -31,6 +31,7 @@ Send acl information to third party tools.
 # :R0903: Too few public methods: This only applies to the validator schema
 #   and two classes that we're using as data structures that can return json.
 #   So this is fine.
+# :C0322: Disable space around operator checking in multiline decorators
 
 import itertools
 

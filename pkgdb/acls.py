@@ -28,6 +28,7 @@ Controller for handling Package ownership information.
 
 # :E1101: SQLAlchemy monkey patches the database fields into the mapper
 #   classes so we have to disable these checks.
+# :C0322: Disable space around operator checking in multiline decorators
 
 from sqlalchemy.orm import eagerload
 

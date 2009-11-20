@@ -30,6 +30,7 @@ Controller for showing Package Collections.
 #   about the monkey patches.
 # :C0103: the method id looks up a collection by id.  Thus the method name is
 #   appropriate.
+# :C0322: Disable space around operator checking in multiline decorators
 
 import threading
 import os
