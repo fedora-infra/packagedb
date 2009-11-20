@@ -47,8 +47,8 @@ class Letters(controllers.Controller):
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.pkgbugoverview', allow_json=True)
-    @paginate('packages', default_order='name', limit=100,
-                max_limit=None, max_pages=13)
+    @paginate('packages', default_order='name', limit=100, max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def default(self, searchwords='', language='en_US'):
         '''Return a list of all packages in the database.
 

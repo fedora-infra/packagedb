@@ -58,7 +58,7 @@ class Package(controllers.Controller):
         :arg repo: shortname of the repository to look in
         :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
-        if buildName==None:
+        if buildName == None:
             raise redirect('/packages/list/')
 
         #pylint:disable-msg=E1101

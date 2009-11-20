@@ -183,7 +183,7 @@ class RPMParser(object):
                     continue
 
                 data.seek(0)
-                size=(48,48)
+                size = (48,48)
                 
                 app_icon_data[name] = dict(size=size,
                         theme=app_icon_data[name]['theme'], data=data)

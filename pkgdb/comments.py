@@ -133,9 +133,9 @@ class Comments(controllers.Controller):
         #pylint:enable-msg=E1101
 
         if comment.published:
-            comment.published=False
+            comment.published = False
         else:
-            comment.published=True
+            comment.published = True
 
         if request_format != 'json':
             # reload the page we came from

@@ -62,7 +62,7 @@ class ApplicationController(controllers.Controller):
         :arg repo: shortname of the repository to look in
         :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
-        if app_name==None:
+        if app_name == None:
             raise redirect('/')
 
         # look for The One application
@@ -102,4 +102,3 @@ class ApplicationController(controllers.Controller):
                     tagscore=tagscore, language=language,
                     app=application,
                     comments=comments)
-

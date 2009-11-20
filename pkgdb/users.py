@@ -68,8 +68,8 @@ class Users(controllers.Controller):
         raise redirect('/users/info/')
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
-    @paginate('pkgs', limit=100, default_order='name',
-            max_limit=None, max_pages=13)
+    @paginate('pkgs', limit=100, default_order='name', max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def packages(self, fasname=None, acls=None, eol=None):
         '''List packages that the user is interested in.
 

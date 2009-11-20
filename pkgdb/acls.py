@@ -196,8 +196,8 @@ class Acls(controllers.Controller):
             aclNames=acl_names, aclStatus=acl_status_translations)
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
-    @paginate('pkgs', limit=75, default_order='name',
-            max_limit=None, max_pages=13)
+    @paginate('pkgs', limit=75, default_order='name', max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def orphans(self, eol=None):
         '''List orphaned packages.
 

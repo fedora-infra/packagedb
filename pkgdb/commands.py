@@ -38,8 +38,7 @@ def start():
     else:
         configfile = pkgdata.get_filename('pkgdb.cfg', 'config')
 
-    turbogears.update_config(configfile=configfile,
-        modulename="pkgdb.config")
+    turbogears.update_config(configfile=configfile, modulename="pkgdb.config")
 
     from pkgdb.controllers import Root
 

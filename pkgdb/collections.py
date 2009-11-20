@@ -81,8 +81,8 @@ class Collections(controllers.Controller):
                 {'app': self.app_title}, collections=collections)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
-    @paginate('packages', default_order='name', limit=100,
-            max_limit=None, max_pages=13)
+    @paginate('packages', default_order='name', limit=100, max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def name(self, collctn):
         '''Return a page with information on a particular Collection
 
@@ -133,8 +133,8 @@ class Collections(controllers.Controller):
             packages=packages)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
-    @paginate('packages', default_order='name', limit=100,
-            max_limit=None, max_pages=13)
+    @paginate('packages', default_order='name', limit=100, max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def id(self, collection_id): #pylint:disable-msg=C0103
         '''Return a page with information on a particular Collection
 

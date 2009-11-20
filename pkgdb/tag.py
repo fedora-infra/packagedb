@@ -136,7 +136,7 @@ class Tags(controllers.Controller):
             # get the scores dict with the new tags
             if is_xhr():
                 #pylint:disable-msg=E1101
-                app=session.query(Application).filter_by(name=apps).first()
+                app = session.query(Application).filter_by(name=apps).first()
                 #pylint:enable-msg=E1101
                 tagscore = app.scores_by_language(language)
                 return dict(tagscore=tagscore)
