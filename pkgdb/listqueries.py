@@ -46,9 +46,10 @@ from pkgdb.model import Package, Branch, GroupPackageListing, Collection,\
      GroupPackageListingAcl, PackageListing, PersonPackageListing,\
      PersonPackageListingAcl, Repo, PackageBuild
 from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable,\
-     LanguagesTable, ApplicationsTagsTable
-from pkgdb.model import YumLanguagesTable, YumTagsTable,\
-     YumReposTable, YumPackageBuildTable, YumPackageBuildNamesTagsTable
+     LanguagesTable, ApplicationsTagsTable, ApplicationTag
+from pkgdb.model import YumLanguagesTable, YumTagsTable, YumReposTable,\
+    YumPackageBuildTable, YumPackageBuildNamesTable,\
+    YumPackageBuildNamesTagsTable
 from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
 from pkgdb.utils import STATUS
 from pkgdb import _
@@ -403,7 +404,7 @@ class ListQueries(controllers.Controller):
             build = [(packagebuild.id, packagebuild.name, packagebuild.repoid)]
             lite_session.execute(YumPackageBuildTable.insert(), build)
             name = [(packagebuild.name)]
-            lite_session.execute(YumPackageBuildNameTable.insert(), name)
+            lite_session.execute(YumPackageBuildNamesTable.insert(), name)
 
             build_tags = {}
 
@@ -420,7 +421,7 @@ class ListQueries(controllers.Controller):
                         build_tags[(tag.tag.name, tag.tag.language)] = tag.score
 
             # write tags
-            for tag, score in iteritems(build_tags):
+            for tag, score in build_tags.iteritems():
                 tag_id = unique_tags.get(tag, None)
                 if not tag_id:
                     tag_id = YumTagsTable.query.insert().values(

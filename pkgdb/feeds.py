@@ -77,17 +77,16 @@ class ApplicationFeed(FeedController):
 
             # 'John Doe <john@doe.com>' is being split for the TG atom template
             entry["author"] = {}
-            (entry["author"]["name"],
-             nothing,
-             entry["author"]["email"]) = app.builds[0].committer.partition(' <')
+            entry["author"]["name"], discard, entry["author"]["email"] =\
+                    app.builds[0].committer.partition(' <')
             entry["author"]["email"] = "<%s" % entry["author"]["email"]
 
             entry["summary"] = app.builds[0].changelog
 
             
             entry["link"] = self.baseurl + '/packages/%s/%s' % (
-                                           build.name,
-                                           build.repo.shortname
+                                           apps.build.name,
+                                           apps.build.repo.shortname
                                            )
             entries.append(entry)
         

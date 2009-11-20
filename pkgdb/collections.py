@@ -35,7 +35,7 @@ import threading
 import os
 import sys
 
-from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy.exceptions import InvalidRequestError, SQLError
 from sqlalchemy.orm import lazyload, eagerload
 from sqlalchemy.sql import select, and_
 from turbogears import controllers, expose, paginate, config, identity, flash

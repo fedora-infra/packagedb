@@ -31,7 +31,7 @@ Controller for displaying PackageBuild(Rpm) related information
 from sqlalchemy.sql import and_
 from sqlalchemy.exceptions import InvalidRequestError
 
-from turbogears import controllers, expose, identity
+from turbogears import controllers, expose, identity, redirect
 from turbogears.database import session
 
 from pkgdb.model import Comment, Application

@@ -34,7 +34,7 @@ from turbogears.database import session
 from cherrypy import request
 from fedora.tg.util import request_format
 
-from pkgdb.model import Tag, PackageBuild, Application
+from pkgdb.model import Tag, PackageBuild, PackageBuildName, Application
 from pkgdb.letter_paginator import Letters
 from pkgdb.utils import is_xhr
 

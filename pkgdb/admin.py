@@ -20,7 +20,6 @@
 '''
 Controller for handling admin commands.  These are the dispatcher type methods.
 '''
-
 #
 # Pylint Explanations
 #
@@ -28,6 +27,7 @@ Controller for handling admin commands.  These are the dispatcher type methods.
 # :E1101: SQLAlchemy monkey patches the database fields into the mapper
 #   classes so we have to disable these checks.
 
+from turbogears import controllers
 
 class Request():
     def __init__(self):
