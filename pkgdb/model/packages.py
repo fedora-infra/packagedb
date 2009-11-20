@@ -298,7 +298,7 @@ def collection_alias(pkg_listing):
     This is used to make Branch keys for the dictionary mapping of pkg listings
     into packages.
     '''
-    return pkg_listing.collection.simple_name()
+    return pkg_listing.collection.simple_name
 
 class PackageBuildDepends(SABase):
     '''PackageBuild Dependencies to one another.

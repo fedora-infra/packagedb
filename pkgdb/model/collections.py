@@ -102,6 +102,7 @@ class Collection(SABase):
                 self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
 
+    @property
     def simple_name(self):
         '''Return a simple name for the Collection
         '''

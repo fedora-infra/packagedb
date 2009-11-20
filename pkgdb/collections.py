@@ -408,7 +408,7 @@ class Collections(controllers.Controller):
         '''
         collection = Collection.query.filter_by( #pylint:disable-msg=E1101
                 name=collctn_name, version=collctn_ver).one()
-        return dict(name=collection.simple_name())
+        return dict(name=collection.simple_name)
 
     @expose(allow_json=True)
     def by_canonical_name(self, collctn):

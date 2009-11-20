@@ -537,7 +537,7 @@ class PackageDispatcher(controllers.Controller):
             if pkg.owner != 'orphan':
                 # let set_owner handle bugzilla and other stuff
                 self.set_owner(pkg.package.name, 'orphan',
-                        pkg.collection.simple_name())
+                        pkg.collection.simple_name)
             pkg.statuscode = STATUS['Deprecated'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
