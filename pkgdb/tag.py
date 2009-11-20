@@ -67,6 +67,8 @@ class Tags(controllers.Controller):
         if builds.__class__ != [].__class__:
             builds = [builds]
         #pylint:disable-msg=E1101
+        ###FIXME: 
+        # https://fedorahosted.org/packagedb/ticket/163
         tags = Tag.query.join(Tag.buildnames).filter(
             PackageBuildName.name.in_(builds)).all()
         #pylint:enable-msg=E1101
