@@ -20,6 +20,12 @@
 '''
 Controller for displaying PackageBuild(Rpm) related information
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
 
 from sqlalchemy.sql import and_
 
@@ -65,6 +71,7 @@ class Package(controllers.Controller):
 
         # look for The One packagebuild
         try:
+            #pylint:disable-msg=E1101
             build = builds_query.join(PackageBuild.repo).filter(
                 Repo.shortname==repo).one()
         except:

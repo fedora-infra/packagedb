@@ -20,6 +20,12 @@
 '''
 Controller for Tag related retrieval and updating of information.
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
 
 import logging
 from sqlalchemy.sql import and_, or_
@@ -61,8 +67,10 @@ class Tags(controllers.Controller):
 
         if builds.__class__ != [].__class__:
             builds = [builds]
+        #pylint:disable-msg=E1101
         tags = Tag.query.join(Tag.buildnames).filter(
             PackageBuildName.name.in_(builds)).all()
+        #pylint:enable-msg=E1101
                 
         return dict(title=self.app_title, tags=tags)
 
@@ -95,8 +103,9 @@ class Tags(controllers.Controller):
         :tags: a list of Tag objects, filtered by :language:
         :builds: list of found PackageBuild objects
         '''
-
+        #pylint:disable-msg=E1101
         builds = PackageBuild.search(tags, operator, language)
+        #pylint:enable-msg=E1101
         return dict(title=self.app_title, tags=tags, builds=builds)
 
     @expose(template='pkgdb.templates._tags', allow_json=True)
@@ -125,7 +134,9 @@ class Tags(controllers.Controller):
         if apps.__class__ != [].__class__:
             # get the scores dict with the new tags
             if is_xhr():
+                #pylint:disable-msg=E1101
                 app=session.query(Application).filter_by(name=apps).first()
+                #pylint:enable-msg=E1101
                 tagscore = app.scores_by_language(language)
                 return dict(tagscore=tagscore)
             # return the user to the tagging page if all is well and no AJAX

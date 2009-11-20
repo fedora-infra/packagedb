@@ -16,10 +16,17 @@
 # permission of Red Hat, Inc.
 #
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+#                           Toshio Kuratomi <toshio@redhat.com>
 #
 '''
 Mapping of language related database tables to python classes.
 '''
+#
+# pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
 
 from sqlalchemy import Table
 from sqlalchemy.orm import relation, backref
@@ -62,10 +69,12 @@ class Language(SABase):
 
         :arg name: a short or long Language name
         '''
-
+        #pylint:disable-msg=E1101
         return session.query(Language).filter(or_(Language.name==language,
                                          Language.shortname==language
                                          )).one()
+        #pylint:enable-msg=E1101
+
 #
 # Mappers
 #

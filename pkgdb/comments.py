@@ -20,6 +20,12 @@
 '''
 Controller for displaying Comments related information.
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
 
 from sqlalchemy.sql import and_, or_
 
@@ -58,12 +64,14 @@ class Comments(controllers.Controller):
         :arg app: the name of the application to search for
         :kwarg language: the language that the comment was written in
         '''
+        #pylint:disable-msg=E1101
         application = session.query(Application).filter_by(name=app).first()
         application.comment(author, body, language)
 
         comment_query = session.query(Comment).filter(and_(
             Comment.application==application,
             Comment.language==language)).order_by(Comment.time)
+        #pylint:enable-msg=E1101
         # hide the mean comments from ordinary users
         if identity.in_group(mod_grp):
             comments = comment_query.all()
@@ -86,8 +94,10 @@ class Comments(controllers.Controller):
         '''
         lang = Language.find(language)
 
+        #pylint:disable-msg=E1101
         comments = Comment.query.filter(and_(Comment.language==lang,
                                              Comment.author==author)).all()
+        #pylint:enable-msg=E1101
 
         return dict(title=self.app_title, comments=comments)
 
@@ -100,12 +110,14 @@ class Comments(controllers.Controller):
         '''
         lang = Language.find(language)
         
+        #pylint:disable-msg=E1101
         packagebuild = PackageBuild.query.filter(PackageBuild.name==build
                                                  ).first()
 
         comments = Comment.query.filter(and_(
             Comment.packagebuildname==packagebuild.name,
             Comment.language==lang)).all()
+        #pylint:enable-msg=E1101
 
         return dict(title=self.app_title, comments=comments)
 
@@ -116,7 +128,9 @@ class Comments(controllers.Controller):
 
         :arg commentid: the id of the Comment
         '''
+        #pylint:disable-msg=E1101
         comment = Comment.query.filter_by(id=commentid).one()
+        #pylint:enable-msg=E1101
 
         if comment.published:
             comment.published=False

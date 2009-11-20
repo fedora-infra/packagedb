@@ -42,7 +42,6 @@ class Letters(controllers.Controller):
     '''
 
     def __init__(self, app_title=None):
-        # pylint: disable-msg=E1101
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.pkgbugoverview', allow_json=True)
@@ -65,27 +64,32 @@ class Letters(controllers.Controller):
             if searchwords != '':
                 searchwords = searchwords.replace('*','%')
                 if searchwords.isdigit() and int(searchwords) < 10: # 0-9
-                    # pylint: disable-msg=E1101
+                    #pylint:disable-msg=E1101
                     packages = Package.query.options(
                             lazyload('listings2'), lazyload('status')
                         ).filter(or_(Package.name.between('0','9'),
                                      Package.name.like('9%')))
+                    #pylint:enable-msg=E1101
                 else: 
                     # sanitize for ilike:
                     searchwords = searchwords.replace('&','').replace('_','') 
-                    # pylint: disable-msg=E1101
+                    #pylint:disable-msg=E1101
                     packages = Package.query.options(
                         lazyload('listings2'),
                         lazyload('status')).filter(
                             Package.name.ilike(searchwords)
                             ).order_by(Package.name.asc())
+                    #pylint:enable-msg=E1101
             else:
-                # pylint: disable-msg=E1101
+                #pylint:disable-msg=E1101
                 packages = Package.query.options(lazyload('listings2'),
                             lazyload('status'))
+                #pylint:enable-msg=E1101
             # minus removed packages
+            #pylint:disable-msg=E1101
             packages = packages.filter(
-                Package.statuscode!=STATUS['Removed'].statuscodeid)
+                    Package.statuscode!=STATUS['Removed'].statuscodeid)
+            #pylint:enable-msg=E1101
         else:
             mode = 'tag/'
             bzUrl = ''
@@ -93,11 +97,13 @@ class Letters(controllers.Controller):
                 searchwords = searchwords.replace('*','%') \
                               .replace('&','').replace('_','')
 
+                #pylint:disable-msg=E1101
                 packages = session.query(Application).join('tags').filter(and_(
                         Tag.name.ilike(searchwords),
                         Tag.language.ilike(language))).all()
+                #pylint:enable-msg=E1101
             else:
-                packages = PackageBuild.query.all()
+                packages = PackageBuild.query.all() #pylint:disable-msg=E1101
             
         searchwords = searchwords.replace('%','*')            
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {

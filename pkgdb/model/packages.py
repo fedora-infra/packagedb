@@ -140,7 +140,9 @@ class Package(SABase):
         pkg_listing.package = self
         for group in DEFAULT_GROUPS:
             new_group = GroupPackageListing(group)
+            #pylint:disable-msg=E1101
             pkg_listing.groups2[group] = new_group
+            #pylint:enable-msg=E1101
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
                     acl_status = STATUS['Approved'].statuscodeid
@@ -205,15 +207,19 @@ class PackageListing(SABase):
                 PersonPackageListingAclLog
         # Retrieve the PackageListing for the to clone branch
         try:
+            #pylint:disable-msg=E1101
             clone_branch = PackageListing.query.join('package'
                     ).join('collection').filter(
                         and_(Package.name==self.package.name,
                             Branch.branchname==branch)).one()
+            #pylint:enable-msg=E1101
         except InvalidRequestError:
             ### Create a new package listing for this release ###
 
             # Retrieve the collection to make the branch for
+            #pylint:disable-msg=E1101
             clone_collection = Branch.query.filter_by(branchname=branch).one()
+            #pylint:enable-msg=E1101
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
                     self.owner, STATUS['Approved'], qacontact=self.qacontact,
@@ -222,12 +228,16 @@ class PackageListing(SABase):
         log_params = {'user': author_name,
                 'pkg': self.package.name, 'branch': branch}
         # Iterate through the acls in the master_branch
+        #pylint:disable-msg=E1101
         for group_name, group in self.groups2.iteritems():
+        #pylint:enable-msg=E1101
             log_params['group'] = group_name
             if group_name not in clone_branch.groups2:
                 # Associate the group with the packagelisting
+                #pylint:disable-msg=E1101
                 clone_branch.groups2[group_name] = \
                         GroupPackageListing(group_name)
+                #pylint:enable-msg=E1101
             clone_group = clone_branch.groups2[group_name]
             for acl_name, acl in group.acls2.iteritems():
                 if acl_name not in clone_group.acls2:
@@ -247,12 +257,16 @@ class PackageListing(SABase):
                         acl.statuscode, log_msg)
                 log.acl = clone_group.acls2[acl_name]
 
+        #pylint:disable-msg=E1101
         for person_name, person in self.people2.iteritems():
+        #pylint:enable-msg=E1101
             log_params['person'] = person_name
             if person_name not in clone_branch.people2:
                 # Associate the person with the packagelisting
+                #pylint:disable-msg=E1101
                 clone_branch.people2[person_name] = \
                         PersonPackageListing(person_name)
+                #pylint:enable-msg=E1101
             clone_person = clone_branch.people2[person_name]
             for acl_name, acl in person.acls2.iteritems():
                 if acl_name not in clone_person.acls2:
@@ -342,7 +356,7 @@ class PackageBuild(SABase):
         '''
 
         scores = {}
-        for app in self.applications:
+        for app in self.applications: #pylint:disable-msg=E1101
             tags = app.scores_by_language(language)
             for tag,score in tags.iteritems():
                 sc = scores.get(tag, None)

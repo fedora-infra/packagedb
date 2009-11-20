@@ -232,7 +232,7 @@ class ListQueries(controllers.Controller):
         # Get the vcs group acls from the db
 
         group_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname,
             GroupPackageListing.groupname), and_(
@@ -265,7 +265,7 @@ class ListQueries(controllers.Controller):
         # Get the package owners from the db
         # Exclude the orphan user from that.
         owner_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname, PackageListing.owner),
             and_(
@@ -289,7 +289,7 @@ class ListQueries(controllers.Controller):
 
         # Get the vcs user acls from the db
         person_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname, PersonPackageListing.username),
             and_(
@@ -338,14 +338,16 @@ class ListQueries(controllers.Controller):
             repos = [repos]
         if langs.__class__ != [].__class__:
             langs = [langs]
-    
+
         buildtags = {}
         for repo in repos:
             buildtags[repo] = {}
-            
-            repoid = Repo.query.filter_by(shortname=repo).one().id
 
+            #pylint:disable-msg=E1101
+            repoid = Repo.query.filter_by(shortname=repo).one().id
             builds = PackageBuild.query.filter_by(repoid=repoid)
+            #pylint:enable-msg=E1101
+
             for language in langs:
                 for build in builds:
                     buildtags[repo][build.name] = build.scores(language)
@@ -393,8 +395,10 @@ class ListQueries(controllers.Controller):
         query_results.close()
         lite_session.execute(YumLanguagesTable.insert(), languages)
 
+        #pylint:disable-msg=E1101
         packagebuilds = PackageBuild.query.join('repos').filter(
                     ReposTable.c.shortname.in_(repos))
+        #pylint:enable-msg=E1101
 
         unique_tags={}
 
@@ -405,12 +409,14 @@ class ListQueries(controllers.Controller):
             lite_session.execute(YumPackageBuildNameTable.insert(), name)
 
             build_tags = {}
-            
+
             # collect tags
-            for app in build.applications:
+            for app in build.applications: #pylint:disable-msg=E1101
+                #pylint:disable-msg=E1101
                 tags = ApplicationTag.query.join('tag').filter(
                         ApplicationsTagsTable.c.applicationid==app.id, 
                         TagsTable.c.language.in_(langs))
+                #pylint:enable-msg=E1101
                 for tag in tags:
                     sc = build_tags.get((tag.tag.name, tag.tag.language), None)
                     if sc is None or sc < tag.score:
@@ -426,12 +432,13 @@ class ListQueries(controllers.Controller):
                         ).execute().last_inserted_ids()[-1]
                     unique_tags[tag] = tag_id
 
+                #pylint:disable-msg=E1101
                 YumPackageBuildNamesTagsTable.query.insert().values(
                     packagebuildname=packagebuild.name, 
                     tagid=tag_id, score=score
                     ).execute()
+                #pylint:enable-msg=E1101
 
-                    
         lite_session.commit()
 
         f = open(dbfile, 'r')
@@ -466,7 +473,7 @@ class ListQueries(controllers.Controller):
 
         # select all packages that are in an active release
         package_info = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Collection.name, Package.name,
             PackageListing.owner, PackageListing.qacontact,
             Package.summary),
@@ -514,8 +521,7 @@ class ListQueries(controllers.Controller):
             # These are packages that have different owners in different
             # branches.  Need to find one to be the owner of the bugzilla
             # component
-            # SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             package_info = select((Collection.name,
                 Collection.version,
                 Package.name, PackageListing.owner),
@@ -530,7 +536,7 @@ class ListQueries(controllers.Controller):
                     ),
                 order_by=(Collection.name, Collection.version),
                 distinct=True)
-            # pylint: enable-msg=E1101
+            #pylint:enable-msg=E1101
 
             # Organize the results so that we have:
             # [packagename][collectionname][collectionversion] = owner
@@ -588,7 +594,7 @@ class ListQueries(controllers.Controller):
         # Retrieve the user acls
 
         person_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Collection.name, PersonPackageListing.username),
             and_(
@@ -644,8 +650,7 @@ class ListQueries(controllers.Controller):
             return errors
 
         # Retrieve Packages, owners, and people on watch* acls
-        # :E1101: SQLAlchemy mapped classes are monkey patched
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         owner_query = select((Package.name, PackageListing.owner),
                 from_obj=(PackageTable.join(PackageListing).join(
                     CollectionTable))).where(and_(
@@ -666,29 +671,31 @@ class ListQueries(controllers.Controller):
                             PersonPackageListingAcl.statuscode ==
                                 STATUS['Approved'].statuscodeid
                         )).distinct().order_by('name')
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
 
         if not eol:
             # Filter out eol distributions
-            # :E1101: SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             owner_query = owner_query.where(Collection.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
             watcher_query = watcher_query.where(Collection.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
+            #pylint:enable-msg=E1101
 
         # Only grab from certain collections
         if name:
-            # SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             owner_query = owner_query.where(Collection.name==name)
             watcher_query = watcher_query.where(Collection.name==name)
+            #pylint:enable-msg=E1101
             if version:
                 # Limit the versions of those collections
+                #pylint:disable-msg=E1101
                 owner_query = owner_query.where(Collection.version==version)
                 watcher_query = watcher_query.where(Collection.version==version)
+                #pylint:enable-msg=E1101
 
         pkgs = {}
         # turn the query into a python object
@@ -699,12 +706,11 @@ class ListQueries(controllers.Controller):
             pkgs.setdefault(pkg[0], set()).update(
                     (pkg[1],))
 
-        # SQLAlchemy mapped classes are monkey patched
-        # pylint: disable-msg=E1101
         # Retrieve list of collection information for generating the
         # collection form
+        #pylint:disable-msg=E1101
         collection_list = Collection.query.order_by('name').order_by('version')
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         collections = {}
         for collection in collection_list:
             try:

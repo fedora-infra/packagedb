@@ -20,6 +20,13 @@
 '''
 Utilities for all classes to use
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+
 import os
 import tempfile
 import logging
@@ -108,7 +115,7 @@ def refresh_status():
     '''
     global STATUS
     statuses = {}
-    for status in StatusTranslation.query.all():
+    for status in StatusTranslation.query.all(): #pylint:disable-msg=E1101
         statuses[status.statusname] = status
     STATUS = statuses
 

@@ -28,6 +28,8 @@ Controller for showing Package Collections.
 # :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
 #   noted, E1101 is disabled due to a static checker not having information
 #   about the monkey patches.
+# :C0103: the method id looks up a collection by id.  Thus the method name is
+#   appropriate.
 
 import threading
 import os
@@ -68,12 +70,12 @@ class Collections(controllers.Controller):
     def index(self):
         '''List the Collections we know about.
         '''
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         collections = Collection.query.options(lazyload('listings'),
                 lazyload('status')).add_entity(CollectionPackage
                 ).filter(Collection.id==CollectionPackage.id).order_by(
             Collection.name, Collection.version)
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
 
         return dict(title=_('%(app)s -- Collection Overview') %
                 {'app': self.app_title}, collections=collections)
@@ -160,10 +162,10 @@ class Collections(controllers.Controller):
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
         try:
-            # pylint: disable-msg=E1101
-            collection_entry = Collection.query.options(lazyload('listings2'),
-                    eagerload('status.locale')
-                    ).filter_by(id=collection_id).one()
+            #pylint:disable-msg=E1101
+            collection_entry = Collection.query.options(
+                    lazyload('listings2'), eagerload('status.locale'))\
+                    .filter_by(id=collection_id).one()
         except InvalidRequestError:
             # Either the id doesn't exist or somehow it references more than
             # one value
@@ -248,10 +250,10 @@ class Collections(controllers.Controller):
 
             # Commit the changes
             try:
-                session.flush()
+                session.flush() #pylint:disable-msg=E1101
             except SQLError, e:
                 # If we have an error committing we lose this whole block
-                session.rollback()
+                session.rollback() #pylint:disable-msg=E1101
                 unbranched = pkgs
 
             # Child prints a \n separated list of unbranched packages
@@ -343,15 +345,16 @@ class Collections(controllers.Controller):
 
         # Retrieve the collection to make the new branches on
         try:
+            #pylint:disable-msg=E1101
             to_branch = Branch.query.filter_by(branchname=branch).one()
         except InvalidRequestError, e:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('Unable to locate a branch for %(branch)s') % {
                 'branch': branch})
             return dict(exc='InvalidBranch')
 
         if to_branch.statuscode == STATUS['EOL'].statuscodeid:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('Will not branch packages in EOL collection %(branch)s') % {
                 'branch': branch})
             return dict(exc='InvalidBranch')
@@ -359,7 +362,7 @@ class Collections(controllers.Controller):
         # Retrieve the a koji session to get the lisst of packages from
         koji_name = to_branch.koji_name
         if not koji_name:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('Unable to mass branch for %(branch)s because it is not'
                 ' managed by koji') % {'branch': branch})
             return dict(exc='InvalidBranch')
@@ -367,12 +370,14 @@ class Collections(controllers.Controller):
         koji_session = koji.ClientSession(koji_url)
         if not koji_session.ssl_login(cert=pkgdb_cert, ca=user_ca,
                 serverca=server_ca):
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('Unable to log into koji'))
             return dict(exc='ServiceError')
 
         # Retrieve the devel branch for comparison
+        #pylint:disable-msg=E1101
         devel_branch = Branch.query.filter_by(branchname='devel').one()
+        #pylint:enable-msg=E1101
 
         # Retrieve the package from koji
         pkglist = koji_session.listPackages(tagID=koji_name, inherited=True)
@@ -401,8 +406,8 @@ class Collections(controllers.Controller):
         '''
         Retrieve a collection by its simple_name
         '''
-        collection = Collection.query.filter_by(name=collctn_name,
-                version=collctn_ver).one()
+        collection = Collection.query.filter_by( #pylint:disable-msg=E1101
+                name=collctn_name, version=collctn_ver).one()
         return dict(name=collection.simple_name())
 
     @expose(allow_json=True)

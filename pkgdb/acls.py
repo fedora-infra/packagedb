@@ -77,12 +77,12 @@ class Acls(controllers.Controller):
             particular version of a distribution.  Has no effect if
             collectionName is not also specified.
         '''
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         # Return the information about a package.
         package = Package.query.filter(
                 Package.statuscode!=STATUS['Removed'].statuscodeid
                 ).filter_by(name=packageName).first()
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         if not package:
             error = dict(status=False,
                     title=_('%(app)s -- Invalid Package Name') % {
@@ -98,9 +98,9 @@ class Acls(controllers.Controller):
 
         collection = None
         if collectionName:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             collection = Collection.query.filter_by(name=collectionName)
-            # pylint: enable-msg=E1101
+            #pylint:enable-msg=E1101
             if collectionVersion:
                 collection = collection.filter_by(version=collectionVersion)
             if not collection.count():
@@ -116,11 +116,9 @@ class Acls(controllers.Controller):
 
         # Possible ACLs
         acl_names = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
-        # pylint: disable-msg=E1101
         # Possible statuses for acls:
-        acl_status = PackageAclStatus.query.options(
+        acl_status = PackageAclStatus.query.options( #pylint:disable-msg=E1101
                 eagerload('locale')).all()
-        # pylint: enable-msg=E1101
         acl_status_translations = ['']
         for status in acl_status:
             ### FIXME: At some point, we have to pull other translations out,
@@ -129,7 +127,7 @@ class Acls(controllers.Controller):
                 acl_status_translations.append(
                         status.locale['C'].statusname)
 
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         # Fetch information about all the packageListings for this package
         pkg_listings = PackageListing.query.options(
                 eagerload('people2.acls2.status.locale'),
@@ -137,7 +135,7 @@ class Acls(controllers.Controller):
                 eagerload('status.locale'),
                 eagerload('collection.status.locale'),
                 ).filter(PackageListingTable.c.packageid==package.id)
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         if collection:
             # User asked to limit it to specific collections
             pkg_listings = pkg_listings.filter(
@@ -217,10 +215,13 @@ class Acls(controllers.Controller):
 
         page_title = _('%(app)s -- Orphaned Packages') % {'app': self.app_title}
 
+        #pylint:disable-msg=E1101
         query = Package.query.join('listings2').distinct().filter(
                     PackageListing.statuscode==STATUS['Orphaned'].statuscodeid)
+        #pylint:enable-msg=E1101
         if not eol:
             # We don't want EOL releases, filter those out of each clause
+            #pylint:disable-msg=E1101
             query = query.join(['listings2', 'collection']).filter(
                     Collection.statuscode!=STATUS['EOL'].statuscodeid)
         pkg_list = []

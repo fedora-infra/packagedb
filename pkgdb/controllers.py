@@ -96,6 +96,7 @@ class Root(controllers.RootController):
 
         This page serves as an overview of the entire PackageDB.  
         '''
+        #pylint:disable-msg=E1101
         packages = session.query(PackageBuild)\
                 .options(eagerload('applications'))\
                 .join('applications')\
@@ -104,6 +105,7 @@ class Root(controllers.RootController):
 
         comments = Comment.query.filter_by(published=True).order_by(
             Comment.time.desc()).limit(7).all()
-        
+        #pylint:enable-msg=E1101
+
         return dict(packages=packages, comments=comments,
             title=self.app_title, version=release.VERSION)

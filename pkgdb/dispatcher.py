@@ -26,7 +26,10 @@ Controller to process requests to change package information.
 #
 
 # :E1101: SQLAlchemy monkey patches the ORM Mappers so we have to disable this
-#   check whenever we use a db mapped class.
+#   check whenever we use a db mapped class.  Bugzilla class also attaches
+#   attributes from a base class that pylint can't see.
+# :W0201: SQLAlchemy mappers define additional attributes on classes so we
+#   can't know about the instance attributes all the time.
 
 import xmlrpclib
 
@@ -93,10 +96,10 @@ class PackageDispatcher(controllers.Controller):
         # We should eventually only pass it in packages::id() but translating
         # from python to javascript makes this hard.
 
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         # Possible statuses for acls:
         acl_status = PackageAclStatus.query.options(eagerload('locale'))
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         self.acl_status_translations = ['']
         # Create a mapping from status name => statuscode
         for status in acl_status:
@@ -145,15 +148,15 @@ class PackageDispatcher(controllers.Controller):
                 else:
                     recipients[owner['email']] = ''
 
-            # pylint: disable-msg=E1101
             # Get the co-maintainers
+            #pylint:disable-msg=E1101
             acl_users = PersonPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
                     PersonPackageListingAcl.c.personpackagelistingid ==
                     PersonPackageListing.c.id,
                     PersonPackageListing.c.packagelistingid == pkg_listing.id,
                     PersonPackageListingAcl.c.acl.in_(acls)))
-            # pylint: enable-msg=E1101
+            #pylint:enable-msg=E1101
 
             for acl in acl_users:
                 if acl.status.locale['C'].statusname == 'Approved':
@@ -221,7 +224,7 @@ class PackageDispatcher(controllers.Controller):
                 # cache
                 user.bugzilla_email = fas.cache[user.username]['bugzilla_email']
             try:
-                bugzilla.getuser(user.bugzilla_email)
+                bugzilla.getuser(user.bugzilla_email) #pylint:disable-msg=E1101
             except xmlrpclib.Fault, e:
                 if e.faultCode == 51:
                     # No such user
@@ -301,7 +304,7 @@ class PackageDispatcher(controllers.Controller):
             pkg_listing.people.append(change_person)
             person_acl = PersonPackageListingAcl(new_acl,
                     status.statuscodeid)
-            change_person.acls.append(person_acl) # pylint: disable-msg=E1101
+            change_person.acls.append(person_acl) #pylint:disable-msg=E1101
         else:
             # Look for an acl for the person
             person_acl = None
@@ -324,8 +327,10 @@ class PackageDispatcher(controllers.Controller):
             if new_acl == 'commit':
                 self._create_or_modify_acl(pkg_listing, person_name, 'build',
                         status)
+        #pylint:disable-msg=E1101
         person_acl.status = session.query(PackageAclStatus).filter(
                 PackageAclStatus.statuscodeid==status.statuscodeid).one()
+        #pylint:enable-msg=E1101
 
         return person_acl
 
@@ -356,7 +361,7 @@ class PackageDispatcher(controllers.Controller):
             pkg_listing.groups.append(change_group)
             group_acl = GroupPackageListingAcl(new_acl,
                     status.statuscodeid)
-            change_group.acls.append(group_acl) # pylint: disable-msg=E1101
+            change_group.acls.append(group_acl) #pylint:disable-msg=E1101
         else:
             # Look for an acl for the group
             group_acl = None
@@ -395,6 +400,7 @@ class PackageDispatcher(controllers.Controller):
             information from the database.
         '''
         #get acls to comparison
+        #pylint:disable-msg=E1101
         acls = PersonPackageListingAcl.query.filter(and_(
                    PersonPackageListingAcl.c.personpackagelistingid
                        == PersonPackageListing.c.id,
@@ -405,6 +411,7 @@ class PackageDispatcher(controllers.Controller):
                        == STATUS['Approved'].statuscodeid,
                    PersonPackageListingAcl.c.acl == 'approveacls')
                    ).all()
+        #pylint:enable-msg=E1101
         comaintainers = {}
         #get acl with min personpackagelistingacl.id
         if len(acls) > 0:
@@ -443,7 +450,7 @@ class PackageDispatcher(controllers.Controller):
         bzQuery['version'] = collectn_version
         if bzQuery['version'] == 'devel':
             bzQuery['version'] = 'rawhide'
-        queryResults = bugzilla.query(bzQuery)
+        queryResults = bugzilla.query(bzQuery) #pylint:disable-msg=E1101
         for bug in queryResults:
             if config.get('bugzilla.enable_modification', False):
                 bug.setassignee(assigned_to=bzMail, comment=bzComment)
@@ -516,7 +523,7 @@ class PackageDispatcher(controllers.Controller):
         '''
         # Check that the pkg exists
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             pkg = PackageListing.query.filter_by(id=pkg_listing_id).one()
         except InvalidRequestError:
             return dict(status=False, message=_('No such package %(pkg)s') %
@@ -528,8 +535,9 @@ class PackageDispatcher(controllers.Controller):
             approved in ('admin', 'owner'))):
             # Retire package
             if pkg.owner != 'orphan':
-                # let toggle_owner handle bugzilla and other stuff
-                self.toggle_owner(pkg_listing_id)
+                # let set_owner handle bugzilla and other stuff
+                self.set_owner(pkg.package.name, 'orphan',
+                        pkg.collection.simple_name())
             pkg.statuscode = STATUS['Deprecated'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
@@ -559,7 +567,7 @@ class PackageDispatcher(controllers.Controller):
         log.packagelistingid = pkg.id
 
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
             # An error was generated
             return dict(status=False,
@@ -592,7 +600,7 @@ class PackageDispatcher(controllers.Controller):
         if not statusname or not statusname.strip():
             statusname = 'Obsolete'
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             status = StatusTranslation.query.filter_by(
                     statusname=statusname).one()
         except InvalidRequestError:
@@ -604,7 +612,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure the package listing exists
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             pkg = PackageListing.query.filter_by(id=pkgid).one()
         except InvalidRequestError:
             return dict(status=False,
@@ -648,10 +656,10 @@ class PackageDispatcher(controllers.Controller):
                     user['username'])
         log = PersonPackageListingAclLog(identity.current.user_name,
                 status.statuscodeid, log_msg)
-        log.acl = person_acl # pylint: disable-msg=W0201
+        log.acl = person_acl #pylint:disable-msg=W0201
 
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
             # An error was generated
             return dict(status=False, message=_('Not able to create acl'
@@ -690,7 +698,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure the package listing exists
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             pkg = PackageListing.query.filter_by(id=pkg_listing_id).one()
         except InvalidRequestError:
             return dict(status=False, message=_('Package Listing with id:'
@@ -722,7 +730,7 @@ class PackageDispatcher(controllers.Controller):
         acl_status = 'Approved'
         # Determine if the group already has an acl
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             acl = GroupPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
                     GroupPackageListingAcl.c.grouppackagelistingid \
@@ -752,10 +760,10 @@ class PackageDispatcher(controllers.Controller):
                     group_name)
         log = GroupPackageListingAclLog(identity.current.user_name,
                 status.statuscodeid, log_msg)
-        log.acl = group_acl # pylint: disable-msg=W0201
+        log.acl = group_acl #pylint:disable-msg=W0201
 
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError:
             # An error was generated
             return dict(status=False, message=_('Not able to create acl'
@@ -783,7 +791,7 @@ class PackageDispatcher(controllers.Controller):
         # Make sure package exists
         pkg_listing_id, acl_name = container_id.split(':')
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             pkg_listing = PackageListing.query.filter_by(
                     id=pkg_listing_id).one()
         except InvalidRequestError:
@@ -794,7 +802,7 @@ class PackageDispatcher(controllers.Controller):
         acl_status = 'Awaiting Review'
         # Determine if the user already has an acl
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             acl = PersonPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
                     PersonPackageListingAcl.c.personpackagelistingid == \
@@ -837,7 +845,7 @@ class PackageDispatcher(controllers.Controller):
         log.acl = person_acl
 
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
             # Probably the acl is mispelled
             return dict(status=False, message=_('Not able to create acl'
@@ -873,9 +881,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('User must be in admin_grp'))
 
         # Make sure the package doesn't already exist
-        # pylint: disable-msg=E1101
-        pkg = Package.query.filter_by(name=package)
-        # pylint: enable-msg=E1101
+        pkg = Package.query.filter_by(name=package) #pylint:disable-msg=E1101
         if pkg.count():
             return dict(status=False, message=_('Package %(pkg)s already'
                 ' exists') % {'pkg': package})
@@ -892,10 +898,10 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=str(e))
 
         # Retrieve the devel Collection so we can use its id later.
-        # pylint: disable-msg=E1101
-        devel_collection = Collection.query.filter_by(
-                name='Fedora', version='devel').one()
-        # pylint: enable-msg=E1101
+        #pylint:disable-msg=E1101
+        devel_collection = Collection.query.\
+                filter_by(name='Fedora', version='devel').one()
+        #pylint:enable-msg=E1101
 
         # Create the package
         pkg = Package(package, summary, STATUS['Approved'].statuscodeid)
@@ -903,7 +909,7 @@ class PackageDispatcher(controllers.Controller):
                 STATUS['Approved'],
                 author_name = identity.current.user_name)
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
             return dict(status=False, message=_('Unable to create'
                 ' PackageListing for %(pkg)s(Fedora devel), %(user)s),'
@@ -911,14 +917,14 @@ class PackageDispatcher(controllers.Controller):
                     'status': STATUS['Approved'].statuscodeid})
         changed_acls = []
         for group in ('provenpackager',):
+            #pylint:disable-msg=E1101
             changed_acls.append(GroupPackageListingAcl.query.filter(and_(
                     GroupPackageListingAcl.c.grouppackagelistingid
                         == GroupPackageListing.c.id,
                     GroupPackageListing.c.packagelistingid 
                         == pkg_listing.id,
                     GroupPackageListing.c.groupname == group)).all())
-
-        # pylint: enable-msg=W0201
+            #pylint:enable-msg=E1101
 
         # Create a log of changes
         logs = []
@@ -930,7 +936,7 @@ class PackageDispatcher(controllers.Controller):
         pkg_log = PackageLog(
                 identity.current.user_name, STATUS['Added'].statuscodeid,
                 pkg_log_msg)
-        pkg_log.package = pkg # pylint: disable-msg=W0201
+        pkg_log.package = pkg #pylint:disable-msg=W0201
         pkg_log_msg = '%s has approved Package %s' % (
                 identity.current.user_name,
                 pkg.name)
@@ -970,11 +976,11 @@ class PackageDispatcher(controllers.Controller):
                 pkg_log_msg = '%s has set %s to %s for %s on %s (%s %s)' % (
                     identity.current.user_name,
                     change_acl.acl,
-                    # pylint: disable-msg=E1101
-                    StatusTranslation.query.filter_by(
-                        statuscodeid=change_acl.statuscode).one().statusname,
-                    # pylint: enable-msg=E1101
-
+                    #pylint:disable-msg=E1101
+                    StatusTranslation.query\
+                            .filter_by(statuscodeid=change_acl.statuscode)\
+                            .one().statusname,
+                    #pylint:enable-msg=E1101
                     change_acl.grouppackagelisting.groupname,
                     pkg.name,
                     devel_collection.name,
@@ -986,7 +992,7 @@ class PackageDispatcher(controllers.Controller):
                 logs.append(pkg_log_msg)
 
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
             return dict(status=False, message=_('Unable to create'
                 ' PackageListing for %(pkg)s(Fedora devel), %(user)s),'
@@ -1047,7 +1053,7 @@ class PackageDispatcher(controllers.Controller):
 
         # Make sure the package exists
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             pkg = Package.query.filter_by(name=package).one()
         except InvalidRequestError:
             return dict(status=False, message=_('Package %(pkg)s does not'
@@ -1090,14 +1096,14 @@ class PackageDispatcher(controllers.Controller):
 
             # Retrieve the id of the initial package owner
             if not owner_name:
-                # pylint: disable-msg=E1101
                 # Retrieve the id for the devel_collection
+                #pylint:disable-msg=E1101
                 devel_collection = Collection.query.filter_by(
                         name='Fedora', version='devel').one()
 
                 devel_pkg = PackageListing.query.filter_by(packageid=pkg.id,
                         collectionid=devel_collection.id).one()
-                # pylint: enable-msg=E1101
+                #pylint:enable-msg=E1101
                 owner_name = devel_pkg.owner
 
             collection_data = changes['collections']
@@ -1106,7 +1112,7 @@ class PackageDispatcher(controllers.Controller):
             for collection_name in collection_data:
                 # Check if collection/version exists
                 try:
-                    # pylint: disable-msg=E1101
+                    #pylint:disable-msg=E1101
                     collection = Collection.by_simple_name(
                             collection_name)
                 except InvalidRequestError:
@@ -1115,7 +1121,7 @@ class PackageDispatcher(controllers.Controller):
 
                 # Create the packageListing if necessary
                 try:
-                    # pylint: disable-msg=E1101
+                    #pylint:disable-msg=E1101
                     pkg_listing = PackageListing.query.filter_by(
                             collectionid=collection.id,
                             packageid=pkg.id).one()
@@ -1129,7 +1135,7 @@ class PackageDispatcher(controllers.Controller):
                             status,
                             author_name = identity.current.user_name)
                     try:
-                        session.flush()
+                        session.flush() #pylint:disable-msg=E1101
                     except SQLError, e:
                         return dict(status=False, message=_('Unable to create'
                             ' PackageListing for %(pkg)s(Fedora devel),'
@@ -1138,6 +1144,7 @@ class PackageDispatcher(controllers.Controller):
                                 'status': status})
                     changed_acls = []
                     for group in ('provenpackager',):
+                        #pylint:disable-msg=E1101
                         changed_acls.append(GroupPackageListingAcl.query.filter(
                             and_(
                             GroupPackageListingAcl.c.grouppackagelistingid
@@ -1146,6 +1153,7 @@ class PackageDispatcher(controllers.Controller):
                                 == pkg_listing.id,
                             GroupPackageListing.c.groupname
                                 == group)).all())
+                        #pylint:enable-msg=E1101
                     log_msg = '%s added a %s %s branch for %s' % (
                             identity.current.user_name,
                             collection.name,
@@ -1158,11 +1166,12 @@ class PackageDispatcher(controllers.Controller):
                                 ' for %s on %s (%s %s)' % (
                                 identity.current.user_name,
                                 change_acl.acl,
-                                # pylint: disable-msg=E1101
-                                StatusTranslation.query.filter_by(
-                                    statuscodeid = change_acl.statuscode
-                                    ).one().statusname,
-                                # pylint: enable-msg=E1101
+                                #pylint:disable-msg=E1101
+                                StatusTranslation.query\
+                                        .filter_by(
+                                            statuscodeid=change_acl.statuscode)\
+                                        .one().statusname,
+                                #pylint:enable-msg=E1101
                                 change_acl.grouppackagelisting.groupname,
                                 pkg.name,
                                 collection.name,
@@ -1177,12 +1186,14 @@ class PackageDispatcher(controllers.Controller):
                 # Save a reference to all pkg_listings
                 listings.append(pkg_listing)
         else:
+            #pylint:disable-msg=E1101
             # Default to the devel branch
             collection = Collection.query.filter_by(
                     name='Fedora', version='devel').one()
             pkg_listing = PackageListing.query.filter_by(
                     collectionid=collection.id,
                     packageid=pkg.id).one()
+            #pylint:enable-msg=E1101
             listings = [pkg_listing]
 
         # If ownership, change the owners
@@ -1323,7 +1334,7 @@ class PackageDispatcher(controllers.Controller):
                         pkg_list_log_msgs[pkg_listing] = [log_msg]
 
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
             # :E1103: PackageListing is monkey patched by SQLAlchemy to have
             # the db fields.  So we have to disable this check here.
@@ -1371,12 +1382,13 @@ class PackageDispatcher(controllers.Controller):
 
         # Retrieve the packagelisting for the master branch
         try:
+            #pylint:disable-msg=E1101
             master_branch = PackageListing.query.join('package'
                     ).join('collection').options(lazyload('status')).filter(
                         and_(Package.name==pkg, Branch.branchname==master)
                         ).one()
         except InvalidRequestError:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('"%(package)s" does not exist on branch "%(master)s"') %
                     error_args)
             return dict(exc='InvalidBranch')
@@ -1385,21 +1397,21 @@ class PackageDispatcher(controllers.Controller):
             clone_branch = master_branch.clone(branch, identity.current.user_name)
         except InvalidRequestError, e:
             # Not a valid collection
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('"%(branch)s" is not a valid branch name') %
                 {'branch': branch})
             return dict(exc='InvalidBranch')
         except Exception, e:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             error_args['msg'] = str(e)
             flash(_('Unable to clone "%(package)s %(master)s" to'
                 ' "%(package)s %(branch)s": %(msg)s') % error_args)
             return dict(exc='CannotClone')
 
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             error_args['error'] = str(e)
             flash(_('Unable to save clone of %(package)s %(master)s for'
                 ' %(branch)s to the database: %(error)s') % error_args)
@@ -1430,7 +1442,7 @@ class PackageDispatcher(controllers.Controller):
           with the package
         '''
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             pkg = Package.query.filter_by(name=pkg_name).one()
         except InvalidRequestError:
             flash(_('Package %(pkg)s does not exist') % {'pkg': pkg_name})
@@ -1456,19 +1468,23 @@ class PackageDispatcher(controllers.Controller):
                         'collctn': simple_name})
                     return dict(exc='NoCollectionError')
 
+                #pylint:disable-msg=E1101
                 pkg_listing = PackageListing.query.filter_by(packageid=pkg.id,
                                   collectionid=collectn.id).one()
+                #pylint:enable-msg=E1101
                 package_listings.append(pkg_listing)
 
         else:
             package_listings = pkg.listings
 
         for pkg_listing in package_listings:
+            #pylint:disable-msg=E1101
             acls = PersonPackageListingAcl.query.filter(and_(
                        PersonPackageListingAcl.c.personpackagelistingid
                            == PersonPackageListing.c.id,
                        PersonPackageListing.c.packagelistingid == pkg_listing.id,
                        PersonPackageListing.c.username == username)).all()
+            #pylint:enable-msg=E1101
 
             for acl in acls:
                 person_acl = self._create_or_modify_acl(pkg_listing, username,
@@ -1481,11 +1497,11 @@ class PackageDispatcher(controllers.Controller):
                                 pkg_listing.collection.version, username)
                 log = PersonPackageListingAclLog(identity.current.user.id,
                         STATUS['Obsolete'].statuscodeid, log_msg)
-                log.acl = person_acl # pylint: disable-msg=W0201
+                log.acl = person_acl #pylint:disable-msg=W0201
                 log_msgs.append(log_msg)
 
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
             # An error was generated
             flash(_('Unable to save changes to the database: %(err)s') % {
@@ -1512,8 +1528,6 @@ class PackageDispatcher(controllers.Controller):
         of the comaintainer that requested approveacls the longest time ago.
         If owner='orphan' owner will be set to 'orphan'.
 
-        :arg pkg_listing: Package listing to retrieve the comaintainer.
-        :returns: User name of the person who has held approveacls the
         :arg pkg_name: Name of the package to change the owner
         :arg owner: User name to change the owner of package
         :kwarg collectn_list: list of collections like 'F-10', 'devel'.
@@ -1522,7 +1536,7 @@ class PackageDispatcher(controllers.Controller):
         '''
         # Check that the pkg exists
         try:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             pkg = Package.query.filter_by(name=pkg_name).one()
         except InvalidRequestError:
             return dict(status=False, message=
@@ -1556,16 +1570,18 @@ class PackageDispatcher(controllers.Controller):
                     return dict(status=False,message=
                         _('Collection %(collctn)s does not exist') % {
                         'collctn': simple_name})
+                #pylint:disable-msg=E1101
                 pkg_listing = PackageListing.query.filter_by(packageid=pkg.id,
                                   collectionid=collectn.id).one()
+                #pylint:enable-msg=E1101
                 package_listings.append(pkg_listing)
         else:
-             package_listings = PackageListing.query.filter(and_(
-                                PackageListing.c.collectionid
-                                    == Collection.c.id,
-                                Collection.c.statuscode 
-                                    != STATUS['EOL'].statuscodeid,
-                                PackageListing.c.packageid == pkg.id)).all()
+            pass # Gah -- pylint bug
+            #pylint:disable-msg=E1101
+            package_listings = PackageListing.query\
+                    .filter(and_(PackageListing.c.collectionid==Collection.c.id,
+                        Collection.c.statuscode!=STATUS['EOL'].statuscodeid,
+                        PackageListing.c.packageid == pkg.id)).all()
 
         for pkg_listing in package_listings:
             if not owner:
@@ -1583,7 +1599,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Not able to change owner'
                 ' information for %(pkg)s.') % {'pkg': pkg.name})
         try:
-            session.flush()
+            session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
             # An error was generated
             return dict(status=False, message=_('Not able to change owner'

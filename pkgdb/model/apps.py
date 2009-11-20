@@ -29,10 +29,9 @@ Application related part of the model.
 
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
-# :R0903: Mapped classes will have few methods as SQLAlchemy will monkey patch
-#   more methods in later.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
+
 from sqlalchemy import Table, Column, ForeignKey, ForeignKeyConstraint, Sequence
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
 from sqlalchemy.orm import relation, backref
@@ -124,13 +123,13 @@ IconsTable = Table('icons', metadata,
     ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['collectionid'], ['collection.id'], onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['themeid'], ['themes.id'], onupdate="CASCADE", ondelete="CASCADE"),
-)                  
+)
 
 
 def _create_apptag(tag, score):
     """Creator function for apptags association proxy """
     apptag = ApplicationTag(tag=tag, score=score)
-    session.add(apptag)
+    session.add(apptag) #pylint:disable-msg=E1101
     return apptag
 
 #
@@ -181,19 +180,24 @@ class Application(SABase):
         if not isinstance(apps, (list, tuple)):
             apps = [apps]
 
-        applications = session.query(Application).filter(
-            Application.name.in_(apps))
+        #pylint:disable-msg=E1101
+        applications = session.query(Application).\
+                filter(Application.name.in_(apps))
+        #pylint:enable-msg=E1101
 
         for tag_name in tags:
             try:
-                tag = session.query(Tag).filter_by(name=tag_name, language=lang.shortname).one()
+                #pylint:disable-msg=E1101
+                tag = session.query(Tag).\
+                        filter_by(name=tag_name, language=lang.shortname).one()
+                #pylint:enable-msg=E1101
             except:
                 tag = Tag(name=tag_name, language=lang.shortname)
-                session.add(tag)
+                session.add(tag) #pylint:disable-msg=E1101
 
             for application in applications:
                 application.scores[tag] = application.scores.get(tag, 0)+1
-    
+
 
     def scores_by_language(self, language='en_US'):
         '''Return a dictionary of tagname: score for a given application
@@ -220,11 +224,13 @@ class Application(SABase):
         '''
 
         lang = Language.find(language)
-        
+
         comment = Comment(author, body, lang.shortname, published=True,
                           application=self)
+        #pylint:disable-msg=E1101
         self.comments.append(comment)
         session.flush()
+        #pylint:enable-msg=E1101
 
 
     @classmethod
@@ -254,12 +260,14 @@ class Application(SABase):
         object_tags = []
         for tag in tags:
             try:
-             object_tags.append(
-                    Tag.query.filter_by(name=tag, language=lang).one())
+                #pylint:disable-msg=E1101
+                object_tags.append(Tag.query.\
+                        filter_by(name=tag, language=lang).one())
+                #pylint:enable-msg=E1101
             except:
                 raise Exception(tag, language)
         tags = object_tags
-                        
+
         if operator.lower() == 'or':
             for tag in tags:
                 apps = tag.applications
@@ -292,7 +300,7 @@ class ApplicationTag(SABase):
 
     def __repr__(self):
         return 'ApplicationTag(applicationid=%r, tagid=%r, score=%r)' % (
-            self.applicationid, self.tagid, self.score)
+            self.applicationid, self.tagid, self.score) #pylint:disable-msg=E1101
 
 
 class Comment(SABase):
@@ -311,11 +319,12 @@ class Comment(SABase):
     def __repr__(self):
         return 'Comment(author=%r, body=%r, published=%r, application=%r, '\
                'language=%r, time=%r)' % (
-            self.author, self.body, self.published, self.application.name,
-            self.language, self.time)
+                       self.author, self.body, self.published,
+                       self.application.name,self.language,
+                       self.time) #pylint:disable-msg=E1101
 
     def fancy_delta(self, precision=2):
-        fancy_delta = FancyDateTimeDelta(self.time)
+        fancy_delta = FancyDateTimeDelta(self.time) #pylint:disable-msg=E1101
         return fancy_delta.format(precision)
 
 

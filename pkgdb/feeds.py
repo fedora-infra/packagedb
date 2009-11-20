@@ -23,6 +23,13 @@ Feed Controller.
 All feeds are provided in all the default TurboGears FeedController formats:
 atom1.0, atom0.3, rss2.0.
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+
 
 from turbogears import config, expose
 from sqlalchemy.orm import eagerload
@@ -58,11 +65,12 @@ class ApplicationFeed(FeedController):
         
         # TODO apps
 
-        for app in Application.query\
-                    .options(eagerload('builds'))\
-                    .join('builds')\
-                    .filter(PackageBuildTable.c.repoid==repoid)\
-                    .order_by(Application.id.desc())[:items]:
+        #pylint:disable-msg=E1101
+        apps = Application.query.options(eagerload('builds')).join('builds')\
+                .filter(PackageBuildTable.c.repoid==repoid)\
+                .order_by(Application.id.desc())[:items]
+        #pylint:enable-msg=E1101
+        for app in apps:
             entry = {}
             entry["title"] = '%s-%s-%s' % (
                 app.name, app.builds[0].version, apps.builds[0].release)
@@ -116,13 +124,16 @@ class CommentsFeed(FeedController):
         except:
             app_name = None
 
+        #pylint:disable-msg=E1101
         comment_query = session.query(Comment) \
                     .join('application') \
                     .options(eagerload('application')) \
                     .filter(Comment.published==True) \
                     .order_by(Comment.time)
+        #pylint:enable-msg=E1101
 
         if app_name:
+            #pylint:disable-msg=E1101
             comment_query = comment_query.filter(Application.name==app_name)
 
         for comment in comment_query:
