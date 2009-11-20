@@ -27,16 +27,12 @@ Controller for displaying PackageBuild(Rpm) related information
 # :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
 #   we have to disable this when accessing an attribute of a mapped class.
 
-from sqlalchemy.sql import and_
+from turbogears import controllers, expose, redirect
 
-from turbogears import controllers, expose, identity, redirect
-
-from pkgdb.model import Comment, PackageBuild, Repo
-from pkgdb.utils import mod_grp
+from pkgdb.model import PackageBuild, Repo
 
 from fedora.tg.util import request_format
 
-from cherrypy import request
 
 class Package(controllers.Controller):
     '''Display general information related to PackageBuilds.

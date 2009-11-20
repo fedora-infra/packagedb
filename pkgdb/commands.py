@@ -9,8 +9,7 @@ from pkgdb.utils import init_globals
 init_globals()
 
 from os import getcwd
-from os.path import dirname, exists, join
-import os.path
+from os.path import dirname
 
 import pkg_resources
 pkg_resources.require("TurboGears>=1.0.4.4")

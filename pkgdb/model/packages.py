@@ -39,15 +39,15 @@ Mapping of package related database tables to python classes.
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 #   is not to name them with all uppercase
 
-from sqlalchemy import Table, Column, Integer, String, ForeignKey
+from sqlalchemy import Table, Column, Integer, ForeignKey
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.exceptions import InvalidRequestError
-from sqlalchemy.sql import and_, or_
+from sqlalchemy.sql import and_
 
-from turbogears.database import metadata, mapper, get_engine, session
+from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
@@ -55,7 +55,6 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
         GroupPackageListing, GroupPackageListingAcl
 from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
         RpmObsoletes, RpmFiles
-from pkgdb.model.languages import Language
 
 import logging
 error_log = logging.getLogger('pkgdb.model.packages')

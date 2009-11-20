@@ -30,22 +30,18 @@ Controller for handling Package ownership information.
 #   classes so we have to disable these checks.
 
 from sqlalchemy.orm import eagerload
-from sqlalchemy.sql import and_
 
-from turbogears import controllers, expose, config, redirect, identity, \
-        paginate
+from turbogears import controllers, expose, paginate
 
 from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
         PackageListingTable
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import admin_grp, STATUS
+from pkgdb.utils import STATUS
 from pkgdb import _
 
 from fedora.tg.util import request_format
-
-from cherrypy import request
 
 COLLECTION = 21
 class Acls(controllers.Controller):

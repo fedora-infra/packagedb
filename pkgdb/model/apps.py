@@ -32,13 +32,12 @@ Application related part of the model.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 
-from sqlalchemy import Table, Column, ForeignKey, ForeignKeyConstraint, Sequence
+from sqlalchemy import Table, Column, ForeignKeyConstraint
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
 from sqlalchemy.orm import relation, backref
-from sqlalchemy.orm.collections import mapped_collection, \
-        attribute_mapped_collection
+from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
-from turbogears.database import metadata, mapper, get_engine, session
+from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
 

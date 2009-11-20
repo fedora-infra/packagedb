@@ -19,7 +19,7 @@
 #            Toshio Kuratomi <toshio@redhat.com>
 #
 
-import sys, os, re
+import os, re
 import stat
 import rpmUtils
 import ConfigParser

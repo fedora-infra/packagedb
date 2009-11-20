@@ -27,7 +27,7 @@ Controller for displaying Comments related information.
 # :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
 #   we have to disable this when accessing an attribute of a mapped class.
 
-from sqlalchemy.sql import and_, or_
+from sqlalchemy.sql import and_
 
 from turbogears import controllers, expose, identity, redirect
 from turbogears.database import session
@@ -36,7 +36,7 @@ from cherrypy import request
 
 from fedora.tg.util import request_format
 
-from pkgdb.model import Branch, Comment, Language, PackageBuild, Repo, Application
+from pkgdb.model import Comment, Language, PackageBuild, Application
 from pkgdb.utils import mod_grp, is_xhr
 import logging
 log = logging.getLogger('pkgdb.comments')

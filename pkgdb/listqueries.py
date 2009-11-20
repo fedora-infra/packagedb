@@ -33,10 +33,9 @@ Send acl information to third party tools.
 #   So this is fine.
 
 import itertools
-import os
 
-from sqlalchemy import select, and_, or_, create_engine
-from sqlalchemy.orm import sessionmaker, session
+from sqlalchemy import select, and_, create_engine
+from sqlalchemy.orm import sessionmaker
 
 from turbogears import expose, validate, error_handler
 from turbogears import controllers, validators
@@ -47,11 +46,9 @@ from pkgdb.model import Package, Branch, GroupPackageListing, Collection,\
      GroupPackageListingAcl, PackageListing, PersonPackageListing,\
      PersonPackageListingAcl, Repo, PackageBuild
 from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable,\
-     LanguagesTable, PackageBuildTable, ApplicationsTable,\
-     ApplicationsTagsTable
+     LanguagesTable, ApplicationsTagsTable
 from pkgdb.model import YumLanguagesTable, YumTagsTable,\
-     YumReposTable, YumPackageBuildTable, YumPackageBuildNamesTagsTable,\
-     YumPackageBuildNamesTable
+     YumReposTable, YumPackageBuildTable, YumPackageBuildNamesTagsTable
 from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
 from pkgdb.utils import STATUS
 from pkgdb import _

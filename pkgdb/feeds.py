@@ -31,13 +31,13 @@ atom1.0, atom0.3, rss2.0.
 #   we have to disable this when accessing an attribute of a mapped class.
 
 
-from turbogears import config, expose
+from turbogears import config
 from sqlalchemy.orm import eagerload
 
 from turbogears.feed import FeedController
 from turbogears.database import session
 
-from pkgdb.model import PackageBuild, Comment, PackageBuildTable, Application
+from pkgdb.model import Comment, PackageBuildTable, Application
 
 class ApplicationFeed(FeedController):
     '''A feed of all the latest PackageBuilds.

@@ -23,7 +23,7 @@ Mapping of tables needed in the sqlite database that goes to yum
 
 from sqlalchemy import Table, Column, String, Integer, MetaData, ForeignKey
 
-from pkgdb.model import TagsTable, LanguagesTable, ReposTable
+from pkgdb.model import TagsTable, LanguagesTable
 
 dbfile = '/tmp/buildtags.db'
 sqliteconn = 'sqlite:////tmp/buildtags.db'

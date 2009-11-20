@@ -34,13 +34,11 @@ from sqlalchemy.exceptions import InvalidRequestError
 from turbogears import controllers, expose, identity
 from turbogears.database import session
 
-from pkgdb.model import Comment, PackageBuild, Repo, Application
+from pkgdb.model import Comment, Application
 from pkgdb.utils import mod_grp
 from pkgdb import _
 
 from fedora.tg.util import request_format
-
-from cherrypy import request
 
 import logging
 log = logging.getLogger('pkgdb.applications')

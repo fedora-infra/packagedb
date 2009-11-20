@@ -35,11 +35,10 @@ import urllib
 import sqlalchemy
 from sqlalchemy.orm import lazyload
 
-from turbogears import controllers, expose, paginate, config, \
-        redirect, identity
+from turbogears import controllers, expose, paginate, redirect, identity
 
 from pkgdb.model import Collection, Package, PackageListing, \
-        StatusTranslation, PersonPackageListing, PersonPackageListingAcl
+        PersonPackageListing, PersonPackageListingAcl
 from pkgdb.utils import STATUS
 from pkgdb import _
 

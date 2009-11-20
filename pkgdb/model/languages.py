@@ -29,7 +29,6 @@ Mapping of language related database tables to python classes.
 #   we have to disable this when accessing an attribute of a mapped class.
 
 from sqlalchemy import Table
-from sqlalchemy.orm import relation, backref
 from sqlalchemy.sql import or_
 
 from turbogears.database import metadata, mapper, session

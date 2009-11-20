@@ -23,7 +23,7 @@ Mapping of database tables for logs to python classes.
 
 from sqlalchemy import Table
 from sqlalchemy import select, literal_column, not_
-from sqlalchemy.orm import polymorphic_union, relation, backref
+from sqlalchemy.orm import polymorphic_union, relation
 from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase

@@ -28,14 +28,13 @@ Controller for Tag related retrieval and updating of information.
 #   we have to disable this when accessing an attribute of a mapped class.
 
 import logging
-from sqlalchemy.sql import and_, or_
 from turbogears import controllers, expose, redirect, identity, flash, \
                        validate, validators
 from turbogears.database import session
 from cherrypy import request
 from fedora.tg.util import request_format
 
-from pkgdb.model import Tag, Language, PackageBuild, Application
+from pkgdb.model import Tag, PackageBuild, Application
 from pkgdb.letter_paginator import Letters
 from pkgdb.utils import is_xhr
 

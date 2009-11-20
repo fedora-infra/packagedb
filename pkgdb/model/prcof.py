@@ -4,7 +4,7 @@ Mapping of PRCO (provides, requires, conflicts, obsoletes) and files
 
 from sqlalchemy import Table
 
-from turbogears.database import metadata, mapper, get_engine
+from turbogears.database import metadata, mapper
 
 from fedora.tg.json import SABase
 

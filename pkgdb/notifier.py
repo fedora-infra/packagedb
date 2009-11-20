@@ -21,8 +21,6 @@
 Classes for notifications
 '''
 
-import logging
-
 import turbomail
 from turbogears import config
 from pkgdb import _

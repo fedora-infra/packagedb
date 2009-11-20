@@ -29,13 +29,9 @@ indirectly from here.
 #   we have to disable this when accessing an attribute of a mapped class.
 # :W0232: Controller methods don't need an __init__()
 
-from turbogears import controllers, expose, config, flash
-from turbogears import identity, redirect
+from turbogears import controllers, expose
 from turbogears.database import session
 from sqlalchemy.orm import eagerload
-from cherrypy import request, response
-
-from fedora.tg.util import request_format
 
 from pkgdb import release, _
 

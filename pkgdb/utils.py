@@ -27,8 +27,6 @@ Utilities for all classes to use
 # :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
 #   we have to disable this when accessing an attribute of a mapped class.
 
-import os
-import tempfile
 import logging
 
 from turbogears import config
