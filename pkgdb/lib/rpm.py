@@ -175,7 +175,7 @@ class RPMParser(object):
                 try:
                     img = Image.open(data)
                     data = StringIO()
-                    img.thumbnail((48,48), Image.ANTIALIAS)
+                    img.thumbnail((48, 48), Image.ANTIALIAS)
                     img.save(data, "PNG")
                 except IOError, e:
                     # Occasionally Image can't parse icon data
@@ -183,7 +183,7 @@ class RPMParser(object):
                     continue
 
                 data.seek(0)
-                size = (48,48)
+                size = (48, 48)
                 
                 app_icon_data[name] = dict(size=size,
                         theme=app_icon_data[name]['theme'], data=data)

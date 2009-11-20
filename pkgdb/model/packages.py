@@ -357,7 +357,7 @@ class PackageBuild(SABase):
         scores = {}
         for app in self.applications: #pylint:disable-msg=E1101
             tags = app.scores_by_language(language)
-            for tag,score in tags.iteritems():
+            for tag, score in tags.iteritems():
                 sc = scores.get(tag, None)
                 if sc is None or sc < score:
                     scores[tag] = score

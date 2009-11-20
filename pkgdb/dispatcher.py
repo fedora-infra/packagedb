@@ -1110,7 +1110,7 @@ class PackageDispatcher(controllers.Controller):
                 owner_name = devel_pkg.owner
 
             collection_data = changes['collections']
-            if not isinstance(collection_data,(tuple,list)):
+            if not isinstance(collection_data, (tuple, list)):
                 collection_data = [collection_data]
             for collection_name in collection_data:
                 # Check if collection/version exists
@@ -1463,7 +1463,7 @@ class PackageDispatcher(controllers.Controller):
         package_listings = []
 
         if collectn_list:
-            if not isinstance(collectn_list,(tuple,list)):
+            if not isinstance(collectn_list, (tuple, list)):
                 collectn_list = [collectn_list]
             for simple_name in collectn_list:
                 try:
@@ -1567,13 +1567,13 @@ class PackageDispatcher(controllers.Controller):
         package_listings = []
 
         if collectn_list:
-            if not isinstance(collectn_list,(tuple,list)):
+            if not isinstance(collectn_list, (tuple, list)):
                 collectn_list = [collectn_list]
             for simple_name in collectn_list:
                 try:
                     collectn = Collection.by_simple_name(simple_name)
                 except InvalidRequestError:
-                    return dict(status=False,message=
+                    return dict(status=False, message=
                         _('Collection %(collctn)s does not exist') % {
                         'collctn': simple_name})
                 #pylint:disable-msg=E1101

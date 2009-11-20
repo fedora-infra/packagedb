@@ -43,13 +43,13 @@ from turbogears import controllers, validators
 
 from turbogears.database import get_engine
 
-from pkgdb.model import Package, Branch, GroupPackageListing, Collection,\
-     GroupPackageListingAcl, PackageListing, PersonPackageListing,\
+from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
+     GroupPackageListingAcl, PackageListing, PersonPackageListing, \
      PersonPackageListingAcl, Repo, PackageBuild
-from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable,\
+from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable, \
      LanguagesTable, ApplicationsTagsTable, ApplicationTag
-from pkgdb.model import YumLanguagesTable, YumTagsTable, YumReposTable,\
-    YumPackageBuildTable, YumPackageBuildNamesTable,\
+from pkgdb.model import YumLanguagesTable, YumTagsTable, YumReposTable, \
+    YumPackageBuildTable, YumPackageBuildNamesTable, \
     YumPackageBuildNamesTagsTable
 from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
 from pkgdb.utils import STATUS

@@ -205,7 +205,8 @@ class Acls(controllers.Controller):
         :kwarg eol: If set, list packages that are in EOL distros.
         :returns: A list of packages.
         '''
-        if not eol or eol.lower() in ('false','f','0'):
+        ### FIXME: Replace with a validator
+        if not eol or eol.lower() in ('false', 'f', '0'):
             eol = False
         else:
             eol = bool(eol)
