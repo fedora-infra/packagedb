@@ -83,7 +83,8 @@ class PackageListingLog(Log):
     def __init__(self, username, action, description=None, changetime=None,
             packagelistingid=None):
         # pylint: disable-msg=R0913
-        super(PackageListingLog, self).__init__(username, description, changetime)
+        super(PackageListingLog, self).__init__(username, description,
+                changetime)
         self.action = action
         self.packagelistingid = packagelistingid
 

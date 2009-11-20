@@ -34,12 +34,12 @@ yummeta.bind = sqliteconn
 YumLanguagesTable = LanguagesTable.tometadata(yummeta)
 YumTagsTable = TagsTable.tometadata(yummeta)
 YumPackageBuildNamesTable = Table('packagebuildnames', yummeta,
-                Column('name', String(30), primary_key=True))
+        Column('name', String(30), primary_key=True))
 YumPackageBuildNamesTagsTable = Table('packagebuildnametags', yummeta,
-                Column('packagebuildname', String,                                           
-                    ForeignKey('packagebuildnames.name'), primary_key=True),              
-                Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),           
-                Column('score', Integer))
+        Column('packagebuildname', String,
+            ForeignKey('packagebuildnames.name'), primary_key=True),
+        Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),
+        Column('score', Integer))
 YumReposTable = Table('repos', yummeta,
                       Column('id', Integer, primary_key=True),
                       Column('name', String(50), nullable=False),

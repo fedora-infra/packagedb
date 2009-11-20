@@ -31,7 +31,8 @@ import logging
 log = logging.getLogger('pkgdb.lib.rpm')
 
 RE_APP_ICON_FILE = re.compile("^.*/(icons|pixmaps).*/apps/([^/]*)\.png$")
-RE_SIZED_APP_ICON_FILE = re.compile("^.*/(icons|pixmaps)/([^/]*)/(\d+x\d+)/apps/([^/]*)\.png$")
+RE_SIZED_APP_ICON_FILE = re.compile(
+        "^.*/(icons|pixmaps)/([^/]*)/(\d+x\d+)/apps/([^/]*)\.png$")
 
 
 def _convert_size(size_string):
@@ -150,13 +151,15 @@ class RPMParser(object):
                     width = _convert_size(sized_match.group(3))
                     theme = sized_match.group(2)
 
-                if not app_icon_data.has_key(name) or width == 48 or app_icon_data[name]['size'][0] < width:
+                if not app_icon_data.has_key(name) or width == 48\
+                        or app_icon_data[name]['size'][0] < width:
                     data = StringIO(entry.read())
                     img = Image.open(data)
                     data.seek(0)
                     size = img.size
 
-                    log.debug("%s at size %sx%s from path %s" % (name, size[0], size[1], entry.name))
+                    log.debug("%s at size %sx%s from path %s" %
+                            (name, size[0], size[1], entry.name))
 
                 app_icon_data[name] = dict(size=size, data=data, theme=theme)
 
@@ -167,7 +170,8 @@ class RPMParser(object):
             size = app_icon_data[name]['size']
             if size[0] != 48 or size[1] != 48:
                 data = app_icon_data[name]['data']
-                log.debug("Resizing %s from %sx%s to 48x48" % (name, size[0], size[1]))
+                log.debug("Resizing %s from %sx%s to 48x48" %
+                        (name, size[0], size[1]))
                 try:
                     img = Image.open(data)
                     data = StringIO()
@@ -181,7 +185,8 @@ class RPMParser(object):
                 data.seek(0)
                 size=(48,48)
                 
-                app_icon_data[name] = dict(size=size, theme=app_icon_data[name]['theme'], data=data)
+                app_icon_data[name] = dict(size=size,
+                        theme=app_icon_data[name]['theme'], data=data)
 
         # delete invalid files
         for name in to_delete:

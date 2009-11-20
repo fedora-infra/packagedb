@@ -155,7 +155,8 @@ class Search(controllers.Controller):
                     #pylint:enable-msg=E1101
                 if searchon == 'both':
                     #pylint:disable-msg=E1101
-                    descriptions = PackageBuild.query.join(PackageBuild.package)\
+                    descriptions = PackageBuild.query\
+                            .join(PackageBuild.package)\
                             .filter(and_(PackageBuild.statuscode!= \
                                 STATUS['Removed'].statuscodeid,
                                 Package.statuscode!= \

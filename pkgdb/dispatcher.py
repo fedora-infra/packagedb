@@ -294,7 +294,8 @@ class PackageDispatcher(controllers.Controller):
         :arg status: Status DB Object we're setting the ACL to.
         '''
         # watchbugzilla and watchcommits are autocommit
-        if new_acl in ('watchbugzilla', 'watchcommits') and status == STATUS['Awaiting Review']:
+        if new_acl in ('watchbugzilla', 'watchcommits')\
+                and status == STATUS['Awaiting Review']:
             status = STATUS['Approved']
 
         change_person = pkg_listing.people2.get(person_name, None)
@@ -648,7 +649,8 @@ class PackageDispatcher(controllers.Controller):
             except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
 
-        person_acl = self._create_or_modify_acl(pkg, person_name, new_acl, status)
+        person_acl = self._create_or_modify_acl(pkg, person_name,
+                new_acl, status)
 
         # Make sure a log is created in the db as well.
         log_msg = u'%s has set the %s acl on %s (%s %s) to %s for %s' % (
@@ -1396,7 +1398,8 @@ class PackageDispatcher(controllers.Controller):
             return dict(exc='InvalidBranch')
 
         try:
-            clone_branch = master_branch.clone(branch, identity.current.user_name)
+            clone_branch = master_branch.clone(branch,
+                    identity.current.user_name)
         except InvalidRequestError, e:
             # Not a valid collection
             session.rollback() #pylint:disable-msg=E1101
@@ -1483,8 +1486,9 @@ class PackageDispatcher(controllers.Controller):
             #pylint:disable-msg=E1101
             acls = PersonPackageListingAcl.query.filter(and_(
                        PersonPackageListingAcl.c.personpackagelistingid
-                           == PersonPackageListing.c.id,
-                       PersonPackageListing.c.packagelistingid == pkg_listing.id,
+                               == PersonPackageListing.c.id,
+                       PersonPackageListing.c.packagelistingid
+                            == pkg_listing.id,
                        PersonPackageListing.c.username == username)).all()
             #pylint:enable-msg=E1101
 

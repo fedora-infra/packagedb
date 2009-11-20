@@ -51,7 +51,8 @@ from datetime import datetime
 #
 
 ApplicationsTable = Table('applications', metadata, 
-    Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),    
+    Column('id', Integer, primary_key=True, autoincrement=True,
+        nullable=False),    
     Column('name', Text, nullable=False),
     Column('description', Text, nullable=False),
     Column('summary', Text, nullable=False),
@@ -60,24 +61,31 @@ ApplicationsTable = Table('applications', metadata,
     Column('desktoptype', Text),
     Column('iconid', nullable=True),
     Column('iconnameid', nullable=True),
-    ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+    ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+    ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
 )
 
 ApplicationsTagsTable = Table('applicationstags', metadata,
     Column('applicationid', Integer, primary_key=True, nullable=False),
     Column('tagid', Integer, primary_key=True, nullable=False),
     Column('score', Integer, default=1, nullable=False),
-    ForeignKeyConstraint(['applicationid'],['applications.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['tagid'],['tags.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['tagid'], ['tags.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
 )
 
 PackageBuildApplicationsTable = Table('packagebuildapplications', metadata,
     Column('applicationid', Integer, primary_key=True, nullable=False),
     Column('packagebuildid', Integer, primary_key=True, nullable=False),
-    ForeignKeyConstraint(['applicationid'],['applications.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['packagebuildid'],['packagebuild.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 AppTypesTable = Table('apptypes', metadata,
@@ -90,17 +98,21 @@ CommentsTable = Table('comments', metadata,
     Column('body', Text, nullable=False),
     Column('published', Boolean, default=True, nullable=False),
     Column('language', Text, nullable=False),
-    Column('time', DateTime(timezone=True), default=datetime.now, nullable=False),
+    Column('time', DateTime(timezone=True), default=datetime.now,
+        nullable=False),
     Column('applicationid', Integer, nullable=False),
-    ForeignKeyConstraint(['language'],['languages.shortname'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['applicationid'],['applications.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['language'],['languages.shortname'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['applicationid'],['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 TagsTable = Table('tags', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False),
     Column('language', Text, nullable=False),
-    ForeignKeyConstraint(['language'],['languages.shortname'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['language'],['languages.shortname'],
+        onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 IconNamesTable = Table('iconnames', metadata,
@@ -119,9 +131,12 @@ IconsTable = Table('icons', metadata,
     Column('collectionid', nullable=False),                   
     Column('themeid', nullable=False),                   
     Column('icon', Binary, nullable=False),
-    ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['collectionid'], ['collection.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['themeid'], ['themes.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+    ForeignKeyConstraint(['collectionid'], ['collection.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['themeid'], ['themes.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
 )
 
 
@@ -142,7 +157,8 @@ class Application(SABase):
     file will have application record (we will presume that the whole package is application)
     Apptype column indicates the type of the record.
     '''
-    def __init__(self, name, description, url, apptype, summary, desktoptype=None, iconname=None, icon=None ):
+    def __init__(self, name, description, url, apptype, summary,
+            desktoptype=None, iconname=None, icon=None ):
         super(Application, self).__init__()
         self.name = name
         self.description = description
@@ -278,7 +294,8 @@ class Application(SABase):
                 # do an intersection between all the taglists to get
                 # the common ones
                 for tag in tags[1:]:
-                    applications = set(tags[0].applications) & set(tag.applications)
+                    applications = set(tags[0].applications)\
+                            & set(tag.applications)
 
         return applications
 
@@ -299,7 +316,7 @@ class ApplicationTag(SABase):
 
     def __repr__(self):
         return 'ApplicationTag(applicationid=%r, tagid=%r, score=%r)' % (
-            self.applicationid, self.tagid, self.score) #pylint:disable-msg=E1101
+            self.applicationid, self.tagid, self.score)#pylint:disable-msg=E1101
 
 
 class Comment(SABase):

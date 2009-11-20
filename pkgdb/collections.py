@@ -170,7 +170,8 @@ class Collections(controllers.Controller):
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
-                    title = _('%(app)s -- Invalid Collection Id') % {'app': self.app_title},
+                    title = _('%(app)s -- Invalid Collection Id') %
+                            {'app': self.app_title},
                     message = _('The collection_id you were linked to, %(id)s,'
                             ' does not exist.  If you received this error from'
                             ' a link on the fedoraproject.org website, please'
