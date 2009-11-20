@@ -81,9 +81,9 @@ class Tags(controllers.Controller):
 
         :arg build: The PackageBuild object to lookup.
         :kwarg language: A language, short ('en_US') or long ('American English')
-        format. Look for them on https://translate.fedoraproject.org/languages/
+            format. Look for them on
+            https://translate.fedoraproject.org/languages/
         '''
-
         buildtags = PackageBuildName.query.filter_by(name=build).one().scores()
         return dict(title=self.app_title, buildtags=buildtags)
 

@@ -1205,7 +1205,7 @@ class PackageDispatcher(controllers.Controller):
             # Already retrieved owner into person
             for pkg_listing in listings:
                 try:
-                   log_msg = self._set_owner(pkg_listing, person)
+                    log_msg = self._set_owner(pkg_listing, person)
                 except InvalidRequestError, e:
                     return dict(status=False, 
                         message=_('Acls error: %(err)s') % {'err': e})
@@ -1591,7 +1591,7 @@ class PackageDispatcher(controllers.Controller):
 
         for pkg_listing in package_listings:
             if not owner:
-               person = self._most_eligible_comaintainer(pkg_listing)
+                person = self._most_eligible_comaintainer(pkg_listing)
             if person['username'] == pkg_listing.owner:
                 continue
             else:

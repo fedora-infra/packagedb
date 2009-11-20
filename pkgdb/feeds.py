@@ -46,7 +46,7 @@ class ApplicationFeed(FeedController):
     because they have a .desktop file
     '''
     def __init__(self):
-         self.baseurl = config.get('base_url_filter.base_url')
+        self.baseurl = config.get('base_url_filter.base_url')
 
     def get_feed_data(self, **kwargs):
         entries = []
