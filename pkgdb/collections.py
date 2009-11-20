@@ -144,7 +144,6 @@ class Collections(controllers.Controller):
         flash(_('This page is deprecated.  Use %(url)s instead.') %
                 {'url': config.get('base_url_filter.base_url',
                     'http://localhost') + tg_url('/collection/name')})
-        collectionEntry = collection_id
         try:
             collection_id = int(collection_id)
         except ValueError:
