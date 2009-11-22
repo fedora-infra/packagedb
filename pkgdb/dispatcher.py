@@ -50,7 +50,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, LOG, STATUS
+from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, LOG, STATUS
 
 from fedora.tg.util import tg_url
 
@@ -78,10 +78,10 @@ class PackageDispatcher(controllers.Controller):
               107427: 'provenpackager',
               'cvsadmin': 101197,
               'provenpackager': 107427}
-    groupnames = (admin_grp, 'provenpackager')
+    groupnames = (admin_grp, provenpkger_grp)
 
     # Groups that a person must be in to own or co-maintain a package
-    owner_memberships = (admin_grp, pkger_grp, 'provenpackager')
+    owner_memberships = (admin_grp, pkger_grp, provenpkger_grp)
 
     def __init__(self):
         controllers.Controller.__init__(self)
@@ -919,7 +919,7 @@ class PackageDispatcher(controllers.Controller):
                 ' %(status)s') % { 'pkg': package, 'user': person['username'],
                     'status': STATUS['Approved'].statuscodeid})
         changed_acls = []
-        for group in ('provenpackager',):
+        for group in (provenpkger_grp,):
             #pylint:disable-msg=E1101
             changed_acls.append(GroupPackageListingAcl.query.filter(and_(
                     GroupPackageListingAcl.c.grouppackagelistingid
@@ -1146,7 +1146,7 @@ class PackageDispatcher(controllers.Controller):
                                 'pkg': package, 'user': person['username'],
                                 'status': status})
                     changed_acls = []
-                    for group in ('provenpackager',):
+                    for group in (provenpkger_grp,):
                         #pylint:disable-msg=E1101
                         changed_acls.append(GroupPackageListingAcl.query.filter(
                             and_(
