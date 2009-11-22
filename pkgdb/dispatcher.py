@@ -81,8 +81,12 @@ class PackageDispatcher(controllers.Controller):
               'provenpackager': 107427}
     groupnames = (admin_grp, provenpkger_grp)
 
-    # Groups that a person must be in to own or co-maintain a package
+    # Groups that a person must be in to own a package
     owner_memberships = (admin_grp, pkger_grp, provenpkger_grp)
+
+    # Groups that a person must be in to co-maintain a package
+    comaintainer_memberships = (admin_grp, pkger_grp, provenpkger_grp,
+            newpkger_grp)
 
     def __init__(self):
         controllers.Controller.__init__(self)
@@ -244,7 +248,9 @@ class PackageDispatcher(controllers.Controller):
         if acl in ('watchbugzilla', 'watchcommits'):
             return True
 
-        if acl == 'owner':
+        # For owner and approveacls, the user must be in packager or higher
+
+        if acl in ('owner', 'approveacls'):
             if user:
                 if user['id'] <= MAXSYSTEMUID:
                     # Any pseudo user can be the package owner
@@ -266,21 +272,22 @@ class PackageDispatcher(controllers.Controller):
                         'groups': self.owner_memberships})
 
         # For any other acl, check whether the person is in an allowed group
+        # New packagers can hold these acls
         if user:
             # If the person isn't in a known group raise an error
             if [group for group in user['approved_memberships']
-                    if group['name'] in self.owner_memberships]:
+                    if group['name'] in self.comaintainer_memberships]:
                 return True
             raise AclNotAllowedError(_('%(user)s must be in one of these'
                 ' groups: %(groups)s to hold the %(acl)s acl') % {
-                    'user': user['username'], 'groups': self.owner_memberships,
+                    'user': user['username'], 'groups': self.comaintainer_memberships,
                     'acl': acl})
-        elif identity.in_any_group(*self.owner_memberships):
+        elif identity.in_any_group(*self.comaintainer_memberships):
             return True
         raise AclNotAllowedError(_('%(user)s must be in one of these'
             ' groups: %(groups)s to hold the %(acl)s acl') % {
                 'user': identity.current.user_name,
-                'groups': self.owner_memberships, 'acl': acl})
+                'groups': self.comaintainer_memberships, 'acl': acl})
 
     def _create_or_modify_acl(self, pkg_listing, person_name, new_acl, status):
         '''Create or modify an acl.
