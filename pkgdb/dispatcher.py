@@ -50,7 +50,8 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, LOG, STATUS
+from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, \
+        newpkger_grp, LOG, STATUS
 
 from fedora.tg.util import tg_url
 
