@@ -94,8 +94,8 @@ for repo in repos:
     yb = yum.YumBase()
 
     yb.repos.disableRepo('*')
-    yb.add_enable_repo('pkgdb-%s' % repo.shortname,
-                       ['%s%s' % (repo.mirror, repo.url)])
+    yb.add_enable_repo(str('pkgdb-%s' % repo.shortname),
+                       [str('%s%s' % (repo.mirror, repo.url))])
     yumrepo = yb.repos.getRepo('pkgdb-%s' % repo.shortname)
 
     log.info('Refreshing repo: %s' % yumrepo.name)
