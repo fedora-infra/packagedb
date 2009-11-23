@@ -1,6 +1,6 @@
 CREATE TABLE iconnames (
     id serial NOT NULL PRIMARY KEY,
-    name text NOT NULL UNIQUE, 
+    name text NOT NULL UNIQUE
 ); 
 
 GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE iconnames TO pkgdbadmin;
@@ -10,7 +10,7 @@ GRANT SELECT, UPDATE ON iconnames_id_seq TO pkgdbreadonly;
 
 CREATE TABLE themes (
     id serial NOT NULL PRIMARY KEY,
-    name text NOT NULL UNIQUE, 
+    name text NOT NULL UNIQUE
 );                      
 
 GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE themes TO pkgdbadmin;
@@ -23,7 +23,7 @@ CREATE TABLE icons (
     nameid integer NOT NULL,
     collectionid integer NOT NULL,
     themeid integer NOT NULL,     
-    icon bytea NOT NULL           
+    icon bytea NOT NULL
 );                                
 
 ALTER TABLE ONLY icons
