@@ -40,11 +40,12 @@ from sqlalchemy.sql import and_
 from turbogears import config, update_config
 from turbogears.database import session
 
-from pkgdb.lib.rpm import RPMParser, RE_APP_ICON_FILE
 
 CONFDIR = '@CONFDIR@'
 PKGDBDIR = os.path.join('@DATADIR@', 'fedora-packagedb')
 sys.path.append(PKGDBDIR)
+
+from pkgdb.lib.rpm import RPMParser, RE_APP_ICON_FILE
 
 if len(sys.argv) > 1:
     update_config(configfile=sys.argv[1],
@@ -122,7 +123,7 @@ for repo in repos:
                      (rpm.name, packagename))
         else:
             # what's my packagelisting?
-            collectionid = repo.collection.id
+            collectionid = repo.collectionid
             listing_query = PackageListing.query.filter_by(
                                 packageid=package.id,
                                 collectionid=collectionid)
