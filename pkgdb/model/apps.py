@@ -41,7 +41,7 @@ from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
 
-from pkgdb.model import PackageBuild, Language, Collection
+from pkgdb.model import PackageBuild, BinaryPackage, Language, Collection
 from pkgdb.lib.dt_utils import FancyDateTimeDelta
 
 from datetime import datetime
@@ -77,6 +77,14 @@ ApplicationsTagsTable = Table('applicationstags', metadata,
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['tagid'], ['tags.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
+)
+
+BinaryPackageTagsTable = Table('binarypackagetags', metadata,
+    Column('binarypackagename', Text, primary_key=True, nullable=False),
+    Column('tagid', Integer, primary_key=True, nullable=False),
+    Column('score', Integer, default=1, nullable=False),
+    ForeignKeyConstraint(['binarypackagename'],['binarypackages.name'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['tagid'],['tags.id'], onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 PackageBuildApplicationsTable = Table('packagebuildapplications', metadata,
@@ -319,6 +327,26 @@ class ApplicationTag(SABase):
             self.applicationid, self.tagid, self.score)#pylint:disable-msg=E1101
 
 
+class BinaryPackageTag(SABase):
+    '''BinaryPackage tag association.
+
+    The association holds score which indicates how many users assigned 
+    related tag to the BinaryPackage.
+
+    '''
+
+    def __init__(self, binarypackage=None, tag=None, score=1):
+        super(BinaryPackageTag, self).__init__()
+        self.binarypackage = binarypackage
+        self.tag = tag
+        self.score = score
+
+    def __repr__(self):
+        return 'BinaryPackageTag(binarypackage=%r, tagid=%r, score=%r)' % (
+            self.binarypackagename, self.tagid, self.score)
+
+
+
 class Comment(SABase):
     '''Comments associated to PackageBuilds.
 
@@ -412,6 +440,12 @@ mapper(ApplicationTag, ApplicationsTagsTable,
     properties={
         'tag': relation(Tag, cascade='all'),
         'application': relation(Application, cascade='all'),
+    })
+
+mapper(BinaryPackageTag, BinaryPackageTagsTable, 
+    properties={
+        'tag': relation(Tag, cascade='all'),
+        'binarypackage': relation(BinaryPackage, cascade='all'),
     })
 
 mapper(Comment, CommentsTable)
