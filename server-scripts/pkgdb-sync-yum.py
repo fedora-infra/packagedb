@@ -60,7 +60,7 @@ from pkgdb.model import PackageBuildTable, RpmProvidesTable, RpmRequiresTable, \
                         ApplicationsTable, IconName, Theme, Icon
 from pkgdb.model import Branch, Package, PackageListing, PackageBuild, Repo, Application, \
                         ApplicationTag, Tag, RpmFiles, PackageBuildDepends, RpmRequires, \
-                        RpmProvides, RpmConflicts, RpmObsoletes
+                        RpmProvides, RpmConflicts, RpmObsoletes, BinaryPackage
 
 fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
 username = config.get('fas.username', 'admin')
@@ -168,6 +168,13 @@ for repo in repos:
                 else:
                     (committime, committer, changelog) = (
                         datetime.datetime.now(),'','')
+
+                # insert binary package if necesary
+                try:
+                    session.query(BinaryPackage).filter_by(name=rpm.name).one()
+                except:
+                    binary_package = BinaryPackage(rpm.name)
+                    session.add(binary_package)
 
                 # insert the new packagebuild and get its id
                 pkgbuild = PackageBuild(
