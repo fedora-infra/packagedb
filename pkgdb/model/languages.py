@@ -28,7 +28,7 @@ Mapping of language related database tables to python classes.
 # :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
 #   we have to disable this when accessing an attribute of a mapped class.
 
-from sqlalchemy import Table
+from sqlalchemy import Table, Column, Text
 from sqlalchemy.sql import or_
 
 from turbogears.database import metadata, mapper, session
@@ -39,7 +39,10 @@ from fedora.tg.json import SABase
 # Tables
 #
 
-LanguagesTable = Table('languages', metadata, autoload=True)
+LanguagesTable = Table('languages', metadata,
+    Column('shortname', Text, nullable=False, primary_key=True),
+    Column('name', Text, nullable=False, unique=True),
+)
 
 #
 # Mapped Classes

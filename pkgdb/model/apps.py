@@ -41,7 +41,7 @@ from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
 
-from pkgdb.model import PackageBuild, BinaryPackage, Language, Collection
+from pkgdb.model import PackageBuild, BinaryPackage, Collection
 from pkgdb.lib.dt_utils import FancyDateTimeDelta
 
 from datetime import datetime
@@ -105,22 +105,16 @@ CommentsTable = Table('comments', metadata,
     Column('author', Text, nullable=False),
     Column('body', Text, nullable=False),
     Column('published', Boolean, default=True, nullable=False),
-    Column('language', Text, nullable=False),
     Column('time', DateTime(timezone=True), default=datetime.now,
         nullable=False),
     Column('applicationid', Integer, nullable=False),
-    ForeignKeyConstraint(['language'],['languages.shortname'],
-        onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['applicationid'],['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 TagsTable = Table('tags', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
-    Column('name', Text, nullable=False),
-    Column('language', Text, nullable=False),
-    ForeignKeyConstraint(['language'],['languages.shortname'],
-        onupdate="CASCADE", ondelete="CASCADE"),
+    Column('name', Text, nullable=False, unique=True),
 )
 
 IconNamesTable = Table('iconnames', metadata,
@@ -184,17 +178,14 @@ class Application(SABase):
             self.name, self.summary, self.url, self.apptype)
 
     @classmethod
-    def tag(cls, apps, tags, language):
+    def tag(cls, apps, tags):
         '''Add a set of tags to a list of Applications.
 
         :arg apps: one or more Application names to add the tags to.
         :arg tags: one or more tags to add to the packages.
-        :arg language: name or shortname for the language of the tags.
 
         #? Returns two lists (unchanged): tags and builds.
         '''
-        lang = Language.find(language)
-
         # if we got just one argument, make it a list
         if not isinstance(tags, (list, tuple)):
             if tags == '':
@@ -212,44 +203,25 @@ class Application(SABase):
             try:
                 #pylint:disable-msg=E1101
                 tag = session.query(Tag).\
-                        filter_by(name=tag_name, language=lang.shortname).one()
+                        filter_by(name=tag_name).one()
                 #pylint:enable-msg=E1101
             except:
-                tag = Tag(name=tag_name, language=lang.shortname)
+                tag = Tag(name=tag_name)
                 session.add(tag) #pylint:disable-msg=E1101
 
             for application in applications:
                 application.scores[tag] = application.scores.get(tag, 0)+1
 
 
-    def scores_by_language(self, language='en_US'):
-        '''Return a dictionary of tagname: score for a given application
 
-        :kwarg language: Select tag language (default: 'en_US').
-        '''
-
-        apptags = {}
-        lang = Language.find(language)
-
-        for (tag, score) in self.scores.iteritems():
-            if tag.language == lang.shortname:
-                apptags[tag.name] = score 
-        
-        return apptags
-
-
-    def comment(self, author, body, language):
+    def comment(self, author, body):
         '''Add a new comment to a packagebuild.
 
         :arg author: the FAS author
         :arg body: text body of the comment
-        :arg language: name or shortname of the comment body`s language
         '''
 
-        lang = Language.find(language)
-
-        comment = Comment(author, body, lang.shortname, published=True,
-                          application=self)
+        comment = Comment(author, body, published=True, application=self)
         #pylint:disable-msg=E1101
         self.comments.append(comment)
         session.flush()
@@ -257,7 +229,7 @@ class Application(SABase):
 
 
     @classmethod
-    def search(cls, tags, operator, language):
+    def search(cls, tags, operator):
         '''Retrieve all the apps which have a specified set of tags.
 
         Can also be used with just one tag.
@@ -265,15 +237,10 @@ class Application(SABase):
         :arg tags: One or more tag names to lookup
         :arg operator: Can be one of 'OR' and 'AND', case insensitive, decides
         how the search for tags is done.
-        :arg language: A language in short ('en_US') or long ('American English')
-        format. Look for them on https://translate.fedoraproject.org/languages/
 
         Returns:
         :apps: list of found Application objects
         '''
-        # :tags: a list of Tag objects, filtered by :language:
-
-        lang = Language.find(language)
         
         if isinstance(tags, (tuple, list)):
             tags = [tags]
@@ -285,10 +252,10 @@ class Application(SABase):
             try:
                 #pylint:disable-msg=E1101
                 object_tags.append(Tag.query.\
-                        filter_by(name=tag, language=lang).one())
+                        filter_by(name=tag).one())
                 #pylint:enable-msg=E1101
             except:
-                raise Exception(tag, language)
+                raise Exception(tag)
         tags = object_tags
 
         if operator.lower() == 'or':
@@ -350,21 +317,19 @@ class BinaryPackageTag(SABase):
 class Comment(SABase):
     '''Comments associated to PackageBuilds.
 
-    Users signed into FAS can comment on specific packagebuilds, each comment
-    belongs to a specific language.
+    Users signed into FAS can comment on specific applications.
     '''
-    def __init__(self, author, body, language, published, application):
+    def __init__(self, author, body, published, application):
         super(Comment, self).__init__()
         self.author = author
         self.body = body
-        self.language = language
         self.published = published
         self.application = application
     def __repr__(self):
         return 'Comment(author=%r, body=%r, published=%r, application=%r, '\
-               'language=%r, time=%r)' % (
+               'time=%r)' % (
                        self.author, self.body, self.published,
-                       self.application.name,self.language,
+                       self.application.name,
                        self.time) #pylint:disable-msg=E1101
 
     def fancy_delta(self, precision=2):
@@ -373,22 +338,17 @@ class Comment(SABase):
 
 
 class Tag(SABase):
-    '''Package Tags.
-
-    These belong to a Package object. They are entered through the pkgdb
-    interface and also belong to a language.
+    '''Application and/or Binarypackage Tags.
 
     Table -- Tags
     '''
 
-    def __init__(self, name, language):
+    def __init__(self, name):
         super(Tag, self).__init__()
         self.name = name
-        self.language = language
 
     def __repr__(self):
-        return 'Tag(%r, language=%r)' % (
-            self.name, self.language)
+        return 'Tag(%r)' % (self.name)
         
 class IconName(SABase):
 
