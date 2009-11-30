@@ -138,7 +138,6 @@ class CommentsFeed(FeedController):
         for comment in comment_query:
             entry = {}
 
-            # maybe it should also say what language it's in. Later.
             entry["title"] = 'On %s by %s at %s' % (
                 comment.application.name,
                 comment.author,
@@ -149,8 +148,8 @@ class CommentsFeed(FeedController):
             
             entry["summary"] = comment.body
             
-            entry["link"] = self.baseurl + '/applications/%s/%s/#Comment%i' % (
-                comment.application.name, comment.language, comment.id)
+            entry["link"] = self.baseurl + '/applications/%s/#Comment%i' % (
+                comment.application.name, comment.id)
             entries.append(entry)
             
         return dict(

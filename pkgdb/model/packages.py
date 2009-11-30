@@ -367,15 +367,13 @@ class PackageBuild(SABase):
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
     
-    def scores(self, language='en_US'):
+    def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild
-
-        :kwarg language: Select tag language (default: 'en_US').
         '''
 
         scores = {}
         for app in self.applications: #pylint:disable-msg=E1101
-            tags = app.scores_by_language(language)
+            tags = app.scores
             for tag, score in tags.iteritems():
                 sc = scores.get(tag, None)
                 if sc is None or sc < score:
