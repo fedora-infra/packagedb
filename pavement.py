@@ -39,7 +39,7 @@ options(
             #'python_bugzilla >= 0.5',
         ],
         scripts = ['start-pkgdb', 'pkgdb.wsgi', 'clients/pkgdb-client',
-            'server-scripts/pkgdb-sync-repo',
+            'server-scripts/pkgdb-sync-yum',
             'server-scripts/pkgdb-sync-bugzilla'],
         zip_safe=False,
         packages=find_packages(),
@@ -85,7 +85,7 @@ options(
     sphinx = Bunch(
         docroot='.',
         builddir='build-doc',
-        sourcedir='doc'
+        sourcedir='docs'
         ),
     pylint = Bunch(
         module=['pkgdb']
@@ -124,7 +124,7 @@ options(
     # finds file location instead.
     substitute = Bunch(
         # Files to substitute on
-        onfiles=['start-pkgdb', 'pkgdb.wsgi', 'server-scripts/pkgdb-sync-repo',
+        onfiles=['start-pkgdb', 'pkgdb.wsgi', 'server-scripts/pkgdb-sync-yum',
             'server-scripts/pkgdb-sync-bugzilla',
             'update-schema/pkgdb-0.3.10-0.3.11.py', 'httpd-pkgdb.conf'],
         # Strings to substitute inside the files

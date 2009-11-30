@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -20,8 +20,6 @@
 '''
 Classes for notifications
 '''
-
-import logging
 
 import turbomail
 from turbogears import config

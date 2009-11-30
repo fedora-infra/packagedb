@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -23,7 +23,7 @@ Mapping of tables needed in the sqlite database that goes to yum
 
 from sqlalchemy import Table, Column, String, Integer, MetaData, ForeignKey
 
-from pkgdb.model import TagsTable, LanguagesTable, ReposTable
+from pkgdb.model import TagsTable, LanguagesTable
 
 dbfile = '/tmp/buildtags.db'
 sqliteconn = 'sqlite:////tmp/buildtags.db'
@@ -31,15 +31,14 @@ sqliteconn = 'sqlite:////tmp/buildtags.db'
 yummeta = MetaData()
 yummeta.bind = sqliteconn
 
-YumLanguagesTable = LanguagesTable.tometadata(yummeta)
 YumTagsTable = TagsTable.tometadata(yummeta)
 YumPackageBuildNamesTable = Table('packagebuildnames', yummeta,
-                Column('name', String(30), primary_key=True))
+        Column('name', String(30), primary_key=True))
 YumPackageBuildNamesTagsTable = Table('packagebuildnametags', yummeta,
-                Column('packagebuildname', String,                                           
-                    ForeignKey('packagebuildnames.name'), primary_key=True),              
-                Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),           
-                Column('score', Integer))
+        Column('packagebuildname', String,
+            ForeignKey('packagebuildnames.name'), primary_key=True),
+        Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),
+        Column('score', Integer))
 YumReposTable = Table('repos', yummeta,
                       Column('id', Integer, primary_key=True),
                       Column('name', String(50), nullable=False),

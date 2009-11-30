@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -21,14 +21,17 @@
 Root Controller for the PackageDB.  All controllers are mounted directly or
 indirectly from here.
 '''
+#
+#pylint Explanations
+#
 
-from turbogears import controllers, expose, config, flash
-from turbogears import identity, redirect
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+# :W0232: Controller methods don't need an __init__()
+
+from turbogears import controllers, expose
 from turbogears.database import session
 from sqlalchemy.orm import eagerload
-from cherrypy import request, response
-
-from fedora.tg.util import request_format
 
 from pkgdb import release, _
 
@@ -57,7 +60,7 @@ class Root(controllers.RootController):
     All URLs to be served must be mounted somewhere under this controller.
     '''
     # Controller methods don't need an __init__()
-    # pylint: disable-msg=W0232
+    #pylint:disable-msg=W0232
     app_title = _('Fedora Package Database')
 
     appfeed = ApplicationFeed()
@@ -89,6 +92,7 @@ class Root(controllers.RootController):
 
         This page serves as an overview of the entire PackageDB.  
         '''
+        #pylint:disable-msg=E1101
         packages = session.query(PackageBuild)\
                 .options(eagerload('applications'))\
                 .join('applications')\
@@ -97,6 +101,7 @@ class Root(controllers.RootController):
 
         comments = Comment.query.filter_by(published=True).order_by(
             Comment.time.desc()).limit(7).all()
-        
+        #pylint:enable-msg=E1101
+
         return dict(packages=packages, comments=comments,
             title=self.app_title, version=release.VERSION)

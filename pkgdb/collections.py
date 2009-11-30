@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -28,19 +28,23 @@ Controller for showing Package Collections.
 # :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
 #   noted, E1101 is disabled due to a static checker not having information
 #   about the monkey patches.
+# :C0103: the method id looks up a collection by id.  Thus the method name is
+#   appropriate.
+# :C0322: Disable space around operator checking in multiline decorators
 
 import threading
 import os
 import sys
 
-from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy.exceptions import InvalidRequestError, SQLError
 from sqlalchemy.orm import lazyload, eagerload
+from sqlalchemy.sql import select, and_
 from turbogears import controllers, expose, paginate, config, identity, flash
 from turbogears.database import session
 from cherrypy import request
 
 import koji
-from fedora.tg.util import json_or_redirect
+from fedora.tg.util import json_or_redirect, request_format, tg_url
 
 from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
@@ -67,26 +71,79 @@ class Collections(controllers.Controller):
     def index(self):
         '''List the Collections we know about.
         '''
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         collections = Collection.query.options(lazyload('listings'),
                 lazyload('status')).add_entity(CollectionPackage
                 ).filter(Collection.id==CollectionPackage.id).order_by(
             Collection.name, Collection.version)
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
 
         return dict(title=_('%(app)s -- Collection Overview') %
                 {'app': self.app_title}, collections=collections)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
-    @paginate('packages', default_order='name', limit=100,
-            max_limit=None, max_pages=13)
-    # :C0103: id is an appropriate name for this function
-    def id(self, collection_id): # pylint: disable-msg=C0103
+    @paginate('packages', default_order='name', limit=100, max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
+    def name(self, collctn):
+        '''Return a page with information on a particular Collection
+
+        :arg collctn: Collection shortname
+        '''
+        ### FIXME: Want to return additional info:
+        # date it was created (join log table: creation date)
+        # The initial import doesn't have this information, though.
+        try:
+            #pylint:disable-msg=E1101
+            collection = Collection.by_simple_name(collctn)
+        except InvalidRequestError:
+            # Either the name doesn't exist or somehow it references more than
+            # one value
+            flash(_('The collection name you were linked to, %(collctn)s,'
+                    ' does not exist.  If you received this error from'
+                    ' a link on the fedoraproject.org website, please'
+                    ' report it.') % {'collctn': collctn})
+            if request_format() == 'json':
+                error = dict(exc='InvalidCollection')
+            else:
+                error = dict(title=_('%(app)s -- Invalid Collection Name') % {
+                            'app': self.app_title},
+                        tg_template='pkgdb.templates.errors')
+            return error
+
+        # Why do we reformat the data returned from the database?
+        # 1) We don't need all the information in the collection object
+        # 2) We need statusname which is not in the specific table.
+        collection_entry = {'name': collection.name,
+                'version': collection.version,
+                'owner': collection.owner,
+                'summary': collection.summary,
+                'description': collection.description,
+                'statusname': collection.status.locale['C'].statusname
+                }
+
+        # Retrieve the package list for this collection
+        # pylint:disable-msg=E1101
+        packages = select((Package), and_(Package.id==PackageListing.packageid,
+                PackageListing.collectionid==collection.id,
+                Package.stauscode!=STATUS['Removed'].statuscodeid),
+                order_by=(Package.name,))
+        # pylint:enable-msg=E1101
+
+        return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
+            collection['version']), collection=collection_entry,
+            packages=packages)
+
+    @expose(template='pkgdb.templates.collectionpage', allow_json=True)
+    @paginate('packages', default_order='name', limit=100, max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
+    def id(self, collection_id): #pylint:disable-msg=C0103
         '''Return a page with information on a particular Collection
 
         :arg collection_id: Numeric id of the collection
         '''
-        collectionEntry = collection_id
+        flash(_('This page is deprecated.  Use %(url)s instead.') %
+                {'url': config.get('base_url_filter.base_url',
+                    'http://localhost') + tg_url('/collection/name')})
         try:
             collection_id = int(collection_id)
         except ValueError:
@@ -105,15 +162,16 @@ class Collections(controllers.Controller):
         # date it was created (join log table: creation date)
         # The initial import doesn't have this information, though.
         try:
-            # pylint: disable-msg=E1101
-            collection_entry = Collection.query.options(lazyload('listings2'),
-                    eagerload('status.locale')
-                    ).filter_by(id=collection_id).one()
+            #pylint:disable-msg=E1101
+            collection_entry = Collection.query.options(
+                    lazyload('listings2'), eagerload('status.locale'))\
+                    .filter_by(id=collection_id).one()
         except InvalidRequestError:
             # Either the id doesn't exist or somehow it references more than
             # one value
             error = dict(status = False,
-                    title = _('%(app)s -- Invalid Collection Id') % {'app': self.app_title},
+                    title = _('%(app)s -- Invalid Collection Id') %
+                            {'app': self.app_title},
                     message = _('The collection_id you were linked to, %(id)s,'
                             ' does not exist.  If you received this error from'
                             ' a link on the fedoraproject.org website, please'
@@ -193,10 +251,10 @@ class Collections(controllers.Controller):
 
             # Commit the changes
             try:
-                session.flush()
+                session.flush() #pylint:disable-msg=E1101
             except SQLError, e:
                 # If we have an error committing we lose this whole block
-                session.rollback()
+                session.rollback() #pylint:disable-msg=E1101
                 unbranched = pkgs
 
             # Child prints a \n separated list of unbranched packages
@@ -288,15 +346,16 @@ class Collections(controllers.Controller):
 
         # Retrieve the collection to make the new branches on
         try:
+            #pylint:disable-msg=E1101
             to_branch = Branch.query.filter_by(branchname=branch).one()
         except InvalidRequestError, e:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('Unable to locate a branch for %(branch)s') % {
                 'branch': branch})
             return dict(exc='InvalidBranch')
 
         if to_branch.statuscode == STATUS['EOL'].statuscodeid:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('Will not branch packages in EOL collection %(branch)s') % {
                 'branch': branch})
             return dict(exc='InvalidBranch')
@@ -304,7 +363,7 @@ class Collections(controllers.Controller):
         # Retrieve the a koji session to get the lisst of packages from
         koji_name = to_branch.koji_name
         if not koji_name:
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('Unable to mass branch for %(branch)s because it is not'
                 ' managed by koji') % {'branch': branch})
             return dict(exc='InvalidBranch')
@@ -312,12 +371,14 @@ class Collections(controllers.Controller):
         koji_session = koji.ClientSession(koji_url)
         if not koji_session.ssl_login(cert=pkgdb_cert, ca=user_ca,
                 serverca=server_ca):
-            session.rollback()
+            session.rollback() #pylint:disable-msg=E1101
             flash(_('Unable to log into koji'))
             return dict(exc='ServiceError')
 
         # Retrieve the devel branch for comparison
+        #pylint:disable-msg=E1101
         devel_branch = Branch.query.filter_by(branchname='devel').one()
+        #pylint:enable-msg=E1101
 
         # Retrieve the package from koji
         pkglist = koji_session.listPackages(tagID=koji_name, inherited=True)
@@ -346,9 +407,9 @@ class Collections(controllers.Controller):
         '''
         Retrieve a collection by its simple_name
         '''
-        collection = Collection.query.filter_by(name=collctn_name,
-                version=collectn_ver).one()
-        return dict(name=collection.simple_name())
+        collection = Collection.query.filter_by( #pylint:disable-msg=E1101
+                name=collctn_name, version=collctn_ver).one()
+        return dict(name=collection.simple_name)
 
     @expose(allow_json=True)
     def by_canonical_name(self, collctn):

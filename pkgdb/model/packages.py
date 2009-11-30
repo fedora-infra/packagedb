@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -32,10 +32,12 @@ Mapping of package related database tables to python classes.
 
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
-# :R0903: Mapped classes will have few methods as SQLAlchemy will monkey patch
-#   more methods in later.
+# :W0201: some attributes are added to the model by SQLAlchemy so they don't
+#   appear in __init__
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+#   is not to name them with all uppercase
 
 from sqlalchemy import Table, Column, Integer, String, Text, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.orm import relation, backref
@@ -43,9 +45,9 @@ from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.exceptions import InvalidRequestError
-from sqlalchemy.sql import and_, or_
+from sqlalchemy.sql import and_
 
-from turbogears.database import metadata, mapper, get_engine, session
+from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
@@ -53,7 +55,6 @@ from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
         GroupPackageListing, GroupPackageListingAcl
 from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
         RpmObsoletes, RpmFiles
-from pkgdb.model.languages import Language
 
 import logging
 error_log = logging.getLogger('pkgdb.model.packages')
@@ -72,7 +73,7 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
-# pylint: disable-msg=C0103
+#pylint:disable-msg=C0103
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 
@@ -90,9 +91,7 @@ PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
 )
 
-
-# pylint: enable-msg=C0103
-
+#pylint:enable-msg=C0103
 #
 # Mapped Classes
 #
@@ -105,10 +104,9 @@ class Package(SABase):
 
     Table -- Package
     '''
-
-    # pylint: disable-msg=R0903,R0913
     def __init__(self, name, summary, statuscode, description=None,
             reviewurl=None, shouldopen=None, upstreamurl=None):
+        #pylint:disable-msg=R0913
         super(Package, self).__init__()
         self.name = name
         self.summary = summary
@@ -139,7 +137,6 @@ class Package(SABase):
         This creates a new PackageListing for this Package.  The PackageListing
         has default values set for group acls.
         '''
-        # pylint: disable-msg=E1101
         from pkgdb.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
         pkg_listing = PackageListing(owner, status.statuscodeid,
@@ -148,7 +145,9 @@ class Package(SABase):
         pkg_listing.package = self
         for group in DEFAULT_GROUPS:
             new_group = GroupPackageListing(group)
+            #pylint:disable-msg=E1101
             pkg_listing.groups2[group] = new_group
+            #pylint:enable-msg=E1101
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
                     acl_status = STATUS['Approved'].statuscodeid
@@ -157,9 +156,9 @@ class Package(SABase):
                 group_acl = GroupPackageListingAcl(acl, acl_status)
                 # :W0201: grouppackagelisting is added to the model by
                 #   SQLAlchemy so it doesn't appear in __init__
-                # pylint: disable-msg=W0201
+                #pylint:disable-msg=W0201
                 group_acl.grouppackagelisting = new_group
-                # pylint: enable-msg=W0201
+                #pylint:enable-msg=W0201
 
         # Create a log message
         log = PackageListingLog(author_name,
@@ -189,10 +188,9 @@ class PackageListing(SABase):
 
     Table -- PackageListing
     '''
-    # pylint: disable-msg=R0903
     def __init__(self, owner, statuscode, packageid=None, collectionid=None,
             qacontact=None, specfile=None):
-        # pylint: disable-msg=R0913
+        #pylint:disable-msg=R0913
         super(PackageListing, self).__init__()
         self.packageid = packageid
         self.collectionid = collectionid
@@ -227,15 +225,19 @@ class PackageListing(SABase):
                 PersonPackageListingAclLog
         # Retrieve the PackageListing for the to clone branch
         try:
+            #pylint:disable-msg=E1101
             clone_branch = PackageListing.query.join('package'
                     ).join('collection').filter(
                         and_(Package.name==self.package.name,
                             Branch.branchname==branch)).one()
+            #pylint:enable-msg=E1101
         except InvalidRequestError:
             ### Create a new package listing for this release ###
 
             # Retrieve the collection to make the branch for
+            #pylint:disable-msg=E1101
             clone_collection = Branch.query.filter_by(branchname=branch).one()
+            #pylint:enable-msg=E1101
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
                     self.owner, STATUS['Approved'], qacontact=self.qacontact,
@@ -244,12 +246,16 @@ class PackageListing(SABase):
         log_params = {'user': author_name,
                 'pkg': self.package.name, 'branch': branch}
         # Iterate through the acls in the master_branch
+        #pylint:disable-msg=E1101
         for group_name, group in self.groups2.iteritems():
+        #pylint:enable-msg=E1101
             log_params['group'] = group_name
             if group_name not in clone_branch.groups2:
                 # Associate the group with the packagelisting
+                #pylint:disable-msg=E1101
                 clone_branch.groups2[group_name] = \
                         GroupPackageListing(group_name)
+                #pylint:enable-msg=E1101
             clone_group = clone_branch.groups2[group_name]
             for acl_name, acl in group.acls2.iteritems():
                 if acl_name not in clone_group.acls2:
@@ -269,12 +275,16 @@ class PackageListing(SABase):
                         acl.statuscode, log_msg)
                 log.acl = clone_group.acls2[acl_name]
 
+        #pylint:disable-msg=E1101
         for person_name, person in self.people2.iteritems():
+        #pylint:enable-msg=E1101
             log_params['person'] = person_name
             if person_name not in clone_branch.people2:
                 # Associate the person with the packagelisting
+                #pylint:disable-msg=E1101
                 clone_branch.people2[person_name] = \
                         PersonPackageListing(person_name)
+                #pylint:enable-msg=E1101
             clone_person = clone_branch.people2[person_name]
             for acl_name, acl in person.acls2.iteritems():
                 if acl_name not in clone_person.acls2:
@@ -306,7 +316,7 @@ def collection_alias(pkg_listing):
     This is used to make Branch keys for the dictionary mapping of pkg listings
     into packages.
     '''
-    return pkg_listing.collection.simple_name()
+    return pkg_listing.collection.simple_name
 
 class PackageBuildDepends(SABase):
     '''PackageBuild Dependencies to one another.
@@ -357,16 +367,14 @@ class PackageBuild(SABase):
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
     
-    def scores(self, language='en_US'):
+    def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild
-
-        :kwarg language: Select tag language (default: 'en_US').
         '''
 
         scores = {}
-        for app in self.applications:
-            tags = app.scores_by_language(language)
-            for tag,score in tags.iteritems():
+        for app in self.applications: #pylint:disable-msg=E1101
+            tags = app.scores
+            for tag, score in tags.iteritems():
                 sc = scores.get(tag, None)
                 if sc is None or sc < score:
                     scores[tag] = score

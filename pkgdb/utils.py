@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2008-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2008-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -20,8 +20,13 @@
 '''
 Utilities for all classes to use
 '''
-import os
-import tempfile
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+
 import logging
 
 from turbogears import config
@@ -77,9 +82,9 @@ class UserCache(dict):
     Use clear() to remove all entries from the cache.
     Use del cache[username] to remove a specific entry.
     '''
-    def __init__(self, fas):
+    def __init__(self, fas_connection):
         super(UserCache, self).__init__()
-        self.fas = fas
+        self.fas = fas_connection
 
     def __getitem__(self, username):
         '''Retrieve a user for a username.
@@ -108,7 +113,7 @@ def refresh_status():
     '''
     global STATUS
     statuses = {}
-    for status in StatusTranslation.query.all():
+    for status in StatusTranslation.query.all(): #pylint:disable-msg=E1101
         statuses[status.statusname] = status
     STATUS = statuses
 
@@ -120,7 +125,7 @@ def init_globals():
     '''
     # Things to do on startup
     refresh_status()
-    global fas, LOG, bugzilla, admin_grp, pkger_grp
+    global fas, LOG, bugzilla
     LOG = logging.getLogger('pkgdb.controllers')
 
     # Get a connection to the Account System server

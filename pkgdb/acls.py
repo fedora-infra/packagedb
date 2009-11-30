@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -28,24 +28,21 @@ Controller for handling Package ownership information.
 
 # :E1101: SQLAlchemy monkey patches the database fields into the mapper
 #   classes so we have to disable these checks.
+# :C0322: Disable space around operator checking in multiline decorators
 
 from sqlalchemy.orm import eagerload
-from sqlalchemy.sql import and_
 
-from turbogears import controllers, expose, config, redirect, identity, \
-        paginate
+from turbogears import controllers, expose, paginate
 
 from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
         PackageListingTable
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import admin_grp, STATUS
+from pkgdb.utils import STATUS
 from pkgdb import _
 
 from fedora.tg.util import request_format
-
-from cherrypy import request
 
 COLLECTION = 21
 class Acls(controllers.Controller):
@@ -77,12 +74,12 @@ class Acls(controllers.Controller):
             particular version of a distribution.  Has no effect if
             collectionName is not also specified.
         '''
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         # Return the information about a package.
         package = Package.query.filter(
                 Package.statuscode!=STATUS['Removed'].statuscodeid
                 ).filter_by(name=packageName).first()
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         if not package:
             error = dict(status=False,
                     title=_('%(app)s -- Invalid Package Name') % {
@@ -98,9 +95,9 @@ class Acls(controllers.Controller):
 
         collection = None
         if collectionName:
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             collection = Collection.query.filter_by(name=collectionName)
-            # pylint: enable-msg=E1101
+            #pylint:enable-msg=E1101
             if collectionVersion:
                 collection = collection.filter_by(version=collectionVersion)
             if not collection.count():
@@ -116,11 +113,9 @@ class Acls(controllers.Controller):
 
         # Possible ACLs
         acl_names = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
-        # pylint: disable-msg=E1101
         # Possible statuses for acls:
-        acl_status = PackageAclStatus.query.options(
+        acl_status = PackageAclStatus.query.options( #pylint:disable-msg=E1101
                 eagerload('locale')).all()
-        # pylint: enable-msg=E1101
         acl_status_translations = ['']
         for status in acl_status:
             ### FIXME: At some point, we have to pull other translations out,
@@ -129,7 +124,7 @@ class Acls(controllers.Controller):
                 acl_status_translations.append(
                         status.locale['C'].statusname)
 
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         # Fetch information about all the packageListings for this package
         pkg_listings = PackageListing.query.options(
                 eagerload('people2.acls2.status.locale'),
@@ -137,7 +132,7 @@ class Acls(controllers.Controller):
                 eagerload('status.locale'),
                 eagerload('collection.status.locale'),
                 ).filter(PackageListingTable.c.packageid==package.id)
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         if collection:
             # User asked to limit it to specific collections
             pkg_listings = pkg_listings.filter(
@@ -160,45 +155,6 @@ class Acls(controllers.Controller):
         status_map = {}
 
         pkg_listings = pkg_listings.all()
-
-        # Check for shouldopen perms
-        if identity.current.user == None:
-            # Anonymous users cannot set shouldopen
-            can_set_shouldopen = False
-        else:
-            # admins and owners of any branch can set shouldopen
-            can_set_shouldopen = admin_grp in identity.current.groups or \
-                    identity.current.user_name in [
-                            x.owner for x in pkg_listings]
-            if not can_set_shouldopen:
-                # Set up a bunch of generators to iterate through the acls
-                # on this package
-
-                # Each iteration, retrieve a list of people with acls on this
-                # package.
-                people_lists = (listing.people for listing in pkg_listings)
-                while True:
-                    try:
-                        # Each iteration, retrieve a set of people from the
-                        # list
-                        people = people_lists.next()
-                        # Retrieve all the lists of acls for the current user
-                        # for each PackageListing
-                        acl_lists = (p.acls for p in people \
-                                    if p.username == identity.current.user_name)
-                        # For each list of acls...
-                        for acls in acl_lists:
-                            # ...check each acl
-                            for acl in acls:
-                                if acl.acl == 'approveacls' and acl.statuscode \
-                                        == STATUS['Approved'].statuscodeid:
-                                    # If the user has approveacls we're done
-                                    can_set_shouldopen = True
-                                    raise StopIteration
-                    except StopIteration:
-                        # When we get StopIteration because the peopleList is
-                        # exhausted or we've found a match, exit the loop
-                        break
 
         for pkg in pkg_listings:
             pkg.json_props = {'PackageListing': ('package', 'collection',
@@ -238,61 +194,32 @@ class Acls(controllers.Controller):
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': package.name},
             packageListings=pkg_listings, statusMap = status_map,
-            aclNames=acl_names, aclStatus=acl_status_translations,
-            can_set_shouldopen=can_set_shouldopen)
-
-    @expose(template='pkgdb.templates.pkgpage')
-    # :C0103: id is an appropriate name for this method
-    def id(self, package_id): # pylint: disable-msg=C0103
-        '''Return the package with the given id
-
-        :arg package_id: Numeric id of the package to return information for
-        '''
-        try:
-            package_id = int(package_id)
-        except ValueError:
-            return dict(tg_template='pkgdb.templates.errors', status=False,
-                    title=_('%(app)s -- Invalid Package Id') % {
-                        'app': self.app_title},
-                    message=_('The packageId you were linked to is not a valid'
-                    ' id.  If you received this error from a link on the'
-                    ' fedoraproject.org website, please report it.'))
-
-        # pylint: disable-msg=E1101
-        pkg = Package.query.filter_by(id=package_id).first()
-        # pylint: enable-msg=E1101
-        if not pkg:
-            return dict(tg_template='pkgdb.templates.errors', status=False,
-                    title=_('%(app)s -- Unknown Package') % {
-                        'app': self.app_title},
-                    message=_('The packageId you were linked to, %(pkg)s, does'
-                    ' not exist. If you received this error from a link on the'
-                    ' fedoraproject.org website, please report it.') % {
-                        'pkg': package_id})
-
-        raise redirect(config.get('base_url_filter.base_url') +
-                '/packages/name/' + pkg.name)
+            aclNames=acl_names, aclStatus=acl_status_translations)
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
-    @paginate('pkgs', limit=75, default_order='name',
-            max_limit=None, max_pages=13)
+    @paginate('pkgs', limit=75, default_order='name', max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def orphans(self, eol=None):
         '''List orphaned packages.
 
         :kwarg eol: If set, list packages that are in EOL distros.
         :returns: A list of packages.
         '''
-        if not eol or eol.lower() in ('false','f','0'):
+        ### FIXME: Replace with a validator
+        if not eol or eol.lower() in ('false', 'f', '0'):
             eol = False
         else:
             eol = bool(eol)
 
         page_title = _('%(app)s -- Orphaned Packages') % {'app': self.app_title}
 
+        #pylint:disable-msg=E1101
         query = Package.query.join('listings2').distinct().filter(
                     PackageListing.statuscode==STATUS['Orphaned'].statuscodeid)
+        #pylint:enable-msg=E1101
         if not eol:
             # We don't want EOL releases, filter those out of each clause
+            #pylint:disable-msg=E1101
             query = query.join(['listings2', 'collection']).filter(
                     Collection.statuscode!=STATUS['EOL'].statuscodeid)
         pkg_list = []

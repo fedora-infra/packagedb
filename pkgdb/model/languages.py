@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2009 Red Hat, Inc. All rights reserved.
+# Copyright © 2009 Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -16,13 +16,19 @@
 # permission of Red Hat, Inc.
 #
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+#                           Toshio Kuratomi <toshio@redhat.com>
 #
 '''
 Mapping of language related database tables to python classes.
 '''
+#
+# pylint Explanations
+#
 
-from sqlalchemy import Table
-from sqlalchemy.orm import relation, backref
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+
+from sqlalchemy import Table, Column, Text
 from sqlalchemy.sql import or_
 
 from turbogears.database import metadata, mapper, session
@@ -33,7 +39,10 @@ from fedora.tg.json import SABase
 # Tables
 #
 
-LanguagesTable = Table('languages', metadata, autoload=True)
+LanguagesTable = Table('languages', metadata,
+    Column('shortname', Text, nullable=False, primary_key=True),
+    Column('name', Text, nullable=False, unique=True),
+)
 
 #
 # Mapped Classes
@@ -57,15 +66,17 @@ class Language(SABase):
         return 'Language(%r, %r)' % (self.name, self.shortname)
 
     @classmethod
-    def find(self, language):
+    def find(cls, language):
         '''Returns a shortname after searching for both short and longname.
 
         :arg name: a short or long Language name
         '''
-
+        #pylint:disable-msg=E1101
         return session.query(Language).filter(or_(Language.name==language,
                                          Language.shortname==language
                                          )).one()
+        #pylint:enable-msg=E1101
+
 #
 # Mappers
 #

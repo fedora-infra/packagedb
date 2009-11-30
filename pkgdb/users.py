@@ -29,17 +29,17 @@ Controller to show information about packages by user.
 
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
+# :C0322: Disable space around operator checking in multiline decorators
 
 import urllib
 
 import sqlalchemy
 from sqlalchemy.orm import lazyload
 
-from turbogears import controllers, expose, paginate, config, \
-        redirect, identity
+from turbogears import controllers, expose, paginate, redirect, identity
 
 from pkgdb.model import Collection, Package, PackageListing, \
-        StatusTranslation, PersonPackageListing, PersonPackageListingAcl
+        PersonPackageListing, PersonPackageListingAcl
 from pkgdb.utils import STATUS
 from pkgdb import _
 
@@ -66,11 +66,11 @@ class Users(controllers.Controller):
     def index(self):
         '''Dish some dirt on the requesting user
         '''
-        raise redirect(config.get('base_url_filter.base_url') + '/users/info/')
+        raise redirect('/users/info/')
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
-    @paginate('pkgs', limit=100, default_order='name',
-            max_limit=None, max_pages=13)
+    @paginate('pkgs', limit=100, default_order='name', max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def packages(self, fasname=None, acls=None, eol=None):
         '''List packages that the user is interested in.
 

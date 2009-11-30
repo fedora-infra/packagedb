@@ -4,7 +4,7 @@ Mapping of PRCO (provides, requires, conflicts, obsoletes) and files
 
 from sqlalchemy import Table
 
-from turbogears.database import metadata, mapper, get_engine
+from turbogears.database import metadata, mapper
 
 from fedora.tg.json import SABase
 
@@ -113,7 +113,7 @@ class RpmFiles(SABase):
     def __init__(self, name, packagebuildid=None):
         super(RpmFiles, self).__init__()
         self.name = name
-        self.packagebuildid
+        self.packagebuildid = packagebuildid
 
     def __repr__(self):
         return 'RpmFiles(%r, %r)' % (self.name, self.packagebuildid)

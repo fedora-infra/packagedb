@@ -132,13 +132,15 @@ Currently the database dump is not up to date with the latest changes in the
 devel branch. These steps won't be required after we get a healthy 0.5.x dbdump.
 Run the following scripts to bring it up to date::
 
-  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.4.0.1.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.4.1-packagebuild.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-tags-and-comments.sql
   python update-schema/repos.py > repos.sql
   sudo -u postgres psql pkgdb < repos.sql
   rm repos.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-2.applications.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-3.binarypackage.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-4.lang_removal.sql
   
 
 Your postgres server is now all set.
@@ -154,6 +156,8 @@ http://trac.turbogears.org/attachment/ticket/2348/feedkid.diff
 
 And here's the link to the upstream ticket:
 http://trac.turbogears.org/ticket/2348
+
+Note: this has been applied to the Fedora and EPEL packages.
 
 Start the Server (The new way)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -319,14 +323,16 @@ Currently, this is more involved.
      bzr checkout --lightweight bzr+ssh://bzr.fedorahosted.org/bzr/packagedb/fedora-packagedb-stable/ release
 
 3) Go to that directory and run::
-     paver sdist
+     paver sdist --format bztar
 
-4) copy the dist/fedora-packagedb-VERSION.tar.gz and fedora-packagedb.spec files
+4) copy the dist/fedora-packagedb-VERSION.tar.bz2 and fedora-packagedb.spec files
    to where you build Fedora RPMS.  Do a test build::
-     cp dist/fedora-packagedb-*.tar.gz fedora-packagedb.spec /srv/cvs/fedora-packagedb/
+     cp dist/fedora-packagedb-*.tar.bz2 fedora-packagedb.spec /srv/cvs/fedora-packagedb/
      pushd /srv/cvs/fedora-packagedb/
-     rpmbuild -bs --nodeps fedora-packagedb.spec
+     rpmbuild-md5 -bs --nodeps fedora-packagedb.spec
      mock -r epel-5-i386 *.src.rpm
+
+   (rpmbuild-md5 is in the fedora-packager package.)
 
 5) Make sure the build completes.  Run rpmlint on the results.  Install and
    test the new packages::

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -20,7 +20,6 @@
 '''
 Controller for handling admin commands.  These are the dispatcher type methods.
 '''
-
 #
 # Pylint Explanations
 #
@@ -28,6 +27,7 @@ Controller for handling admin commands.  These are the dispatcher type methods.
 # :E1101: SQLAlchemy monkey patches the database fields into the mapper
 #   classes so we have to disable these checks.
 
+from turbogears import controllers
 
 class Request():
     def __init__(self):

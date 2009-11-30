@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -20,17 +20,19 @@
 '''
 Controller for displaying PackageBuild(Rpm) related information
 '''
+#
+#pylint Explanations
+#
 
-from sqlalchemy.sql import and_
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
 
-from turbogears import controllers, expose, identity, redirect
+from turbogears import controllers, expose, redirect
 
-from pkgdb.model import Comment, PackageBuild, Repo
-from pkgdb.utils import mod_grp
+from pkgdb.model import PackageBuild, Repo
 
 from fedora.tg.util import request_format
 
-from cherrypy import request
 
 class Package(controllers.Controller):
     '''Display general information related to PackageBuilds.
@@ -44,7 +46,7 @@ class Package(controllers.Controller):
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
-    def default(self, buildName=None, repo='F-11-i386', language='en_US'):
+    def default(self, buildName=None, repo='F-11-i386'):
         '''Retrieve PackageBuild by their name.
 
         This method returns general packagebuild/rpm information about a
@@ -54,15 +56,17 @@ class Package(controllers.Controller):
 
         :arg buildName: Name of the packagebuild/rpm to lookup
         :arg repo: shortname of the repository to look in
-        :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
-        if buildName==None:
-            raise redirect(config.get('base_url_filter.base_url') +
-                '/packages/list/')
+        if buildName == None:
+            raise redirect('/packages/list/')
 
+        #pylint:disable-msg=E1101
         builds_query = PackageBuild.query.filter_by(name=buildName)
+        #pylint:enable-msg=E1101
+
         # look for The One packagebuild
         try:
+            #pylint:disable-msg=E1101
             build = builds_query.join(PackageBuild.repo).filter(
                 Repo.shortname==repo).one()
         except:
@@ -89,5 +93,5 @@ class Package(controllers.Controller):
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': buildName},
                     repo=repo, build=build, other_repos=other_repos,
-                    arches=arches, language=language)
+                    arches=arches)
 

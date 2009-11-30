@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -27,11 +27,14 @@ Module to be used for letter pagination and search.
 # :E1101: SQLAlchemy mapped classes are monkey patched.  Unless otherwise
 #   noted, E1101 is disabled due to a static checker not having information
 #   about the monkey patches.
+# :C0322: Disable space around operator checking in multiline decorators
 
 from sqlalchemy.sql import or_, and_
 from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate, config
-from pkgdb.model import Package, PackageBuild, Tag
+from turbogears.database import session
+
+from pkgdb.model import Application, Package, PackageBuild, Tag
 from pkgdb.utils import STATUS
 from pkgdb import _
 
@@ -42,12 +45,11 @@ class Letters(controllers.Controller):
     '''
 
     def __init__(self, app_title=None):
-        # pylint: disable-msg=E1101
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.pkgbugoverview', allow_json=True)
-    @paginate('packages', default_order='name', limit=100,
-                max_limit=None, max_pages=13)
+    @paginate('packages', default_order='name', limit=100, max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def default(self, searchwords='', language='en_US'):
         '''Return a list of all packages in the database.
 
@@ -65,27 +67,32 @@ class Letters(controllers.Controller):
             if searchwords != '':
                 searchwords = searchwords.replace('*','%')
                 if searchwords.isdigit() and int(searchwords) < 10: # 0-9
-                    # pylint: disable-msg=E1101
+                    #pylint:disable-msg=E1101
                     packages = Package.query.options(
                             lazyload('listings2'), lazyload('status')
                         ).filter(or_(Package.name.between('0','9'),
                                      Package.name.like('9%')))
+                    #pylint:enable-msg=E1101
                 else: 
                     # sanitize for ilike:
-                    searchwords =searchwords.replace('&','').replace('_','') 
-                    # pylint: disable-msg=E1101
+                    searchwords = searchwords.replace('&','').replace('_','') 
+                    #pylint:disable-msg=E1101
                     packages = Package.query.options(
                         lazyload('listings2'),
                         lazyload('status')).filter(
                             Package.name.ilike(searchwords)
                             ).order_by(Package.name.asc())
+                    #pylint:enable-msg=E1101
             else:
-                # pylint: disable-msg=E1101
+                #pylint:disable-msg=E1101
                 packages = Package.query.options(lazyload('listings2'),
                             lazyload('status'))
+                #pylint:enable-msg=E1101
             # minus removed packages
+            #pylint:disable-msg=E1101
             packages = packages.filter(
-                Package.statuscode!=STATUS['Removed'].statuscodeid)
+                    Package.statuscode!=STATUS['Removed'].statuscodeid)
+            #pylint:enable-msg=E1101
         else:
             mode = 'tag/'
             bzUrl = ''
@@ -93,11 +100,13 @@ class Letters(controllers.Controller):
                 searchwords = searchwords.replace('*','%') \
                               .replace('&','').replace('_','')
 
+                #pylint:disable-msg=E1101
                 packages = session.query(Application).join('tags').filter(and_(
                         Tag.name.ilike(searchwords),
                         Tag.language.ilike(language))).all()
+                #pylint:enable-msg=E1101
             else:
-                packages = PackageBuild.query.all()
+                packages = PackageBuild.query.all() #pylint:disable-msg=E1101
             
         searchwords = searchwords.replace('%','*')            
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {

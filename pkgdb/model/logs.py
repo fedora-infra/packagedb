@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -23,7 +23,7 @@ Mapping of database tables for logs to python classes.
 
 from sqlalchemy import Table
 from sqlalchemy import select, literal_column, not_
-from sqlalchemy.orm import polymorphic_union, relation, backref
+from sqlalchemy.orm import polymorphic_union, relation
 from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
@@ -83,7 +83,8 @@ class PackageListingLog(Log):
     def __init__(self, username, action, description=None, changetime=None,
             packagelistingid=None):
         # pylint: disable-msg=R0913
-        super(PackageListingLog, self).__init__(username, description, changetime)
+        super(PackageListingLog, self).__init__(username, description,
+                changetime)
         self.action = action
         self.packagelistingid = packagelistingid
 

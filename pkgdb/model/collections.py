@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2008  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -34,7 +34,6 @@ from pkgdb.model.packages import PackageListing, PackageBuild
 
 get_engine()
 
-CURRENTREPO='F-11-i386'
 #
 # Mapped Tables
 #
@@ -102,6 +101,7 @@ class Collection(SABase):
                 self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
 
+    @property
     def simple_name(self):
         '''Return a simple name for the Collection
         '''

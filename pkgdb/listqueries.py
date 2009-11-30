@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -20,27 +20,37 @@
 '''
 Send acl information to third party tools.
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+# :W0232: no __init__ method: This only applies to a validator schema.  Those
+#   don't have methods, just attributes so it's expected.
+# :R0903: Too few public methods: This only applies to the validator schema
+#   and two classes that we're using as data structures that can return json.
+#   So this is fine.
+# :C0322: Disable space around operator checking in multiline decorators
 
 import itertools
-import os
 
-from sqlalchemy import select, and_, or_, create_engine
-from sqlalchemy.orm import sessionmaker, session
+from sqlalchemy import select, and_, create_engine
+from sqlalchemy.orm import sessionmaker
 
 from turbogears import expose, validate, error_handler
 from turbogears import controllers, validators
 
 from turbogears.database import get_engine
 
-from pkgdb.model import Package, Branch, GroupPackageListing, Collection,\
-     GroupPackageListingAcl, PackageListing, PersonPackageListing,\
+from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
+     GroupPackageListingAcl, PackageListing, PersonPackageListing, \
      PersonPackageListingAcl, Repo, PackageBuild
-from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable,\
-     LanguagesTable, PackageBuildTable, ApplicationsTable,\
-     ApplicationsTagsTable
-from pkgdb.model import YumLanguagesTable, YumTagsTable,\
-     YumReposTable, YumPackageBuildTable, YumPackageBuildNamesTagsTable,\
-     YumPackageBuildNamesTable
+from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable, \
+     LanguagesTable, ApplicationsTagsTable, ApplicationTag
+from pkgdb.model import YumTagsTable, YumReposTable, \
+    YumPackageBuildTable, YumPackageBuildNamesTable, \
+    YumPackageBuildNamesTagsTable
 from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
 from pkgdb.utils import STATUS
 from pkgdb import _
@@ -57,7 +67,7 @@ from fedora.tg.util import jsonify_validation_errors
 class NotifyList(validators.Schema):
     '''Validator schema for the notify method.'''
     # validator schemas don't have methods (R0903, W0232)
-    # pylint: disable-msg=R0903,W0232
+    #pylint:disable-msg=R0903,W0232
 
     # We don't use a more specific validator for collection or version because
     # the chained validator does it for us and we don't want to hit the
@@ -76,7 +86,7 @@ class AclList(object):
     '''
     # This class is just a data structure that can convert itself to json so
     # there's no need for a lot of methods.
-    # pylint: disable-msg=R0903
+    #pylint:disable-msg=R0903
 
     ### FIXME: Reevaluate whether we need this data structure at all.  Once
     # jsonified, it is transformed into a dict of lists so it might not be
@@ -95,7 +105,7 @@ class BugzillaInfo(object):
     '''
     # This class is just a data structure that can convert itself to json so
     # there's no need for a lot of methods.
-    # pylint: disable-msg=R0903
+    #pylint:disable-msg=R0903
 
     ### FIXME: Reevaluate whether we need this data structure at all.  Once
     # jsonified, it is transformed into a dict of lists so it might not be
@@ -199,10 +209,11 @@ class ListQueries(controllers.Controller):
             except KeyError:
                 branch[acl] = AclList(people=[identity])
 
-    @expose(template="genshi-text:pkgdb.templates.plain.vcsacls",
-            as_format="plain", accept_format="text/plain",
-            content_type="text/plain; charset=utf-8", format='text')
-    @expose(template="pkgdb.templates.vcsacls", allow_json=True)
+    @expose(template='genshi-text:pkgdb.templates.plain.vcsacls',
+            as_format='plain', accept_format='text/plain',
+            content_type='text/plain; charset=utf-8', #pylint:disable-msg=C0322
+            format='text') #pylint:disable-msg=C0322
+    @expose(template='pkgdb.templates.vcsacls', allow_json=True)
     def vcs(self):
         '''Return ACLs for the version control system.
 
@@ -221,7 +232,7 @@ class ListQueries(controllers.Controller):
         # Get the vcs group acls from the db
 
         group_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname,
             GroupPackageListing.groupname), and_(
@@ -254,7 +265,7 @@ class ListQueries(controllers.Controller):
         # Get the package owners from the db
         # Exclude the orphan user from that.
         owner_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname, PackageListing.owner),
             and_(
@@ -278,7 +289,7 @@ class ListQueries(controllers.Controller):
 
         # Get the vcs user acls from the db
         person_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname, PersonPackageListing.username),
             and_(
@@ -308,15 +319,15 @@ class ListQueries(controllers.Controller):
                 packageAcls=package_acls)
 
     @expose(template='pkgdb.templates.buildtags', as_format='xml',
-            accept_format='application/xml', allow_json=True)
-    def buildtags(self, repos, langs='en_US'):
+            accept_format='application/xml', #pylint:disable-msg=C0322
+            allow_json=True) #pylint:disable-msg=E1101
+    def buildtags(self, repos):
         '''Return an XML object with all the PackageBuild tags and their scores.
         The PackageBuild tags are tags binded to applications belonging to 
         the packagebuild. When there are more apps with same tag within one 
         packaebuild, the maximum score is taken.
 
         :arg repoName: A repo shortname to lookup packagebuilds into
-        :arg language: A language string, (e.g. 'American English' or 'en_US')
         for tags
 
         Returns:
@@ -327,22 +338,23 @@ class ListQueries(controllers.Controller):
             repos = [repos]
         if langs.__class__ != [].__class__:
             langs = [langs]
-    
+
         buildtags = {}
         for repo in repos:
             buildtags[repo] = {}
-            
-            repoid = Repo.query.filter_by(shortname=repo).one().id
 
+            #pylint:disable-msg=E1101
+            repoid = Repo.query.filter_by(shortname=repo).one().id
             builds = PackageBuild.query.filter_by(repoid=repoid)
-            for language in langs:
-                for build in builds:
-                    buildtags[repo][build.name] = build.scores(language)
+            #pylint:enable-msg=E1101
+
+            for build in builds:
+                buildtags[repo][build.name] = build.scores()
 
         return dict(buildtags=buildtags, repos=repos)
 
     @expose(content_type='application/sqlite')
-    def sqlitebuildtags(self, repos, langs='en_US'):
+    def sqlitebuildtags(self, repos):
         '''Return a sqlite database of packagebuilds and tags.
 
         The database returned will contain copies or subsets of tables in the
@@ -374,52 +386,47 @@ class ListQueries(controllers.Controller):
         e.close()
         lite_session.execute(YumReposTable.insert(), fetchedrepos)
 
-        # copy the languages
-        e = LanguagesTable.select(
-            LanguagesTable.c.shortname.in_(langs)).execute()
-        languages = e.fetchall()
-        e.close()
-        lite_session.execute(YumLanguagesTable.insert(), languages)
-
-        pacakagebuilds = PackageBuild.query.join('repos').filter(
+        #pylint:disable-msg=E1101
+        packagebuilds = PackageBuild.query.join('repos').filter(
                     ReposTable.c.shortname.in_(repos))
+        #pylint:enable-msg=E1101
 
-        unique_tags={}
+        unique_tags = {}
 
-        for packagebuild in pacakagebuilds:
+        for packagebuild in packagebuilds:
             build = [(packagebuild.id, packagebuild.name, packagebuild.repoid)]
             lite_session.execute(YumPackageBuildTable.insert(), build)
             name = [(packagebuild.name)]
-            lite_session.execute(YumPackageBuildNameTable.insert(), name)
+            lite_session.execute(YumPackageBuildNamesTable.insert(), name)
 
             build_tags = {}
-            
+
             # collect tags
-            for app in build.applications:
-                tags = ApplicationTag.query.join('tag').filter(
-                        ApplicationsTagsTable.c.applicationid==app.id, 
-                        TagsTable.c.language._in(langs))
+            for app in build.applications: #pylint:disable-msg=E1101
+                #pylint:disable-msg=E1101
+                tags = ApplicationTag.query.join('tag').filter(ApplicationsTagsTable.c.applicationid==app.id)
+                #pylint:enable-msg=E1101
                 for tag in tags:
-                    sc = build_tags.get((tag.tag.name, tag.tag.language), None)
+                    sc = build_tags.get(tag.tag.name, None)
                     if sc is None or sc < tag.score:
-                        build_tags[(tag.tag.name, tag.tag.language)] = tag.score
+                        build_tags[tag.tag.name] = tag.score
 
             # write tags
-            for tag, score in iteritems(build_tags):
+            for tag, score in build_tags.iteritems():
                 tag_id = unique_tags.get(tag, None)
                 if not tag_id:
                     tag_id = YumTagsTable.query.insert().values(
-                        name=tag[0], 
-                        language=tag[1]
+                        name=tag 
                         ).execute().last_inserted_ids()[-1]
                     unique_tags[tag] = tag_id
 
+                #pylint:disable-msg=E1101
                 YumPackageBuildNamesTagsTable.query.insert().values(
                     packagebuildname=packagebuild.name, 
                     tagid=tag_id, score=score
                     ).execute()
+                #pylint:enable-msg=E1101
 
-                    
         lite_session.commit()
 
         f = open(dbfile, 'r')
@@ -429,7 +436,8 @@ class ListQueries(controllers.Controller):
         
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
             as_format="plain", accept_format="text/plain",
-            content_type="text/plain; charset=utf-8", format='text')
+            content_type="text/plain; charset=utf-8", #pylint:disable-msg=C0322
+            format='text') #pylint:disable-msg=C0322
     @expose(template="pkgdb.templates.bugzillaacls", allow_json=True)
     def bugzilla(self):
         '''Return the package attributes used by bugzilla.
@@ -454,7 +462,7 @@ class ListQueries(controllers.Controller):
 
         # select all packages that are in an active release
         package_info = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Collection.name, Package.name,
             PackageListing.owner, PackageListing.qacontact,
             Package.summary),
@@ -502,8 +510,7 @@ class ListQueries(controllers.Controller):
             # These are packages that have different owners in different
             # branches.  Need to find one to be the owner of the bugzilla
             # component
-            # SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             package_info = select((Collection.name,
                 Collection.version,
                 Package.name, PackageListing.owner),
@@ -518,7 +525,7 @@ class ListQueries(controllers.Controller):
                     ),
                 order_by=(Collection.name, Collection.version),
                 distinct=True)
-            # pylint: enable-msg=E1101
+            #pylint:enable-msg=E1101
 
             # Organize the results so that we have:
             # [packagename][collectionname][collectionversion] = owner
@@ -576,7 +583,7 @@ class ListQueries(controllers.Controller):
         # Retrieve the user acls
 
         person_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Collection.name, PersonPackageListing.username),
             and_(
@@ -612,7 +619,8 @@ class ListQueries(controllers.Controller):
     @error_handler()
     @expose(template='genshi-text:pkgdb.templates.plain.notify',
             as_format='plain', accept_format='text/plain',
-            content_type='text/plain; charset=utf-8', format='text')
+            content_type='text/plain; charset=utf-8', #pylint:disable-msg=C0322
+            format='text') #pylint:disable-msg=C0322
     @expose(template='pkgdb.templates.notify', allow_json=True)
     def notify(self, name=None, version=None, eol=False):
         '''List of usernames that should be notified of changes to a package.
@@ -632,8 +640,7 @@ class ListQueries(controllers.Controller):
             return errors
 
         # Retrieve Packages, owners, and people on watch* acls
-        # :E1101: SQLAlchemy mapped classes are monkey patched
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         owner_query = select((Package.name, PackageListing.owner),
                 from_obj=(PackageTable.join(PackageListing).join(
                     CollectionTable))).where(and_(
@@ -654,29 +661,31 @@ class ListQueries(controllers.Controller):
                             PersonPackageListingAcl.statuscode ==
                                 STATUS['Approved'].statuscodeid
                         )).distinct().order_by('name')
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
 
         if not eol:
             # Filter out eol distributions
-            # :E1101: SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             owner_query = owner_query.where(Collection.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
             watcher_query = watcher_query.where(Collection.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
+            #pylint:enable-msg=E1101
 
         # Only grab from certain collections
         if name:
-            # SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             owner_query = owner_query.where(Collection.name==name)
             watcher_query = watcher_query.where(Collection.name==name)
+            #pylint:enable-msg=E1101
             if version:
                 # Limit the versions of those collections
+                #pylint:disable-msg=E1101
                 owner_query = owner_query.where(Collection.version==version)
                 watcher_query = watcher_query.where(Collection.version==version)
+                #pylint:enable-msg=E1101
 
         pkgs = {}
         # turn the query into a python object
@@ -687,12 +696,11 @@ class ListQueries(controllers.Controller):
             pkgs.setdefault(pkg[0], set()).update(
                     (pkg[1],))
 
-        # SQLAlchemy mapped classes are monkey patched
-        # pylint: disable-msg=E1101
         # Retrieve list of collection information for generating the
         # collection form
+        #pylint:disable-msg=E1101
         collection_list = Collection.query.order_by('name').order_by('version')
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         collections = {}
         for collection in collection_list:
             try:

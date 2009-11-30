@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -21,19 +21,24 @@
 '''
 Controller for displaying PackageBuild(Rpm) related information
 '''
+#
+#pylint Explanations
+#
+
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
 
 from sqlalchemy.sql import and_
+from sqlalchemy.exceptions import InvalidRequestError
 
-from turbogears import controllers, expose, identity
+from turbogears import controllers, expose, identity, redirect
 from turbogears.database import session
 
-from pkgdb.model import Comment, PackageBuild, Repo, Application
+from pkgdb.model import Comment, Application
 from pkgdb.utils import mod_grp
 from pkgdb import _
 
 from fedora.tg.util import request_format
-
-from cherrypy import request
 
 import logging
 log = logging.getLogger('pkgdb.applications')
@@ -50,21 +55,22 @@ class ApplicationController(controllers.Controller):
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.application', allow_json=True)
-    def default(self, app_name=None, repo='F-11-i386', language='en_US'):
+    def default(self, app_name=None, repo='F-11-i386'):
         '''Retrieve application by its name.
 
         :arg app_name: Name of the packagebuild/rpm to lookup
         :arg repo: shortname of the repository to look in
-        :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
-        if app_name==None:
-            raise redirect(config.get('base_url_filter.base_url') +
-                '/')
+        if app_name == None:
+            raise redirect('/')
 
         # look for The One application
         try:
-            application = session.query(Application).filter_by(name=app_name).one()
-        except Exception, e:
+            #pylint:disable-msg=E1101
+            application = session.query(Application).filter_by(name=app_name).\
+                    one()
+            #pylint:enable-msg=E1101
+        except InvalidRequestError, e:
             error = dict(status=False,
                          title=_('%(app)s -- Invalid Application Name') % {
                              'app': self.app_title},
@@ -77,11 +83,12 @@ class ApplicationController(controllers.Controller):
                 error['tg_template'] = 'pkgdb.templates.errors'
                 return error
         
-        tagscore = application.scores_by_language(language)
+        tagscore = application.scores
 
-        comment_query = session.query(Comment).filter(and_(
-            Comment.application==application,
-            Comment.language==language)).order_by(Comment.time)
+        #pylint:disable-msg=E1101
+        comment_query = session.query(Comment).filter(
+            Comment.application==application).order_by(Comment.time)
+        #pylint:enable-msg=E1101
         # hide the mean comments from ordinary users
         if identity.in_group(mod_grp):
             comments = comment_query.all()
@@ -90,7 +97,6 @@ class ApplicationController(controllers.Controller):
 
         return dict(title=_('%(title)s -- %(app)s') % {
             'title': self.app_title, 'app': application.name},
-                    tagscore=tagscore, language=language,
+                    tagscore=tagscore,
                     app=application,
                     comments=comments)
-

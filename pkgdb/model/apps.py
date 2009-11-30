@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -29,21 +29,19 @@ Application related part of the model.
 
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
-# :R0903: Mapped classes will have few methods as SQLAlchemy will monkey patch
-#   more methods in later.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
-from sqlalchemy import Table, Column, ForeignKey, ForeignKeyConstraint, Sequence
+
+from sqlalchemy import Table, Column, ForeignKeyConstraint
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
 from sqlalchemy.orm import relation, backref
-from sqlalchemy.orm.collections import mapped_collection, \
-        attribute_mapped_collection
+from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
-from turbogears.database import metadata, mapper, get_engine, session
+from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
 
-from pkgdb.model import PackageBuild, BinaryPackage, Language, Collection
+from pkgdb.model import PackageBuild, BinaryPackage, Collection
 from pkgdb.lib.dt_utils import FancyDateTimeDelta
 
 from datetime import datetime
@@ -53,7 +51,8 @@ from datetime import datetime
 #
 
 ApplicationsTable = Table('applications', metadata, 
-    Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),    
+    Column('id', Integer, primary_key=True, autoincrement=True,
+        nullable=False),    
     Column('name', Text, nullable=False),
     Column('description', Text, nullable=False),
     Column('summary', Text, nullable=False),
@@ -62,17 +61,22 @@ ApplicationsTable = Table('applications', metadata,
     Column('desktoptype', Text),
     Column('iconid', nullable=True),
     Column('iconnameid', nullable=True),
-    ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+    ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+    ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
 )
 
 ApplicationsTagsTable = Table('applicationstags', metadata,
     Column('applicationid', Integer, primary_key=True, nullable=False),
     Column('tagid', Integer, primary_key=True, nullable=False),
     Column('score', Integer, default=1, nullable=False),
-    ForeignKeyConstraint(['applicationid'],['applications.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['tagid'],['tags.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['tagid'], ['tags.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
 )
 
 BinaryPackageTagsTable = Table('binarypackagetags', metadata,
@@ -86,8 +90,10 @@ BinaryPackageTagsTable = Table('binarypackagetags', metadata,
 PackageBuildApplicationsTable = Table('packagebuildapplications', metadata,
     Column('applicationid', Integer, primary_key=True, nullable=False),
     Column('packagebuildid', Integer, primary_key=True, nullable=False),
-    ForeignKeyConstraint(['applicationid'],['applications.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['packagebuildid'],['packagebuild.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 AppTypesTable = Table('apptypes', metadata,
@@ -99,18 +105,16 @@ CommentsTable = Table('comments', metadata,
     Column('author', Text, nullable=False),
     Column('body', Text, nullable=False),
     Column('published', Boolean, default=True, nullable=False),
-    Column('language', Text, nullable=False),
-    Column('time', DateTime(timezone=True), default=datetime.now, nullable=False),
+    Column('time', DateTime(timezone=True), default=datetime.now,
+        nullable=False),
     Column('applicationid', Integer, nullable=False),
-    ForeignKeyConstraint(['language'],['languages.shortname'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['applicationid'],['applications.id'], onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['applicationid'],['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 TagsTable = Table('tags', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
-    Column('name', Text, nullable=False),
-    Column('language', Text, nullable=False),
-    ForeignKeyConstraint(['language'],['languages.shortname'], onupdate="CASCADE", ondelete="CASCADE"),
+    Column('name', Text, nullable=False, unique=True),
 )
 
 IconNamesTable = Table('iconnames', metadata,
@@ -129,16 +133,19 @@ IconsTable = Table('icons', metadata,
     Column('collectionid', nullable=False),                   
     Column('themeid', nullable=False),                   
     Column('icon', Binary, nullable=False),
-    ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['collectionid'], ['collection.id'], onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['themeid'], ['themes.id'], onupdate="CASCADE", ondelete="CASCADE"),
-)                  
+    ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+    ForeignKeyConstraint(['collectionid'], ['collection.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['themeid'], ['themes.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+)
 
 
 def _create_apptag(tag, score):
     """Creator function for apptags association proxy """
     apptag = ApplicationTag(tag=tag, score=score)
-    session.add(apptag)
+    session.add(apptag) #pylint:disable-msg=E1101
     return apptag
 
 #
@@ -152,7 +159,8 @@ class Application(SABase):
     file will have application record (we will presume that the whole package is application)
     Apptype column indicates the type of the record.
     '''
-    def __init__(self, name, description, url, apptype, summary, desktoptype=None, iconname=None, icon=None ):
+    def __init__(self, name, description, url, apptype, summary,
+            desktoptype=None, iconname=None, icon=None ):
         super(Application, self).__init__()
         self.name = name
         self.description = description
@@ -170,17 +178,14 @@ class Application(SABase):
             self.name, self.summary, self.url, self.apptype)
 
     @classmethod
-    def tag(cls, apps, tags, language):
+    def tag(cls, apps, tags):
         '''Add a set of tags to a list of Applications.
 
         :arg apps: one or more Application names to add the tags to.
         :arg tags: one or more tags to add to the packages.
-        :arg language: name or shortname for the language of the tags.
 
         #? Returns two lists (unchanged): tags and builds.
         '''
-        lang = Language.find(language)
-
         # if we got just one argument, make it a list
         if not isinstance(tags, (list, tuple)):
             if tags == '':
@@ -189,54 +194,42 @@ class Application(SABase):
         if not isinstance(apps, (list, tuple)):
             apps = [apps]
 
-        applications = session.query(Application).filter(
-            Application.name.in_(apps))
+        #pylint:disable-msg=E1101
+        applications = session.query(Application).\
+                filter(Application.name.in_(apps))
+        #pylint:enable-msg=E1101
 
         for tag_name in tags:
             try:
-                tag = session.query(Tag).filter_by(name=tag_name, language=lang.shortname).one()
+                #pylint:disable-msg=E1101
+                tag = session.query(Tag).\
+                        filter_by(name=tag_name).one()
+                #pylint:enable-msg=E1101
             except:
-                tag = Tag(name=tag_name, language=lang.shortname)
-                session.add(tag)
+                tag = Tag(name=tag_name)
+                session.add(tag) #pylint:disable-msg=E1101
 
             for application in applications:
                 application.scores[tag] = application.scores.get(tag, 0)+1
-    
-
-    def scores_by_language(self, language='en_US'):
-        '''Return a dictionary of tagname: score for a given application
-
-        :kwarg language: Select tag language (default: 'en_US').
-        '''
-
-        apptags = {}
-        lang = Language.find(language)
-
-        for (tag, score) in self.scores.iteritems():
-            if tag.language == lang.shortname:
-                apptags[tag.name] = score 
-        
-        return apptags
 
 
-    def comment(self, author, body, language):
+
+    def comment(self, author, body):
         '''Add a new comment to a packagebuild.
 
         :arg author: the FAS author
         :arg body: text body of the comment
-        :arg language: name or shortname of the comment body`s language
         '''
 
-        lang = Language.find(language)
-        
-        comment = Comment(author, body, lang.shortname, published=True,
-                          application=self)
+        comment = Comment(author, body, published=True, application=self)
+        #pylint:disable-msg=E1101
         self.comments.append(comment)
         session.flush()
+        #pylint:enable-msg=E1101
 
 
     @classmethod
-    def search(cls, tags, operator, language):
+    def search(cls, tags, operator):
         '''Retrieve all the apps which have a specified set of tags.
 
         Can also be used with just one tag.
@@ -244,15 +237,10 @@ class Application(SABase):
         :arg tags: One or more tag names to lookup
         :arg operator: Can be one of 'OR' and 'AND', case insensitive, decides
         how the search for tags is done.
-        :arg language: A language in short ('en_US') or long ('American English')
-        format. Look for them on https://translate.fedoraproject.org/languages/
 
         Returns:
         :apps: list of found Application objects
         '''
-        # :tags: a list of Tag objects, filtered by :language:
-
-        lang = Language.find(language)
         
         if isinstance(tags, (tuple, list)):
             tags = [tags]
@@ -262,12 +250,14 @@ class Application(SABase):
         object_tags = []
         for tag in tags:
             try:
-             object_tags.append(
-                    Tag.query.filter_by(name=tag, language=lang).one())
+                #pylint:disable-msg=E1101
+                object_tags.append(Tag.query.\
+                        filter_by(name=tag).one())
+                #pylint:enable-msg=E1101
             except:
-                raise Exception(tag, language)
+                raise Exception(tag)
         tags = object_tags
-                        
+
         if operator.lower() == 'or':
             for tag in tags:
                 apps = tag.applications
@@ -279,7 +269,8 @@ class Application(SABase):
                 # do an intersection between all the taglists to get
                 # the common ones
                 for tag in tags[1:]:
-                    applications = set(tags[0].applications) & set(tag.applications)
+                    applications = set(tags[0].applications)\
+                            & set(tag.applications)
 
         return applications
 
@@ -300,7 +291,7 @@ class ApplicationTag(SABase):
 
     def __repr__(self):
         return 'ApplicationTag(applicationid=%r, tagid=%r, score=%r)' % (
-            self.applicationid, self.tagid, self.score)
+            self.applicationid, self.tagid, self.score)#pylint:disable-msg=E1101
 
 
 class BinaryPackageTag(SABase):
@@ -326,44 +317,38 @@ class BinaryPackageTag(SABase):
 class Comment(SABase):
     '''Comments associated to PackageBuilds.
 
-    Users signed into FAS can comment on specific packagebuilds, each comment
-    belongs to a specific language.
+    Users signed into FAS can comment on specific applications.
     '''
-    def __init__(self, author, body, language, published, application):
+    def __init__(self, author, body, published, application):
         super(Comment, self).__init__()
         self.author = author
         self.body = body
-        self.language = language
         self.published = published
         self.application = application
     def __repr__(self):
         return 'Comment(author=%r, body=%r, published=%r, application=%r, '\
-               'language=%r, time=%r)' % (
-            self.author, self.body, self.published, self.application.name,
-            self.language, self.time)
+               'time=%r)' % (
+                       self.author, self.body, self.published,
+                       self.application.name,
+                       self.time) #pylint:disable-msg=E1101
 
     def fancy_delta(self, precision=2):
-        fancy_delta = FancyDateTimeDelta(self.time)
+        fancy_delta = FancyDateTimeDelta(self.time) #pylint:disable-msg=E1101
         return fancy_delta.format(precision)
 
 
 class Tag(SABase):
-    '''Package Tags.
-
-    These belong to a Package object. They are entered through the pkgdb
-    interface and also belong to a language.
+    '''Application and/or Binarypackage Tags.
 
     Table -- Tags
     '''
 
-    def __init__(self, name, language):
+    def __init__(self, name):
         super(Tag, self).__init__()
         self.name = name
-        self.language = language
 
     def __repr__(self):
-        return 'Tag(%r, language=%r)' % (
-            self.name, self.language)
+        return 'Tag(%r)' % (self.name)
         
 class IconName(SABase):
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc. All rights reserved.
+# Copyright © 2007-2009  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -15,10 +15,11 @@
 # General Public License and may only be used or replicated with the express
 # permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Martin Bacovsky <mbacovsk@redhat.com>
+# Author(s): Martin Bacovsky <mbacovsk@redhat.com>
+#            Toshio Kuratomi <toshio@redhat.com>
 #
 
-import sys, os, re
+import os, re
 import stat
 import rpmUtils
 import ConfigParser
@@ -30,7 +31,8 @@ import logging
 log = logging.getLogger('pkgdb.lib.rpm')
 
 RE_APP_ICON_FILE = re.compile("^.*/(icons|pixmaps).*/apps/([^/]*)\.png$")
-RE_SIZED_APP_ICON_FILE = re.compile("^.*/(icons|pixmaps)/([^/]*)/(\d+x\d+)/apps/([^/]*)\.png$")
+RE_SIZED_APP_ICON_FILE = re.compile(
+        "^.*/(icons|pixmaps)/([^/]*)/(\d+x\d+)/apps/([^/]*)\.png$")
 
 
 def _convert_size(size_string):
@@ -120,7 +122,9 @@ class RPMParser(object):
         return desktop_entries
 
 
-    def get_app_icons(self, exc=[]):
+    def get_app_icons(self, exc=None):
+        if exc == None:
+            exc = []
 
         app_icon_data = {}
 
@@ -147,13 +151,15 @@ class RPMParser(object):
                     width = _convert_size(sized_match.group(3))
                     theme = sized_match.group(2)
 
-                if not app_icon_data.has_key(name) or width == 48 or app_icon_data[name]['size'][0] < width:
+                if not app_icon_data.has_key(name) or width == 48\
+                        or app_icon_data[name]['size'][0] < width:
                     data = StringIO(entry.read())
                     img = Image.open(data)
                     data.seek(0)
                     size = img.size
 
-                    log.debug("%s at size %sx%s from path %s" % (name, size[0], size[1], entry.name))
+                    log.debug("%s at size %sx%s from path %s" %
+                            (name, size[0], size[1], entry.name))
 
                 app_icon_data[name] = dict(size=size, data=data, theme=theme)
 
@@ -164,11 +170,12 @@ class RPMParser(object):
             size = app_icon_data[name]['size']
             if size[0] != 48 or size[1] != 48:
                 data = app_icon_data[name]['data']
-                log.debug("Resizing %s from %sx%s to 48x48" % (name, size[0], size[1]))
+                log.debug("Resizing %s from %sx%s to 48x48" %
+                        (name, size[0], size[1]))
                 try:
                     img = Image.open(data)
                     data = StringIO()
-                    img.thumbnail((48,48), Image.ANTIALIAS)
+                    img.thumbnail((48, 48), Image.ANTIALIAS)
                     img.save(data, "PNG")
                 except IOError, e:
                     # Occasionally Image can't parse icon data
@@ -176,9 +183,10 @@ class RPMParser(object):
                     continue
 
                 data.seek(0)
-                size=(48,48)
+                size = (48, 48)
                 
-                app_icon_data[name] = dict(size=size, theme=app_icon_data[name]['theme'], data=data)
+                app_icon_data[name] = dict(size=size,
+                        theme=app_icon_data[name]['theme'], data=data)
 
         # delete invalid files
         for name in to_delete:
