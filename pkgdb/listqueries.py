@@ -47,7 +47,7 @@ from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
      GroupPackageListingAcl, PackageListing, PersonPackageListing, \
      PersonPackageListingAcl, Repo, PackageBuild
 from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable, \
-     LanguagesTable, ApplicationsTagsTable, ApplicationTag
+     ApplicationsTagsTable, ApplicationTag
 from pkgdb.model import YumTagsTable, YumReposTable, \
     YumPackageBuildTable, YumPackageBuildNamesTable, \
     YumPackageBuildNamesTagsTable
@@ -336,8 +336,6 @@ class ListQueries(controllers.Controller):
         '''
         if repos.__class__ != [].__class__:
             repos = [repos]
-        if langs.__class__ != [].__class__:
-            langs = [langs]
 
         buildtags = {}
         for repo in repos:
@@ -366,8 +364,6 @@ class ListQueries(controllers.Controller):
 
         if repos.__class__ != [].__class__:
             repos = [repos]
-        if langs.__class__ != [].__class__:
-            langs = [langs]
 
         # initialize/clear database
         open(dbfile, 'w').close()
@@ -415,9 +411,11 @@ class ListQueries(controllers.Controller):
             for tag, score in build_tags.iteritems():
                 tag_id = unique_tags.get(tag, None)
                 if not tag_id:
+                    #pylint:disable-msg=E1103
                     tag_id = YumTagsTable.query.insert().values(
                         name=tag 
                         ).execute().last_inserted_ids()[-1]
+                    #pylint:enable-msg=E1103
                     unique_tags[tag] = tag_id
 
                 #pylint:disable-msg=E1101
