@@ -56,20 +56,18 @@ class Tags(controllers.Controller):
     @expose(allow_json=True)
     @validate(validators={
         # get a list even if only one string is provided
-        "builds": validators.Set()})
+        "apps": validators.Set()})
     def packages(self, apps):
         '''Retrieve all tags belonging to one or more PackageBuilds.
 
-        :arg builds: The name (or list of names) of a generic PackageBuild
+        :arg apps: The name (or list of names) of a generic PackageBuild
         to lookup
         '''
 
-        if builds.__class__ != [].__class__:
-            builds = [builds]
+        if apps.__class__ != [].__class__:
+            apps = [apps]
         #pylint:disable-msg=E1101
-        ###FIXME: 
-        # https://fedorahosted.org/packagedb/ticket/163
-        tags = Tag.query.join(Tag.applications).filter(
+        tags = session.query(Tag).join(Tag.applications).filter(
             Application.name.in_(apps)).all()
         #pylint:enable-msg=E1101
                 
@@ -79,9 +77,12 @@ class Tags(controllers.Controller):
     def scores(self, app):
         '''Return a dictionary of tagname: score for a given package build.
 
-        :arg build: The PackageBuild object to lookup.
+        :arg app: The application name to lookup.
         '''
-        apptags = Application.query.filter_by(name=app).one().scores
+        #pylint:disable-msg=E1101
+        apptags = session.query(Application).filter_by(name=app).one().scores
+        #pylint:enable-msg=E1101
+
         return dict(title=self.app_title, buildtags=apptags)
 
 

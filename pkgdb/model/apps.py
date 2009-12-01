@@ -310,7 +310,7 @@ class BinaryPackageTag(SABase):
 
     def __repr__(self):
         return 'BinaryPackageTag(binarypackage=%r, tagid=%r, score=%r)' % (
-            self.binarypackagename, self.tagid, self.score)
+            self.binarypackagename, self.tagid, self.score) #pylint:disable-msg=E1101
 
 
 
