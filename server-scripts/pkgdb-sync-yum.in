@@ -29,6 +29,13 @@ available in the pkgdb.
 # :E1101: Ignore this anytime we use the session.  SQLAlchemy monkeypatches
 #   extra functionality into here that isn't apparent to pylint
 
+__requires__ = 'fedora_packagedb'
+import os
+import sys
+CONFDIR = '/var/www/pkgdb/0.5.x'
+PKGDBDIR = os.path.join('/var/www/pkgdb/', '0.5.x')
+sys.path.append(PKGDBDIR)
+
 import os
 import sys
 import yum
@@ -39,11 +46,6 @@ import datetime
 from sqlalchemy.sql import and_
 from turbogears import config, update_config
 from turbogears.database import session
-
-
-CONFDIR = '@CONFDIR@'
-PKGDBDIR = os.path.join('@DATADIR@', 'fedora-packagedb')
-sys.path.append(PKGDBDIR)
 
 from pkgdb.lib.rpm import RPMParser, RE_APP_ICON_FILE
 
@@ -61,10 +63,6 @@ from pkgdb.model import PackageBuildTable, PackageTable, IconName, Theme, Icon
 from pkgdb.model import Package, PackageListing, PackageBuild, Repo, \
         Application, ApplicationTag, Tag, RpmFiles, PackageBuildDepends, \
         RpmRequires, RpmProvides, RpmConflicts, RpmObsoletes, BinaryPackage
-
-fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
-username = config.get('fas.username', 'admin')
-password = config.get('fas.password', 'admin')
 
 log = logging.getLogger('pkgdb-sync-yum')
 
@@ -269,12 +267,9 @@ for repo in repos:
                                         try:
                                             #pylint:disable-msg=E1101
                                             tag = session.query(Tag).filter_by(
-                                                    name=cat,
-                                                    language='en_US')\
-                                                            .one()
+                                                    name=cat).one()
                                         except:
-                                            tag = Tag(name=cat,
-                                                    language='en_US')
+                                            tag = Tag(name=cat)
                                             #pylint:disable-msg=E1101
                                             session.add(tag)
                                             #pylint:enable-msg=E1101
