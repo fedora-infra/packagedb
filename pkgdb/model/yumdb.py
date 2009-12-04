@@ -31,7 +31,6 @@ sqliteconn = 'sqlite:////tmp/buildtags.db'
 yummeta = MetaData()
 yummeta.bind = sqliteconn
 
-YumLanguagesTable = LanguagesTable.tometadata(yummeta)
 YumTagsTable = TagsTable.tometadata(yummeta)
 YumPackageBuildNamesTable = Table('packagebuildnames', yummeta,
         Column('name', String(30), primary_key=True))

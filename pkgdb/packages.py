@@ -46,7 +46,7 @@ class Package(controllers.Controller):
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.userpkgpage', allow_json=True)
-    def default(self, buildName=None, repo='F-11-i386', language='en_US'):
+    def default(self, buildName=None, repo='F-11-i386'):
         '''Retrieve PackageBuild by their name.
 
         This method returns general packagebuild/rpm information about a
@@ -56,7 +56,6 @@ class Package(controllers.Controller):
 
         :arg buildName: Name of the packagebuild/rpm to lookup
         :arg repo: shortname of the repository to look in
-        :arg language: A language string, (e.g. 'American English' or 'en_US')
         '''
         if buildName == None:
             raise redirect('/packages/list/')
@@ -94,5 +93,5 @@ class Package(controllers.Controller):
         return dict(title=_('%(title)s -- %(pkg)s') % {
             'title': self.app_title, 'pkg': buildName},
                     repo=repo, build=build, other_repos=other_repos,
-                    arches=arches, language=language)
+                    arches=arches)
 

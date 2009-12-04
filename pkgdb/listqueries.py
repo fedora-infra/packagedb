@@ -47,8 +47,8 @@ from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
      GroupPackageListingAcl, PackageListing, PersonPackageListing, \
      PersonPackageListingAcl, Repo, PackageBuild
 from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable, \
-     LanguagesTable, ApplicationsTagsTable, ApplicationTag
-from pkgdb.model import YumLanguagesTable, YumTagsTable, YumReposTable, \
+     ApplicationsTagsTable, ApplicationTag
+from pkgdb.model import YumTagsTable, YumReposTable, \
     YumPackageBuildTable, YumPackageBuildNamesTable, \
     YumPackageBuildNamesTagsTable
 from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
@@ -321,14 +321,13 @@ class ListQueries(controllers.Controller):
     @expose(template='pkgdb.templates.buildtags', as_format='xml',
             accept_format='application/xml', #pylint:disable-msg=C0322
             allow_json=True) #pylint:disable-msg=E1101
-    def buildtags(self, repos, langs='en_US'):
+    def buildtags(self, repos):
         '''Return an XML object with all the PackageBuild tags and their scores.
         The PackageBuild tags are tags binded to applications belonging to 
         the packagebuild. When there are more apps with same tag within one 
         packaebuild, the maximum score is taken.
 
         :arg repoName: A repo shortname to lookup packagebuilds into
-        :arg language: A language string, (e.g. 'American English' or 'en_US')
         for tags
 
         Returns:
@@ -337,8 +336,6 @@ class ListQueries(controllers.Controller):
         '''
         if repos.__class__ != [].__class__:
             repos = [repos]
-        if langs.__class__ != [].__class__:
-            langs = [langs]
 
         buildtags = {}
         for repo in repos:
@@ -349,14 +346,13 @@ class ListQueries(controllers.Controller):
             builds = PackageBuild.query.filter_by(repoid=repoid)
             #pylint:enable-msg=E1101
 
-            for language in langs:
-                for build in builds:
-                    buildtags[repo][build.name] = build.scores(language)
+            for build in builds:
+                buildtags[repo][build.name] = build.scores()
 
         return dict(buildtags=buildtags, repos=repos)
 
     @expose(content_type='application/sqlite')
-    def sqlitebuildtags(self, repos, langs='en_US'):
+    def sqlitebuildtags(self, repos):
         '''Return a sqlite database of packagebuilds and tags.
 
         The database returned will contain copies or subsets of tables in the
@@ -368,8 +364,6 @@ class ListQueries(controllers.Controller):
 
         if repos.__class__ != [].__class__:
             repos = [repos]
-        if langs.__class__ != [].__class__:
-            langs = [langs]
 
         # initialize/clear database
         open(dbfile, 'w').close()
@@ -387,14 +381,6 @@ class ListQueries(controllers.Controller):
         fetchedrepos = e.fetchall()
         e.close()
         lite_session.execute(YumReposTable.insert(), fetchedrepos)
-
-        # copy the languages
-        lang_select = select(LanguagesTable,
-            LanguagesTable.c.shortname.in_(langs))
-        query_results = default_engine.execute(lang_select)
-        languages = query_results.fetchall()
-        query_results.close()
-        lite_session.execute(YumLanguagesTable.insert(), languages)
 
         #pylint:disable-msg=E1101
         packagebuilds = PackageBuild.query.join('repos').filter(
@@ -414,23 +400,22 @@ class ListQueries(controllers.Controller):
             # collect tags
             for app in build.applications: #pylint:disable-msg=E1101
                 #pylint:disable-msg=E1101
-                tags = ApplicationTag.query.join('tag').filter(
-                        ApplicationsTagsTable.c.applicationid==app.id, 
-                        TagsTable.c.language.in_(langs))
+                tags = ApplicationTag.query.join('tag').filter(ApplicationsTagsTable.c.applicationid==app.id)
                 #pylint:enable-msg=E1101
                 for tag in tags:
-                    sc = build_tags.get((tag.tag.name, tag.tag.language), None)
+                    sc = build_tags.get(tag.tag.name, None)
                     if sc is None or sc < tag.score:
-                        build_tags[(tag.tag.name, tag.tag.language)] = tag.score
+                        build_tags[tag.tag.name] = tag.score
 
             # write tags
             for tag, score in build_tags.iteritems():
                 tag_id = unique_tags.get(tag, None)
                 if not tag_id:
+                    #pylint:disable-msg=E1103
                     tag_id = YumTagsTable.query.insert().values(
-                        name=tag[0], 
-                        language=tag[1]
+                        name=tag 
                         ).execute().last_inserted_ids()[-1]
+                    #pylint:enable-msg=E1103
                     unique_tags[tag] = tag_id
 
                 #pylint:disable-msg=E1101

@@ -54,6 +54,12 @@ pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
 # Get the moderator group if one is specified.
 mod_grp = config.get('pkgdb.modgroup', 'sysadmin')
 
+# Get the provenpackager group if one is specified.
+provenpkger_grp = config.get('pkgdb.provenpkgergroup', 'provenpackager')
+
+# Get the newpackager group if one is specified.
+newpkger_grp = config.get('pkgdb.newpkgergroup', 'newpackager')
+
 def to_unicode(obj, encoding='utf-8', errors='strict'):
     '''return a unicode representation of the object.
 

@@ -34,7 +34,7 @@ from turbogears.database import session
 from cherrypy import request
 from fedora.tg.util import request_format
 
-from pkgdb.model import Tag, PackageBuild, PackageBuildName, Application
+from pkgdb.model import Tag, PackageBuild, Application
 from pkgdb.letter_paginator import Letters
 from pkgdb.utils import is_xhr
 
@@ -56,40 +56,38 @@ class Tags(controllers.Controller):
     @expose(allow_json=True)
     @validate(validators={
         # get a list even if only one string is provided
-        "builds": validators.Set()})
-    def packages(self, builds):
+        "apps": validators.Set()})
+    def packages(self, apps):
         '''Retrieve all tags belonging to one or more PackageBuilds.
 
-        :arg builds: The name (or list of names) of a generic PackageBuild
+        :arg apps: The name (or list of names) of a generic PackageBuild
         to lookup
         '''
 
-        if builds.__class__ != [].__class__:
-            builds = [builds]
+        if apps.__class__ != [].__class__:
+            apps = [apps]
         #pylint:disable-msg=E1101
-        ###FIXME: 
-        # https://fedorahosted.org/packagedb/ticket/163
-        tags = Tag.query.join(Tag.buildnames).filter(
-            PackageBuildName.name.in_(builds)).all()
+        tags = session.query(Tag).join(Tag.applications).filter(
+            Application.name.in_(apps)).all()
         #pylint:enable-msg=E1101
                 
         return dict(title=self.app_title, tags=tags)
 
     @expose(allow_json=True)
-    def scores(self, build, language='en_US'):
+    def scores(self, app):
         '''Return a dictionary of tagname: score for a given package build.
 
-        :arg build: The PackageBuild object to lookup.
-        :kwarg language: A language, short ('en_US') or long ('American English')
-            format. Look for them on
-            https://translate.fedoraproject.org/languages/
+        :arg app: The application name to lookup.
         '''
-        buildtags = PackageBuildName.query.filter_by(name=build).one().scores()
-        return dict(title=self.app_title, buildtags=buildtags)
+        #pylint:disable-msg=E1101
+        apptags = session.query(Application).filter_by(name=app).one().scores
+        #pylint:enable-msg=E1101
+
+        return dict(title=self.app_title, buildtags=apptags)
 
 
     @expose(allow_json=True)
-    def search(self, tags, operator='OR', language='en_US'):
+    def search(self, tags, operator='OR'):
         '''Retrieve all the builds which have a specified set of tags.
 
         Can also be used with just one tag.
@@ -97,22 +95,20 @@ class Tags(controllers.Controller):
         :arg tags: One or more tag names to lookup
         :kwarg operator: Can be one of 'OR' and 'AND', case insensitive, decides
         how the search for tags is done.
-        :kwarg language: A language, short ('en_US') or long ('American English')
-        format. Look for them on https://translate.fedoraproject.org/languages/
         
         Returns:
-        :tags: a list of Tag objects, filtered by :language:
+        :tags: a list of Tag objects
         :builds: list of found PackageBuild objects
         '''
         #pylint:disable-msg=E1101
-        builds = PackageBuild.search(tags, operator, language)
+        apps = Application.search(tags, operator)
         #pylint:enable-msg=E1101
-        return dict(title=self.app_title, tags=tags, builds=builds)
+        return dict(title=self.app_title, tags=tags, apps=apps)
 
     @expose(template='pkgdb.templates._tags', allow_json=True)
     # FIXME: if auth expires let the user know
     @identity.require(identity.not_anonymous())
-    def add(self, apps, tags, language='en_US'):
+    def add(self, apps, tags):
         '''Add a set of tags to a specific PackageBuild.
 
         This method will tag all packagebuilds in the given list. The tags are
@@ -120,7 +116,6 @@ class Tags(controllers.Controller):
         
         :arg apps: one or more PackageBuild names to add the tags to.
         :kwarg tags: one or more tags to add to the packages.
-        :kwarg language: name or shortname for the language of the tags.
 
         Returns a dictionary of tag: score if only one packagebuild is given.
         '''
@@ -129,7 +124,7 @@ class Tags(controllers.Controller):
             flash('Tag name can not be null.')
             raise redirect(request.headers.get("Referer", "/"))
        
-        Application.tag(apps, tags, language)
+        Application.tag(apps, tags)
 
         # we only get one build from the webUI
         if apps.__class__ != [].__class__:
@@ -138,8 +133,7 @@ class Tags(controllers.Controller):
                 #pylint:disable-msg=E1101
                 app = session.query(Application).filter_by(name=apps).first()
                 #pylint:enable-msg=E1101
-                tagscore = app.scores_by_language(language)
-                return dict(tagscore=tagscore)
+                return dict(tagscore=app.scores)
             # return the user to the tagging page if all is well and no AJAX
             elif 'json' not in request_format():
                 raise redirect(request.headers.get("Referer", "/"))

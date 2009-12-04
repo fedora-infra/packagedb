@@ -36,7 +36,7 @@ from cherrypy import request
 
 from fedora.tg.util import request_format
 
-from pkgdb.model import Comment, Language, PackageBuild, Application
+from pkgdb.model import Comment, PackageBuild, Application
 from pkgdb.utils import mod_grp, is_xhr
 import logging
 log = logging.getLogger('pkgdb.comments')
@@ -56,21 +56,20 @@ class Comments(controllers.Controller):
 
     @identity.require(identity.not_anonymous())
     @expose(template='pkgdb.templates._comments', allow_json=True)
-    def add(self, author, body, app, language='en_US'):
+    def add(self, author, body, app):
         '''Add a new comment to a packagebuild.
 
         :arg author: the FAS author of the comment
         :arg body: text body of the comment
         :arg app: the name of the application to search for
-        :kwarg language: the language that the comment was written in
         '''
         #pylint:disable-msg=E1101
         application = session.query(Application).filter_by(name=app).first()
-        application.comment(author, body, language)
+        application.comment(author, body)
 
-        comment_query = session.query(Comment).filter(and_(
-            Comment.application==application,
-            Comment.language==language)).order_by(Comment.time)
+        comment_query = session.query(Comment)\
+                .filter(Comment.application==application)\
+                .order_by(Comment.time)
         #pylint:enable-msg=E1101
         # hide the mean comments from ordinary users
         if identity.in_group(mod_grp):
@@ -86,37 +85,31 @@ class Comments(controllers.Controller):
             raise redirect(request.headers.get("Referer", "/"))
 
     @expose(allow_json=True)
-    def author(self, author, language='en_US'):
+    def author(self, author):
         '''Retrieve all the comments of a specific author.
 
         :arg author: the FAS author of the comment
-        :kwarg language: the language that the comments were written in
         '''
-        lang = Language.find(language)
 
         #pylint:disable-msg=E1101
-        comments = Comment.query.filter(and_(Comment.language==lang,
-                                             Comment.author==author)).all()
+        comments = Comment.query.filter(Comment.author==author).all()
         #pylint:enable-msg=E1101
 
         return dict(title=self.app_title, comments=comments)
 
     @expose(allow_json=True)
-    def build(self, build, language='en_US'):
+    def build(self, build):
         '''Return all the comments on a given packagebuild.
 
         :arg build: the name of the packagebuild to search for
-        :kwarg language: the language that the comments were written in
         '''
-        lang = Language.find(language)
         
         #pylint:disable-msg=E1101
         packagebuild = PackageBuild.query.filter(PackageBuild.name==build
                                                  ).first()
 
-        comments = Comment.query.filter(and_(
-            Comment.packagebuildname==packagebuild.name,
-            Comment.language==lang)).all()
+        comments = Comment.query.filter(
+            Comment.packagebuildname==packagebuild.name).all()
         #pylint:enable-msg=E1101
 
         return dict(title=self.app_title, comments=comments)

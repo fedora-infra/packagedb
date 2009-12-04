@@ -2,6 +2,8 @@
 pkgdb.admin_grp = 'cvsadmin'
 pkgdb.pkger_grp = 'packager'
 pkgdb.mod_grp = 'sysadmin'
+pkgdb.provenpkger_grp = 'provenpacakger'
+pkgdb.newpkger_grp = 'newpackager'
 
 fas.url = 'https://admin.fedoraproject.org/accounts/'
 fas.username = 'user'

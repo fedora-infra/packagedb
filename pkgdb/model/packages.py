@@ -39,7 +39,7 @@ Mapping of package related database tables to python classes.
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 #   is not to name them with all uppercase
 
-from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy import Table, Column, Integer, String, Text, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
@@ -76,6 +76,12 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 #pylint:disable-msg=C0103
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
+
+BinaryPackagesTable = Table('binarypackages', metadata, 
+    Column('name', Text,  nullable=False, primary_key=True),
+    useexisting=True
+)
+
 PackageBuildTable = Table('packagebuild', metadata, autoload=True)
 PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
 
@@ -84,8 +90,8 @@ PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
         Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
 )
-#pylint:enable-msg=C0103
 
+#pylint:enable-msg=C0103
 #
 # Mapped Classes
 #
@@ -163,6 +169,19 @@ class Package(SABase):
         log.listing = pkg_listing
 
         return pkg_listing
+
+
+class BinaryPackage(SABase):
+
+    def __init__(self, name):
+        super(BinaryPackage, self).__init__()
+        self.name = name
+
+
+    def __repr__(self):
+        return 'BinaryPackage(%r)' % self.name
+
+
 
 class PackageListing(SABase):
     '''This associates a package with a particular collection.
@@ -348,15 +367,13 @@ class PackageBuild(SABase):
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
     
-    def scores(self, language='en_US'):
+    def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild
-
-        :kwarg language: Select tag language (default: 'en_US').
         '''
 
         scores = {}
         for app in self.applications: #pylint:disable-msg=E1101
-            tags = app.scores_by_language(language)
+            tags = app.scores
             for tag, score in tags.iteritems():
                 sc = scores.get(tag, None)
                 if sc is None or sc < score:
@@ -412,4 +429,11 @@ mapper(PackageBuild, PackageBuildTable, properties={
     'listings': relation(PackageListing, backref=backref('builds'),
         secondary = PackageBuildListingTable),
     })
+
+
+mapper(BinaryPackage, BinaryPackagesTable,
+    properties={
+        'packagebuilds': relation(PackageBuild, cascade='all'),
+    })
+
 
