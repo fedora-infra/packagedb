@@ -139,9 +139,9 @@ for repo in repos:
                                 repoid=repo.id,
                                 release=rpm.release).count() != 0:
                     log.warn('%s-%s - PackageBuild already in! '
-                             'Skipping to next repo.' % (
+                             'Skipping to next package.' % (
                         pkg_query.one().name, rpm.version))
-                    break
+                    continue
 
                 applications = []
                 has_desktop = False
