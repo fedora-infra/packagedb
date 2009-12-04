@@ -29,7 +29,7 @@ Module to be used for letter pagination and search.
 #   about the monkey patches.
 # :C0322: Disable space around operator checking in multiline decorators
 
-from sqlalchemy.sql import or_, and_
+from sqlalchemy.sql import or_
 from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate, config
 from turbogears.database import session
@@ -50,7 +50,7 @@ class Letters(controllers.Controller):
     @expose(template='pkgdb.templates.pkgbugoverview', allow_json=True)
     @paginate('packages', default_order='name', limit=100, max_limit=None,
             max_pages=13) #pylint:disable-msg=C0322
-    def default(self, searchwords='', language='en_US'):
+    def default(self, searchwords=''):
         '''Return a list of all packages in the database.
 
            :kwarg searchwords: optional - string to restrict the list, can use
@@ -101,9 +101,8 @@ class Letters(controllers.Controller):
                               .replace('&','').replace('_','')
 
                 #pylint:disable-msg=E1101
-                packages = session.query(Application).join('tags').filter(and_(
-                        Tag.name.ilike(searchwords),
-                        Tag.language.ilike(language))).all()
+                packages = session.query(Application).join('tags').filter(
+                        Tag.name.ilike(searchwords)).all()
                 #pylint:enable-msg=E1101
             else:
                 packages = PackageBuild.query.all() #pylint:disable-msg=E1101
