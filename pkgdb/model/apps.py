@@ -223,6 +223,18 @@ class Application(SABase):
         #pylint:enable-msg=E1101
 
 
+    def build_names(self):
+        '''Get names of all binary packages that include this application.
+        
+        Returns list of distinct names
+        '''
+        build_names = {}
+        for build in self.builds:
+            build_names[build.name] = 1
+
+        return build_names.keys()
+
+
     @classmethod
     def search(cls, tags, operator):
         '''Retrieve all the apps which have a specified set of tags.

@@ -192,11 +192,19 @@
     padding-left: 14px;
 }
 
-
-#tag-list ul {
+.seamless-list {
     margin: 0;
 }
 
-#tag-list li {
+.seamless-list li {
+    list-style: none;
+}
+
+#info-bar ul {
+    margin: 0;
+    margin-left: 3px;
+}
+
+#info-bar li {
     list-style: none;
 }
