@@ -144,3 +144,59 @@
 }
 
 /* Requested to merge */
+
+/* application */
+
+.comment {
+    border-bottom: 1px solid #ebebef;
+    margin-bottom: 10px;
+}
+
+
+
+
+/* info-box */
+
+.info-bar {
+    margin-left: 14px;
+}
+
+.info-box h4 {
+    color: #f7f7f9;
+    background-color: #b4bccb;
+    border-radius: 4px 4px 0 0;
+    -moz-border-radius: 4px 4px 0 0;
+    -webkit-border-radius: 4px 4px 0 0;
+    font-size: 1em;
+    padding: 3px;
+    padding-left: 8px;
+    margin-bottom: 0;
+
+}
+
+.info-box .group-header {
+    background-color: #ebebef;
+    padding: 3px;
+    padding-left: 8px;
+}
+
+.group-header .title {
+    font-weight: bold;
+    color: #337acc;
+}
+
+.info-box .group-data {
+    background-color: #f7f7f9;
+    color: #337acc;
+    padding: 3px;
+    padding-left: 14px;
+}
+
+
+#tag-list ul {
+    margin: 0;
+}
+
+#tag-list li {
+    list-style: none;
+}

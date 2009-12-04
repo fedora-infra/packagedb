@@ -46,6 +46,8 @@ from pkgdb.lib.dt_utils import FancyDateTimeDelta
 
 from datetime import datetime
 
+import logging
+log = logging.getLogger('pkgdb.model.apps')
 #
 # Tables
 #
@@ -148,6 +150,7 @@ def _create_apptag(tag, score):
     session.add(apptag) #pylint:disable-msg=E1101
     return apptag
 
+
 #
 # Mapped Classes
 # 
@@ -171,47 +174,39 @@ class Application(SABase):
         self.summary = summary
         self.icon = icon
 
-    scores = association_proxy('by_tag', 'score', creator=_create_apptag)
+    # scores is dict {<tag_object>:score}
+    # scores[<tag-object>] = <score> create/update app2tag relation with given score
+    scores = association_proxy('by_tag', 'score', 
+            creator=_create_apptag)
 
     def __repr__(self):
         return 'Application(%r, summary=%r, url=%r, apptype=%r )' % (
             self.name, self.summary, self.url, self.apptype)
 
-    @classmethod
-    def tag(cls, apps, tags):
-        '''Add a set of tags to a list of Applications.
 
-        :arg apps: one or more Application names to add the tags to.
-        :arg tags: one or more tags to add to the packages.
+    def tag(self, tag_name):
+        '''Tag application.
 
-        #? Returns two lists (unchanged): tags and builds.
+        Add tag to application. If the tag already exists, 
+        the score will be increased.
+
+        :arg tag_name: tag name.
+
+        Returns tag object
         '''
-        # if we got just one argument, make it a list
-        if not isinstance(tags, (list, tuple)):
-            if tags == '':
-                raise Exception('Tag name missing.')
-            tags = [tags]
-        if not isinstance(apps, (list, tuple)):
-            apps = [apps]
 
         #pylint:disable-msg=E1101
-        applications = session.query(Application).\
-                filter(Application.name.in_(apps))
+        try:
+            tag = session.query(Tag).filter_by(name=tag_name).one()
+        except:
+            tag = Tag(name=tag_name)
+            session.add(tag)
         #pylint:enable-msg=E1101
 
-        for tag_name in tags:
-            try:
-                #pylint:disable-msg=E1101
-                tag = session.query(Tag).\
-                        filter_by(name=tag_name).one()
-                #pylint:enable-msg=E1101
-            except:
-                tag = Tag(name=tag_name)
-                session.add(tag) #pylint:disable-msg=E1101
-
-            for application in applications:
-                application.scores[tag] = application.scores.get(tag, 0)+1
-
+        score = self.scores.get(tag, 0)
+       
+        self.scores[tag] = score + 1
+        return tag
 
 
     def comment(self, author, body):

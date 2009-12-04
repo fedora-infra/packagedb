@@ -12,6 +12,7 @@
     </script>
     <script type="text/javascript">
       dojo.require("dojo.parser");
+      dojo.require("dojo.fx");
       dojo.require("dijit._base.manager");
       dojo.require("dijit.layout.ContentPane" );
       dojo.require("dijit.form.ValidationTextBox");
@@ -26,6 +27,22 @@
            window.location = urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf'+urlparts[1];
            return false
       };
+
+      function showTagForm() {
+            var e = dojo.byId('tagFormContainer');
+            if(e.style.display=="none") {
+                dojo.fx.wipeIn({node: 'tagFormContainer',duration: 100}).play();
+            }
+            
+      }
+
+      function hideTagForm() {
+            var e = dojo.byId('tagFormContainer');
+            if(e.style.display!="none") {
+                dojo.fx.wipeOut({node: 'tagFormContainer',duration: 100}).play();
+            }
+            
+      }
 
       function toggle(hiddenId,buttonId){
            e = dojo.byId(hiddenId);
@@ -56,9 +73,14 @@
                                     node: loaderId,
                                     duration: 1000
                                     }).play();
+                                var form = dojo.query('#'+formId)[0];
+                                form.reset();
                                 var textarea = dojo.query('#'+formId+' textarea')[0];
-                                dijit.getEnclosingWidget(textarea).reset();
-                                dojo.byId(destinationId).innerHTML = response;
+                                if (textarea) {
+                                    textarea.value="";
+                                }
+                                var dest = dojo.byId(destinationId);
+                                dest.innerHTML = response;
                                 }
                       });
                   }
@@ -67,7 +89,7 @@
     </script>
     <script type="text/javascript">
     dojo.addOnLoad(function(){
-          /*tagComment("tagForm", "tagLoader", "tagList");*/
+          tagComment("tagForm", "tagLoader", "tagList");
           tagComment("commentForm", "commentLoader", "commentList");
       });
     </script>
@@ -76,12 +98,21 @@
 
   <div id="info-bar" style="float:right; width: 220px;">
      Screenshot
-    <br />
-    Appinfo
+     <div class="info-box">
+       <h4>Application Info</h4>
+         <div id="tagList">
+           <xi:include href="_tags.html" />
+         </div>
+         <div class="group-header">
+           <span class="title">Packages</span>
+         </div>
+         <div class="group-data">totem</div>
+     </div>
+
     <br />
     Related stuff
   </div>
-  <div id="main-pannel" style="margin-right: 220px;">
+  <div id="main-pannel" style="margin-right: 235px;">
     <py:choose test="app.icon">
     <img py:when="None" style="float:left;padding-right:10px;" src="${tg.url('/static/images/noicon.png')}" />
     <img py:otherwise="True" style="float:left;padding-right:10px;" src="${tg.url('/static/images/totem.png')}" />
@@ -92,7 +123,7 @@
     </div>
 
     <p>
-    Something | <a href="#user_comments"><img style="padding-right:5px;" src="${tg.url('/static/images/comments_small.png')}" />User Comments (${len(comments)})</a>
+    Something | <a href="#user_comments"><img style="padding-right:5px;" src="${tg.url('/static/images/comments_small.png')}" />User Comments</a>
     </p>
 
     <p>
@@ -101,30 +132,8 @@
     <p>
     User ratings
     </p>
-    <a name="user_comments" />
-    <div id="comments">
-      <div id="commentList">
-        <xi:include href="_comments.html" />
-      </div>
-      <py:choose test="tg.identity.anonymous">
-      <py:when test="True">
-        <a href="${tg.url('/login')}">please log in to comment</a>
-      </py:when>
-          
-      <py:when test="False">
-            <h4>Post a comment</h4>
-            <form id="commentForm" method="post"
-                  action="${tg.url('/comments/add/')}"
-                  dojoType="dijit.form.Form">
-              <input type="hidden" name="app" value="$app.name" />
-              <input type="hidden" name="author" value="$tg.identity.user_name"/>
-              <p><textarea name="body" rows="10" cols="60"
-                           style="min-height:50px;" dojoType="dijit.form.Textarea"></textarea></p>
-              <button type="submit" dojoType="dijit.form.Button">Post</button>
-            </form>
-            <div id="commentLoader" style="opacity: 0">Loading...</div>
-      </py:when>
-      </py:choose>
+    <div id="commentList">
+      <xi:include href="_comments.html" />
     </div>
   </div>
 

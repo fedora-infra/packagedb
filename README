@@ -141,6 +141,7 @@ Run the following scripts to bring it up to date::
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-2.applications.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-3.binarypackage.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-4.lang_removal.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-5.tags_trigger_removal.sql
   
 
 Your postgres server is now all set.

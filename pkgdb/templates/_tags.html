@@ -1,20 +1,32 @@
 <html xmlns:py="http://genshi.edgewall.org/"
       py:strip="">
-  <?python
-     # get the biggest value and size the other tags relative to it and the MAX
-     MAX = 22.0
-     if tagscore.values():
-       biggest = sorted(tagscore.values())[-1]
-     ?>
-  <p>
-    <py:for each="tag in tagscore.keys()" xmlns:py="http://genshi.edgewall.org/">
-      <?python
-         fsize = (tagscore[tag] * MAX)/biggest
-         ?>
-      <span style="font-size: ${'%spt' % fsize}">
-        <a href="${tg.url('/tag/list/%s' % tag)}"
-           title="tagged ${tagscore[tag]} times">$tag</a>
-      </span>
-    </py:for>
-  </p>
+   <div class="group-header">
+     <span style="float:right;">${len(app.scores.keys())}</span>
+     <span class="title">Tags</span> [
+     <py:choose test="tg.identity.anonymous">
+      <py:when test="True">
+        <a href="${tg.url('/login')}">Log in to tag</a>
+      </py:when>
+      <py:when test="False">
+        <a href="javascript:showTagForm()">Add</a>
+      </py:when>
+      </py:choose>
+     ]
+   </div>
+   <div class="group-data" id="tagFormContainer" style="display: none;">
+        <form id="tagForm" method="post"
+              action="${tg.url('/tag/add/')}"
+              dojoType="dijit.form.Form">
+          <input type="hidden" name="app" value="$app.name" />
+          <input type="text" name="tags" size="10" />
+          <button type="submit" dojoType="dijit.form.Button">Tag</button>
+          <a href="javascript:hideTagForm()" style="text-decoration: none;"><b>x</b></a>
+        </form>
+   </div>
+   <div class="group-data" id="tagLoader" style="display: none;">Loading...</div>
+   <div class="group-data" id="tag-list">
+     <ul>
+       <li py:for="tag in sorted(app.scores.keys(), lambda a,b: cmp(a.name.lower(), b.name.lower()))">${tag.name}</li>
+     </ul>
+   </div>
 </html>

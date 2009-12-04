@@ -108,33 +108,34 @@ class Tags(controllers.Controller):
     @expose(template='pkgdb.templates._tags', allow_json=True)
     # FIXME: if auth expires let the user know
     @identity.require(identity.not_anonymous())
-    def add(self, apps, tags):
-        '''Add a set of tags to a specific PackageBuild.
+    def add(self, app, tags):
+        '''Add a set of tags to a specific Application
 
-        This method will tag all packagebuilds in the given list. The tags are
-        added to all the packagebuilds with the same name.
-        
-        :arg apps: one or more PackageBuild names to add the tags to.
+        :arg app: application name to add the tags to.
         :kwarg tags: one or more tags to add to the packages.
 
-        Returns a dictionary of tag: score if only one packagebuild is given.
+        Returns updated application object.
         '''
         
         if tags == '' and request_format() != 'json':
-            flash('Tag name can not be null.')
+            flash('Tag name can not be empty.')
             raise redirect(request.headers.get("Referer", "/"))
-       
-        Application.tag(apps, tags)
 
-        # we only get one build from the webUI
-        if apps.__class__ != [].__class__:
-            # get the scores dict with the new tags
-            if is_xhr():
-                #pylint:disable-msg=E1101
-                app = session.query(Application).filter_by(name=apps).first()
-                #pylint:enable-msg=E1101
-                return dict(tagscore=app.scores)
-            # return the user to the tagging page if all is well and no AJAX
-            elif 'json' not in request_format():
-                raise redirect(request.headers.get("Referer", "/"))
+        if not isinstance(tags, (list, tuple)):
+            tags = [tags]
+      
+        #FIXME: handle if app does not exist
+        #pylint:disable-msg=E1101
+        app_obj = session.query(Application).filter_by(name=app).one()
+        #pylint:enable-msg=E1101
+
+        for tag in tags:
+            app_obj.tag(tag)
+            session.flush()
+
+        if is_xhr():
+            return dict(app=app_obj)
+        # return the user to the tagging page if all is well and no AJAX
+        elif 'json' not in request_format():
+            raise redirect(request.headers.get("Referer", "/"))
 
