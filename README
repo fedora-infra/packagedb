@@ -153,6 +153,7 @@ Other cron jobs are required to sync data out to cvs, bugzilla, and koji
 owner-sync-pkgdb
 pkgdb-sync-bugzilla
 
+We don't have a good way to test these.latter scripts.
 
 TG FeedController bug
 ---------------------

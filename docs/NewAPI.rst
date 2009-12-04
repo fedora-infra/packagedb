@@ -372,13 +372,14 @@ Current Name              New Name
 package                   pkg
 packageName               pkg_name
 package_name              pkg_name
+packageList               pkg_lst
 collection                collctn  (Use this for collection short name)
 collectionName            collctn_name
 collectionVersion         collctn_ver
-cc_list                   cc_list
+cc_list                   cc_lst
 qacontact                 qa_contact
 fasname                   username
-pkg_listing_id            pkg_listing_id
+pkg_listing_id            pkglisting_id
 collection_id             collctn_id
 ========================  ================
 
