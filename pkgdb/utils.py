@@ -29,7 +29,7 @@ Utilities for all classes to use
 
 import logging
 
-from turbogears import config
+from turbogears import config, view
 
 from cherrypy import request
 
@@ -123,6 +123,9 @@ def refresh_status():
         statuses[status.statusname] = status
     STATUS = statuses
 
+def custom_template_vars(new_vars):
+    return new_vars.update({'fas_cache': fas.cache})
+
 def init_globals():
     '''Initialize global variables.
 
@@ -151,6 +154,7 @@ def init_globals():
     bz_pass = config.get('bugzilla.password')
     bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass,
             cookiefile=None)
+    view.variable_providers.append(custom_template_vars)
 
 __all__ = [STATUS, admin_grp, pkger_grp, LOG, fas, bugzilla, refresh_status,
         init_globals, to_unicode]
