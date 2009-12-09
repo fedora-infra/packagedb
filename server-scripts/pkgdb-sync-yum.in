@@ -138,10 +138,12 @@ for repo in repos:
                                 architecture=rpm.arch,
                                 repoid=repo.id,
                                 release=rpm.release).count() != 0:
-                    log.warn('%s-%s - PackageBuild already in! '
-                             'Skipping to next repo.' % (
+                    # We expect to skip a lot of packages, only note it on
+                    # debug level
+                    log.debug('%s-%s - PackageBuild already in. '
+                             'Skipping to next package.' % (
                         pkg_query.one().name, rpm.version))
-                    break
+                    continue
 
                 applications = []
                 has_desktop = False
