@@ -21,6 +21,9 @@
           <input type="text" name="tags" size="10" />
           <button type="submit" dojoType="dijit.form.Button">Tag</button>
           <a href="javascript:hideTagForm()" style="text-decoration: none;"><b>x</b></a>
+          <script type="dojo/method">
+            tagComment("tagForm", "tagLoader", "tagList");
+          </script>
         </form>
    </div>
    <div class="group-data" id="tagLoader" style="display: none;">Loading...</div>

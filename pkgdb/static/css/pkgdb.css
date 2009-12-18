@@ -208,3 +208,55 @@
 #info-bar li {
     list-style: none;
 }
+
+#user_ratings table th {
+    border: 0;
+    border-top: 1px solid #c4ccdb;
+    background-color: #ebebef;
+    white-space: nowrap;
+    text-align: left;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+#user_ratings table td {
+    border: 0;
+    border-bottom: 1px solid #dddddd;
+    white-space: nowrap;
+    text-align: left;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+#user_ratings ul {
+    margin: 0;
+}
+
+
+#user_ratings .rating-votes {
+    font-size: 80%;
+    margin-left: 5px;
+}
+
+#user_ratings .usage-label {
+    color: #337acc;
+    font-weight: bold;
+
+}
+
+.rating-result {
+    background: transparent url(../images/star_bar.png);
+    width: 80px;
+    height: 16px;
+    background-position: left top;
+    float: left;
+}
+
+.rating-result li {
+    list-style: none;
+    text-indent: -1000em;
+    height: 16px;
+    background: transparent url(../images/star_bar.png);
+    background-position: left bottom;
+}
+

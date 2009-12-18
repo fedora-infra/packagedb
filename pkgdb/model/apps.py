@@ -71,6 +71,17 @@ ApplicationsTable = Table('applications', metadata,
         ondelete="CASCADE"),
 )
 
+ApplicationsUsagesTable = Table('applicationsusages', metadata,
+    Column('applicationid', Integer, primary_key=True, nullable=False),
+    Column('usageid', Integer, primary_key=True, nullable=False),
+    Column('rating', Integer, default=1, nullable=False),
+    Column('author', Text, primary_key=True, nullable=False),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['usageid'], ['usages.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+)
+
 ApplicationsTagsTable = Table('applicationstags', metadata,
     Column('applicationid', Integer, primary_key=True, nullable=False),
     Column('tagid', Integer, primary_key=True, nullable=False),
@@ -112,6 +123,11 @@ CommentsTable = Table('comments', metadata,
     Column('applicationid', Integer, nullable=False),
     ForeignKeyConstraint(['applicationid'],['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
+)
+
+UsagesTable = Table('usages', metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text, nullable=False, unique=True),
 )
 
 TagsTable = Table('tags', metadata,
@@ -162,6 +178,8 @@ class Application(SABase):
     file will have application record (we will presume that the whole package is application)
     Apptype column indicates the type of the record.
     '''
+
+
     def __init__(self, name, description, url, apptype, summary,
             desktoptype=None, iconname=None, icon=None ):
         super(Application, self).__init__()
@@ -173,17 +191,50 @@ class Application(SABase):
         self.iconname = iconname
         self.summary = summary
         self.icon = icon
+    
 
     # scores is dict {<tag_object>:score}
     # scores[<tag-object>] = <score> create/update app2tag relation with given score
     scores = association_proxy('by_tag', 'score', 
             creator=_create_apptag)
 
+    _rating = None
+
     def __repr__(self):
         return 'Application(%r, summary=%r, url=%r, apptype=%r )' % (
             self.name, self.summary, self.url, self.apptype)
 
 
+    def rating(self):
+        '''Get application usages rating
+
+
+        Returns dict(usage_name: (rating, votes))
+        '''
+
+        if not self._rating:
+
+            ratings = {}
+
+            for a2u in self.usages:
+               current = ratings.get(a2u.usage.name, (0, 0))
+               votes = current[1] + 1
+               rating = ((current[0] * current[1]) + a2u.rating)*1.0 / votes
+               ratings[a2u.usage.name] = (rating, votes)
+
+            self._rating = ratings
+
+        return self._rating
+
+
+    def user_rating(self, user):
+        usages = {}
+        for a2u in self.usages:
+            if a2u.author == user:
+                usages[a2u.usage.name] = a2u.rating
+
+        return usages
+    
     def tag(self, tag_name):
         '''Tag application.
 
@@ -207,6 +258,33 @@ class Application(SABase):
        
         self.scores[tag] = score + 1
         return tag
+
+
+    def update_rating(self, usage_name, rating, author):
+
+        #pylint:disable-msg=E1101
+        try:
+            usage = session.query(Usage).filter_by(name=usage_name).one()
+        except:
+            usage = Usage(name=usage_name)
+            session.add(usage)
+        #pylint:enable-msg=E1101
+
+        found = False
+
+        for app_usage in self.usages:
+            if app_usage.usage == usage and app_usage.author == author:
+                user_rating = app_usage
+                found = True
+                break
+        
+        if not found:
+            user_rating = ApplicationUsage(author=author)
+            user_rating.usage = usage
+            self.usages.append(user_rating)
+            session.add(user_rating)
+
+        user_rating.rating = int(rating)
 
 
     def comment(self, author, body):
@@ -282,6 +360,8 @@ class Application(SABase):
         return applications
 
 
+
+
 class ApplicationTag(SABase):
     '''Application tag association.
 
@@ -299,6 +379,26 @@ class ApplicationTag(SABase):
     def __repr__(self):
         return 'ApplicationTag(applicationid=%r, tagid=%r, score=%r)' % (
             self.applicationid, self.tagid, self.score)#pylint:disable-msg=E1101
+
+
+class ApplicationUsage(SABase):
+    '''Application usage association.
+
+    The association holds rating (0-5) which indicates 
+    how suitable the application is for the usage.
+
+    '''
+
+    def __init__(self, application=None, usage=None, rating=1, author=None):
+        super(ApplicationUsage, self).__init__()
+        self.application = application
+        self.usage = usage
+        self.rating = rating
+        self.author = author
+
+    def __repr__(self):
+        return 'ApplicationUsage(applicationid=%r, usageid=%r, rating=%r, author=%r)' % (
+            self.applicationid, self.usageid, self.rating, self.author)#pylint:disable-msg=E1101
 
 
 class BinaryPackageTag(SABase):
@@ -344,6 +444,20 @@ class Comment(SABase):
         return fancy_delta.format(precision)
 
 
+class Usage(SABase):
+    '''Application usage tags.
+
+    Table -- usages
+    '''
+
+    def __init__(self, name):
+        super(Usage, self).__init__()
+        self.name = name
+
+    def __repr__(self):
+        return 'Usage(%r)' % (self.name)
+        
+
 class Tag(SABase):
     '''Application and/or Binarypackage Tags.
 
@@ -357,6 +471,7 @@ class Tag(SABase):
     def __repr__(self):
         return 'Tag(%r)' % (self.name)
         
+
 class IconName(SABase):
 
     def __init__(self, name):
@@ -401,6 +516,13 @@ mapper(Application, ApplicationsTable, properties={
         cascade='all, delete-orphan'),
     'iconname': relation(IconName, backref=backref('applications')),
     'icon': relation(Icon),
+    'usages': relation(ApplicationUsage, cascade='all'),
+    })
+
+mapper(ApplicationUsage, ApplicationsUsagesTable, 
+    properties={
+        'usage': relation(Usage, cascade='all'),
+        'application': relation(Application, cascade='all'),
     })
 
 mapper(ApplicationTag, ApplicationsTagsTable, 
@@ -418,6 +540,8 @@ mapper(BinaryPackageTag, BinaryPackageTagsTable,
 mapper(Comment, CommentsTable)
 
 mapper(Tag, TagsTable)
+
+mapper(Usage, UsagesTable)
 
 mapper(IconName, IconNamesTable)
 

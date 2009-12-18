@@ -1,0 +1,85 @@
+<html py:strip=""
+      xmlns:py="http://genshi.edgewall.org/">
+
+  <a name="user_ratings" />
+  <div id="user_ratings">
+    <h3>User Ratings</h3>
+    Users are using ${app.name} to 
+    <table>
+    <tr>
+        <th>Usage <span style="font-weight: normal;">[
+         <py:choose test="tg.identity.anonymous">
+          <py:when test="True">
+            <a href="${tg.url('/login')}">Log in to add new</a>
+          </py:when>
+          <py:when test="False">
+            <a href="javascript:showUsageForm()">Add</a>
+          </py:when>
+          </py:choose>
+        ]</span></th>
+        <th>User rating</th>
+        <th>Your rating</th>
+    </tr>
+    <tr py:for="r in sorted(app.rating().keys())">
+        <td class="usage-label">${r}</td>
+        <td>
+        <div dojoType="dijit.Tooltip" connectId="Ratingresult${r.replace(' ','-')}"
+            label="Rated: ${app.rating()[r][0]} out of 5">
+        </div>
+        <ul class="rating-result" id="Ratingresult${r.replace(' ','-')}">
+           <li style="width: ${app.rating()[r][0]*100/5}%;">${app.rating()[r][0]}/5</li>
+        </ul>
+        <span class="rating-votes"> ${app.rating()[r][1]} votes</span></td>
+        <td>
+            <form id="UsageForm${r.replace(' ','-')}" method="post"
+                  action="${tg.url('/rating/add/')}"
+                  dojoType="dijit.form.Form">
+                <input type="hidden" name="app" value="${app.name}" />
+                <input type="hidden" name="author" value="${tg.identity.user_name}"/>
+                <input type="hidden" name="usage" value="${r}"/>
+                <py:choose test="tg.identity.anonymous">
+                <py:when test="True">
+                    <a href="${tg.url('/login')}">Log in to rate</a>
+                </py:when>
+                <py:when test="False">
+                    <div dojoType="dojox.form.Rating" numStars="5" value="${app.user_rating(tg.identity.user_name).get(r, 0)}">
+                        <script type="dojo/connect" event="onStarClick" args="evt">
+                            dijit.byId('UsageForm${r.replace(' ','-')}').onSubmit();
+                        </script>
+                        <script type="dojo/method">
+                            dojo.query("#UsageForm${r.replace(' ','-')} div input")[0].name = 'rating';
+                            tagComment("UsageForm${r.replace(' ','-')}", "usageLoader", "userRatingList");
+                        </script>
+                    </div>
+                </py:when>
+                </py:choose>
+            </form>
+        </td>
+    </tr>
+    <tr id='newUsageFormContainer' style="display:none;">
+        <td colspan="3">
+          <form id="newUsageForm" method="post"
+                  action="${tg.url('/rating/add/')}"
+                  dojoType="dijit.form.Form">
+            <input type="hidden" name="app" value="$app.name" />
+            <input type="hidden" name="author" value="$tg.identity.user_name"/>
+            I use ${app.name} to 
+            <input type="text" size="15" name="usage" />
+            and give it
+            <div dojoType="dojox.form.Rating" numStars="5" value="0">
+                <script type="dojo/connect" event="onStarClick" args="evt">
+                    dijit.byId('newUsageForm').onSubmit();
+                </script>
+                <script type="dojo/method">
+                    dojo.query("#newUsageForm div input")[0].name = 'rating';
+                    tagComment("newUsageForm", "usageLoader", "userRatingList");
+                </script>
+            </div>
+            stars.
+          </form>
+        </td>
+    </tr>
+    </table>
+  </div>
+   <div id="usageLoader" style="display: none;">Loading...</div>
+</html>

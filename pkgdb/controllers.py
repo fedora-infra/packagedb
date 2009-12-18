@@ -45,6 +45,7 @@ from pkgdb.applications import ApplicationController
 from pkgdb.stats import Stats
 from pkgdb.search import Search
 from pkgdb.tag import Tags
+from pkgdb.user_rating import UserRatings
 from pkgdb.users import Users
 
 from pkgdb.model import PackageBuild, Comment, ApplicationsTable
@@ -74,6 +75,7 @@ class Root(controllers.RootController):
     stats = Stats(app_title)
     search = Search(app_title)
     tag = Tags(app_title)
+    rating = UserRatings(app_title)
     users = Users(app_title)
 
     @expose(template="pkgdb.templates.login", allow_json=True)

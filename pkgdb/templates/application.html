@@ -6,6 +6,39 @@
   <xi:include href="layout.html" />
 
   <head>
+    <style type="text/css">
+
+        #user_ratings .dojoxRatingStar {
+            background-image: url(${tg.url('/static/images/grey_star.png')});
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-color: white;
+            width: 16px;
+            height: 16px;
+            padding: 0;
+        }
+
+        #user_ratings .dojoxRatingStarChecked {
+            background-image: url(${tg.url('/static/images/blue_star.png')});
+        }
+
+        #user_ratings .dojoxRatingStarHover {
+            background-image:url(${tg.url('/static/images/blue_star.png')});
+            opacity: 0.5;
+        }
+
+        .pkgdbRatingStar {
+            background-image: url(${tg.url('/static/images/grey_star.png')});
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-color: white;
+            width: 16px;
+            height: 16px;
+            padding: 0;
+            margin: 0 -4px 0 0;
+        }
+    </style>
+
     <script type="text/javascript"
             src="${tg.url('/static/js/dojo/dojo.js')}"
             djConfig="parseOnLoad: true" >
@@ -13,12 +46,14 @@
     <script type="text/javascript">
       dojo.require("dojo.parser");
       dojo.require("dojo.fx");
+      dojo.require("dojox.form.Rating");
+      dojo.require("dojox.layout.ContentPane");
       dojo.require("dijit._base.manager");
-      dojo.require("dijit.layout.ContentPane" );
       dojo.require("dijit.form.ValidationTextBox");
       dojo.require("dijit.form.Textarea");
       dojo.require("dijit.form.Form");
       dojo.require("dijit.form.Button");
+      dojo.require("dijit.Tooltip");
     </script>
 
     <script type="text/javascript">
@@ -27,6 +62,15 @@
            window.location = urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf'+urlparts[1];
            return false
       };
+
+      function showUsageForm() {
+            var e = dojo.byId('newUsageFormContainer');
+            if(e.style.display=="none") {
+                dojo.fx.wipeIn({node: 'newUsageFormContainer',duration: 100}).play();
+            }
+            
+      }
+
 
       function showTagForm() {
             var e = dojo.byId('tagFormContainer');
@@ -59,7 +103,9 @@
       function tagComment(formId, loaderId, destinationId){
           var form = dijit.byId(formId);
           dojo.connect(form, "onSubmit", function(e){
-              e.preventDefault();
+              if(e) {
+                  e.preventDefault();
+              }
               if(form.isValid()){
                   dojo.fadeIn({
                       node: loaderId,
@@ -79,8 +125,10 @@
                                 if (textarea) {
                                     textarea.value="";
                                 }
-                                var dest = dojo.byId(destinationId);
-                                dest.innerHTML = response;
+                                var dest = dijit.byId(destinationId);
+                                dest.destroyDescendants();
+
+                                dest.attr('content', response);
                                 }
                       });
                   }
@@ -89,8 +137,6 @@
     </script>
     <script type="text/javascript">
     dojo.addOnLoad(function(){
-          tagComment("tagForm", "tagLoader", "tagList");
-          tagComment("commentForm", "commentLoader", "commentList");
       });
     </script>
   </head>
@@ -100,7 +146,7 @@
      Screenshot
      <div class="info-box">
        <h4>Application Info</h4>
-         <div id="tagList">
+         <div id="tagList" dojoType="dojox.layout.ContentPane">
            <xi:include href="_tags.html" />
          </div>
          <div class="group-header">
@@ -134,9 +180,11 @@
     ${app.description}
     </p>
     <p>
-    User ratings
+    <div id="userRatingList" dojoType="dojox.layout.ContentPane">
+      <xi:include href="_user_ratings.html" />
+    </div>
     </p>
-    <div id="commentList">
+    <div id="commentList" dojoType="dojox.layout.ContentPane">
       <xi:include href="_comments.html" />
     </div>
   </div>

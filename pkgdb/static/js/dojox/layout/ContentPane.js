@@ -173,11 +173,10 @@ dojo.declare("dojox.layout.ContentPane", dijit.layout.ContentPane, {
 			this.onUnloadDeferred.callback(true);
 		}
 
-		dijit.layout.ContentPane.prototype._onUnloadHandler.apply(this, arguments);
+		dijit.layout.ContentPane.prototype._onUnloadHandler.apply(this, arguments); 
 
-		if(this._nextUnloadDeferred){
-			this.onUnloadDeferred = this._nextUnloadDeferred;
-		}
+        this.onUnloadDeferred = this._nextUnloadDeferred; 
+        delete this._nextUnloadDeferred; 
 	},
 
 	_onError: function(type, err){
