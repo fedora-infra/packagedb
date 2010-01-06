@@ -42,7 +42,7 @@ from turbogears.database import metadata, mapper, session
 from fedora.tg.json import SABase
 
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
-from pkgdb.lib.dt_utils import FancyDateTimeDelta
+from pkgdb.lib.dt_utils import fancy_delta
 
 from datetime import datetime
 
@@ -439,9 +439,8 @@ class Comment(SABase):
                        self.application.name,
                        self.time) #pylint:disable-msg=E1101
 
-    def fancy_delta(self, precision=2):
-        fancy_delta = FancyDateTimeDelta(self.time) #pylint:disable-msg=E1101
-        return fancy_delta.format(precision)
+    def fancy_delta(self, precision=2, short=False):
+        return fancy_delta(self.time, precision, short)
 
 
 class Usage(SABase):
@@ -515,7 +514,7 @@ mapper(Application, ApplicationsTable, properties={
     'comments': relation(Comment, backref=backref('application'),
         cascade='all, delete-orphan'),
     'iconname': relation(IconName, backref=backref('applications')),
-    'icon': relation(Icon),
+    'icon': relation(Icon, backref=backref('applications')),
     'usages': relation(ApplicationUsage, cascade='all'),
     })
 
