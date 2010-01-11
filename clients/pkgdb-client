@@ -178,12 +178,10 @@ def clone_branch(pkgdb, options):
         # Make changes to the master branch before cloning
         if options.groups or options.comaintList or options.ccList \
                 or options.description or options.owner:
-            group_dict = options.groups
             try:
                 pkgdb.add_edit_package(package, options.owner,
                         options.description, [options.masterBranch],
-                        options.ccList, options.comaintList,
-                        group_dict)
+                        options.ccList, options.comaintList, options.groups)
             except AppError, e:
                 failedPackages[package] = 'Could not save changes to master' \
                         ' branch.  Error: %(msg)s' % {'msg': e.message}
@@ -208,14 +206,13 @@ def add_package(pkgdb, options):
     '''
     failedPackages = {}
     for package in options.packages:
-        group_dict = options.groups
         try:
             pkgdb.add_package(pkg=package, owner=options.owner,
                     description=options.description,
                     branches=options.branchList,
                     cc_list=options.ccList,
                     comaintainers=options.comaintList,
-                    groups=group_dict)
+                    groups=options.groups)
         except AppError, e:
             failedPackages[package] = e.message
             continue
@@ -226,14 +223,13 @@ def edit_package(pkgdb, options):
     '''
     failedPackages = {}
     for package in options.packages:
-        group_dict = options.groups
         try:
             pkgdb.edit_package(package, owner=options.owner,
                     description=options.description,
                     branches=options.branchList,
                     cc_list=options.ccList,
                     comaintainers=options.comaintList,
-                    groups=group_dict)
+                    groups=options.groups)
         except AppError, e:
             failedPackages[package] = e.message
             continue
