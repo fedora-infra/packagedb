@@ -179,7 +179,7 @@ def clone_branch(pkgdb, options):
         if options.groups or options.comaintList or options.ccList \
                 or options.description or options.owner:
             try:
-                pkgdb.add_edit_package(package, options.owner,
+                pkgdb.edit_package(package, options.owner,
                         options.description, [options.masterBranch],
                         options.ccList, options.comaintList, options.groups)
             except AppError, e:
