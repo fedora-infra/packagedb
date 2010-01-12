@@ -51,8 +51,8 @@ ReposTable = Table('repos', metadata, autoload=True)
 collectionJoin = polymorphic_union (
         {'b' : select((CollectionTable.join(
             BranchTable, CollectionTable.c.id == BranchTable.c.collectionid),
-            literal_column("'b'").label('kind'))),
-         'c' : select((CollectionTable, literal_column("'c'").label('kind')),
+            literal_column("cast('b' as text)").label('kind'))),
+         'c' : select((CollectionTable, literal_column("cast('c' as text)").label('kind')),
              not_(CollectionTable.c.id.in_(select(
                  (CollectionTable.c.id,),
                  CollectionTable.c.id == BranchTable.c.collectionid)
