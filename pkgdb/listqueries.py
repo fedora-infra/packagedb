@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -33,6 +33,8 @@ Send acl information to third party tools.
 #   So this is fine.
 # :C0322: Disable space around operator checking in multiline decorators
 
+import os
+import tempfile
 import itertools
 
 from sqlalchemy import select, and_, create_engine
@@ -360,8 +362,6 @@ class ListQueries(controllers.Controller):
         :kwarg repos: A list of repository shortnames (e.g. 'F-11-i386')
 
         '''
-        import tempfile
-        import os
         # initialize/clear database
         fd, dbfile = tempfile.mkstemp()
         os.close(fd)
@@ -370,12 +370,12 @@ class ListQueries(controllers.Controller):
         if not isinstance(repos, list):
             repos = [repos]
 
-        yummeta.bind = sqliteconn
+        yummeta.bind = create_engine(sqliteconn)
         yummeta.create_all()
 
         # since we're using two databases, we'll need a new session
         default_engine = get_engine()
-        lite_session = sessionmaker(create_engine(sqliteconn))()
+        lite_session = sessionmaker(yummeta.bind)()
 
         # copy the repo
         s = select([ReposTable.c.id, ReposTable.c.name, ReposTable.c.shortname],
@@ -390,14 +390,14 @@ class ListQueries(controllers.Controller):
                     ReposTable.c.shortname.in_(repos))
         #pylint:enable-msg=E1101
 
+        pkg_builds = []
+        pkg_build_names = []
         unique_tags = {}
-
+        tag_values = []
         for packagebuild in packagebuilds:
-            build = [{'id': packagebuild.id, 'name': packagebuild.name,
-                'repoid': packagebuild.repoid}]
-            lite_session.execute(YumPackageBuildTable.insert(), build)
-            name = [{'name': packagebuild.name}]
-            lite_session.execute(YumPackageBuildNamesTable.insert(), name)
+            pkg_builds.append({'id': packagebuild.id, 'name':
+                packagebuild.name, 'repoid': packagebuild.repoid})
+            pkg_build_names.append({'name': packagebuild.name})
 
             build_tags = {}
 
@@ -417,23 +417,20 @@ class ListQueries(controllers.Controller):
                 tag_id = unique_tags.get(tag, None)
                 if not tag_id:
                     #pylint:disable-msg=E1103
-                    tag_id = lite_session.execute(YumTagsTable.insert(),
-                            {'name': tag}).last_inserted_ids()[-1]
-                    #tag_id = YumTagsTable.query.insert().values(
-                    #    name=tag 
-                    #    ).execute().last_inserted_ids()[-1]
+                    tag_id = YumTagsTable.insert().values(
+                        name=tag 
+                        ).execute().last_inserted_ids()[-1]
                     #pylint:enable-msg=E1103
                     unique_tags[tag] = tag_id
 
                 #pylint:disable-msg=E1101
-                lite_session.execute(YumPackageBuildNamesTagsTable.insert(),
-                        {'packagebuildname': packagebuild.name,
-                            'tagid': tag_id, 'score': score})
-                #YumPackageBuildNamesTagsTable.query.insert().values(
-                #    packagebuildname=packagebuild.name, 
-                #    tagid=tag_id, score=score
-                #    ).execute()
+                tag_values.append({'packagebuildname': packagebuild.name,
+                    'tagid': tag_id, 'score': score})
                 #pylint:enable-msg=E1101
+
+        lite_session.execute(YumPackageBuildTable.insert(), pkg_builds)
+        lite_session.execute(YumPackageBuildNamesTable.insert(), pkg_build_names)
+        lite_session.execute(YumPackageBuildNamesTagsTable.insert(), tag_values)
 
         lite_session.commit()
 
