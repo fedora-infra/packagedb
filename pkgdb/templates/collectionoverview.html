@@ -21,14 +21,14 @@
         </th></tr>
         <tr py:for="collection, numpkgs  in collections">
           <td class="collection">
-            <a href="${tg.url('/collections/id/' + str(collection.id))}"
+            <a href="${tg.url('/collections/name/%s' % collection.simple_name)}"
                py:content="collection.name">Collection Name</a>
           </td>
           <td class="version">
-            <a href="${tg.url('/collections/id/' + str(collection.id))}"
+            <a href="${tg.url('/collections/name/%s' % collection.simple_name)}"
                py:content="collection.version">Collection Version</a>
           </td>
-          <td py:content="numpkgs.numpkgs" class="package">
+          <td py:content="numpkgs" class="package">
             Number of Packages
           </td>
           <td>
@@ -41,7 +41,7 @@
             </form>
           </td>
           <td class="shortname">
-            <a href="${tg.url('/collections/id/'+str(collection.id))}"
+            <a href="${tg.url('/collections/name/%s' % collection.simple_name)}"
                py:content="collection.branchname">
               Collection Shortname
             </a>

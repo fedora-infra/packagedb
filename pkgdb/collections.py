@@ -132,16 +132,17 @@ class Collections(controllers.Controller):
                 'statusname': collection.status.locale['C'].statusname
                 }
 
+        from model import PackageTable
         # Retrieve the package list for this collection
         # pylint:disable-msg=E1101
-        packages = select((Package), and_(Package.id==PackageListing.packageid,
+        packages = select((PackageTable,), and_(Package.id==PackageListing.packageid,
                 PackageListing.collectionid==collection.id,
-                Package.stauscode!=STATUS['Removed'].statuscodeid),
-                order_by=(Package.name,))
+                Package.statuscode!=STATUS['Removed'].statuscodeid),
+                order_by=(Package.name,)).execute()
         # pylint:enable-msg=E1101
 
-        return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
-            collection['version']), collection=collection_entry,
+        return dict(title='%s -- %s %s' % (self.app_title, collection.name,
+            collection.version), collection=collection_entry,
             packages=packages)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
