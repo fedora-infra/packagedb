@@ -51,7 +51,7 @@ from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable, \
 from pkgdb.model import YumTagsTable, YumReposTable, \
     YumPackageBuildTable, YumPackageBuildNamesTable, \
     YumPackageBuildNamesTagsTable
-from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
+from pkgdb.model.yumdb import yummeta
 from pkgdb.utils import STATUS
 from pkgdb import _
 
@@ -334,7 +334,7 @@ class ListQueries(controllers.Controller):
         :buildtags: a dictionary of buildaname : tagdict, where tagdict is a
         dictionary of tag : score key-value pairs. 
         '''
-        if repos.__class__ != [].__class__:
+        if not isinstance(repos, list):
             repos = [repos]
 
         buildtags = {}
@@ -348,7 +348,6 @@ class ListQueries(controllers.Controller):
 
             for build in builds:
                 buildtags[repo][build.name] = build.scores()
-
         return dict(buildtags=buildtags, repos=repos)
 
     @expose(content_type='application/sqlite')
@@ -361,19 +360,23 @@ class ListQueries(controllers.Controller):
         :kwarg repos: A list of repository shortnames (e.g. 'F-11-i386')
 
         '''
+        import tempfile
+        import os
+        # initialize/clear database
+        fd, dbfile = tempfile.mkstemp()
+        os.close(fd)
+        sqliteconn = 'sqlite:///%s' % dbfile
 
-        if repos.__class__ != [].__class__:
+        if not isinstance(repos, list):
             repos = [repos]
 
-        # initialize/clear database
-        open(dbfile, 'w').close()
-        
+        yummeta.bind = sqliteconn
         yummeta.create_all()
 
         # since we're using two databases, we'll need a new session
         default_engine = get_engine()
         lite_session = sessionmaker(create_engine(sqliteconn))()
-        
+
         # copy the repo
         s = select([ReposTable.c.id, ReposTable.c.name, ReposTable.c.shortname],
                    ReposTable.c.shortname.in_(repos))
@@ -383,24 +386,26 @@ class ListQueries(controllers.Controller):
         lite_session.execute(YumReposTable.insert(), fetchedrepos)
 
         #pylint:disable-msg=E1101
-        packagebuilds = PackageBuild.query.join('repos').filter(
+        packagebuilds = PackageBuild.query.join('repo').filter(
                     ReposTable.c.shortname.in_(repos))
         #pylint:enable-msg=E1101
 
         unique_tags = {}
 
         for packagebuild in packagebuilds:
-            build = [(packagebuild.id, packagebuild.name, packagebuild.repoid)]
+            build = [{'id': packagebuild.id, 'name': packagebuild.name,
+                'repoid': packagebuild.repoid}]
             lite_session.execute(YumPackageBuildTable.insert(), build)
-            name = [(packagebuild.name)]
+            name = [{'name': packagebuild.name}]
             lite_session.execute(YumPackageBuildNamesTable.insert(), name)
 
             build_tags = {}
 
             # collect tags
-            for app in build.applications: #pylint:disable-msg=E1101
+            for app in packagebuild.applications: #pylint:disable-msg=E1101
                 #pylint:disable-msg=E1101
-                tags = ApplicationTag.query.join('tag').filter(ApplicationsTagsTable.c.applicationid==app.id)
+                tags = ApplicationTag.query.join('tag').filter(
+                        ApplicationsTagsTable.c.applicationid==app.id)
                 #pylint:enable-msg=E1101
                 for tag in tags:
                     sc = build_tags.get(tag.tag.name, None)
@@ -412,17 +417,22 @@ class ListQueries(controllers.Controller):
                 tag_id = unique_tags.get(tag, None)
                 if not tag_id:
                     #pylint:disable-msg=E1103
-                    tag_id = YumTagsTable.query.insert().values(
-                        name=tag 
-                        ).execute().last_inserted_ids()[-1]
+                    tag_id = lite_session.execute(YumTagsTable.insert(),
+                            {'name': tag}).last_inserted_ids()[-1]
+                    #tag_id = YumTagsTable.query.insert().values(
+                    #    name=tag 
+                    #    ).execute().last_inserted_ids()[-1]
                     #pylint:enable-msg=E1103
                     unique_tags[tag] = tag_id
 
                 #pylint:disable-msg=E1101
-                YumPackageBuildNamesTagsTable.query.insert().values(
-                    packagebuildname=packagebuild.name, 
-                    tagid=tag_id, score=score
-                    ).execute()
+                lite_session.execute(YumPackageBuildNamesTagsTable.insert(),
+                        {'packagebuildname': packagebuild.name,
+                            'tagid': tag_id, 'score': score})
+                #YumPackageBuildNamesTagsTable.query.insert().values(
+                #    packagebuildname=packagebuild.name, 
+                #    tagid=tag_id, score=score
+                #    ).execute()
                 #pylint:enable-msg=E1101
 
         lite_session.commit()
@@ -430,8 +440,9 @@ class ListQueries(controllers.Controller):
         f = open(dbfile, 'r')
         dump = f.read()
         f.close()
+        os.unlink(dbfile)
         return dump
-        
+
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
             as_format="plain", accept_format="text/plain",
             content_type="text/plain; charset=utf-8", #pylint:disable-msg=C0322

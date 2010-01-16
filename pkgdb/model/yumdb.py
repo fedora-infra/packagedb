@@ -25,11 +25,7 @@ from sqlalchemy import Table, Column, String, Integer, MetaData, ForeignKey
 
 from pkgdb.model import TagsTable, LanguagesTable
 
-dbfile = '/tmp/buildtags.db'
-sqliteconn = 'sqlite:////tmp/buildtags.db'
-
 yummeta = MetaData()
-yummeta.bind = sqliteconn
 
 YumTagsTable = TagsTable.tometadata(yummeta)
 YumPackageBuildNamesTable = Table('packagebuildnames', yummeta,
