@@ -1,0 +1,16 @@
+<html py:strip=""
+      xmlns:py="http://genshi.edgewall.org/">
+    <div id="search-applications">
+        <div>
+        <form action="${tg.url('/apps/search')}" method="POST">
+            <h4>Search</h4> 
+            <input name="pattern" value="${pattern}" style="width: 60%;" />
+            <input class="button" type="Submit" value="Search" />
+        </form>
+        </div>
+        <div class="hint">
+            Type in what you are looking for or what do you want to do. E.g.: "web browser", "edit photo", "read mail", etc. 
+        </div>
+    </div>
+
+</html>

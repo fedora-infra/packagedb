@@ -142,7 +142,7 @@
   </head>
   <body>
 
-  <div id="info-bar" style="float:right; width: 220px;">
+  <div id="info-bar">
      Screenshot
      <div class="info-box">
        <h4>Application Info</h4>
@@ -163,10 +163,7 @@
     Related stuff
   </div>
   <div id="main-pannel" style="margin-right: 235px;">
-    <py:choose test="app.icon">
-    <img py:when="None" style="float:left;padding-right:10px;" src="${tg.url('/static/images/noicon.png')}" />
-    <img py:otherwise="True" style="float:left;padding-right:10px;" src="${tg.url('/static/images/totem.png')}" />
-    </py:choose>
+    <img style="float:left;padding-right:10px;" src="${tg.url('/appicon/show/%s' % app.name)}" />
     <div style="margin-left:150;">
         <h2 style="color: #337acc;">${app.name}</h2>
         ${app.summary}

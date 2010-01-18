@@ -228,6 +228,13 @@ class Application(SABase):
 
 
     def user_rating(self, user):
+        """Ratings set by given user
+
+        :arg user: username
+
+        Returns dict(usage: rating)
+        """
+
         usages = {}
         for a2u in self.usages:
             if a2u.author == user:
@@ -235,6 +242,7 @@ class Application(SABase):
 
         return usages
     
+
     def tag(self, tag_name):
         '''Tag application.
 
@@ -511,6 +519,7 @@ mapper(Application, ApplicationsTable, properties={
         secondary=PackageBuildApplicationsTable, cascade='all'),
     'by_tag': relation(ApplicationTag,
         collection_class=attribute_mapped_collection('tag')),
+    'tags': relation(ApplicationTag, cascade='all'),
     'comments': relation(Comment, backref=backref('application'),
         cascade='all, delete-orphan'),
     'iconname': relation(IconName, backref=backref('applications')),
