@@ -846,6 +846,8 @@ class PackageDispatcher(controllers.Controller):
         # Make sure a log is created in the db as well.
         if acl_status == 'Awaiting Review':
             acl_action = 'requested'
+        elif acl_status == 'Approved':
+            acl_action = 'been granted'
         else:
             acl_action = 'given up'
         log_msg = '%s has %s the %s acl on %s (%s %s)' % (
