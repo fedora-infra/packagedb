@@ -22,7 +22,7 @@ Mapping of collection and repo related database tables to python classes
 '''
 
 from sqlalchemy import Table, Column, ForeignKey, Integer
-from sqlalchemy import select, literal_column, not_
+from sqlalchemy import select, not_
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import polymorphic_union, relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
@@ -48,19 +48,18 @@ CollectionTable = Table('collection', metadata, autoload=True)
 BranchTable = Table('branch', metadata, autoload=True)
 ReposTable = Table('repos', metadata, autoload=True)
 
-collectionJoin = polymorphic_union (
+
+CollectionJoin = polymorphic_union (
         {'b' : select((CollectionTable.join(
-            BranchTable, CollectionTable.c.id == BranchTable.c.collectionid),
-            literal_column("cast('b' as text)").label('kind'))),
-         'c' : select((CollectionTable, literal_column("cast('c' as text)").label('kind')),
+            BranchTable, CollectionTable.c.id == BranchTable.c.collectionid),)),
+         'c' : select((CollectionTable,),
              not_(CollectionTable.c.id.in_(select(
                  (CollectionTable.c.id,),
                  CollectionTable.c.id == BranchTable.c.collectionid)
              )))
          },
-        None
+        'kind', 'CollectionJoin'
         )
-
 #
 # CollectionTable that shows number of packages in a collection
 #
@@ -199,10 +198,10 @@ class CollectionPackage(SABase):
 # Mappers
 #
 
-collectionMapper = mapper(Collection, CollectionTable,
-        polymorphic_on=collectionJoin.c.kind,
-        polymorphic_identity='collection',
-        with_polymorphic=('*',collectionJoin),
+mapper(Collection, CollectionJoin,
+        polymorphic_on=CollectionJoin.c.kind,
+        polymorphic_identity='c',
+        with_polymorphic='*',
         properties={
             # listings is deprecated.  It will go away in 0.4.x
             'listings': relation(PackageListing),
@@ -216,8 +215,8 @@ collectionMapper = mapper(Collection, CollectionTable,
                 collection_class=attribute_mapped_collection('packagename')),
             'repos': relation(Repo, backref=backref('collection'))
         })
-mapper(Branch, BranchTable, inherits=collectionMapper,
-        inherit_condition=CollectionTable.c.id==BranchTable.c.collectionid,
+mapper(Branch, BranchTable, inherits=Collection,
+        inherit_condition=CollectionJoin.c.id==BranchTable.c.collectionid,
         polymorphic_identity='b')
 mapper(CollectionPackage, CollectionPackageTable)
 mapper(Repo, ReposTable, properties={
