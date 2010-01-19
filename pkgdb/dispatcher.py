@@ -426,7 +426,8 @@ class PackageDispatcher(controllers.Controller):
         #get acl with min personpackagelistingacl.id
         if len(acls) > 0:
             for acl in acls:
-                comaintainers[acl.id] = acl.personpackagelisting.username
+                if acl.personpackagelisting.username != pkg_listing.owner:
+                    comaintainers[acl.id] = acl.personpackagelisting.username
 
             for acl_id in sorted(comaintainers.keys()):
                 try:
