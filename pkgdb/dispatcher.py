@@ -478,7 +478,7 @@ class PackageDispatcher(controllers.Controller):
         If owner.username='orphan', the owner of package set to 'orphan'.
 
         :arg pkg_listing: Package listing to set the owner.
-        :arg owner: User name to change the owner
+        :arg owner: User to change the owner
         :returns: Log message about changes.
         :raises InvalidRequestError: if there's problem retrieving
             information from the database.
@@ -546,9 +546,14 @@ class PackageDispatcher(controllers.Controller):
             approved in ('admin', 'owner'))):
             # Retire package
             if pkg.owner != 'orphan':
+                try:
+                    person = fas.cache['orphan']
+                except KeyError:
+                    return dict(status=False, message=_('specified owner %(owner)s'
+                        ' does not have a fedora account') % {
+                            'owner': 'orphan'})
                 # let set_owner handle bugzilla and other stuff
-                self.set_owner(pkg.package.name, 'orphan',
-                        pkg.collection.simple_name)
+                self._set_owner(pkg.package.name, person)
             pkg.statuscode = STATUS['Deprecated'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
@@ -1094,7 +1099,7 @@ class PackageDispatcher(controllers.Controller):
                 person = fas.cache[changes['owner']]
             except KeyError:
                 return dict(status=False, message=_('Specified owner %(owner)s'
-                    ' does not have a Fedora Account') % {
+                    ' does not have a Fedora account') % {
                         'owner': changes['owner']})
             # Make sure the owner is in the correct group
             try:
