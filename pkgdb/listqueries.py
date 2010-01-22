@@ -37,7 +37,7 @@ import os
 import tempfile
 import itertools
 
-from sqlalchemy import select, and_, create_engine
+from sqlalchemy import select, and_, create_engine, union
 from sqlalchemy.orm import sessionmaker
 
 from turbogears import expose, validate, error_handler
@@ -45,14 +45,13 @@ from turbogears import controllers, validators
 
 from turbogears.database import get_engine
 
+
 from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
-     GroupPackageListingAcl, PackageListing, PersonPackageListing, \
-     PersonPackageListingAcl, Repo, PackageBuild
-from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable, \
-     ApplicationsTagsTable, ApplicationTag
-from pkgdb.model import YumTagsTable, YumReposTable, \
-    YumPackageBuildTable, YumPackageBuildNamesTable, \
-    YumPackageBuildNamesTagsTable
+        GroupPackageListingAcl, PackageListing, PersonPackageListing, \
+        PersonPackageListingAcl, Repo, PackageBuild, Tag
+from pkgdb.model import PackageTable, CollectionTable, ApplicationTag, \
+        PackageBuildApplicationsTable, BinaryPackageTag
+from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.utils import STATUS
 from pkgdb import _
@@ -353,22 +352,19 @@ class ListQueries(controllers.Controller):
         return dict(buildtags=buildtags, repos=repos)
 
     @expose(content_type='application/sqlite')
-    def sqlitebuildtags(self, repos):
+    def sqlitebuildtags(self, repo):
         '''Return a sqlite database of packagebuilds and tags.
 
         The database returned will contain copies or subsets of tables in the
         pkgdb.
 
-        :kwarg repos: A list of repository shortnames (e.g. 'F-11-i386')
+        :arg repo: A repository shortname to retrieve tags for (e.g. 'F-11-i386')
 
         '''
         # initialize/clear database
         fd, dbfile = tempfile.mkstemp()
         os.close(fd)
         sqliteconn = 'sqlite:///%s' % dbfile
-
-        if not isinstance(repos, list):
-            repos = [repos]
 
         yummeta.bind = create_engine(sqliteconn)
         yummeta.create_all()
@@ -377,61 +373,29 @@ class ListQueries(controllers.Controller):
         default_engine = get_engine()
         lite_session = sessionmaker(yummeta.bind)()
 
-        # copy the repo
-        s = select([ReposTable.c.id, ReposTable.c.name, ReposTable.c.shortname],
-                   ReposTable.c.shortname.in_(repos))
-        e = default_engine.execute(s)
-        fetchedrepos = e.fetchall()
-        e.close()
-        lite_session.execute(YumReposTable.insert(), fetchedrepos)
+        # Retrieve the tags from the database
+        tags = union(select(
+            (PackageBuild.name.label('name'),
+                Tag.name.label('tag'),
+                ApplicationTag.score.label('score')),
+            and_(Tag.id==ApplicationTag.tagid,
+                ApplicationTag.applicationid==PackageBuildApplicationsTable.c.applicationid,
+                PackageBuildApplicationsTable.c.packagebuildid==PackageBuild.id,
+                PackageBuild.repoid==Repo.id,
+                Repo.shortname=='F-11-i386')),
+            select((PackageBuild.name.label('name'),
+                Tag.name.label('tag'),
+                BinaryPackageTag.score.label('score')),
+            and_(Tag.id==BinaryPackageTag.tagid,
+                BinaryPackageTag.binarypackagename==PackageBuild.name,
+                PackageBuild.repoid==Repo.id,
+                Repo.shortname=='F-11-i386')))
 
-        #pylint:disable-msg=E1101
-        packagebuilds = PackageBuild.query.join('repo').filter(
-                    ReposTable.c.shortname.in_(repos))
-        #pylint:enable-msg=E1101
+        pkg_tags = []
+        for tag in tags.execute().fetchall():
+            pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
 
-        pkg_builds = []
-        pkg_build_names = []
-        unique_tags = {}
-        tag_values = []
-        for packagebuild in packagebuilds:
-            pkg_builds.append({'id': packagebuild.id, 'name':
-                packagebuild.name, 'repoid': packagebuild.repoid})
-            pkg_build_names.append({'name': packagebuild.name})
-
-            build_tags = {}
-
-            # collect tags
-            for app in packagebuild.applications: #pylint:disable-msg=E1101
-                #pylint:disable-msg=E1101
-                tags = ApplicationTag.query.join('tag').filter(
-                        ApplicationsTagsTable.c.applicationid==app.id)
-                #pylint:enable-msg=E1101
-                for tag in tags:
-                    sc = build_tags.get(tag.tag.name, None)
-                    if sc is None or sc < tag.score:
-                        build_tags[tag.tag.name] = tag.score
-
-            # write tags
-            for tag, score in build_tags.iteritems():
-                tag_id = unique_tags.get(tag, None)
-                if not tag_id:
-                    #pylint:disable-msg=E1103
-                    tag_id = YumTagsTable.insert().values(
-                        name=tag 
-                        ).execute().last_inserted_ids()[-1]
-                    #pylint:enable-msg=E1103
-                    unique_tags[tag] = tag_id
-
-                #pylint:disable-msg=E1101
-                tag_values.append({'packagebuildname': packagebuild.name,
-                    'tagid': tag_id, 'score': score})
-                #pylint:enable-msg=E1101
-
-        lite_session.execute(YumPackageBuildTable.insert(), pkg_builds)
-        lite_session.execute(YumPackageBuildNamesTable.insert(), pkg_build_names)
-        lite_session.execute(YumPackageBuildNamesTagsTable.insert(), tag_values)
-
+        lite_session.execute(YumTagsTable.insert(), pkg_tags)
         lite_session.commit()
 
         f = open(dbfile, 'r')

@@ -21,27 +21,12 @@
 Mapping of tables needed in the sqlite database that goes to yum
 '''
 
-from sqlalchemy import Table, Column, String, Integer, MetaData, ForeignKey
-
-from pkgdb.model import TagsTable, LanguagesTable
+from sqlalchemy import Table, Column, Integer, MetaData, Text
 
 yummeta = MetaData()
 
-YumTagsTable = TagsTable.tometadata(yummeta)
-YumPackageBuildNamesTable = Table('packagebuildnames', yummeta,
-        Column('name', String(30), primary_key=True))
-YumPackageBuildNamesTagsTable = Table('packagebuildnametags', yummeta,
-        Column('packagebuildname', String,
-            ForeignKey('packagebuildnames.name'), primary_key=True),
-        Column('tagid', Integer, ForeignKey('tags.id'), primary_key=True),
-        Column('score', Integer))
-YumReposTable = Table('repos', yummeta,
-                      Column('id', Integer, primary_key=True),
-                      Column('name', String(50), nullable=False),
-                      Column('shortname', String(20), nullable=False))
-
-YumPackageBuildTable = Table('packagebuild', yummeta,
-                              Column('id', Integer, primary_key=True),
-                              Column('name', String(30), nullable=False),
-                              Column('repoid', Integer, ForeignKey('repos.id'))
-                              )
+YumTagsTable = Table('packagetags', yummeta,
+        Column('name', Text, nullable=False, primary_key=True),
+        Column('tag', Text, nullable=False, primary_key=True),
+        Column('score', Integer),
+        )
