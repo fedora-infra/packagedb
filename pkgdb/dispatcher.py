@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -1115,7 +1115,8 @@ class PackageDispatcher(controllers.Controller):
 
             # Retrieve the id of the initial package owner
             if not owner_name:
-                # Retrieve the id for the devel_collection
+            # No new owner specifed, use the devel_collection if ownership
+            # information becomes necessary
                 #pylint:disable-msg=E1101
                 devel_collection = Collection.query.filter_by(
                         name='Fedora', version='devel').one()
