@@ -36,7 +36,7 @@ from turbogears import controllers, expose, identity, redirect, flash
 from turbogears import paginate
 from turbogears.database import session
 
-from pkgdb.model import Comment, Application, Icon, PackageBuild
+from pkgdb.model import Comment, Application, Icon, IconName, PackageBuild
 from pkgdb.model import Tag, Usage, ApplicationUsage, ApplicationTag
 from pkgdb.utils import mod_grp
 from pkgdb import release, _
@@ -105,7 +105,6 @@ class ApplicationsController(controllers.Controller):
                     )
                 )
 
-
             # summary
             q_summary = session.query(
                     Application.name,
@@ -121,7 +120,6 @@ class ApplicationsController(controllers.Controller):
                         *(Application.summary.ilike('%%%s%%' % p) for p in s_pattern)
                     )
                 )
-
 
             # descr
             q_descr = session.query(
@@ -480,8 +478,6 @@ class ApplicationsController(controllers.Controller):
         return comments
         
 
-
-
 class ApplicationController(controllers.Controller):
     '''Display general information related to Applicaiton.
     '''
@@ -542,7 +538,6 @@ class ApplicationController(controllers.Controller):
                     comments=comments)
 
 
-
 class AppIconController(controllers.Controller):
     '''Application icon API.
     '''
@@ -556,13 +551,12 @@ class AppIconController(controllers.Controller):
 
     @expose(content_type='image/png')
     def show(self, app_name):
-        
-        try:
-            icon_data = session.query(Icon.icon)\
-                    .join('applications')\
-                    .filter(Application.name==app_name)\
-                    .one()
-        except NoResultFound:
+        # TODO: themes 
+        icon_data = session.query(Icon.icon)\
+                .join(Icon.name, IconName.applications)\
+                .filter(Application.name==app_name)\
+                .first()
+        if not icon_data:
             redirect('/static/images/noicon.png')
 
         return str(icon_data[0])

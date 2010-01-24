@@ -130,6 +130,20 @@ UsagesTable = Table('usages', metadata,
     Column('name', Text, nullable=False, unique=True),
 )
 
+MimeTypesTable = Table('mimetypes', metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text, nullable=False, unique=True),
+)
+
+AppsMimeTypesTable = Table('appsmimetypes', metadata,
+    Column('applicationid', Integer, primary_key=True, nullable=False),
+    Column('mimetypeid', Integer, primary_key=True, nullable=False),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['mimetypeid'], ['mimetypes.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+
 TagsTable = Table('tags', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False, unique=True),
@@ -151,6 +165,7 @@ IconsTable = Table('icons', metadata,
     Column('collectionid', nullable=False),                   
     Column('themeid', nullable=False),                   
     Column('icon', Binary, nullable=False),
+    Column('orig_size', Integer, nullable=False),
     ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
     ForeignKeyConstraint(['collectionid'], ['collection.id'],
@@ -268,6 +283,31 @@ class Application(SABase):
         return tag
 
 
+    def assign_mimetype(self, mimetype_name):
+        '''Assign mime-type to application.
+
+        If mime-type with the given name does not exist in the DB,
+        it will be created as well
+
+        :arg mimetype_name: mime-type name.
+
+        Returns MimeType object
+        '''
+
+        #pylint:disable-msg=E1101
+        try:
+            mimetype = session.query(MimeType).filter_by(name=mimetype_name).one()
+        except:
+            mimetype = MimeType(name=mimetype_name)
+            session.add(mimetype)
+        #pylint:enable-msg=E1101
+
+        if mimetype not in self.mimetypes:
+            self.mimetypes.append(mimetype)
+
+        return mimetype
+
+
     def update_rating(self, usage_name, rating, author):
 
         #pylint:disable-msg=E1101
@@ -307,6 +347,17 @@ class Application(SABase):
         self.comments.append(comment)
         session.flush()
         #pylint:enable-msg=E1101
+
+
+    def builds_by_collection(self):
+        builds = {}
+
+        for build in self.builds:
+            blds = builds.get(build.repo.collection,[])
+            blds.append(build)
+            builds[build.repo.collection] = blds
+
+        return builds
 
 
     def build_names(self):
@@ -366,7 +417,6 @@ class Application(SABase):
                             & set(tag.applications)
 
         return applications
-
 
 
 
@@ -479,6 +529,20 @@ class Tag(SABase):
         return 'Tag(%r)' % (self.name)
         
 
+class MimeType(SABase):
+    '''Mimetype representation.
+
+    Table -- MimeTypes
+    '''
+
+    def __init__(self, name):
+        super(MimeType, self).__init__()
+        self.name = name
+
+    def __repr__(self):
+        return 'MimeType(%r)' % (self.name)
+
+
 class IconName(SABase):
 
     def __init__(self, name):
@@ -487,7 +551,8 @@ class IconName(SABase):
 
     def __repr__(self):
         return 'IconName(%r)' % (self.name)
-        
+       
+
 class Theme(SABase):
 
     def __init__(self, name):
@@ -499,16 +564,17 @@ class Theme(SABase):
         
 class Icon(SABase):
 
-    def __init__(self, icon=None, name=None, collection=None, theme=None):
+    def __init__(self, icon=None, name=None, collection=None, theme=None, orig_size=0):
         super(Icon, self).__init__()
         self.icon = icon
         self.name = name
         self.collection = collection
         self.theme = theme
+        self.orig_size = orig_size
 
     def __repr__(self):
-        return 'Icon(%r, collection=%r, theme=%r)' % (
-            self.name, self.collection.name, self.theme.name)
+        return 'Icon(%r, collection=%r, theme=%r, orig_size=%r)' % (
+            self.name, self.collection.name, self.theme.name, self.orig_size)
         
 #
 # Mappers
@@ -520,6 +586,8 @@ mapper(Application, ApplicationsTable, properties={
     'by_tag': relation(ApplicationTag,
         collection_class=attribute_mapped_collection('tag')),
     'tags': relation(ApplicationTag, cascade='all'),
+    'mimetypes': relation(MimeType, backref=backref('applications'),
+        secondary=AppsMimeTypesTable, cascade='all'),
     'comments': relation(Comment, backref=backref('application'),
         cascade='all, delete-orphan'),
     'iconname': relation(IconName, backref=backref('applications')),
@@ -546,6 +614,8 @@ mapper(BinaryPackageTag, BinaryPackageTagsTable,
     })
 
 mapper(Comment, CommentsTable)
+
+mapper(MimeType, MimeTypesTable)
 
 mapper(Tag, TagsTable)
 
