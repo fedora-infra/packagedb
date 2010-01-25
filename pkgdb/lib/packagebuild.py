@@ -37,7 +37,6 @@ from sqlalchemy.sql import and_
 from sqlalchemy.orm.exc import NoResultFound
 
 from mock import Mock
-import pdb
 import yum
 
 from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
@@ -263,7 +262,8 @@ class PackageBuildImporter(object):
         self.force = force
         self.collection = repo.collection
         self._yumrepo = None
-        self.yumbase = None
+        self.yumbase = yum.YumBase()
+        self.yumbase.doTsSetup()
 
 
     def get_package(self, rpm):
@@ -292,7 +292,6 @@ class PackageBuildImporter(object):
     @property
     def yumrepo(self):
         if not self._yumrepo:
-            self.yumbase = yum.YumBase()
             self.yumbase.repos.disableRepo('*')
             self.yumbase.add_enable_repo('pkgdb-%s' % self.repo.shortname,
                        ['%s%s' % (self.repo.mirror, self.repo.url)])

@@ -47,8 +47,17 @@ class Desktop(object):
 
     @classmethod
     def from_file(self, data):
-        conf = ConfigParser()
-        conf.readfp(data)
+        """initialize Desktop object with data from .desktop file
+        :arg data: open .desktop file
+        :raises DesktopParseError: on invalid file
+        :returns: initialized Desktop object
+        """
+        try:
+            conf = ConfigParser()
+            conf.readfp(data)
+        except Exception, e:
+            raise DesktopParseError('Failed to read .desktop file (%s)' % e)
+            
       
         # name
         if conf.has_option('Desktop Entry', 'Name'):

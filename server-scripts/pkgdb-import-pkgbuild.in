@@ -175,13 +175,8 @@ def update(args):
     :arg args: set of commandline arguments 
     """
     from pkgdb.model import Repo
-    from yum.packages import YumLocalPackage
-    from rpmUtils.transaction import initReadOnlyTransaction
     from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
     from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
-
-    # prepare rpm transaction for rpm parser
-    ts = initReadOnlyTransaction()
 
     # find repo
     #pylint:disable-msg=E1101
