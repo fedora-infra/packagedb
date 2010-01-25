@@ -1,0 +1,23 @@
+<html py:strip=""
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+
+  <a name="app_install" />
+  <button dojoType="dijit.form.DropDownButton" id="dropdown_default" baseClass="download-button" iconClass="download-icon" value="color">
+		<span>Install application</span>
+          <div style="display: none" dojoType="dojox.layout.ContentPane">
+          <div id="app-install">
+            <div py:for="(col, builds) in app.builds_by_collection().iteritems()">
+              <h4>${col.simple_name}</h4>
+                <ul>
+                    <li py:for="b in builds">
+                        <a href="${'%s%s%s-%s-%s.%s.rpm' % (b.repo.mirror, b.repo.url, b.name, b.version, b.release, b.architecture)}">${"%s-%s:%s-%s.%s" % (b.name, b.epoch, b.version, b.release, b.architecture)}</a>
+                        ${b.size/1024}kB</li>
+                </ul>
+            </div>
+            </div>
+          </div>
+	</button>
+
+
+</html>

@@ -196,7 +196,8 @@
 
 #info-bar {
     float: right; 
-    margin-top: 35px;
+    /*margin-top: 35px;*/
+    width: 210px;
 }
 
 .info-box h4 {
@@ -548,4 +549,36 @@
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
     
+}
+
+.download-button .dijitButtonNode{
+    color: #337acc;
+    font-size: 120%;
+    font-weight: bold;
+    border: 1px solid #aaaaaa;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    background: url(../images/download_button_slice.png) repeat-x;
+    
+}
+
+.download-icon {
+    width: 20px;
+    height: 20px;
+    background: url(../images/download_20x20.png) no-repeat;
+}
+
+#app-install {
+    background-color: white;
+    padding: 10px;
+    border: 1px solid #cacace;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+ 
+}
+
+#content #app_install ul,li {
+    list-style: none;
 }
