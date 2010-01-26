@@ -1,7 +1,7 @@
 <html xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude"
       py:strip="">
-  <div py:def="_apps_by_marker(data_url='', marker_type='')" >
+  <div py:def="_apps_by_marker(data_url='', marker_type='', value=None)" >
     <script type="text/javascript">
         function hide_all(){
             dojo.query('#apps-marker-list li').style("display", "none");
@@ -55,24 +55,34 @@
     
     <a name="markers-navi" />
     <ul id="apps-markers-navi">
-        <li>Choose ${marker_type}:</li>
-        <li py:for="l in map(chr, range(65, 91))">
-            <a href="#markers-navi" onclick="filter_markers('^${l}');switch_navi(this);return false;">${l}</a>
-        </li>
         <li>
             Filter: <input id="apps-marker-filter" onchange="filter_markers(this.value);switch_navi(this);" size="10" value="" />
+        </li>
+        <li py:for="l in map(chr, range(65, 91))">
+            <a href="#markers-navi" onclick="filter_markers('^${l}');switch_navi(this);return false;">${l}</a>
         </li>
     </ul>
 
     <div class="navi-frame">
     <ul id="apps-marker-list">
         <li py:for="m in markers" id="marker-${m.name.lower()}" style="display: none;">
-            <a href="#markers-navi" onclick="load_apps('${m.name}', 'apps-by-marker-content');switch_navi(this); return false;">${m.name}</a>
+            <a href="#markers-navi" onclick="load_apps('${m.name}', 'apps-by-marker-content');switch_navi(this); return false;" title="${m.name}">${m.name}</a>
         </li>
     </ul>
     <hr style="width: 100%; display: inline-block; border: 0;" />
     </div>
     <div id="apps-by-marker-content">
     </div>
+      <script type="text/javascript">
+        if ('${value}') {
+            filter_markers('^${value}$');
+            load_apps('${value}', 'apps-by-marker-content');
+            var filter = dojo.byId('apps-marker-filter');
+            filter.value='${value}';
+            switch_navi(filter);
+            var tag = dojo.query("#apps-marker-list a[title='${value}']")[0];
+            switch_navi(tag);
+        }
+      </script>
   </div>
 </html>

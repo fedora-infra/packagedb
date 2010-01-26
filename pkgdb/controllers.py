@@ -47,6 +47,7 @@ from pkgdb.listqueries import ListQueries
 from pkgdb.packages import Package
 from pkgdb.applications import ApplicationController, AppIconController
 from pkgdb.applications import ApplicationsController
+from pkgdb.builds import BuildsController
 from pkgdb.stats import Stats
 from pkgdb.search import Search
 from pkgdb.tag import Tags
@@ -82,6 +83,7 @@ class Root(controllers.RootController):
     tag = Tags(app_title)
     rating = UserRatings(app_title)
     users = Users(app_title)
+    builds = BuildsController(app_title)
 
 
     @expose(template="pkgdb.templates.login", allow_json=True)

@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xml:lang="en" lang="en">
+  <xi:include href="layout.html" />
+
+  <head></head>
+  <body>
+
+  <div id="info-bar">
+     <div class="info-box">
+       <h4>Package build Info</h4>
+         <div class="group-header">
+           <span class="title">Applications</span>
+         </div>
+         <div class="group-data">
+            <ul>
+              <li py:for="a in build.applications"><a href="${tg.url('/applications/%s' % a.name)}">${a.name}</a></li>
+            </ul>
+         </div>
+     </div>
+  </div>
+  <div id="main-pannel" style="margin-right: 235px;">
+    <div style="margin-left:150;">
+        <h2 style="color: #337acc;">${str(build)}</h2>
+        <div>${build.package.summary}</div>
+        <table>
+        <tr><td class="label">Version:</td><td>${build.version}</td></tr>
+        <tr><td class="label">Epoch:</td><td>${build.epoch}</td></tr>
+        <tr><td class="label">Release:</td><td>${build.release}</td></tr>
+        <tr><td class="label">Architecture:</td><td>${build.architecture}</td></tr>
+        <tr><td class="label">Size:</td><td>${build.size/1024}kB</td></tr>
+        <tr><td class="label">License:</td><td>${build.license}</td></tr>
+        <tr><td class="label">Package:</td><td><a href="${tg.url('/acls/name/%s' % build.package.name)}">${build.package.name}</a></td></tr>
+        <tr><td class="label">Repository:</td><td>${build.repo.name}</td></tr>
+        </table>
+    </div>
+
+    <p>
+    ${build.package.description}
+    </p>
+
+    <p>|
+    <span py:if="build.provides" py:strip="True"><a href="#provides">Provides</a> |</span>
+    <span py:if="build.requires" py:strip="True"><a href="#requires">Requires</a> |</span>
+    <span py:if="build.obsoletes" py:strip="True"><a href="#obsoletes">Obsoletes</a> |</span>
+    <span py:if="build.conflicts" py:strip="True"><a href="#conflicts">Conflicts</a> |</span>
+    <span py:if="build.depends" py:strip="True"><a href="#depends">Depends</a> |</span>
+    <span py:if="build.files" py:strip="True"><a href="#files">Files</a> |</span>
+    </p>
+
+    <a name="changelog" />
+    <div id="changelog" py:if="build.changelog">
+        <h4 class="comment">Last Changelog entry</h4>
+        <div class="comment">
+            ${build.committime} - ${build.committer}<br />
+            ${build.changelog}
+        </div>
+    </div>
+    <a name="provides" />
+    <div id="provides" py:if="build.provides">
+        <h4 class="thin-comment">Provides</h4>
+        <ul>
+            <li py:for="p in sorted(build.provides)">${str(p)}</li>
+        </ul>
+    </div>
+    <a name="requires" />
+    <div id="requires" py:if="build.requires">
+        <h4 class="thin-comment">Requires</h4>
+        <ul>
+            <li py:for="r in sorted(build.requires)">${str(r)}</li>
+        </ul>
+    </div>
+    <a name="obsoletes" />
+    <div id="obsoletes" py:if="build.obsoletes">
+        <h4 class="thin-comment">Obsolotes</h4>
+        <ul>
+            <li py:for="r in sorted(build.obsoletes)">${str(r)}</li>
+        </ul>
+    </div>
+    <a name="conflicts" />
+    <div id="conflicts" py:if="build.conflicts">
+        <h4 class="thin-comment">Conflicts</h4>
+        <ul>
+            <li py:for="r in sorted(build.conflicts)">${str(r)}</li>
+        </ul>
+    </div>
+    <a name="depends" />
+    <div id="depends" py:if="build.depends">
+        <h4 class="thin-comment">Depends</h4>
+        <ul>
+            <li py:for="d in sorted(build.depends)">${d}</li>
+        </ul>
+    </div>
+    <a name="files" />
+    <div id="files" py:if="build.files">
+        <h4 class="thin-comment">Files</h4>
+        <ul>
+            <li py:for="f in sorted(build.files)">${f}</li>
+        </ul>
+    </div>
+  </div>
+
+
+  </body>
+</html>

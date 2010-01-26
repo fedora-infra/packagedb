@@ -21,7 +21,7 @@
         <th>Your rating</th>
     </tr>
     <tr py:for="r in sorted(app.rating().keys())">
-        <td class="usage-label">${r}</td>
+        <td class="usage-label"><a href="${tg.url('/apps/usage/list/%s' % r)}">${r}</a></td>
         <td>
         <div dojoType="dijit.Tooltip" connectId="Ratingresult${r.replace(' ','-')}"
             label="Rated: ${app.rating()[r][0]} out of 5">

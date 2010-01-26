@@ -29,7 +29,8 @@
    <div class="group-data" id="tagLoader" style="display: none;">Loading...</div>
    <div class="group-data" id="tag-list">
      <ul>
-       <li py:for="tag in sorted(app.scores.keys(), lambda a,b: cmp(a.name.lower(), b.name.lower()))">${tag.name}</li>
+       <li py:for="tag in sorted(app.scores.keys(), lambda a,b: cmp(a.name.lower(), b.name.lower()))">
+            <a href="${tg.url('/apps/tag/list/%s' % tag.name)}">${tag.name}</a></li>
      </ul>
    </div>
 </html>

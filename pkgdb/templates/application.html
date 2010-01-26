@@ -167,8 +167,6 @@
     <div style="margin-left:150;">
         <div class="download-button" style="float: right;">
         <xi:include href="_app_install.html" />
-        <!--div class="button-label" style="float: right;">Install application</div>
-        <img src="${tg.url('/static/images/download_20x20.png')}" /--> 
         </div>
         <div>
         <h2 style="color: #337acc;">${app.name}</h2>
@@ -177,7 +175,7 @@
     </div>
 
     <p>
-    Something | <a href="#user_comments"><img style="padding-right:5px;" src="${tg.url('/static/images/comments_small.png')}" />User Comments</a>
+    <a href="#user_comments"><img style="padding-right:5px;" src="${tg.url('/static/images/comments_small.png')}" />User Comments</a> | <a href="#builds">Builds</a>
     </p>
 
     <p>
@@ -190,6 +188,27 @@
     </p>
     <div id="commentList" dojoType="dojox.layout.ContentPane">
       <xi:include href="_comments.html" />
+    </div>
+    
+    <a name="builds" />
+    <div id="builds">
+      <py:choose test="len(app.builds_by_collection())">
+      <py:when test="0">
+        <h3>No builds available</h3>
+      </py:when>
+      <py:otherwise>
+        <h3 class="comment" style="padding-bottom: 7px;">Available Builds</h3>
+        <div py:for="(col, builds) in app.builds_by_collection().iteritems()">
+          <h4>${col.simple_name}</h4>
+            <ul>
+                <li py:for="b in builds">
+                    <a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b.repo.shortname, b.name, b.epoch, b.version, b.release, b.architecture))}">${"%s-%s:%s-%s.%s" % (b.name, b.epoch, b.version, b.release, b.architecture)}</a>
+                    ${b.size/1024}kB</li>
+            </ul>
+        </div>
+
+      </py:otherwise>
+      </py:choose>
     </div>
   </div>
 

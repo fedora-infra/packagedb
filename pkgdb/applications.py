@@ -38,6 +38,7 @@ from turbogears.database import session
 
 from pkgdb.model import Comment, Application, Icon, IconName, PackageBuild
 from pkgdb.model import Tag, Usage, ApplicationUsage, ApplicationTag
+from pkgdb.model import MimeType
 from pkgdb.utils import mod_grp
 from pkgdb import release, _
 from pkgdb.lib.text_utils import excerpt
@@ -72,7 +73,7 @@ class ApplicationsController(controllers.Controller):
         redirect('/apps/name/list/a*')
 
     @expose(template='pkgdb.templates.apps_search')
-    def search(self, pattern='' ):
+    def search(self, pattern='', submit='' ):
         '''Applications search result
 
         :arg pattern: pattern to be looked for in apps
@@ -82,129 +83,16 @@ class ApplicationsController(controllers.Controller):
         to relevancy. Parts where pattern was recognized are shown
         in listing.
         '''
+
+        app_list = []
+        pkg_list = []
+
         if pattern == '':
             flash('Insert search pattern...')
-            app_list = []
+        elif submit == 'Packages':
+            pass
         else:
-            p = re.compile(r'\W+')
-            s_pattern = p.sub(' ', pattern).split(' ')
-
-            # name
-            q_name = session.query(
-                    Application.name,
-                    Application.apptype,
-                    Application.summary,
-                    Application.description,
-                    literal_column("'Name'", Text).label('foundin'),
-                    literal_column('100', Integer).label('score'),
-                    Application.name.label('data'))\
-                .filter(
-                    and_(
-                        Application.apptype == 'desktop', 
-                        *(Application.name.ilike('%%%s%%' % p) for p in s_pattern)
-                    )
-                )
-
-            # summary
-            q_summary = session.query(
-                    Application.name,
-                    Application.apptype,
-                    Application.summary,
-                    Application.description,
-                    literal_column("'Summary'", Text).label('foundin'),
-                    literal_column('90', Integer).label('score'),
-                    Application.summary.label('data'))\
-                .filter(
-                    and_(
-                        Application.apptype == 'desktop', 
-                        *(Application.summary.ilike('%%%s%%' % p) for p in s_pattern)
-                    )
-                )
-
-            # descr
-            q_descr = session.query(
-                    Application.name,
-                    Application.apptype,
-                    Application.summary,
-                    Application.description,
-                    literal_column("'Description'", Text).label('foundin'),
-                    literal_column('70', Integer).label('score'),
-                    Application.description.label('data'))\
-                .filter(
-                    and_(
-                        Application.apptype == 'desktop', 
-                        *(Application.description.ilike('%%%s%%' % p) for p in s_pattern)
-                    )
-                )
-
-            # usage
-            q_usage = session.query(
-                    Application.name,
-                    Application.apptype,
-                    Application.summary,
-                    Application.description,
-                    literal_column("'Usage'", Text).label('foundin'),
-                    literal_column('20', Integer).label('score'),
-                    Usage.name.label('data'))\
-                .join(
-                    Application.usages, 
-                    ApplicationUsage.usage)\
-                .filter(
-                    and_(
-                        Application.apptype == 'desktop', 
-                        *(Usage.name.ilike('%%%s%%' % p) for p in s_pattern)
-                    )
-                )
-
-            # tags
-            q_tags = session.query(
-                    Application.name,
-                    Application.apptype,
-                    Application.summary,
-                    Application.description,
-                    literal_column("'Tags'", Text).label('foundin'),
-                    literal_column('10', Integer).label('score'),
-                    Tag.name.label('data'))\
-                .join(
-                    Application.tags, 
-                    ApplicationTag.tag)\
-                .filter(
-                    and_(
-                        Application.apptype == 'desktop', 
-                        *(Tag.name.ilike('%%%s%%' % p) for p in s_pattern)
-                    )
-                )
-
-
-            # comments
-            q_comments = session.query(
-                    Application.name,
-                    Application.apptype,
-                    Application.summary,
-                    Application.description,
-                    literal_column("'Comments'", Text).label('foundin'),
-                    literal_column('1', Integer).label('score'),
-                    Comment.body.label('data'))\
-                .join(
-                    Application.comments)\
-                .filter(
-                    and_(
-                        Application.apptype == 'desktop', 
-                        Comment.published == True,
-                        *(Comment.body.ilike('%%%s%%' % p) for p in s_pattern)
-                    )
-                )
-
-
-            # union that
-            apps = union(
-                        q_name,
-                        q_summary,
-                        q_descr,
-                        q_usage,
-                        q_tags,
-                        q_comments,
-                    ).execute()
+            apps = self._applications_search_query(pattern).execute()
 
             # merge all hits 
             merged_results = {}
@@ -219,14 +107,17 @@ class ApplicationsController(controllers.Controller):
                         'descr': ''.join(excerpt(app['description'], pattern, max=120, all=True)),
                         'comments': [],
                         'tags': [],
+                        'mimetypes': [],
                         'usage': []
                     }
                 result['score'] += app['score']
                 if app['foundin'] == 'Tags':
                     result['tags'].append(app['data'])
-                if app['foundin'] == 'Usage':
+                elif app['foundin'] == 'MimeTypes':
+                    result['mimetypes'].append(app['data'])
+                elif app['foundin'] == 'Usage':
                     result['usage'].append(app['data'])
-                if app['foundin'] == 'Comments':
+                elif app['foundin'] == 'Comments':
                     result['comments'].append(''.join(excerpt(app['data'], pattern, all=True)))
 
                 merged_results[(app['name'], app['apptype'])] = result
@@ -234,7 +125,149 @@ class ApplicationsController(controllers.Controller):
             app_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
                 
         return dict(title=self.app_title, version=release.VERSION,
-            pattern=pattern, app_list=app_list)
+            pattern=pattern, app_list=app_list, pkg_list=pkg_list)
+
+
+    def _applications_search_query(self, pattern):
+        p = re.compile(r'\W+')
+        s_pattern = p.sub(' ', pattern).split(' ')
+
+        # name
+        q_name = session.query(
+                Application.name,
+                Application.apptype,
+                Application.summary,
+                Application.description,
+                literal_column("'Name'", Text).label('foundin'),
+                literal_column('100', Integer).label('score'),
+                Application.name.label('data'))\
+            .filter(
+                and_(
+                    Application.apptype == 'desktop', 
+                    *(Application.name.ilike('%%%s%%' % p) for p in s_pattern)
+                )
+            )
+
+        # summary
+        q_summary = session.query(
+                Application.name,
+                Application.apptype,
+                Application.summary,
+                Application.description,
+                literal_column("'Summary'", Text).label('foundin'),
+                literal_column('90', Integer).label('score'),
+                Application.summary.label('data'))\
+            .filter(
+                and_(
+                    Application.apptype == 'desktop', 
+                    *(Application.summary.ilike('%%%s%%' % p) for p in s_pattern)
+                )
+            )
+
+        # descr
+        q_descr = session.query(
+                Application.name,
+                Application.apptype,
+                Application.summary,
+                Application.description,
+                literal_column("'Description'", Text).label('foundin'),
+                literal_column('70', Integer).label('score'),
+                Application.description.label('data'))\
+            .filter(
+                and_(
+                    Application.apptype == 'desktop', 
+                    *(Application.description.ilike('%%%s%%' % p) for p in s_pattern)
+                )
+            )
+
+        # usage
+        q_usage = session.query(
+                Application.name,
+                Application.apptype,
+                Application.summary,
+                Application.description,
+                literal_column("'Usage'", Text).label('foundin'),
+                literal_column('20', Integer).label('score'),
+                Usage.name.label('data'))\
+            .join(
+                Application.usages, 
+                ApplicationUsage.usage)\
+            .filter(
+                and_(
+                    Application.apptype == 'desktop', 
+                    *(Usage.name.ilike('%%%s%%' % p) for p in s_pattern)
+                )
+            )
+
+        # tags
+        q_tags = session.query(
+                Application.name,
+                Application.apptype,
+                Application.summary,
+                Application.description,
+                literal_column("'Tags'", Text).label('foundin'),
+                literal_column('10', Integer).label('score'),
+                Tag.name.label('data'))\
+            .join(
+                Application.tags, 
+                ApplicationTag.tag)\
+            .filter(
+                and_(
+                    Application.apptype == 'desktop', 
+                    *(Tag.name.ilike('%%%s%%' % p) for p in s_pattern)
+                )
+            )
+
+
+        # comments
+        q_comments = session.query(
+                Application.name,
+                Application.apptype,
+                Application.summary,
+                Application.description,
+                literal_column("'Comments'", Text).label('foundin'),
+                literal_column('1', Integer).label('score'),
+                Comment.body.label('data'))\
+            .join(
+                Application.comments)\
+            .filter(
+                and_(
+                    Application.apptype == 'desktop', 
+                    Comment.published == True,
+                    *(Comment.body.ilike('%%%s%%' % p) for p in s_pattern)
+                )
+            )
+
+        # mimetypes
+        q_mimetypes = session.query(
+                Application.name,
+                Application.apptype,
+                Application.summary,
+                Application.description,
+                literal_column("'MimeTypes'", Text).label('foundin'),
+                literal_column('10', Integer).label('score'),
+                MimeType.name.label('data'))\
+            .join(
+                Application.mimetypes)\
+            .filter(
+                and_(
+                    Application.apptype == 'desktop', 
+                    *(MimeType.name.ilike('%%%s%%' % p) for p in s_pattern)
+                )
+            )
+
+
+        # union that
+        apps_query = union(
+                    q_name,
+                    q_summary,
+                    q_descr,
+                    q_usage,
+                    q_tags,
+                    q_comments,
+                    q_mimetypes)
+
+        return apps_query
 
 
     @expose(template='pkgdb.templates.apps')
@@ -326,7 +359,7 @@ class ApplicationsController(controllers.Controller):
 
 
     @expose(template='pkgdb.templates.apps')
-    def tag(self, action='list'):
+    def tag(self, action='list', tag=None):
         '''Applications view by tag
         '''
         
@@ -341,7 +374,7 @@ class ApplicationsController(controllers.Controller):
 
         return dict(fresh=fresh, comments=comments,
             title=self.app_title, version=release.VERSION,
-            list_type='tag', markers=tags,
+            list_type='tag', markers=tags, tag=tag,
             app_list=app_list, pattern='')
 
 
@@ -364,7 +397,7 @@ class ApplicationsController(controllers.Controller):
 
 
     @expose(template='pkgdb.templates.apps')
-    def usage(self, action='list'):
+    def usage(self, action='list', usage=None):
         '''Applications view by usage
         '''
         
@@ -379,7 +412,7 @@ class ApplicationsController(controllers.Controller):
 
         return dict(fresh=fresh, comments=comments,
             title=self.app_title, version=release.VERSION,
-            list_type='usage', markers=usages,
+            list_type='usage', markers=usages, usage=usage,
             app_list=app_list, pattern='')
 
 

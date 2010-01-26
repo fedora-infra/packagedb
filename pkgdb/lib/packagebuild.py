@@ -36,7 +36,6 @@ from cpioarchive import CpioArchive
 from sqlalchemy.sql import and_
 from sqlalchemy.orm.exc import NoResultFound
 
-from mock import Mock
 import yum
 
 from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
@@ -296,7 +295,7 @@ class PackageBuildImporter(object):
             self.yumbase.add_enable_repo('pkgdb-%s' % self.repo.shortname,
                        ['%s%s' % (self.repo.mirror, self.repo.url)])
             self._yumrepo = self.yumbase.repos.getRepo('pkgdb-%s' % self.repo.shortname)
-            
+           
             # populate sack
             try:
                 self.yumbase._getSacks(thisrepo=self._yumrepo.id)

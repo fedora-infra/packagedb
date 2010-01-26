@@ -37,6 +37,10 @@
   margin: 1ex 0;
 }
 
+#content table td {
+  border: 1px solid #aaa;
+}
+
 .filter
 {
     background: #ddd;
@@ -152,6 +156,16 @@
     margin-bottom: 10px;
 }
 
+
+.thin-comment {
+    border-bottom: 1px solid #ebebef;
+}
+
+
+.label {
+    font-weight: bold;
+    width: 45px;
+}
 
 .highlight {
     background: #ffff99;

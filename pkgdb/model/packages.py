@@ -366,6 +366,11 @@ class PackageBuild(SABase):
             self.release, self.architecture, self.size,
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
+
+    def __str__(self):
+        return "%s-%s%s-%s.%s" % (self.name,
+                ('', self.epoch+':')[bool(self.epoch)], self.version, 
+                self.release, self.architecture)
     
     def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild
