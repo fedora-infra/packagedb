@@ -97,6 +97,11 @@ class Icon(object):
     def size(self):
         return max(self.img.size)
 
+
+    def check(self):
+        """Check if we can process the image.
+        """
+        self.img.load()
     
     @property
     def group_key(self):

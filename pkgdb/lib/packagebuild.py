@@ -189,6 +189,7 @@ class RPM(object):
                 icon_file = StringIO(f.read())
                 try:
                     icon = IconImage.from_filename(f.name, icon_file)
+                    icon.check()
                     icons.append(icon)
                 except:
                     pass
@@ -631,11 +632,14 @@ class PackageBuildImporter(object):
         print "    - categories: %s items" % len(desktop.categories)
         for category in desktop.categories:
             app.tag(category)
+            session.flush()
 
         # mimetypes
         print "    - mimetypes: %s items" % len(desktop.mimetypes)
         for mimetype in desktop.mimetypes:
             app.assign_mimetype(mimetype)
+            session.flush()
+
 
         # assign to build
         if app not in pkgbuild.applications:
