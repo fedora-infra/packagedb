@@ -27,6 +27,7 @@ import datetime
 import pytz
 import re
 import os
+import atexit
 from StringIO import StringIO
 import stat
 import rpmUtils
@@ -73,7 +74,29 @@ class RPM(object):
     
         self.build = build
         self._cpio = None
+        self._fdno = None
         self.yumrepo = yumrepo
+        self._issued_arch_closes = []
+
+
+    def close(self):
+        """Clean after yourself
+        """
+        # cpioarchive registers iself in atexit and thuc can't be 
+        # garbage collected
+        if len(self._issued_arch_closes) == 0:
+            return 
+        
+        pos_to_del = []
+
+        for (pos, eh) in enumerate(atexit._exithandlers):
+             if eh[0] in self._issued_arch_closes:
+                eh[0](*(eh[1]), **(eh[2]))
+                pos_to_del.append(pos)
+
+        # a bit awkward way to drop unnecesary stuff
+        for (idx,pos) in enumerate(pos_to_del):
+            del atexit._exithandlers[pos-idx]
 
 
     @property
@@ -92,26 +115,27 @@ class RPM(object):
                 except Exception, e:
                     raise PkgImportError(e)
 
-            fdno = os.open(filename, os.O_RDONLY)
+            self._fdno = os.open(filename, os.O_RDONLY)
 
             # rpm2cpio won't just output a blob of data, it needs a file.
             # Using StringIO here takes more memory than a tempfile, but
             # should be faster.
             # rpm2cpio closes fdno
             cpio = StringIO()
-            rpm2cpio(fdno, out=cpio)
+            rpm2cpio(self._fdno, out=cpio)
             self._cpio = cpio
 
         # Back to the beginning of the file
         self._cpio.seek(0)
 
         archive = CpioArchive(fileobj=self._cpio)
+        self._issued_arch_closes.append(archive.close)
 
         return archive
 
 
     def re_custom_icons(self, icon_names=()):
-            return re.compile(r"^.*/(icons|pixmaps).*/(%s)\.png$" % '|'.join(icon_names))
+            return re.compile(r"^.*/(icons|pixmaps).*/(%s)\.png$" % '|'.join((re.escape(e) for e in icon_names)))
 
 
     def has_icon(self, icon_names=()):
@@ -219,7 +243,7 @@ class RPM(object):
         # check for desktops first, getting full rpm is expensive
         if not self.has_desktop():
             raise StopIteration
-        
+       
         arch = self.archive
 
         for f in arch:
@@ -236,6 +260,7 @@ class RPM(object):
                 yield desktop
 
         arch.close()
+
 
     sourcerpm = property(lambda self: self.build.sourcerpm)
     name = property(lambda self: self.build.name)
@@ -648,6 +673,15 @@ class PackageBuildImporter(object):
         session.flush() #pylint:disable-msg=E1101
 
         return app
+
+
+    def prune_builds(self):
+        session.execute('delete from packagebuild p using(select id from packagebuild where repoid=%i except select max(id) from packagebuild where repoid=%i group by name) x where p.id=x.id' % (self.repo.id, self.repo.id))
+        print "Repo pruned..."
+
+
+    def close(self):
+        self.prune_builds()
 
 
     def process(self, rpm):

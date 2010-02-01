@@ -54,7 +54,7 @@ subparsers = parser.add_subparsers(title='Import commands',
         help='for more help run "%(prog)s <command> --help"')
 
 # import local command
-parser_importlocal = subparsers.add_parser('importlocal', help='import local rpm files')
+parser_importlocal = subparsers.add_parser('importlocal', help='import local rpm files. WARNING: Make sure you are choosing the right repo. Make sure the files exist on the mirrors (links from the web ui will not work). Make sure the imported files are most fresh builds (we assume that the last imported is most fresh version).')
 parser_importlocal.add_argument('--repo', '-r', metavar='shortname', required=True, 
         help='repository in which the rpm(s) belongs to. For list of valid repos run with showrepos command')
 parser_importlocal.add_argument('--force', action='store_true',
@@ -151,16 +151,20 @@ def import_local(args):
         try:
             importer.process(RPM(pkg, yumrepo=None))
         except PkgImportAlreadyExists, e:
+            rpm.close()
             print "%s: Already imported - skipping" % pkg.name
             session.rollback() #pylint:disable-msg=E1101
             continue
         except PkgImportError, e:
+            rpm.close()
             print "%s: Error during import (%s)- skipping" % (pkg.name, e)
             session.rollback() #pylint:disable-msg=E1101
             continue
 
         session.commit() #pylint:disable-msg=E1101
+        rpm.close()
 
+    importer.close()
     print 'Done.'
 
 
@@ -187,7 +191,7 @@ def update(args):
             .all()
     #pylint:disable-msg=E1101
     if len(repos)==0:
-        print "Repo not found!"
+        print "Repo '%s' not found!" % args.repo
         exit(1)
 
     for repo in repos:
@@ -201,19 +205,25 @@ def update(args):
                 continue
             session.begin() #pylint:disable-msg=E1101
             print " PackageBuild: %s" % pkg
+            rpm = RPM(pkg, yumrepo=importer.yumrepo)
             try:
-                importer.process(RPM(pkg, yumrepo=importer.yumrepo))
+                importer.process(rpm)
             except PkgImportAlreadyExists, e:
                 print "%s: Already imported - skipping" % pkg.name
                 session.rollback() #pylint:disable-msg=E1101
+                rpm.close()
                 continue
             except PkgImportError, e:
                 print "%s: Error during import (%s)- skipping" % (pkg.name, e)
                 session.rollback() #pylint:disable-msg=E1101
+                rpm.close()
                 continue
 
+    
             session.commit() #pylint:disable-msg=E1101
+            rpm.close()
             
+        importer.close()
 
     print 'Done.'
 
