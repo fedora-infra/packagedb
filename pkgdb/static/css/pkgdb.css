@@ -27,6 +27,10 @@
   width: 25ex;
 }
 
+#nav li.separator {
+    margin-bottom: 20px;
+}
+
 #content
 {
   margin-left: 25ex!important;
@@ -321,7 +325,7 @@
     border-radius: 4px;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
-    padding: 15px 8px 3px;
+    padding: 15px 8px 3px 75px;
     margin: 10px 0;
 
 }
@@ -334,6 +338,7 @@
     display: inline;
     color: white;
     font-size: 130%;
+    margin-left: -62px;
 
 }
 
@@ -593,6 +598,20 @@
  
 }
 
-#content #app_install ul,li {
-    list-style: none;
+#app-install ul {
+    list-style: none; 
+}
+
+#app-install li {
+    list-style: none; 
+    white-space: nowrap;
+}
+
+#builds ul {
+    list-style: none; 
+}
+
+#builds li {
+    list-style: none; 
+    white-space: nowrap;
 }

@@ -98,13 +98,28 @@ class Root(controllers.RootController):
         return f_ctrlers.logout()
 
 
-    @expose(template='pkgdb.templates.apps')
+    @expose(template='pkgdb.templates.home')
     def index(self):
         '''Overview of the PackageDB.
 
         This page serves as an overview of the entire PackageDB.  
         '''
+        fresh = Application.fresh_apps(10)
 
-        redirect('/apps/name/list/a*')
+        comments = Application.last_commented(10)
+
+        popular = Application.most_popular(limit=10)
+
+        return dict(title=self.app_title, version=release.VERSION,
+            pattern='', comments=comments, fresh=fresh, popular=popular)
 
 
+    @expose(template='pkgdb.templates.home')
+    def search_dispatcher(self, pattern='', submit='' ):
+
+        if submit == 'Builds':
+            redirect('/builds/search/%s' % pattern)
+        elif submit == 'Applications':
+            redirect('/apps/search/%s' % pattern)
+
+        redirect('/')
