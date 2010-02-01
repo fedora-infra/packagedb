@@ -369,8 +369,12 @@ class PackageBuild(SABase):
 
     def __str__(self):
         return "%s-%s%s-%s.%s" % (self.name,
-                ('', self.epoch+':')[bool(self.epoch)], self.version, 
+                ('', self.epoch+':')[bool(int(self.epoch))], self.version, 
                 self.release, self.architecture)
+
+    def download_path(self):
+        return "%s%s%s%s.rpm" % (self.repo.mirror, self.repo.url, 
+                ('','Packages/')[self.repo.url.endswith('os/')], self)
     
     def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild
