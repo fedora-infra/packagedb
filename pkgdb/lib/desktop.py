@@ -86,18 +86,18 @@ class Desktop(object):
             icon_name = conf.get('Desktop Entry', 'Icon').replace('.png','')
 
         # categories
-        categories = []
+        categories = set()
         if conf.has_option('Desktop Entry', 'Categories'):
             for c in conf.get('Desktop Entry', 'Categories').split(';'):
                 if c.strip():
-                    categories.append(c)
+                    categories.add(c)
 
         # mimetypes
-        mimetypes = []
+        mimetypes = set()
         if conf.has_option('Desktop Entry', 'MimeType'):
             for mt in conf.get('Desktop Entry', 'MimeType').split(';'):
                 if mt.strip():
-                    mimetypes.append(mt)
+                    mimetypes.add(mt)
 
         return self(name, generic_name=generic_name, 
                 comment=comment, icon_name=icon_name,
