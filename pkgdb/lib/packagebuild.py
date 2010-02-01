@@ -106,9 +106,8 @@ class RPM(object):
         """
 
         if not self._cpio:
-            if isinstance(self.build, yum.packages.YumLocalPackage):
-                filename = self.build.localPkg()
-            else:
+            filename = self.build.localPkg()
+            if not os.path.exists(filename):
                 try:
                     print "          Downloading..."
                     filename = self.yumrepo.getPackage(self.build)
@@ -122,7 +121,10 @@ class RPM(object):
             # should be faster.
             # rpm2cpio closes fdno
             cpio = StringIO()
-            rpm2cpio(self._fdno, out=cpio)
+            try:
+                rpm2cpio(self._fdno, out=cpio)
+            except Exception, e:
+                raise PkgImportError("Invalid RPM file (%s). Yum cache broken?" % e)
             self._cpio = cpio
 
         # Back to the beginning of the file
