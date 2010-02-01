@@ -1,0 +1,65 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xml:lang="en" lang="en">
+  <xi:include href="layout.html" />
+  <?python
+    from pkgdb.lib.dt_utils import fancy_delta
+  ?>
+  <head>
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true" >
+    </script>
+    <script type="text/javascript">
+        dojo.addOnLoad(function(){
+        });
+    </script>
+  </head>
+  <body>
+  <!--div id="info-bar" style="margin-top: 35px;">
+    <div py:if="comments" class="best-of-box">
+        <h4>5 latest comments</h4>
+        <table>
+        <tr py:for="app in comments">
+          <td class="col-icon"><a href="${tg.url('/applications/%s' % app[0])}">
+                <img src="${tg.url('/appicon/show/%s' % app[0])}" />
+              </a>
+          </td>
+          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app[0])}">${app[0]}</a></div>${app[1]}</td>
+        </tr>
+        </table>
+    </div>
+    
+    <div py:if="fresh" class="best-of-box">
+        <h4>5 most fresh builds</h4>
+        <table>
+        <tr py:for="app in fresh">
+          <td class="col-icon"><a href="${tg.url('/applications/%s' % app[0])}">
+                <img src="${tg.url('/appicon/show/%s' % app[0])}" />
+              </a>
+          </td>
+          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app[0])}">${app[0]}</a></div>${app[1]}</td>
+        </tr>
+        </table>
+    </div>
+  </div-->
+  <div id="main-pannel" style="margin-right: 235px;">
+    <h2 style="color: #337acc;" >Builds</h2>
+    <xi:include href="_apps_search.html" />
+    ${search_box(apps=False, packages=False)}
+
+    <div id="app-viewer-tabs">View builds:  
+        <ul>
+            <li py:attrs="({},{'class':'selected'})[list_type=='name']"><a href="${tg.url('/builds/name')}">Name</a></li>
+            <!--li py:attrs="({},{'class':'selected'})[list_type=='latest']"><a href="${tg.url('/builds/latest')}">Latest builds</a></li-->
+        </ul>
+    </div>
+
+    <xi:include href="_builds_by_${list_type}.html" />
+
+  </div>
+
+  </body>
+</html>

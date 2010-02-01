@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xml:lang="en" lang="en">
+  <xi:include href="layout.html" />
+  <?python
+    from pkgdb.lib.dt_utils import fancy_delta
+    from pkgdb.lib.text_utils import highlight
+    from genshi import HTML
+  ?>
+  <head>
+  </head>
+  <body>
+  <div id="main-pannel">
+    <h2 style="color: #337acc;" >Applications</h2>
+    <xi:include href="_apps_search.html" />
+    ${search_box(packages=False, apps=False)}
+
+    <div py:if="build_list" class="app-search-result-box">
+        <table>
+        <tr py:for="b in build_list">
+          <td class="col-icon"><a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b.repo, b.name, b.epoch, b.version, b.release, b.arch))}">
+                <img src="${tg.url('/static/images/build.png')}" />
+              </a>
+          </td>
+          <td>
+            <div class="app-name">
+                <a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b.repo, b.name, b.epoch, b.version, b.release, b.arch))}">
+                    ${HTML(highlight("%s-%s%s-%s.%s" % (b.name, ('', b.epoch+':')[bool(int(b.epoch))], b.version, b.release, b.arch), pattern))}
+                </a>
+            </div>
+          </td>
+          <td>
+            ${b.repo}
+          </td>
+          <td>
+                <!-->
+                ${HTML(highlight(app['descr'], pattern))} 
+                <py:if test="app['usage']">
+                <b>Usage:</b> ${HTML(highlight(', '.join(app['usage']), pattern))} 
+                </py:if>
+                <py:if test="app['tags']">
+                <b>Tags:</b> ${HTML(highlight(', '.join(app['tags']), pattern))}
+                </py:if>
+                <py:if test="app['mimetypes']">
+                <b>MimeTypes:</b> ${HTML(highlight(', '.join(app['mimetypes']), pattern))}
+                </py:if>
+                <py:if test="app['comments']">
+                <b>Comments:</b> ${HTML(highlight(', '.join(app['comments']), pattern))}
+                </py:if-->
+            </td>
+        </tr>
+        <tr py:if="len(build_list)==0">
+          <td colspan="4">No packagebuild found</td>
+        </tr>
+        </table>
+    </div>
+
+  </div>
+
+  </body>
+</html>
