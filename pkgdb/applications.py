@@ -73,7 +73,7 @@ class ApplicationsController(controllers.Controller):
         redirect('/apps/name/list/a*')
 
     @expose(template='pkgdb.templates.apps_search')
-    def search(self, pattern='', submit='' ):
+    def search(self, pattern=''):
         '''Applications search result
 
         :arg pattern: pattern to be looked for in apps
@@ -89,40 +89,38 @@ class ApplicationsController(controllers.Controller):
 
         if pattern == '':
             flash('Insert search pattern...')
-        elif submit == 'Packages':
-            pass
-        else:
-            apps = self._applications_search_query(pattern).execute()
 
-            # merge all hits 
-            merged_results = {}
-            for app in apps:
-                result = merged_results.get((app['name'], app['apptype']), None)
-                if result is None:
-                    result = {
-                        'name': app['name'],
-                        'apptype': app['apptype'],
-                        'score': 0,
-                        'summary': app['summary'] or '',
-                        'descr': ''.join(excerpt(app['description'], pattern, max=120, all=True)),
-                        'comments': [],
-                        'tags': [],
-                        'mimetypes': [],
-                        'usage': []
-                    }
-                result['score'] += app['score']
-                if app['foundin'] == 'Tags':
-                    result['tags'].append(app['data'])
-                elif app['foundin'] == 'MimeTypes':
-                    result['mimetypes'].append(app['data'])
-                elif app['foundin'] == 'Usage':
-                    result['usage'].append(app['data'])
-                elif app['foundin'] == 'Comments':
-                    result['comments'].append(''.join(excerpt(app['data'], pattern, all=True)))
+        apps = self._applications_search_query(pattern).execute()
 
-                merged_results[(app['name'], app['apptype'])] = result
+        # merge all hits 
+        merged_results = {}
+        for app in apps:
+            result = merged_results.get((app['name'], app['apptype']), None)
+            if result is None:
+                result = {
+                    'name': app['name'],
+                    'apptype': app['apptype'],
+                    'score': 0,
+                    'summary': app['summary'] or '',
+                    'descr': ''.join(excerpt(app['description'], pattern, max=120, all=True)),
+                    'comments': [],
+                    'tags': [],
+                    'mimetypes': [],
+                    'usage': []
+                }
+            result['score'] += app['score']
+            if app['foundin'] == 'Tags':
+                result['tags'].append(app['data'])
+            elif app['foundin'] == 'MimeTypes':
+                result['mimetypes'].append(app['data'])
+            elif app['foundin'] == 'Usage':
+                result['usage'].append(app['data'])
+            elif app['foundin'] == 'Comments':
+                result['comments'].append(''.join(excerpt(app['data'], pattern, all=True)))
 
-            app_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
+            merged_results[(app['name'], app['apptype'])] = result
+
+        app_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
                 
         return dict(title=self.app_title, version=release.VERSION,
             pattern=pattern, app_list=app_list, pkg_list=pkg_list)
@@ -143,6 +141,7 @@ class ApplicationsController(controllers.Controller):
                 Application.name.label('data'))\
             .filter(
                 and_(
+                    Application.desktoptype == 'Application',
                     Application.apptype == 'desktop', 
                     *(Application.name.ilike('%%%s%%' % p) for p in s_pattern)
                 )
@@ -160,6 +159,7 @@ class ApplicationsController(controllers.Controller):
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application',
                     *(Application.summary.ilike('%%%s%%' % p) for p in s_pattern)
                 )
             )
@@ -176,6 +176,7 @@ class ApplicationsController(controllers.Controller):
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application',
                     *(Application.description.ilike('%%%s%%' % p) for p in s_pattern)
                 )
             )
@@ -195,6 +196,7 @@ class ApplicationsController(controllers.Controller):
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application',
                     *(Usage.name.ilike('%%%s%%' % p) for p in s_pattern)
                 )
             )
@@ -214,6 +216,7 @@ class ApplicationsController(controllers.Controller):
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application',
                     *(Tag.name.ilike('%%%s%%' % p) for p in s_pattern)
                 )
             )
@@ -233,6 +236,7 @@ class ApplicationsController(controllers.Controller):
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application',
                     Comment.published == True,
                     *(Comment.body.ilike('%%%s%%' % p) for p in s_pattern)
                 )
@@ -252,6 +256,7 @@ class ApplicationsController(controllers.Controller):
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application',
                     *(MimeType.name.ilike('%%%s%%' % p) for p in s_pattern)
                 )
             )
@@ -278,9 +283,9 @@ class ApplicationsController(controllers.Controller):
         :arg searchwords: filter used letter_paginator
         '''
         
-        fresh = self.fresh_apps(5)
+        fresh = Application.fresh_apps(5)
 
-        comments = self.last_commented(5)
+        comments = Application.last_commented(5)
         
         pattern = searchwords.replace('*','%')
         #pylint:disable-msg=E1101
@@ -289,7 +294,8 @@ class ApplicationsController(controllers.Controller):
                     Application.summary, 
                     Application.description)\
                 .filter(and_(
-                    Application.apptype == 'desktop', 
+                    Application.apptype == 'desktop',
+                    Application.desktoptype == 'Application',
                     Application.name.ilike(pattern)))\
                 .order_by(Application.name.asc())\
                 .all()
@@ -307,11 +313,11 @@ class ApplicationsController(controllers.Controller):
         '''Applications view by popularity 
         '''
         
-        fresh = self.fresh_apps(5)
+        fresh = Application.fresh_apps(5)
 
-        comments = self.last_commented(5)
+        comments = Application.last_commented(5)
         
-        app_list = self.most_popular(limit=0)
+        app_list = Application.most_popular(limit=0)
         
 
         return dict(fresh=fresh, comments=comments,
@@ -326,11 +332,11 @@ class ApplicationsController(controllers.Controller):
         '''Applications view by comments (chronologicaly)
         '''
         
-        fresh = self.fresh_apps(5)
+        fresh = Application.fresh_apps(5)
 
         comments = None
         
-        app_list = self.last_commented(limit=0)
+        app_list = Application.last_commented(limit=0)
         
 
         return dict(fresh=fresh, comments=comments,
@@ -347,9 +353,9 @@ class ApplicationsController(controllers.Controller):
         
         fresh = None
 
-        comments = self.last_commented(5)
+        comments = Application.last_commented(5)
         
-        app_list = self.fresh_apps(limit=0)
+        app_list = Application.fresh_apps(limit=0)
         
 
         return dict(fresh=fresh, comments=comments,
@@ -365,7 +371,7 @@ class ApplicationsController(controllers.Controller):
         
         fresh = None
 
-        comments = self.last_commented(5)
+        comments = Application.last_commented(5)
        
         tags = session.query(Tag).order_by(Tag.name.asc()).all()
 
@@ -389,6 +395,7 @@ class ApplicationsController(controllers.Controller):
                 .join(ApplicationTag, Tag)\
                 .filter(and_(
                     Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application',
                     Tag.name == tag))\
                 .order_by(Application.name.asc())\
                 .all()
@@ -403,7 +410,7 @@ class ApplicationsController(controllers.Controller):
         
         fresh = None
 
-        comments = self.last_commented(5)
+        comments = Application.last_commented(5)
        
         usages = session.query(Usage).order_by(Usage.name.asc()).all()
 
@@ -419,8 +426,6 @@ class ApplicationsController(controllers.Controller):
     @expose(template='pkgdb.templates._apps_ajax_result')
     def _by_usage(self, usage):
 
-        log.debug('U: %s' % usage)
-
         #pylint:disable-msg=E1101
         app_list = session.query(
                     Application.name, 
@@ -430,86 +435,13 @@ class ApplicationsController(controllers.Controller):
                 .distinct()\
                 .filter(and_(
                     Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application',
                     Usage.name == usage))\
                 .order_by(Application.name.asc())\
                 .all()
         
         return dict(app_list=app_list)
 
-
-
-    def most_popular(self, limit=5):
-        """Query that returns most rated applications
-
-        :arg limit: top <limit> apps
-
-        Number of votes is relevant here not the rating value
-        """
-        #pylint:disable-msg=E1101
-        popular = session.query(
-                    Application.name, 
-                    Application.summary, 
-                    Application.description,
-                    func.sum(ApplicationUsage.rating).label('total'),
-                    func.count(ApplicationUsage.rating).label('count'))\
-                .join('usages')\
-                .filter(Application.apptype == 'desktop')\
-                .group_by(Application.name, Application.summary, Application.description)\
-                .order_by(desc('count'))
-        #pylint:enable-msg=E1101
-        if limit > 0:
-            popular = popular.limit(limit)
-        return popular
-
-
-    def fresh_apps(self, limit=5):
-        """Query that returns last pkgbuild imports
-
-        :arg limit: top <limit> apps
-
-        Excerpt from changelog is returned as well
-        """
-        #pylint:disable-msg=E1101
-        fresh = session.query(
-                    Application.name, 
-                    Application.summary, 
-                    PackageBuild.changelog,
-                    PackageBuild.committime,
-                    PackageBuild.committer)\
-                .distinct()\
-                .join('builds')\
-                .filter(Application.apptype == 'desktop')\
-                .order_by(PackageBuild.committime.desc())
-        #pylint:enable-msg=E1101
-        if limit > 0:
-            fresh = fresh.limit(limit)
-        return fresh
-
-
-    def last_commented(self, limit=5):
-        """Query that returns last commented apps
-
-        :arg limit: top <limit> apps
-
-        Last comment is returned as well
-        """
-        #pylint:disable-msg=E1101
-        comments = session.query(
-                    Application.name, 
-                    Application.summary, 
-                    Comment.body,
-                    Comment.time,
-                    Comment.author)\
-                .join('comments')\
-                .filter(and_(
-                    Application.apptype == 'desktop', 
-                    Comment.published == True))\
-                .order_by(Comment.time.desc())
-        #pylint:enable-msg=E1101
-        if limit > 0:
-            comments = comments.limit(limit)
-        return comments
-        
 
 class ApplicationController(controllers.Controller):
     '''Display general information related to Applicaiton.

@@ -1,17 +1,20 @@
 <html py:strip=""
       xmlns:py="http://genshi.edgewall.org/">
-    <div id="search-applications">
+    <div py:def="search_box(apps=True, builds=True, packages=True)" id="search-applications">
         <div>
-        <form action="${tg.url('/apps/search')}" method="POST">
+        <form action="${tg.url('/search_dispatcher')}" method="POST">
             <h4>Search</h4> 
-            <input name="pattern" value="${pattern}" style="width: 60%;" />
-            <input class="button" name="submit" type="Submit" value="Applications" />
-            <input class="button" name="submit" type="Submit" value="Packages" />
+            <input name="pattern" value="${pattern}" style="width: ${50+(12,0)[apps]+(10,0)[builds]+(10,0)[packages]}%; margin-bottom: 10px;" />
+            <span style="white-space: nowrap;">
+            <input py:if="apps" class="button" name="submit" type="Submit" value="Applications" />
+            <input py:if="builds" class="button" name="submit" type="Submit" value="Builds" />
+            <input py:if="packages" class="button" name="submit" type="Submit" value="Packages" />
+            </span>
         </form>
         </div>
-        <div class="hint">
+        <!--div class="hint">
             Type in what you are looking for or what do you want to do. E.g.: "web browser", "edit photo", "read mail", etc. 
-        </div>
+        </div-->
     </div>
 
 </html>

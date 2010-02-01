@@ -15,6 +15,7 @@
   <div id="main-pannel">
     <h2 style="color: #337acc;" >Applications</h2>
     <xi:include href="_apps_search.html" />
+    ${search_box(packages=False, builds=False)}
 
     <div py:if="app_list" class="app-search-result-box">
         <table>

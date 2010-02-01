@@ -32,9 +32,11 @@ Application related part of the model.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 
-from sqlalchemy import Table, Column, ForeignKeyConstraint
+from sqlalchemy import Table, Column, ForeignKeyConstraint, func, desc
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
 from sqlalchemy.orm import relation, backref
+from sqlalchemy.sql.expression import and_
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 from turbogears.database import metadata, mapper, session
@@ -70,6 +72,19 @@ ApplicationsTable = Table('applications', metadata,
     ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+
+#BlacklistTable = Table('blacklist', metadata,
+#    Column('id', Integer, primary_key=True, autoincrement=True,
+#        nullable=False),    
+#    Column('name', Text, nullable=False),
+#    Column('bltype', String(32), nullable=False),
+#    ForeignKeyConstraint(['bltype'],['blacklisttypes.name'], onupdate="CASCADE",
+#        ondelete="CASCADE"),
+#)
+#
+#BlacklistTypesTable = Table('blacklistttypes', metadata,
+#    Column('nmae', String(32), primary_key=True, nullable=False),
+#)
 
 ApplicationsUsagesTable = Table('applicationsusages', metadata,
     Column('applicationid', Integer, primary_key=True, nullable=False),
@@ -194,7 +209,6 @@ class Application(SABase):
     Apptype column indicates the type of the record.
     '''
 
-
     def __init__(self, name, description, url, apptype, summary,
             desktoptype=None, iconname=None, icon=None ):
         super(Application, self).__init__()
@@ -297,7 +311,7 @@ class Application(SABase):
         #pylint:disable-msg=E1101
         try:
             mimetype = session.query(MimeType).filter_by(name=mimetype_name).one()
-        except:
+        except NoResultFound:
             mimetype = MimeType(name=mimetype_name)
             session.add(mimetype)
         #pylint:enable-msg=E1101
@@ -419,6 +433,102 @@ class Application(SABase):
         return applications
 
 
+    @classmethod
+    def most_popular(self, limit=5):
+        """Query that returns most rated applications
+
+        :arg limit: top <limit> apps
+
+        Number of votes is relevant here not the rating value
+        """
+        #pylint:disable-msg=E1101
+        popular = session.query(
+                    Application.name, 
+                    Application.summary, 
+                    Application.description,
+                    func.sum(ApplicationUsage.rating).label('total'),
+                    func.count(ApplicationUsage.rating).label('count'))\
+                .join('usages')\
+                .filter(and_(
+                    Application.apptype == 'desktop',
+                    Application.desktoptype == 'Application'))\
+                .group_by(Application.name, Application.summary, Application.description)\
+                .order_by(desc('count'))
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            popular = popular.limit(limit)
+        return popular
+
+    @classmethod
+    def fresh_apps(self, limit=5):
+        """Query that returns last pkgbuild imports
+
+        :arg limit: top <limit> apps
+
+        Excerpt from changelog is returned as well
+        """
+        #pylint:disable-msg=E1101
+        fresh = session.query(
+                    Application.name, 
+                    Application.summary, 
+                    PackageBuild.changelog,
+                    PackageBuild.committime,
+                    PackageBuild.committer)\
+                .distinct()\
+                .join('builds')\
+                .filter(and_(
+                    Application.apptype == 'desktop', 
+                    Application.desktoptype=='Application'))\
+                .order_by(PackageBuild.committime.desc())
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            fresh = fresh.limit(limit)
+        return fresh
+
+
+    @classmethod
+    def last_commented(self, limit=5):
+        """Query that returns last commented apps
+
+        :arg limit: top <limit> apps
+
+        Last comment is returned as well
+        """
+        #pylint:disable-msg=E1101
+        comments = session.query(
+                    Application.name, 
+                    Application.summary, 
+                    Comment.body,
+                    Comment.time,
+                    Comment.author)\
+                .join('comments')\
+                .filter(and_(
+                    Application.apptype == 'desktop',
+                    Application.desktoptype == 'Application',
+                    Comment.published == True))\
+                .order_by(Comment.time.desc())
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            comments = comments.limit(limit)
+        return comments
+        
+
+#class Blacklist(SABase):
+#
+#    def __init__(self, name, bltype=None, just_store=False):
+#        super(Blacklist, self).__init__()
+#        self.name = name
+#        self.bltype = bltype
+#    
+#        if not just_store:
+#            # clean such objects from db
+#            pass
+#
+#
+#    def __repr__(self):
+#        return 'Blacklist(%r, bltype=%r)' % (
+#            self.name, self.bltype)#pylint:disable-msg=E1101
+    
 
 class ApplicationTag(SABase):
     '''Application tag association.
@@ -594,6 +704,8 @@ mapper(Application, ApplicationsTable, properties={
     'icon': relation(Icon, backref=backref('applications')),
     'usages': relation(ApplicationUsage, cascade='all'),
     })
+
+#mapper(Blacklist, BlacklistTable)
 
 mapper(ApplicationUsage, ApplicationsUsagesTable, 
     properties={
