@@ -104,7 +104,7 @@ class Root(controllers.RootController):
 
         This page serves as an overview of the entire PackageDB.  
         '''
-        fresh = Application.fresh_apps(10)
+        fresh = PackageBuild.most_fresh(5)
 
         comments = Application.last_commented(10)
 

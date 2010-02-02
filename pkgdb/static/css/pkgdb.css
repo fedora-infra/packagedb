@@ -469,10 +469,18 @@
     padding: 1px 4px;
 }
 
-.app-search-result-box .app-name {
+.app-search-result-box .app-name, .best-of-box .app-name  {
     font-size: 120%;
     font-weight: bold;
     white-space: nowrap;
+}
+
+#content .best-of-box ul {
+    margin: 0;
+}
+
+.best-of-box li {
+    list-style: none;
 }
 
 #content .app-search-result-box .app-name a {
@@ -536,7 +544,7 @@
 }
 
 #content #apps-markers-navi {
-    list-style: none;
+    yylist-style: none;
     display: inline;
     margin: 0;
     margin-left: 3px;
