@@ -22,7 +22,7 @@
 PackageBuild related tools
 '''
 
-from turbogears.database import session
+from turbogears.database import session, get_engine
 import datetime
 import logging
 import pytz
@@ -679,7 +679,8 @@ class PackageBuildImporter(object):
 
 
     def prune_builds(self):
-        session.execute('delete from packagebuild p using(select id from packagebuild where repoid=%i except select max(id) from packagebuild where repoid=%i group by name) x where p.id=x.id' % (self.repo.id, self.repo.id))
+        engine = get_engine()
+        engine.execute('delete from packagebuild p using(select id from packagebuild where repoid=%i except select max(id) from packagebuild where repoid=%i group by name) x where p.id=x.id' % (self.repo.id, self.repo.id))
         log.info("Repo pruned...")
 
 
