@@ -368,8 +368,7 @@ class PackageBuild(SABase):
             self.repoid)
 
     def __str__(self):
-        return "%s-%s%s-%s.%s" % (self.name,
-                ('', self.epoch+':')[bool(int(self.epoch))], self.version, 
+        return "%s-%s-%s.%s" % (self.name, self.version, 
                 self.release, self.architecture)
 
     def download_path(self):
