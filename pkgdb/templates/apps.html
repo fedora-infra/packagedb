@@ -4,6 +4,7 @@
   xmlns:xi="http://www.w3.org/2001/XInclude"
   xml:lang="en" lang="en">
   <xi:include href="layout.html" />
+  <xi:include href="_ajax_loader.html" />
   <?python
     from pkgdb.lib.dt_utils import fancy_delta
   ?>
@@ -12,6 +13,7 @@
             src="${tg.url('/static/js/dojo/dojo.js')}"
             djConfig="parseOnLoad: true" >
     </script>
+    ${ajax_loader_script()}
     <script type="text/javascript">
         dojo.addOnLoad(function(){
         });

@@ -42,10 +42,12 @@
         }
 
         function load_apps(marker, target_id) {
+            show_ajax_loader(target_id);
             dojo.xhrGet( {
                 url: "${data_url}".replace('/?', '/'+marker+'/?'),
                 handleAs: "text",
                 load: function(response){
+                    hide_ajax_loader(target_id);
                     var dest = dojo.byId(target_id);
                     dest.innerHTML = response;
                 }
@@ -72,7 +74,10 @@
     <hr style="width: 100%; display: inline-block; border: 0;" />
     </div>
     <div id="apps-by-marker-content">
+    &nbsp;
     </div>
+    ${ajax_loader()}
+    
       <script type="text/javascript">
         if ('${value}') {
             filter_markers('^${value}$');

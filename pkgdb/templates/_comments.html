@@ -1,5 +1,7 @@
 <html py:strip=""
+      xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:py="http://genshi.edgewall.org/">
+   <xi:include href="_ajax_loader.html" />
     <!--a  href="${tg.url('/commentsfeed/atom1.0?app=%s' % app.name)}">
             <img src="${tg.url('/static/images/feed.png')}"
                  alt="(${len(comments)}) Comments" />
@@ -64,10 +66,10 @@
               <textarea name="body" rows="6" cols="70" style="width: 100%; padding: 0;"></textarea>
               <button type="submit" dojoType="dijit.form.Button">Post</button>
               <script type="dojo/method">
-                tagComment("commentForm", "commentLoader", "commentList");
+                tagComment("commentForm", "commentForm", "commentList");
               </script>
             </form>
-            <div id="commentLoader" style="display: none;">Loading...</div>
+            ${ajax_loader()}
       </py:when>
       </py:choose>
     </div>

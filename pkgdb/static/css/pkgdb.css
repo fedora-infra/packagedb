@@ -432,6 +432,18 @@
     text-decoration: none;
     color: #777 !important;
 }
+
+.ajax-loader {
+    position:relative; 
+    font-size: 32px; 
+    z-index:2; 
+    top: 0px; 
+    left: 0px; 
+    background: url(../images/loader_bg.png); 
+    padding: 0px 0px;
+}
+
+
 /* 
  * app-search-result-box
  */

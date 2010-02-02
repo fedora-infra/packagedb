@@ -1,10 +1,13 @@
 <html py:strip=""
+      xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:py="http://genshi.edgewall.org/">
+   <xi:include href="_ajax_loader.html" />
 
   <a name="user_ratings" />
   <div id="user_ratings">
     <h3>User Ratings</h3>
-    Users are using ${app.name} to 
+    Users are using ${app.name} to
+    <div id="usages_list">
     <table>
     <tr>
         <th>Usage <span style="font-weight: normal;">[
@@ -48,7 +51,7 @@
                         </script>
                         <script type="dojo/method">
                             dojo.query("#UsageForm${r.replace(' ','-')} div input")[0].name = 'rating';
-                            tagComment("UsageForm${r.replace(' ','-')}", "usageLoader", "userRatingList");
+                            tagComment("UsageForm${r.replace(' ','-')}", "usages_list", "userRatingList");
                         </script>
                     </div>
                 </py:when>
@@ -72,7 +75,7 @@
                 </script>
                 <script type="dojo/method">
                     dojo.query("#newUsageForm div input")[0].name = 'rating';
-                    tagComment("newUsageForm", "usageLoader", "userRatingList");
+                    tagComment("newUsageForm", "usages_list", "userRatingList");
                 </script>
             </div>
             stars.
@@ -80,6 +83,7 @@
         </td>
     </tr>
     </table>
+    </div>
+    ${ajax_loader()}
   </div>
-   <div id="usageLoader" style="display: none;">Loading...</div>
 </html>

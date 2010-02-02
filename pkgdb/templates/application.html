@@ -4,6 +4,7 @@
   xmlns:xi="http://www.w3.org/2001/XInclude"
   xml:lang="en" lang="en">
   <xi:include href="layout.html" />
+  <xi:include href="_ajax_loader.html" />
 
   <head>
     <style type="text/css">
@@ -56,6 +57,8 @@
       dojo.require("dijit.Tooltip");
     </script>
 
+    ${ajax_loader_script()}
+
     <script type="text/javascript">
       function jump(page,form){
            urlparts = page.split('?_csrf');
@@ -107,18 +110,11 @@
                   e.preventDefault();
               }
               if(form.isValid()){
-                  dojo.fadeIn({
-                      node: loaderId,
-                      duration: 2000
-                  }).play();
+                  show_ajax_loader(loaderId);
                   dojo.xhrPost( {
                       form: formId,
                       handleAs: "text",
                       load: function(response){
-                                dojo.fadeOut({
-                                    node: loaderId,
-                                    duration: 1000
-                                    }).play();
                                 var form = dojo.query('#'+formId)[0];
                                 form.reset();
                                 var textarea = dojo.query('#'+formId+' textarea')[0];
