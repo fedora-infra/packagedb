@@ -13,7 +13,7 @@ NEWS
 * Remove pkgdb-sync-repo in favor of pkgdb-sync-yum.py.  This uses the yum api
   to get the repo data and is thus far superior to parsing the db ourselves.  It
   also gets more information from the yum metadata.
-* shouldopen as gone away
+* shouldopen has gone away
 * /packages/ urls have moved to /acls/
 * packages/id has gone away.   Use owners/name instead.
 * collections/id is deprecated.  Use collections/name instead. (name is the

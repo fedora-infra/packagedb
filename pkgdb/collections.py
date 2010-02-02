@@ -68,18 +68,29 @@ class Collections(controllers.Controller):
         self.app_title = app_title
 
     @expose(template='pkgdb.templates.collectionoverview', allow_json=True)
-    def index(self):
+    def index(self, eol=True):
         '''List the Collections we know about.
+
+        :kwarg eol: Default True.  If set to False, only return collections
+            which are not eol
+        :returns: list of collections
         '''
         #pylint:disable-msg=E1101
         collections = Collection.query.options(lazyload('listings'),
-                lazyload('status')).add_entity(CollectionPackage
+                lazyload('status')).add_column(CollectionPackage.numpkgs
                 ).filter(Collection.id==CollectionPackage.id).order_by(
             Collection.name, Collection.version)
         #pylint:enable-msg=E1101
+        if not eol:
+            collections = collections.filter(Collection.statuscode!=
+                    STATUS['EOL'].statuscodeid)
+
+        status_map = dict(((c[0].statuscode, c[0].status.locale['C'].statusname) for
+            c in collections))
 
         return dict(title=_('%(app)s -- Collection Overview') %
-                {'app': self.app_title}, collections=collections)
+                {'app': self.app_title}, collections=collections,
+                status_map=status_map)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100, max_limit=None,
@@ -121,16 +132,17 @@ class Collections(controllers.Controller):
                 'statusname': collection.status.locale['C'].statusname
                 }
 
+        from model import PackageTable
         # Retrieve the package list for this collection
         # pylint:disable-msg=E1101
-        packages = select((Package), and_(Package.id==PackageListing.packageid,
+        packages = select((PackageTable,), and_(Package.id==PackageListing.packageid,
                 PackageListing.collectionid==collection.id,
-                Package.stauscode!=STATUS['Removed'].statuscodeid),
-                order_by=(Package.name,))
+                Package.statuscode!=STATUS['Removed'].statuscodeid),
+                order_by=(Package.name,)).execute()
         # pylint:enable-msg=E1101
 
-        return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
-            collection['version']), collection=collection_entry,
+        return dict(title='%s -- %s %s' % (self.app_title, collection.name,
+            collection.version), collection=collection_entry,
             packages=packages)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)

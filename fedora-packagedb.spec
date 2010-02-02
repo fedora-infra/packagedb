@@ -21,6 +21,7 @@ Requires: python-fedora >= 0.3.12
 Requires: python-bugzilla >= 0.5
 Requires: koji
 Requires: mod_wsgi
+Requires: python-cpio
 
 BuildRequires: python-devel
 BuildRequires: python-genshi

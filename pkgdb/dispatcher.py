@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -50,7 +50,8 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, LOG, STATUS
+from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, \
+        newpkger_grp, LOG, STATUS
 
 from fedora.tg.util import tg_url
 
@@ -78,10 +79,14 @@ class PackageDispatcher(controllers.Controller):
               107427: 'provenpackager',
               'cvsadmin': 101197,
               'provenpackager': 107427}
-    groupnames = (admin_grp, 'provenpackager')
+    groupnames = (admin_grp, provenpkger_grp)
 
-    # Groups that a person must be in to own or co-maintain a package
-    owner_memberships = (admin_grp, pkger_grp, 'provenpackager')
+    # Groups that a person must be in to own a package
+    owner_memberships = (admin_grp, pkger_grp, provenpkger_grp)
+
+    # Groups that a person must be in to co-maintain a package
+    comaintainer_memberships = (admin_grp, pkger_grp, provenpkger_grp,
+            newpkger_grp)
 
     def __init__(self):
         controllers.Controller.__init__(self)
@@ -243,7 +248,9 @@ class PackageDispatcher(controllers.Controller):
         if acl in ('watchbugzilla', 'watchcommits'):
             return True
 
-        if acl == 'owner':
+        # For owner and approveacls, the user must be in packager or higher
+
+        if acl in ('owner', 'approveacls'):
             if user:
                 if user['id'] <= MAXSYSTEMUID:
                     # Any pseudo user can be the package owner
@@ -265,21 +272,22 @@ class PackageDispatcher(controllers.Controller):
                         'groups': self.owner_memberships})
 
         # For any other acl, check whether the person is in an allowed group
+        # New packagers can hold these acls
         if user:
             # If the person isn't in a known group raise an error
             if [group for group in user['approved_memberships']
-                    if group['name'] in self.owner_memberships]:
+                    if group['name'] in self.comaintainer_memberships]:
                 return True
             raise AclNotAllowedError(_('%(user)s must be in one of these'
                 ' groups: %(groups)s to hold the %(acl)s acl') % {
-                    'user': user['username'], 'groups': self.owner_memberships,
+                    'user': user['username'], 'groups': self.comaintainer_memberships,
                     'acl': acl})
-        elif identity.in_any_group(*self.owner_memberships):
+        elif identity.in_any_group(*self.comaintainer_memberships):
             return True
         raise AclNotAllowedError(_('%(user)s must be in one of these'
             ' groups: %(groups)s to hold the %(acl)s acl') % {
                 'user': identity.current.user_name,
-                'groups': self.owner_memberships, 'acl': acl})
+                'groups': self.comaintainer_memberships, 'acl': acl})
 
     def _create_or_modify_acl(self, pkg_listing, person_name, new_acl, status):
         '''Create or modify an acl.
@@ -418,7 +426,8 @@ class PackageDispatcher(controllers.Controller):
         #get acl with min personpackagelistingacl.id
         if len(acls) > 0:
             for acl in acls:
-                comaintainers[acl.id] = acl.personpackagelisting.username
+                if acl.personpackagelisting.username != pkg_listing.owner:
+                    comaintainers[acl.id] = acl.personpackagelisting.username
 
             for acl_id in sorted(comaintainers.keys()):
                 try:
@@ -469,7 +478,7 @@ class PackageDispatcher(controllers.Controller):
         If owner.username='orphan', the owner of package set to 'orphan'.
 
         :arg pkg_listing: Package listing to set the owner.
-        :arg owner: User name to change the owner
+        :arg owner: User to change the owner
         :returns: Log message about changes.
         :raises InvalidRequestError: if there's problem retrieving
             information from the database.
@@ -537,9 +546,14 @@ class PackageDispatcher(controllers.Controller):
             approved in ('admin', 'owner'))):
             # Retire package
             if pkg.owner != 'orphan':
+                try:
+                    person = fas.cache['orphan']
+                except KeyError:
+                    return dict(status=False, message=_('specified owner %(owner)s'
+                        ' does not have a fedora account') % {
+                            'owner': 'orphan'})
                 # let set_owner handle bugzilla and other stuff
-                self.set_owner(pkg.package.name, 'orphan',
-                        pkg.collection.simple_name)
+                self._set_owner(pkg.package.name, person)
             pkg.statuscode = STATUS['Deprecated'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
@@ -837,6 +851,8 @@ class PackageDispatcher(controllers.Controller):
         # Make sure a log is created in the db as well.
         if acl_status == 'Awaiting Review':
             acl_action = 'requested'
+        elif acl_status == 'Approved':
+            acl_action = 'been granted'
         else:
             acl_action = 'given up'
         log_msg = '%s has %s the %s acl on %s (%s %s)' % (
@@ -919,7 +935,7 @@ class PackageDispatcher(controllers.Controller):
                 ' %(status)s') % { 'pkg': package, 'user': person['username'],
                     'status': STATUS['Approved'].statuscodeid})
         changed_acls = []
-        for group in ('provenpackager',):
+        for group in (provenpkger_grp,):
             #pylint:disable-msg=E1101
             changed_acls.append(GroupPackageListingAcl.query.filter(and_(
                     GroupPackageListingAcl.c.grouppackagelistingid
@@ -1083,7 +1099,7 @@ class PackageDispatcher(controllers.Controller):
                 person = fas.cache[changes['owner']]
             except KeyError:
                 return dict(status=False, message=_('Specified owner %(owner)s'
-                    ' does not have a Fedora Account') % {
+                    ' does not have a Fedora account') % {
                         'owner': changes['owner']})
             # Make sure the owner is in the correct group
             try:
@@ -1099,7 +1115,8 @@ class PackageDispatcher(controllers.Controller):
 
             # Retrieve the id of the initial package owner
             if not owner_name:
-                # Retrieve the id for the devel_collection
+            # No new owner specifed, use the devel_collection if ownership
+            # information becomes necessary
                 #pylint:disable-msg=E1101
                 devel_collection = Collection.query.filter_by(
                         name='Fedora', version='devel').one()
@@ -1146,7 +1163,7 @@ class PackageDispatcher(controllers.Controller):
                                 'pkg': package, 'user': person['username'],
                                 'status': status})
                     changed_acls = []
-                    for group in ('provenpackager',):
+                    for group in (provenpkger_grp,):
                         #pylint:disable-msg=E1101
                         changed_acls.append(GroupPackageListingAcl.query.filter(
                             and_(
