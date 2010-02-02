@@ -24,6 +24,7 @@ PackageBuild related tools
 
 from turbogears.database import session
 import datetime
+import logging
 import pytz
 import re
 import os
@@ -48,6 +49,7 @@ from pkgdb.model import Application
 from pkgdb.lib.desktop import Desktop, DesktopParseError
 from pkgdb.lib.icon import Icon as IconImage
 
+log = logging.getLogger(__name__)
 
 RE_APP_ICON_FILE = re.compile(
         "^.*/(icons|pixmaps)/([^/]*)/(\d+x\d+)/apps/([^/]*)\.png$")
@@ -109,7 +111,7 @@ class RPM(object):
             filename = self.build.localPkg()
             if not os.path.exists(filename):
                 try:
-                    print "          Downloading..."
+                    log.info("          Downloading...")
                     filename = self.yumrepo.getPackage(self.build)
                 except Exception, e:
                     raise PkgImportError(e)
@@ -209,7 +211,6 @@ class RPM(object):
         arch = self.archive
 
         for f in arch:
-            #print f.name
             if RE_APP_ICON_FILE.match(f.name) or (
                     icon_names and re_cust_icons.match(f.name)):
                 icon_file = StringIO(f.read())
@@ -218,8 +219,7 @@ class RPM(object):
                     icon.check()
                     icons.append(icon)
                 except:
-                    pass
-                #print str(icon)
+                    log.warning("%s: Unable to parse icon: %s" % (self.build, f.name))
 
         arch.close()
 
@@ -254,7 +254,7 @@ class RPM(object):
                 try:
                     desktop = Desktop.from_file(desktop_file)
                 except DesktopParseError, e:
-                    print "Invalid .desktop file: %s" % e
+                    log.warning("%s: Invalid .desktop file: %s" % (self.build, e))
                     desktop_file.close()
                     continue
 
@@ -581,6 +581,7 @@ class PackageBuildImporter(object):
 
         :arg icon_image: pkgdb.lib.icon.Icon object
         """
+        log.info("    - icon: %s" % icon_image)
         # icon_name
         icon_name = self.store_icon_name(icon_image.name)
         
@@ -656,13 +657,13 @@ class PackageBuildImporter(object):
             app.iconname = icon_name
             
         # categories
-        print "    - categories: %s items" % len(desktop.categories)
+        log.info("    - categories: %s items" % len(desktop.categories))
         for category in desktop.categories:
             app.tag(category)
             session.flush()
 
         # mimetypes
-        print "    - mimetypes: %s items" % len(desktop.mimetypes)
+        log.info("    - mimetypes: %s items" % len(desktop.mimetypes))
         for mimetype in desktop.mimetypes:
             app.assign_mimetype(mimetype)
             session.flush()
@@ -679,7 +680,7 @@ class PackageBuildImporter(object):
 
     def prune_builds(self):
         session.execute('delete from packagebuild p using(select id from packagebuild where repoid=%i except select max(id) from packagebuild where repoid=%i group by name) x where p.id=x.id' % (self.repo.id, self.repo.id))
-        print "Repo pruned..."
+        log.info("Repo pruned...")
 
 
     def close(self):
@@ -704,15 +705,13 @@ class PackageBuildImporter(object):
         icon_names = set()
 
         for desktop in rpm.desktops():
-            print "  Application found: %s" % desktop.name
+            log.info("  Application found: %s" % desktop.name)
             self.store_desktop_app(rpm, pkgbuild, desktop)
             if desktop.icon_name:
                 icon_names.add(desktop.icon_name)
 
         
         icons = rpm.icons(icon_names)
-        #print "    - icons: %s items" % len(icons)
         for icon in icons:
-            print "      - icon: %s" % icon
             self.store_icon(icon)
 

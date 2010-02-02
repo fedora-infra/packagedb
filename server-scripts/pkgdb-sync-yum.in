@@ -137,10 +137,10 @@ def import_local(args):
         repo = session.query(Repo).filter_by(shortname=args.repo).one()
         #pylint:enable-msg=E1101
     except:
-        print "Repo (%s) does not exist" % args.repo
+        log.error("Repo (%s) does not exist" % args.repo)
         exit(1)
     if not repo.active:
-        print "Repo (%s) is not active" % args.repo
+        log.error("Repo (%s) is not active" % args.repo)
         exit(1)
 
     # prepare importer
@@ -148,18 +148,18 @@ def import_local(args):
 
     for f in args.files:
         session.begin() #pylint:disable-msg=E1101
-        print "PackageBuild: %s" % f
+        log.info("PackageBuild: %s" % f)
         pkg = YumLocalPackage(ts=ts, filename=f)    
         try:
             importer.process(RPM(pkg, yumrepo=None))
         except PkgImportAlreadyExists, e:
             rpm.close()
-            print "%s: Already imported - skipping" % pkg.name
+            log.info("%s: Already imported - skipping" % pkg.name)
             session.rollback() #pylint:disable-msg=E1101
             continue
         except PkgImportError, e:
             rpm.close()
-            print "%s: Error during import (%s)- skipping" % (pkg.name, e)
+            log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
             session.rollback() #pylint:disable-msg=E1101
             continue
 
@@ -167,7 +167,7 @@ def import_local(args):
         rpm.close()
 
     importer.close()
-    print 'Done.'
+    log.info('Done.')
 
 
 def update(args):
@@ -193,11 +193,11 @@ def update(args):
             .all()
     #pylint:disable-msg=E1101
     if len(repos)==0:
-        print "Repo '%s' not found!" % args.repo
+        log.error("Repo '%s' not found!" % args.repo)
         exit(1)
 
     for repo in repos:
-        print "Repo: %s" % repo.name
+        log.info("Repo: %s" % repo.name)
         # prepare importer
     
         importer = PackageBuildImporter(repo, force=args.force)
@@ -206,28 +206,27 @@ def update(args):
             if args.package and not fnmatch(pkg.name, args.package):
                 continue
             session.begin() #pylint:disable-msg=E1101
-            print " PackageBuild: %s" % pkg
+            log.info(" %s" % pkg)
             rpm = RPM(pkg, yumrepo=importer.yumrepo)
             try:
                 importer.process(rpm)
             except PkgImportAlreadyExists, e:
-                print "%s: Already imported - skipping" % pkg.name
+                log.info("%s: Already imported - skipping" % pkg.name)
                 session.rollback() #pylint:disable-msg=E1101
                 rpm.close()
                 continue
             except PkgImportError, e:
-                print "%s: Error during import (%s)- skipping" % (pkg.name, e)
+                log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
                 session.rollback() #pylint:disable-msg=E1101
                 rpm.close()
                 continue
 
-    
             session.commit() #pylint:disable-msg=E1101
             rpm.close()
             
         importer.close()
 
-    print 'Done.'
+    log.info('Done.')
 
 
 # command handling
