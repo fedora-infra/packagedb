@@ -121,5 +121,7 @@ class Root(controllers.RootController):
             redirect('/builds/search/%s' % pattern)
         elif submit == 'Applications':
             redirect('/apps/search/%s' % pattern)
+        elif submit == 'Packages':
+            redirect('/acls/list/*%s*' % pattern)
 
         redirect('/')
