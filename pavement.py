@@ -1,5 +1,4 @@
 #!/usr/bin/python -tt
-__requires__ = 'TurboGears[future]'
 import pkg_resources
 
 from paver.easy import path as paver_path
@@ -34,7 +33,7 @@ options(
             'TurboGears[future] >= 1.0',
             'TurboMail',
             'python_fedora >= 0.3.12',
-            'SQLAlchemy >= 0.4alpha',
+            'SQLAlchemy >= 0.5',
             # Doesn't use setuptools so not on RHEL5
             #'python_bugzilla >= 0.5',
         ],
