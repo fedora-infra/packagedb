@@ -3,7 +3,7 @@ CREATE TABLE usages (
         name TEXT NOT NULL,
         PRIMARY KEY (id),
          UNIQUE (name)
-)
+);
 
 GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE usages TO pkgdbadmin;
 GRANT SELECT, UPDATE ON usages_id_seq TO pkgdbadmin;
@@ -16,6 +16,6 @@ CREATE TABLE applicationsusages (
         PRIMARY KEY (applicationid, usageid, author),
          FOREIGN KEY(applicationid) REFERENCES applications (id) ON DELETE CASCADE ON UPDATE CASCADE,
          FOREIGN KEY(usageid) REFERENCES usages (id) ON DELETE CASCADE ON UPDATE CASCADE
-)
+);
 
 GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE applicationsusages TO pkgdbadmin;
