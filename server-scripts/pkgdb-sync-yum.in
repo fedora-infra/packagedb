@@ -26,7 +26,7 @@ Import PackageBuild(rpm) related information from all the `active` repos
 available in the pkgdb.
 '''
 
-__requires__ = 'SQLAlchemy >= 0.5'
+__requires__ = 'fedora_packagedb'
 
 # Pylint Errors
 # :E1101: Ignore this anytime we use the session.  SQLAlchemy monkeypatches
