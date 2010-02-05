@@ -32,9 +32,11 @@ Application related part of the model.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 
-from sqlalchemy import Table, Column, ForeignKeyConstraint
+from sqlalchemy import Table, Column, ForeignKeyConstraint, func, desc
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
 from sqlalchemy.orm import relation, backref
+from sqlalchemy.sql.expression import and_
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 from turbogears.database import metadata, mapper, session
@@ -42,10 +44,12 @@ from turbogears.database import metadata, mapper, session
 from fedora.tg.json import SABase
 
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
-from pkgdb.lib.dt_utils import FancyDateTimeDelta
+from pkgdb.lib.dt_utils import fancy_delta
 
 from datetime import datetime
 
+import logging
+log = logging.getLogger('pkgdb.model.apps')
 #
 # Tables
 #
@@ -66,6 +70,30 @@ ApplicationsTable = Table('applications', metadata,
     ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
     ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+)
+
+#BlacklistTable = Table('blacklist', metadata,
+#    Column('id', Integer, primary_key=True, autoincrement=True,
+#        nullable=False),    
+#    Column('name', Text, nullable=False),
+#    Column('bltype', String(32), nullable=False),
+#    ForeignKeyConstraint(['bltype'],['blacklisttypes.name'], onupdate="CASCADE",
+#        ondelete="CASCADE"),
+#)
+#
+#BlacklistTypesTable = Table('blacklistttypes', metadata,
+#    Column('nmae', String(32), primary_key=True, nullable=False),
+#)
+
+ApplicationsUsagesTable = Table('applicationsusages', metadata,
+    Column('applicationid', Integer, primary_key=True, nullable=False),
+    Column('usageid', Integer, primary_key=True, nullable=False),
+    Column('rating', Integer, default=1, nullable=False),
+    Column('author', Text, primary_key=True, nullable=False),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['usageid'], ['usages.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
 
@@ -112,6 +140,25 @@ CommentsTable = Table('comments', metadata,
         onupdate="CASCADE", ondelete="CASCADE"),
 )
 
+UsagesTable = Table('usages', metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text, nullable=False, unique=True),
+)
+
+MimeTypesTable = Table('mimetypes', metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text, nullable=False, unique=True),
+)
+
+AppsMimeTypesTable = Table('appsmimetypes', metadata,
+    Column('applicationid', Integer, primary_key=True, nullable=False),
+    Column('mimetypeid', Integer, primary_key=True, nullable=False),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['mimetypeid'], ['mimetypes.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+
 TagsTable = Table('tags', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False, unique=True),
@@ -133,6 +180,7 @@ IconsTable = Table('icons', metadata,
     Column('collectionid', nullable=False),                   
     Column('themeid', nullable=False),                   
     Column('icon', Binary, nullable=False),
+    Column('orig_size', Integer, nullable=False),
     ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
     ForeignKeyConstraint(['collectionid'], ['collection.id'],
@@ -148,6 +196,7 @@ def _create_apptag(tag, score):
     session.add(apptag) #pylint:disable-msg=E1101
     return apptag
 
+
 #
 # Mapped Classes
 # 
@@ -159,6 +208,7 @@ class Application(SABase):
     file will have application record (we will presume that the whole package is application)
     Apptype column indicates the type of the record.
     '''
+
     def __init__(self, name, description, url, apptype, summary,
             desktoptype=None, iconname=None, icon=None ):
         super(Application, self).__init__()
@@ -170,48 +220,133 @@ class Application(SABase):
         self.iconname = iconname
         self.summary = summary
         self.icon = icon
+    
 
-    scores = association_proxy('by_tag', 'score', creator=_create_apptag)
+    # scores is dict {<tag_object>:score}
+    # scores[<tag-object>] = <score> create/update app2tag relation with given score
+    scores = association_proxy('by_tag', 'score', 
+            creator=_create_apptag)
+
+    _rating = None
 
     def __repr__(self):
         return 'Application(%r, summary=%r, url=%r, apptype=%r )' % (
             self.name, self.summary, self.url, self.apptype)
 
-    @classmethod
-    def tag(cls, apps, tags):
-        '''Add a set of tags to a list of Applications.
 
-        :arg apps: one or more Application names to add the tags to.
-        :arg tags: one or more tags to add to the packages.
+    def rating(self):
+        '''Get application usages rating
 
-        #? Returns two lists (unchanged): tags and builds.
+
+        Returns dict(usage_name: (rating, votes))
         '''
-        # if we got just one argument, make it a list
-        if not isinstance(tags, (list, tuple)):
-            if tags == '':
-                raise Exception('Tag name missing.')
-            tags = [tags]
-        if not isinstance(apps, (list, tuple)):
-            apps = [apps]
+
+        if not self._rating:
+
+            ratings = {}
+
+            for a2u in self.usages:
+               current = ratings.get(a2u.usage.name, (0, 0))
+               votes = current[1] + 1
+               rating = ((current[0] * current[1]) + a2u.rating)*1.0 / votes
+               ratings[a2u.usage.name] = (rating, votes)
+
+            self._rating = ratings
+
+        return self._rating
+
+
+    def user_rating(self, user):
+        """Ratings set by given user
+
+        :arg user: username
+
+        Returns dict(usage: rating)
+        """
+
+        usages = {}
+        for a2u in self.usages:
+            if a2u.author == user:
+                usages[a2u.usage.name] = a2u.rating
+
+        return usages
+    
+
+    def tag(self, tag_name):
+        '''Tag application.
+
+        Add tag to application. If the tag already exists, 
+        the score will be increased.
+
+        :arg tag_name: tag name.
+
+        Returns tag object
+        '''
 
         #pylint:disable-msg=E1101
-        applications = session.query(Application).\
-                filter(Application.name.in_(apps))
+        try:
+            tag = session.query(Tag).filter_by(name=tag_name).one()
+        except:
+            tag = Tag(name=tag_name)
+            session.add(tag)
         #pylint:enable-msg=E1101
 
-        for tag_name in tags:
-            try:
-                #pylint:disable-msg=E1101
-                tag = session.query(Tag).\
-                        filter_by(name=tag_name).one()
-                #pylint:enable-msg=E1101
-            except:
-                tag = Tag(name=tag_name)
-                session.add(tag) #pylint:disable-msg=E1101
+        score = self.scores.get(tag, 0)
+       
+        self.scores[tag] = score + 1
+        return tag
 
-            for application in applications:
-                application.scores[tag] = application.scores.get(tag, 0)+1
 
+    def assign_mimetype(self, mimetype_name):
+        '''Assign mime-type to application.
+
+        If mime-type with the given name does not exist in the DB,
+        it will be created as well
+
+        :arg mimetype_name: mime-type name.
+
+        Returns MimeType object
+        '''
+
+        #pylint:disable-msg=E1101
+        try:
+            mimetype = session.query(MimeType).filter_by(name=mimetype_name).one()
+        except NoResultFound:
+            mimetype = MimeType(name=mimetype_name)
+            session.add(mimetype)
+        #pylint:enable-msg=E1101
+
+        if mimetype not in self.mimetypes:
+            self.mimetypes.append(mimetype)
+
+        return mimetype
+
+
+    def update_rating(self, usage_name, rating, author):
+
+        #pylint:disable-msg=E1101
+        try:
+            usage = session.query(Usage).filter_by(name=usage_name).one()
+        except:
+            usage = Usage(name=usage_name)
+            session.add(usage)
+        #pylint:enable-msg=E1101
+
+        found = False
+
+        for app_usage in self.usages:
+            if app_usage.usage == usage and app_usage.author == author:
+                user_rating = app_usage
+                found = True
+                break
+        
+        if not found:
+            user_rating = ApplicationUsage(author=author)
+            user_rating.usage = usage
+            self.usages.append(user_rating)
+            session.add(user_rating)
+
+        user_rating.rating = int(rating)
 
 
     def comment(self, author, body):
@@ -226,6 +361,29 @@ class Application(SABase):
         self.comments.append(comment)
         session.flush()
         #pylint:enable-msg=E1101
+
+
+    def builds_by_collection(self):
+        builds = {}
+
+        for build in self.builds:
+            blds = builds.get(build.repo.collection,[])
+            blds.append(build)
+            builds[build.repo.collection] = blds
+
+        return builds
+
+
+    def build_names(self):
+        '''Get names of all binary packages that include this application.
+        
+        Returns list of distinct names
+        '''
+        build_names = {}
+        for build in self.builds:
+            build_names[build.name] = 1
+
+        return build_names.keys()
 
 
     @classmethod
@@ -275,6 +433,103 @@ class Application(SABase):
         return applications
 
 
+    @classmethod
+    def most_popular(self, limit=5):
+        """Query that returns most rated applications
+
+        :arg limit: top <limit> apps
+
+        Number of votes is relevant here not the rating value
+        """
+        #pylint:disable-msg=E1101
+        popular = session.query(
+                    Application.name, 
+                    Application.summary, 
+                    Application.description,
+                    func.sum(ApplicationUsage.rating).label('total'),
+                    func.count(ApplicationUsage.rating).label('count'))\
+                .join('usages')\
+                .filter(and_(
+                    Application.apptype == 'desktop',
+                    Application.desktoptype == 'Application'))\
+                .group_by(Application.name, Application.summary, Application.description)\
+                .order_by(desc('count'))
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            popular = popular.limit(limit)
+        return popular
+
+    @classmethod
+    def fresh_apps(self, limit=5):
+        """Query that returns last pkgbuild imports
+
+        :arg limit: top <limit> apps
+
+        Excerpt from changelog is returned as well
+        """
+        #pylint:disable-msg=E1101
+        fresh = session.query(
+                    Application.name, 
+                    Application.summary, 
+                    PackageBuild.changelog,
+                    PackageBuild.committime,
+                    PackageBuild.committer)\
+                .distinct()\
+                .join('builds')\
+                .filter(and_(
+                    Application.apptype == 'desktop', 
+                    Application.desktoptype=='Application'))\
+                .order_by(PackageBuild.committime.desc())
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            fresh = fresh.limit(limit)
+        return fresh
+
+
+    @classmethod
+    def last_commented(self, limit=5):
+        """Query that returns last commented apps
+
+        :arg limit: top <limit> apps
+
+        Last comment is returned as well
+        """
+        #pylint:disable-msg=E1101
+        comments = session.query(
+                    Application.name, 
+                    Application.summary, 
+                    Comment.body,
+                    Comment.time,
+                    Comment.author)\
+                .join('comments')\
+                .filter(and_(
+                    Application.apptype == 'desktop',
+                    Application.desktoptype == 'Application',
+                    Comment.published == True))\
+                .order_by(Comment.time.desc())
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            comments = comments.limit(limit)
+        return comments
+        
+
+#class Blacklist(SABase):
+#
+#    def __init__(self, name, bltype=None, just_store=False):
+#        super(Blacklist, self).__init__()
+#        self.name = name
+#        self.bltype = bltype
+#    
+#        if not just_store:
+#            # clean such objects from db
+#            pass
+#
+#
+#    def __repr__(self):
+#        return 'Blacklist(%r, bltype=%r)' % (
+#            self.name, self.bltype)#pylint:disable-msg=E1101
+    
+
 class ApplicationTag(SABase):
     '''Application tag association.
 
@@ -292,6 +547,26 @@ class ApplicationTag(SABase):
     def __repr__(self):
         return 'ApplicationTag(applicationid=%r, tagid=%r, score=%r)' % (
             self.applicationid, self.tagid, self.score)#pylint:disable-msg=E1101
+
+
+class ApplicationUsage(SABase):
+    '''Application usage association.
+
+    The association holds rating (0-5) which indicates 
+    how suitable the application is for the usage.
+
+    '''
+
+    def __init__(self, application=None, usage=None, rating=1, author=None):
+        super(ApplicationUsage, self).__init__()
+        self.application = application
+        self.usage = usage
+        self.rating = rating
+        self.author = author
+
+    def __repr__(self):
+        return 'ApplicationUsage(applicationid=%r, usageid=%r, rating=%r, author=%r)' % (
+            self.applicationid, self.usageid, self.rating, self.author)#pylint:disable-msg=E1101
 
 
 class BinaryPackageTag(SABase):
@@ -332,10 +607,23 @@ class Comment(SABase):
                        self.application.name,
                        self.time) #pylint:disable-msg=E1101
 
-    def fancy_delta(self, precision=2):
-        fancy_delta = FancyDateTimeDelta(self.time) #pylint:disable-msg=E1101
-        return fancy_delta.format(precision)
+    def fancy_delta(self, precision=2, short=False):
+        return fancy_delta(self.time, precision, short)
 
+
+class Usage(SABase):
+    '''Application usage tags.
+
+    Table -- usages
+    '''
+
+    def __init__(self, name):
+        super(Usage, self).__init__()
+        self.name = name
+
+    def __repr__(self):
+        return 'Usage(%r)' % (self.name)
+        
 
 class Tag(SABase):
     '''Application and/or Binarypackage Tags.
@@ -350,6 +638,21 @@ class Tag(SABase):
     def __repr__(self):
         return 'Tag(%r)' % (self.name)
         
+
+class MimeType(SABase):
+    '''Mimetype representation.
+
+    Table -- MimeTypes
+    '''
+
+    def __init__(self, name):
+        super(MimeType, self).__init__()
+        self.name = name
+
+    def __repr__(self):
+        return 'MimeType(%r)' % (self.name)
+
+
 class IconName(SABase):
 
     def __init__(self, name):
@@ -358,7 +661,8 @@ class IconName(SABase):
 
     def __repr__(self):
         return 'IconName(%r)' % (self.name)
-        
+       
+
 class Theme(SABase):
 
     def __init__(self, name):
@@ -370,16 +674,17 @@ class Theme(SABase):
         
 class Icon(SABase):
 
-    def __init__(self, icon=None, name=None, collection=None, theme=None):
+    def __init__(self, icon=None, name=None, collection=None, theme=None, orig_size=0):
         super(Icon, self).__init__()
         self.icon = icon
         self.name = name
         self.collection = collection
         self.theme = theme
+        self.orig_size = orig_size
 
     def __repr__(self):
-        return 'Icon(%r, collection=%r, theme=%r)' % (
-            self.name, self.collection.name, self.theme.name)
+        return 'Icon(%r, collection=%r, theme=%r, orig_size=%r)' % (
+            self.name, self.collection.name, self.theme.name, self.orig_size)
         
 #
 # Mappers
@@ -390,10 +695,22 @@ mapper(Application, ApplicationsTable, properties={
         secondary=PackageBuildApplicationsTable, cascade='all'),
     'by_tag': relation(ApplicationTag,
         collection_class=attribute_mapped_collection('tag')),
+    'tags': relation(ApplicationTag, cascade='all'),
+    'mimetypes': relation(MimeType, backref=backref('applications'),
+        secondary=AppsMimeTypesTable, cascade='all'),
     'comments': relation(Comment, backref=backref('application'),
         cascade='all, delete-orphan'),
     'iconname': relation(IconName, backref=backref('applications')),
-    'icon': relation(Icon),
+    'icon': relation(Icon, backref=backref('applications')),
+    'usages': relation(ApplicationUsage, cascade='all'),
+    })
+
+#mapper(Blacklist, BlacklistTable)
+
+mapper(ApplicationUsage, ApplicationsUsagesTable, 
+    properties={
+        'usage': relation(Usage, cascade='all'),
+        'application': relation(Application, cascade='all'),
     })
 
 mapper(ApplicationTag, ApplicationsTagsTable, 
@@ -410,7 +727,11 @@ mapper(BinaryPackageTag, BinaryPackageTagsTable,
 
 mapper(Comment, CommentsTable)
 
+mapper(MimeType, MimeTypesTable)
+
 mapper(Tag, TagsTable)
+
+mapper(Usage, UsagesTable)
 
 mapper(IconName, IconNamesTable)
 

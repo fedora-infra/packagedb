@@ -29,11 +29,15 @@ indirectly from here.
 #   we have to disable this when accessing an attribute of a mapped class.
 # :W0232: Controller methods don't need an __init__()
 
-from turbogears import controllers, expose
+from turbogears import controllers, expose, redirect
 from turbogears.database import session
 from sqlalchemy.orm import eagerload
+from sqlalchemy.sql.expression import and_
 
 from pkgdb import release, _
+
+import logging
+log = logging.getLogger(__name__)
 
 from pkgdb.acls import Acls
 from pkgdb.collections import Collections
@@ -41,18 +45,19 @@ from pkgdb.comments import Comments
 from pkgdb.feeds import ApplicationFeed, CommentsFeed
 from pkgdb.listqueries import ListQueries
 from pkgdb.packages import Package
-from pkgdb.applications import ApplicationController
+from pkgdb.applications import ApplicationController, AppIconController
+from pkgdb.applications import ApplicationsController
+from pkgdb.builds import BuildsController
 from pkgdb.stats import Stats
 from pkgdb.search import Search
 from pkgdb.tag import Tags
+from pkgdb.user_rating import UserRatings
 from pkgdb.users import Users
 
-from pkgdb.model import PackageBuild, Comment, ApplicationsTable
+from pkgdb.model import PackageBuild, Comment, Application
 
 from fedora.tg import controllers as f_ctrlers
 
-import logging
-log = logging.getLogger(__name__)
 
 class Root(controllers.RootController):
     '''Toplevel controller for the PackageDB
@@ -64,6 +69,7 @@ class Root(controllers.RootController):
     app_title = _('Fedora Package Database')
 
     appfeed = ApplicationFeed()
+    appicon = AppIconController()
     commentsfeed = CommentsFeed()
     acls = Acls(app_title)
     collections = Collections(app_title)
@@ -71,10 +77,14 @@ class Root(controllers.RootController):
     lists = ListQueries(app_title)
     packages = Package(app_title)
     applications = ApplicationController(app_title)
+    apps = ApplicationsController(app_title)
     stats = Stats(app_title)
     search = Search(app_title)
     tag = Tags(app_title)
+    rating = UserRatings(app_title)
     users = Users(app_title)
+    builds = BuildsController(app_title)
+
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, *args, **kwargs):
@@ -82,26 +92,36 @@ class Root(controllers.RootController):
         login_dict['title'] = _('Login to the PackageDB')
         return login_dict
 
+
     @expose(allow_json=True)
     def logout(self):
         return f_ctrlers.logout()
 
-    @expose(template='pkgdb.templates.overview')
+
+    @expose(template='pkgdb.templates.home')
     def index(self):
         '''Overview of the PackageDB.
 
         This page serves as an overview of the entire PackageDB.  
         '''
-        #pylint:disable-msg=E1101
-        packages = session.query(PackageBuild)\
-                .options(eagerload('applications'))\
-                .join('applications')\
-                .filter(ApplicationsTable.c.apptype == 'desktop')\
-                .order_by(PackageBuild.committime.desc()).limit(7).all()
+        fresh = PackageBuild.most_fresh(5)
 
-        comments = Comment.query.filter_by(published=True).order_by(
-            Comment.time.desc()).limit(7).all()
-        #pylint:enable-msg=E1101
+        comments = Application.last_commented(10)
 
-        return dict(packages=packages, comments=comments,
-            title=self.app_title, version=release.VERSION)
+        popular = Application.most_popular(limit=10)
+
+        return dict(title=self.app_title, version=release.VERSION,
+            pattern='', comments=comments, fresh=fresh, popular=popular)
+
+
+    @expose(template='pkgdb.templates.home')
+    def search_dispatcher(self, pattern='', submit='' ):
+
+        if submit == 'Builds':
+            redirect('/builds/search/%s' % pattern)
+        elif submit == 'Applications':
+            redirect('/apps/search/%s' % pattern)
+        elif submit == 'Packages':
+            redirect('/acls/list/*%s*' % pattern)
+
+        redirect('/')

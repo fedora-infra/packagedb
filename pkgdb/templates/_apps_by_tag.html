@@ -1,0 +1,8 @@
+<html xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      py:strip="">
+
+    <xi:include href="_apps_by_marker.html" />
+    ${_apps_by_marker(data_url=tg.url('/apps/_by_tag/'), marker_type='tag', value=tag)}
+
+</html>

@@ -47,7 +47,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.sql import and_
 
-from turbogears.database import metadata, mapper, get_engine
+from turbogears.database import metadata, mapper, get_engine, session
 
 from fedora.tg.json import SABase
 
@@ -366,6 +366,14 @@ class PackageBuild(SABase):
             self.release, self.architecture, self.size,
             self.license, self.changelog, self.committime, self.committer,
             self.repoid)
+
+    def __str__(self):
+        return "%s-%s-%s.%s" % (self.name, self.version, 
+                self.release, self.architecture)
+
+    def download_path(self):
+        return "%s%s%s%s.rpm" % (self.repo.mirror, self.repo.url, 
+                ('','Packages/')[self.repo.url.endswith('os/')], self)
     
     def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild
@@ -380,6 +388,23 @@ class PackageBuild(SABase):
                     scores[tag] = score
 
         return scores
+
+
+    @classmethod
+    def most_fresh(self, limit=5):
+        """Query that returns last pkgbuild imports
+
+        :arg limit: top <limit> apps
+
+        Excerpt from changelog is returned as well
+        """
+        #pylint:disable-msg=E1101
+        fresh = session.query(PackageBuild)\
+                .order_by(PackageBuild.committime.desc())
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            fresh = fresh.limit(limit)
+        return fresh
 
 #
 # Mappers

@@ -1,0 +1,21 @@
+<html xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      py:strip="">
+
+    <div class="app-search-result-box">
+        <table>
+        <tr py:for="app in app_list">
+          <td class="col-icon"><a href="${tg.url('/applications/%s' % app['name'])}">
+                <img src="${tg.url('/appicon/show/%s' % app['name'])}" />
+              </a>
+          </td>
+          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app['name'])}">${app['name']}</a></div>${app['summary']}</td>
+          <td>${app['description']}</td>
+        </tr>
+        <tr py:if="len(app_list)==0">
+          <td colspan="3">No application found</td>
+        </tr>
+        </table>
+    </div>
+
+</html>

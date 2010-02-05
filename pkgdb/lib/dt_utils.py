@@ -20,6 +20,20 @@
 
 from datetime import datetime
 
+periods = ['year', 'month', 'day', 'hour', 'minute']
+periods_short = {
+    'year':'y', 
+    'month':'m', 
+    'day':'d', 
+    'hour':'h',
+    'minute':'min'
+    }
+periods_long = dict(((p,p) for p in periods))
+
+def fancy_delta(dt, precision=2, short=False):
+    delta = FancyDateTimeDelta(dt)
+    return delta.format(precision, short)
+
 class FancyDateTimeDelta(object):
     """
     Format the date / time difference between the supplied date and
@@ -43,14 +57,20 @@ class FancyDateTimeDelta(object):
         self.hour = delta.seconds / 3600
         self.minute = delta.seconds / 60 - (60 * self.hour)
 
-    def format(self, precision=2):
+    def format(self, precision=2, short=False):
         fmt = []
-        for period in ['year', 'month', 'day', 'hour', 'minute']:
+        if short:
+            periods_d = periods_short
+        else:
+            periods_d = periods_long
+
+        for period in periods:
             value = getattr(self, period)
             if value:
-                if value > 1:
-                    period += "s"
-                fmt.append("%s %s" % (value, period))
+                unit = periods_d[period]
+                if value > 1 and not short:
+                    unit += "s"
+                fmt.append("%s %s" % (value, unit))
         if len(fmt) > 0:
             formated = ", ".join(fmt[:precision]) + " ago"
         else:
