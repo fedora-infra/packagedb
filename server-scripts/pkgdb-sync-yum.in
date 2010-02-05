@@ -69,6 +69,8 @@ parser_importlocal.set_defaults(func='import_local')
 parser_update = subparsers.add_parser('update', help='import latest builds from all repos. Script goes through latest builds backwards. It skips to next repo, when it hits already imported build.')
 parser_update.add_argument('--repo', '-r', metavar='shortname', default='*',
         help='go just through this repo. For list of valid repos run with showrepos command')
+parser_update.add_argument('--cachedir',
+        help='directory where the yum cache will be created during the import. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
 parser_update.add_argument('--force', action='store_true',
         help="reimport existing builds. When this option is selected we DON'T skip to next repo on hitting already imported build")
 parser_update.add_argument('--all', default=False, action='store_true',
@@ -186,6 +188,13 @@ def update(args):
     from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
     from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
 
+    cachedir = args.cachedir
+    if not cachedir:
+        cachedir = config.get('sync-yum.cachedir', '/var/tmp')
+
+
+    log.info('CacheDir: %s' % cachedir)
+
     # find repo
     #pylint:disable-msg=E1101
     repos = session.query(Repo)\
@@ -202,9 +211,20 @@ def update(args):
         log.info("Repo: %s" % repo.name)
         # prepare importer
     
-        importer = PackageBuildImporter(repo, force=args.force)
+        try:
+            importer = PackageBuildImporter(repo, force=args.force,
+                    cachedir=cachedir)
+        except Exception, e:
+            log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
+            continue
 
-        for pkg in importer.yumrepo.sack.returnNewestByName():
+        try:
+            pkgbuilds = importer.yumrepo.sack.returnNewestByName()
+        except Exception, e:
+            log.error('Failed to read repo %s! (%s)' % (repo.name, e))
+            continue
+
+        for pkg in pkgbuilds:
             if args.package and not fnmatch(pkg.name, args.package):
                 continue
             session.begin() #pylint:disable-msg=E1101

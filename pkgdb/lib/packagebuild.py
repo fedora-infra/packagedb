@@ -39,6 +39,8 @@ from sqlalchemy.sql import and_
 from sqlalchemy.orm.exc import NoResultFound
 
 import yum
+from yum.misc import getCacheDir
+from yum.parser import varReplace
 
 from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
 from pkgdb.model import RpmFiles, RpmProvides, RpmObsoletes, RpmConflicts
@@ -284,12 +286,19 @@ class RPM(object):
 
 class PackageBuildImporter(object):
 
-    def __init__(self, repo, force=False):
+    def __init__(self, repo, cachedir='/var/tmp', force=False):
         self.repo = repo
         self.force = force
         self.collection = repo.collection
         self._yumrepo = None
         self.yumbase = yum.YumBase()
+        cachedir = getCacheDir(cachedir)
+        if not cachedir:
+            raise PkgImportError('Unable to setup yum cache directory.')
+
+        self.yumbase.repos.setCacheDir(cachedir + varReplace('/$basearch/$releasever', self.yumbase.yumvar))
+
+        self.yumbase.conf.cachedir = cachedir
         self.yumbase.doTsSetup()
 
 
@@ -680,7 +689,7 @@ class PackageBuildImporter(object):
 
     def prune_builds(self):
         engine = get_engine()
-        engine.execute('delete from packagebuild p using(select id from packagebuild where repoid=%i except select max(id) from packagebuild where repoid=%i group by name) x where p.id=x.id' % (self.repo.id, self.repo.id))
+        engine.execute('delete from packagebuild using(select id from packagebuild where repoid=%i except select max(id) from packagebuild where repoid=%i group by name) x where packagebuild.id=x.id' % (self.repo.id, self.repo.id))
         log.info("Repo pruned...")
 
 
