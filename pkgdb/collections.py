@@ -48,7 +48,7 @@ from fedora.tg.util import json_or_redirect, request_format, tg_url
 
 from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
-from pkgdb.model.packages import Package, PackageListing
+from pkgdb.model.packages import Package, PackageListing, PackageTable
 from pkgdb.notifier import EventLogger
 from pkgdb.utils import admin_grp, STATUS
 
@@ -132,7 +132,6 @@ class Collections(controllers.Controller):
                 'statusname': collection.status.locale['C'].statusname
                 }
 
-        from model import PackageTable
         # Retrieve the package list for this collection
         # pylint:disable-msg=E1101
         packages = select((PackageTable,), and_(Package.id==PackageListing.packageid,
@@ -140,6 +139,14 @@ class Collections(controllers.Controller):
                 Package.statuscode!=STATUS['Removed'].statuscodeid),
                 order_by=(Package.name,)).execute()
         # pylint:enable-msg=E1101
+
+        # Workaround for problem with SA-0.5 Selectables not being decodable
+        # by TurboJson.  The proper fix is to write a rule to decode
+        # Selectables but we'll do that later.  Right now, pretty much
+        # everyone who wants this list via json wants the whole thing so
+        # this isn't that inefficient.
+        if request_format() == 'json':
+            packages = list(packages)
 
         return dict(title='%s -- %s %s' % (self.app_title, collection.name,
             collection.version), collection=collection_entry,
