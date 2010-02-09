@@ -343,8 +343,10 @@ class ListQueries(controllers.Controller):
             buildtags[repo] = {}
 
             #pylint:disable-msg=E1101
-            repoid = Repo.query.filter_by(shortname=repo).one().id
-            builds = PackageBuild.query.filter_by(repoid=repoid)
+            repoid = session.query(Repo).filter_by(shortname=repo).one().id
+            builds = session.query(PackageBuild)\
+                    .join(PackageBuild.repos)\
+                    .filter(Repo.id==repoid)
             #pylint:enable-msg=E1101
 
             for build in builds:

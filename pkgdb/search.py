@@ -196,8 +196,8 @@ class Search(controllers.Controller):
         for group in [exact, names, descriptions]:
             if group:
                 #pylint:disable-msg=E1101
-                for b in group.join(PackageBuild.repo).filter(
-                    Repo.collectionid==collection).all():
+                for b in group.join(PackageBuild.repos).filter(
+                    Repos.collectionid==collection).all():
                     buildset.add(b)
                 #pylint:enable-msg=E1101
 

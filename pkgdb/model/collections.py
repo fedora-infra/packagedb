@@ -30,7 +30,7 @@ from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
-from pkgdb.model.packages import PackageListing, PackageBuild
+from pkgdb.model.packages import PackageListing, PackageBuild, PackageBuildReposTable
 
 get_engine()
 
@@ -220,6 +220,6 @@ mapper(Branch, BranchTable, inherits=Collection,
         polymorphic_identity='b')
 mapper(CollectionPackage, CollectionPackageTable)
 mapper(Repo, ReposTable, properties={
-    'builds': relation(PackageBuild, backref=backref('repo'),
-         collection_class = attribute_mapped_collection('name'))
+    'builds': relation(PackageBuild, backref=backref('repos'),
+        secondary=PackageBuildReposTable, cascade='all'),
     })

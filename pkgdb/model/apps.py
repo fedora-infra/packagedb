@@ -367,9 +367,10 @@ class Application(SABase):
         builds = {}
 
         for build in self.builds:
-            blds = builds.get(build.repo.collection,[])
-            blds.append(build)
-            builds[build.repo.collection] = blds
+            for repo in build.repos:
+                blds = builds.get(repo.collection,[])
+                blds.append(build)
+                builds[repo.collection] = blds
 
         return builds
 

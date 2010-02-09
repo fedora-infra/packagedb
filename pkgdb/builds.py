@@ -203,7 +203,7 @@ class BuildsController(controllers.Controller):
             Repo.shortname.label('repo'),
         ]
 
-        join = [Repo]
+        join = [PackageBuild.repos]
 
         filter = []
 
@@ -285,13 +285,16 @@ class BuildsController(controllers.Controller):
             redirect('/builds')
 
         try:
-            build = session.query(PackageBuild).filter_by(
-                name=buildname,
-                epoch=epoch,
-                version=version,
-                release=rel,
-                architecture=arch,
-                repo=repo).one()
+            build = session.query(PackageBuild)\
+                .join(PackageBuild.repos)\
+                .filter(and_(
+                    PackageBuild.name==buildname,
+                    PackageBuild.epoch==epoch,
+                    PackageBuild.version==version,
+                    PackageBuild.release==rel,
+                    PackageBuild.architecture==arch,
+                    Repo.id==repo.id))\
+                .one()
         except NoResultFound:
             flash('Build (%s-%s:%s-%s.%s) was not found' % (buildname, epoch, version, rel, arch))
             redirect('/builds')

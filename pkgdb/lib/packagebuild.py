@@ -386,7 +386,6 @@ class PackageBuildImporter(object):
                     packageid=self.get_package(rpm).id,
                     version=rpm.version,
                     architecture=rpm.arch,
-                    repoid=self.repo.id,
                     release=rpm.release).one()
             #pylint:enable-msg=E1101
         except NoResultFound:
@@ -396,12 +395,13 @@ class PackageBuildImporter(object):
                 epoch=rpm.epoch, version=rpm.version,
                 release=rpm.release, 
                 size=0, architecture=rpm.arch, license='', changelog='',
-                committime=datetime.datetime.now(), committer='',
-                repoid=self.repo.id)
+                committime=datetime.datetime.now(), committer='')
             session.add(pkgbuild) #pylint:disable-msg=E1101
 
             # create link to listing
             listing.builds.append(pkgbuild)
+            self.repo.builds.append(pkgbuild)
+
         else:
             # The build already exists
             # interrupt import unless in force mode
@@ -411,6 +411,10 @@ class PackageBuildImporter(object):
             # check link to listing
             if not pkgbuild in listing.builds:
                 listing.builds.append(pkgbuild)
+
+            # check link to repo
+            if not pkgbuild in self.repo.builds:
+                self.repo.builds.append(pkgbuild)
 
         # store commit data
         #FIXME: should be committime really tz aware?
@@ -689,7 +693,7 @@ class PackageBuildImporter(object):
 
     def prune_builds(self):
         engine = get_engine()
-        engine.execute('delete from packagebuild using(select id from packagebuild where repoid=%i except select max(id) from packagebuild where repoid=%i group by name) x where packagebuild.id=x.id' % (self.repo.id, self.repo.id))
+        engine.execute('delete from packagebuild using(select pb.id from packagebuild pb, packagebuildrepos pbs where pbr.repoid=%i and pb.id=pbr.packagebuildid except select max(pb.id) from packagebuild pb, packagebuildrepos pbr where pbr.repoid=%i and pbr.packagebuildid=pb.id group by pb.name) x where packagebuild.id=x.id' % (self.repo.id, self.repo.id))
         log.info("Repo pruned...")
 
 
