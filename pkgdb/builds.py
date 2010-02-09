@@ -28,21 +28,21 @@ Controller for displaying PackageBuild related information
 #   we have to disable this when accessing an attribute of a mapped class.
 
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.expression import and_, literal_column, union
+from sqlalchemy.sql.expression import and_, or_, literal_column, union
 from sqlalchemy import Text, Integer
 
 from turbogears import controllers, expose, identity, redirect, flash
 from turbogears import paginate
 from turbogears.database import session
 
-from pkgdb.model import Repo, PackageBuild
+from pkgdb.model import Repo, PackageBuild, RpmFiles, RpmProvides
+from pkgdb.model import RpmRequires, PackageBuildDepends
 from pkgdb import release, _
 
 from fedora.tg.util import request_format
 
 from operator import itemgetter
 import re
-
 
 import logging
 log = logging.getLogger('pkgdb.builds')
@@ -68,7 +68,7 @@ class BuildsController(controllers.Controller):
     @expose(template='pkgdb.templates.builds_search')
     @paginate('build_list', limit=50, default_order='name', max_limit=None,
             max_pages=13) #pylint:disable-msg=C0322
-    def search(self, pattern=''):
+    def search(self, *pattern):
         '''Builds search result
 
         :arg pattern: pattern to be looked for in apps.
@@ -79,80 +79,177 @@ class BuildsController(controllers.Controller):
         in listing.
         '''
 
-        pkg_list = []
+        pattern = '/'.join(pattern)
 
-        if pattern == '':
+        build_base = {}
+
+        if len(pattern) == 0:
             flash('Insert search pattern...')
 
-        builds = self._builds_search_query(pattern).execute()
+        s_pattern = self._parse_pattern(pattern)
 
-        # merge all hits 
-        merged_results = {}
-        for b in builds:
-            result = merged_results.get(b['id'], None)
-            if result is None:
-                result = {
-                    'name': b['name'],
-                    'epoch': b['epoch'],
-                    'release': b['release'],
-                    'version': b['version'],
-                    'arch': b['architecture'],
-                    'repo': b['repo'],
-                    'score': 0,
-                    'obsoletes': [],
-                    'provides': [],
-                    'requires': [],
-                    'conflicts': [],
-                    'depend': [],
-                }
-            result['score'] += b['score']
-            if b['foundin'] == 'Obsoletes':
-                result['obsoletes'].append(b['data'])
-            elif b['foundin'] == 'Provides':
-                result['provides'].append(b['data'])
-            elif b['foundin'] == 'Requires':
-                result['requires'].append(b['data'])
-            elif b['foundin'] == 'Conflicts':
-                result['conflicts'].append(b['data'])
-            elif b['foundin'] == 'Depend':
-                result['depend'].append(b['data'])
+        builds_raw = self._builds_search_query(s_pattern).statement.execute()
 
-            merged_results[b['id']] = result
+        for b in builds_raw:
+            build_base[b.id] = self._score_build(b, s_pattern, build_base.get(b.id, None))
 
-        build_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
+        build_list = sorted(build_base.values(), key=itemgetter('score'), reverse=True)
+
                 
         return dict(title=self.app_title, version=release.VERSION,
-            pattern=pattern, build_list=build_list)
+            pattern=pattern, s_pattern=s_pattern, build_list=build_list)
+
+    
+    def _score_build(self, b, pattern, update=None):
+        result = {
+            'name': b.name,
+            'epoch': b.epoch,
+            'release': b.release,
+            'version': b.version,
+            'arch': b.architecture,
+            'repo': b.repo,
+            'license': b.license,
+            'committer': b.committer,
+            'score': 0,
+            'obsoletes': [],
+            'provides': [],
+            'requires': [],
+            'conflicts': [],
+            'depends': [],
+            'files': [],
+        }
+
+        score = 0
+
+        if pattern.has_key('default'):
+            for p in pattern['default']:
+                p = p.lower()
+                if p in b.name.lower():
+                    score += 5
+                if p in b.license.lower():
+                    score += 1
+                if p in b.committer.lower():
+                    score += 2
+
+        if pattern.has_key('arch:'):
+            for p in pattern['arch:']:
+                if p.lower() in b.architecture.lower():
+                    score += 3
+            
+        if pattern.has_key('repo:'):
+            for p in pattern['repo:']:
+                if p.lower() in b.repo.lower():
+                    score += 3
+
+        if pattern.has_key('file:'):
+            result['files'] = [b.files]
+            score += 3
+
+        if pattern.has_key('provides:'):
+            result['provides'] = [b.provides]
+            score += 3
+
+        if pattern.has_key('requires:'):
+            result['requires'] = [b.requires]
+            score += 3
+
+        if pattern.has_key('depends:'):
+            result['depends'] = [b.depends]
+            score += 3
+
+        result['score'] = score
+
+        if update:
+            result['score'] += update['score']
+            result['files'].extend(update['files'])
+            result['provides'].extend(update['provides'])
+            result['requires'].extend(update['requires'])
+            result['depends'].extend(update['depends'])
+
+        return result
+        
+    
+    def _parse_pattern(self, pattern):
+        p = re.compile(r'\s+')
+        s_pattern = {}
+        for pat in  p.sub(' ', pattern).split(' '):
+            found = False
+            for prefix in ['repo:', 'arch:', 'file:', 'provides:', 'requires:', 'depends:']:
+                if pat.startswith(prefix):
+                    tmp = s_pattern.get(prefix, [])
+                    tmp.append(pat[len(prefix):])
+                    s_pattern[prefix] = tmp
+                    found = True
+                    break
+            if not found:
+                tmp = s_pattern.get('default', [])
+                tmp.append(pat)
+                s_pattern['default'] = tmp
+
+        return s_pattern
 
 
     def _builds_search_query(self, pattern):
-        p = re.compile(r'\W+')
-        s_pattern = p.sub(' ', pattern).split(' ')
+                
+        columns = [
+            PackageBuild.id,
+            PackageBuild.name,
+            PackageBuild.epoch,
+            PackageBuild.version,
+            PackageBuild.release,
+            PackageBuild.architecture,
+            PackageBuild.license,
+            PackageBuild.committer,
+            Repo.shortname.label('repo'),
+        ]
 
-        # name
-        q_name = session.query(
-                PackageBuild.id,
-                PackageBuild.name,
-                PackageBuild.epoch,
-                PackageBuild.version,
-                PackageBuild.release,
-                PackageBuild.architecture,
-                Repo.shortname.label('repo'),
-                literal_column("'Name'", Text).label('foundin'),
-                literal_column('100', Integer).label('score'),
-                literal_column('0', Integer).label('data'))\
-            .join(Repo)\
-            .filter(
-                and_(
-                    1 == 1, 
-                    *(PackageBuild.name.ilike('%%%s%%' % p) for p in s_pattern)
-                )
+        join = [Repo]
+
+        filter = []
+
+        if pattern.has_key('default'):
+            filter.extend(
+                (or_(
+                    PackageBuild.name.ilike('%%%s%%' % p),
+                    PackageBuild.license.ilike('%%%s%%' % p),
+                    PackageBuild.committer.ilike('%%%s%%' % p))
+                    for p in pattern['default'])
             )
+        if pattern.has_key('arch:'):
+            filter.append(
+                or_(*(PackageBuild.architecture.ilike(p.replace('*', '%')) for p in pattern['arch:'])))
 
-        # union that
-        builds_query = union(
-                    q_name,
-                    )
+        if pattern.has_key('repo:'):
+            filter.append(
+                or_(*(Repo.shortname.ilike(p.replace('*', '%')) for p in pattern['repo:'])))
+
+        if pattern.has_key('file:'):
+            filter.append(
+                or_(*(RpmFiles.name.ilike(p.replace('*', '%')) for p in pattern['file:'])))
+            join.append(RpmFiles)
+            columns.append(RpmFiles.name.label('files'))
+
+        if pattern.has_key('provides:'):
+            filter.append(
+                or_(*(RpmProvides.name.ilike(p.replace('*', '%')) for p in pattern['provides:'])))
+            join.append(RpmProvides)
+            columns.append(RpmProvides.name.label('provides'))
+
+        if pattern.has_key('requires:'):
+            filter.append(
+                or_(*(RpmRequires.name.ilike(p.replace('*', '%')) for p in pattern['requires:'])))
+            join.append(RpmRequires)
+            columns.append(RpmRequires.name.label('requires'))
+
+        if pattern.has_key('depends:'):
+            filter.append(
+                or_(*(PackageBuildDepends.packagebuildname.ilike(p.replace('*', '%')) for p in pattern['depends:'])))
+            join.append(PackageBuildDepends)
+            columns.append(PackageBuildDepends.packagebuildname.label('depends'))
+
+        builds_query = session.query(*columns)\
+            .join(*join)\
+            .filter(and_(*filter))
 
         return builds_query
 

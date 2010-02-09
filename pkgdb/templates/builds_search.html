@@ -13,7 +13,7 @@
   </head>
   <body>
   <div id="main-pannel">
-    <h2 style="color: #337acc;" >Applications</h2>
+    <h2 style="color: #337acc;" >Builds</h2>
     <xi:include href="_apps_search.html" />
     ${search_box(packages=False, apps=False)}
 
@@ -27,7 +27,7 @@
           <td>
             <div class="app-name">
                 <a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b.repo, b.name, b.epoch, b.version, b.release, b.arch))}">
-                    ${HTML(highlight("%s-%s%s-%s.%s" % (b.name, ('', b.epoch+':')[bool(int(b.epoch))], b.version, b.release, b.arch), pattern))}
+                    ${HTML("%s-%s-%s.%s" % (highlight(b.name, ' '.join(s_pattern.get('default', ['']))), b.version, b.release, highlight(b.arch, ' '.join(s_pattern.get('arch:', [''])))))}
                 </a>
             </div>
           </td>
@@ -35,20 +35,29 @@
             ${b.repo}
           </td>
           <td>
-                <!-->
-                ${HTML(highlight(app['descr'], pattern))} 
-                <py:if test="app['usage']">
-                <b>Usage:</b> ${HTML(highlight(', '.join(app['usage']), pattern))} 
-                </py:if>
-                <py:if test="app['tags']">
-                <b>Tags:</b> ${HTML(highlight(', '.join(app['tags']), pattern))}
-                </py:if>
-                <py:if test="app['mimetypes']">
-                <b>MimeTypes:</b> ${HTML(highlight(', '.join(app['mimetypes']), pattern))}
-                </py:if>
-                <py:if test="app['comments']">
-                <b>Comments:</b> ${HTML(highlight(', '.join(app['comments']), pattern))}
-                </py:if-->
+                <span py:if="b.has_key('committer')" py:strip="True">
+                <b>Commit:</b> ${HTML(highlight(b['committer'].split(chr(60))[0], ' '.join(s_pattern.get('default', ['']))))}, 
+                </span>
+                <span py:if="b.has_key('license')" py:strip="True">
+                <b>License:</b> ${HTML(highlight(b['license'], ' '.join(s_pattern.get('default', ['']))))},
+                </span>
+                <span py:if="b.has_key('files') and b['files']" py:strip="True">
+                <b>Files:</b> ${HTML(highlight(', '.join(b['files'][:5]), ' '.join(s_pattern.get('file:', ['']))))}
+                <span py:if="len(b['files'])>5" py:strip="True">...</span>,
+                </span>
+                <span py:if="b.has_key('provides') and b['provides']" py:strip="True">
+                <b>Provides:</b> ${HTML(highlight(', '.join(b['provides'][:5]), ' '.join(s_pattern.get('provides:', ['']))))}
+                <span py:if="len(b['provides'])>10" py:strip="True">...</span>,
+                </span>
+                <span py:if="b.has_key('requires') and b['requires']" py:strip="True">
+                <b>Requires:</b> ${HTML(highlight(', '.join(b['requires'][:5]), ' '.join(s_pattern.get('requires:', ['']))))}
+                <span py:if="len(b['requires'])>10" py:strip="True">...</span>,
+                </span>
+                <span py:if="b.has_key('depends') and b['depends']" py:strip="True">
+                <b>Depends:</b> ${HTML(highlight(', '.join(b['depends'][:5]), ' '.join(s_pattern.get('depends:', ['']))))}
+                <span py:if="len(b['depends'])>10" py:strip="True">...</span>,
+                </span>
+                <b>Score:</b> ${b['score']}
             </td>
         </tr>
         <tr py:if="len(build_list)==0">
