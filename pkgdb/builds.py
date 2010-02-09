@@ -66,7 +66,7 @@ class BuildsController(controllers.Controller):
 
     
     @expose(template='pkgdb.templates.builds_search')
-    @paginate('build_list', limit=50, default_order='name', max_limit=None,
+    @paginate('build_list', limit=90, default_order=('-score','name'), max_limit=None,
             max_pages=13) #pylint:disable-msg=C0322
     def search(self, *pattern):
         '''Builds search result
@@ -93,11 +93,11 @@ class BuildsController(controllers.Controller):
         for b in builds_raw:
             build_base[b.id] = self._score_build(b, s_pattern, build_base.get(b.id, None))
 
-        build_list = sorted(build_base.values(), key=itemgetter('score'), reverse=True)
+        #build_list = sorted(build_base.values(), key=itemgetter('score'), reverse=True)
 
                 
         return dict(title=self.app_title, version=release.VERSION,
-            pattern=pattern, s_pattern=s_pattern, build_list=build_list)
+            pattern=pattern, s_pattern=s_pattern, build_list=build_base.values())
 
     
     def _score_build(self, b, pattern, update=None):
