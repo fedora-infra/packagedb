@@ -140,14 +140,6 @@ class Collections(controllers.Controller):
                 order_by=(Package.name,)).execute()
         # pylint:enable-msg=E1101
 
-        # Workaround for problem with SA-0.5 Selectables not being decodable
-        # by TurboJson.  The proper fix is to write a rule to decode
-        # Selectables but we'll do that later.  Right now, pretty much
-        # everyone who wants this list via json wants the whole thing so
-        # this isn't that inefficient.
-        if request_format() == 'json':
-            packages = list(packages)
-
         return dict(title='%s -- %s %s' % (self.app_title, collection.name,
             collection.version), collection=collection_entry,
             packages=packages)
