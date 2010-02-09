@@ -22,6 +22,10 @@ Utilities for text manipulation
 '''
 
 import re
+import logging
+
+log = logging.getLogger(__name__)
+
 
 def excerpt(text, pattern, max=60, all=False):
     """ Returns selected sentences containing pattern with 
@@ -95,8 +99,26 @@ def excerpt(text, pattern, max=60, all=False):
 
 
 def highlight(text, pattern, pre='<span class="highlight">', post='</span>'):
-    p = re.compile(r'\W+')
+    """Wraps pattern occurences in text with pre and post content. 
+
+    Space and star in pattern is used as word separator.
+
+    :arg text:      text to be searched for pattern
+    :arg pattern:   pattern that should be highlighted
+    :arg pre:       what to place before pattern occurence in text to make it highlighted
+    :arg post:      what to place after the pattern occurence
+    
+    :returns:       text with markup around pattern occurences
+    """
+
+    pattern = pattern.replace('*',' ')
+    p = re.compile(r'\s+')
     pattern = p.sub(' ', pattern)
-    p = re.compile('(%s)' % pattern.replace(' ','|'), re.I)
+    pattern = pattern.strip()
+    pat = '(%s)' % re.escape(pattern).replace('\\ ','|')
+    p = re.compile(pat, re.I)
     result = p.sub(pre+r'\1'+post, text)
+
     return result
+
+
