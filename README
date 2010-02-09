@@ -145,6 +145,8 @@ Run the following scripts to bring it up to date::
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-6_usage.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-7_icon.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-8_mimetypes.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-9_langremoval2.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-10_critpath.sql
 
 Your postgres server is now all set.
 
