@@ -42,7 +42,7 @@
 }
 
 #content table td {
-  border: 1px solid #aaa;
+  border: 1px solid #bbb;
 }
 
 .filter
@@ -354,28 +354,17 @@
 
 }
 
-#search-applications select {
-    background-color: #c0c0c0;
-    color: #333;
-    font-size: 80%;
-    margin-left: 5px;
-    padding: 0px;
-    padding-top: 3px;
-    vertical-align: middle;
-    border: 1px solid #888;
-
-}
-
-#search-applications options {
-    background-color: #cecece;
-    margin-left: 5px;
-    padding: 0px 0px;
-    vertical-align: middle;
-}
-
 #search-applications .hint {
     margin-left: 66px;
     font-size: 70%;
+}
+
+.dijitTooltip {
+    max-width: 60em;
+}
+
+.dijitTooltip h3 {
+    color: #337acc !important;
 }
 
 /* 
@@ -635,3 +624,4 @@
     list-style: none; 
     white-space: nowrap;
 }
+

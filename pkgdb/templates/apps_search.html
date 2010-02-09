@@ -10,6 +10,15 @@
     from genshi import HTML
   ?>
   <head>
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true" >
+    </script>
+    <script type="text/javascript">
+        dojo.require("dijit.Tooltip");
+        dojo.addOnLoad(function(){
+        });
+    </script>
   </head>
   <body>
   <div id="main-pannel">
