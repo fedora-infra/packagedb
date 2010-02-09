@@ -297,7 +297,6 @@ def _install_sbin(args, paths):
 # Any install target needs to first look in:
 # Commandline
 # Default config
-#
 @task
 def install_doc():
     pass
@@ -309,6 +308,15 @@ def install_public_code():
 @task
 def install_private_code():
     pass
+
+def _db_autodoc_run(*args, **kwargs):
+    cmd = subprocess.Popen('/usr/bin/postgresql_autodoc -d pkgdb -u pkgdbadmin -h localhost --password -t dia'.split(' '))
+    return cmd.wait()
+
+@task
+def db_autodoc():
+    autodocopts = options.module
+    dry('postgresql_autodoc -d pkgdb -u pkgdbadmin -h localhost --password -t dia', _db_autodoc_run, autodocopts)
 
 ### Frontends -- these are what you invoke with paver ###
 @task
