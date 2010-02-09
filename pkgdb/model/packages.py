@@ -85,6 +85,15 @@ BinaryPackagesTable = Table('binarypackages', metadata,
 PackageBuildTable = Table('packagebuild', metadata, autoload=True)
 PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
 
+PackageBuildReposTable = Table('packagebuildrepos', metadata,
+    Column('repoid', Integer, primary_key=True, nullable=False),
+    Column('packagebuildid', Integer, primary_key=True, nullable=False),
+    ForeignKeyConstraint(['repoid'], ['repos.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+
 # association tables (many-to-many relationships)
 PackageBuildListingTable = Table('packagebuildlisting', metadata,
         Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
@@ -342,8 +351,7 @@ class PackageBuild(SABase):
     Table -- PackageBuild
     '''
     def __init__(self, name, packageid, epoch, version, release, architecture,
-                 size, license, changelog, committime, committer,
-                 repoid):
+                 size, license, changelog, committime, committer):
         super(PackageBuild, self).__init__()
         self.name = name
         self.packageid = packageid
@@ -356,16 +364,17 @@ class PackageBuild(SABase):
         self.changelog = changelog
         self.committime = committime
         self.committer = committer
-        self.repoid = repoid
+
+    repo = property(lambda self:self.repos[0])
 
     def __repr__(self):
-        return 'PackageBuild(%r, packageid=%r, epoch=%r, version=%r,' \
+        return 'PackageBuild(%r, epoch=%r, version=%r,' \
                ' release=%r, architecture=%r, size=%r, license=%r,' \
-               ' changelog=%r, committime=%r, committer=%r, repoid=%r)' % (
-            self.name, self.packageid, self.epoch, self.version,
+               ' changelog=%r, committime=%r, committer=%r, packageid=%r, repoid=%r)' % (
+            self.name, self.epoch, self.version,
             self.release, self.architecture, self.size,
             self.license, self.changelog, self.committime, self.committer,
-            self.repoid)
+            self.packageid, self.repo.id)
 
     def __str__(self):
         return "%s-%s-%s.%s" % (self.name, self.version, 

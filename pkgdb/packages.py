@@ -67,7 +67,7 @@ class Package(controllers.Controller):
         # look for The One packagebuild
         try:
             #pylint:disable-msg=E1101
-            build = builds_query.join(PackageBuild.repo).filter(
+            build = builds_query.join(PackageBuild.repos).filter(
                 Repo.shortname==repo).one()
         except:
             error = dict(status=False,
