@@ -19,6 +19,7 @@ Requires: python-psycopg2
 Requires: python-genshi
 Requires: python-fedora >= 0.3.12
 Requires: python-bugzilla >= 0.5
+Requires: python-argparse
 Requires: koji
 Requires: mod_wsgi
 Requires: python-cpio
