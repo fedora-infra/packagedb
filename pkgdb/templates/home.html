@@ -16,38 +16,12 @@
             djConfig="parseOnLoad: true" >
     </script>
     <script type="text/javascript">
+        dojo.require("dijit.Tooltip");
         dojo.addOnLoad(function(){
         });
     </script>
   </head>
   <body>
-  <!--div id="info-bar" style="margin-top: 35px;">
-    <div py:if="comments" class="best-of-box">
-        <h4>5 latest comments</h4>
-        <table>
-        <tr py:for="app in comments">
-          <td class="col-icon"><a href="${tg.url('/applications/%s' % app[0])}">
-                <img src="${tg.url('/appicon/show/%s' % app[0])}" />
-              </a>
-          </td>
-          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app[0])}">${app[0]}</a></div>${app[1]}</td>
-        </tr>
-        </table>
-    </div>
-    
-    <div py:if="fresh" class="best-of-box">
-        <h4>5 most fresh builds</h4>
-        <table>
-        <tr py:for="app in fresh">
-          <td class="col-icon"><a href="${tg.url('/applications/%s' % app[0])}">
-                <img src="${tg.url('/appicon/show/%s' % app[0])}" />
-              </a>
-          </td>
-          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app[0])}">${app[0]}</a></div>${app[1]}</td>
-        </tr>
-        </table>
-    </div>
-  </div-->
   <div id="main-pannel">
     <h1>Fedora Package Database -- Version ${version}</h1>
     <h2>Overview</h2>

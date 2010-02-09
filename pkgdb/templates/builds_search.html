@@ -4,12 +4,22 @@
   xmlns:xi="http://www.w3.org/2001/XInclude"
   xml:lang="en" lang="en">
   <xi:include href="layout.html" />
+  <xi:include href="paginator.html" />
   <?python
     from pkgdb.lib.dt_utils import fancy_delta
     from pkgdb.lib.text_utils import highlight
     from genshi import HTML
   ?>
   <head>
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true" >
+    </script>
+    <script type="text/javascript">
+        dojo.require("dijit.Tooltip");
+        dojo.addOnLoad(function(){
+        });
+    </script>
   </head>
   <body>
   <div id="main-pannel">
@@ -18,6 +28,7 @@
     ${search_box(packages=False, apps=False)}
 
     <div py:if="build_list" class="app-search-result-box">
+        ${paginate_nav()}
         <table>
         <tr py:for="b in build_list">
           <td class="col-icon"><a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b.repo, b.name, b.epoch, b.version, b.release, b.arch))}">
@@ -64,6 +75,7 @@
           <td colspan="4">No packagebuild found</td>
         </tr>
         </table>
+        ${paginate_nav()}
     </div>
 
   </div>
