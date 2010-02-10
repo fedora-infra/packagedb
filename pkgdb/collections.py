@@ -48,7 +48,7 @@ from fedora.tg.util import json_or_redirect, request_format, tg_url
 
 from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
-from pkgdb.model.packages import Package, PackageListing
+from pkgdb.model.packages import Package, PackageListing, PackageTable
 from pkgdb.notifier import EventLogger
 from pkgdb.utils import admin_grp, STATUS
 
@@ -132,7 +132,6 @@ class Collections(controllers.Controller):
                 'statusname': collection.status.locale['C'].statusname
                 }
 
-        from model import PackageTable
         # Retrieve the package list for this collection
         # pylint:disable-msg=E1101
         packages = select((PackageTable,), and_(Package.id==PackageListing.packageid,
