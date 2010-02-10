@@ -336,6 +336,21 @@ class PackageBuildDepends(SABase):
             self.packagebuildid, self.packagebuildname)
 
 
+class PackageBuildRepo(SABase):
+    '''PackageBuild Repo association.
+
+    Table -- PackageBuildRepo
+    '''
+    def __init__(self, packagebuildid, repoid):
+        super(PackageBuildRepo, self).__init__()
+        self.packagebuildid = packagebuildid
+        self.repoid = repoid
+
+    def __repr__(self):
+        return 'PackageBuildRepo(%r, %r)' % (
+            self.packagebuildid, self.repoid)
+
+
 
 class PackageBuild(SABase):
     '''Package Builds - Actual rpms
@@ -434,6 +449,8 @@ mapper(PackageListing, PackageListingTable, properties={
     })
 
 mapper(PackageBuildDepends, PackageBuildDependsTable)
+
+mapper(PackageBuildRepo, PackageBuildReposTable)
 
 mapper(PackageBuild, PackageBuildTable, properties={
     'conflicts': relation(RpmConflicts, backref=backref('build'),

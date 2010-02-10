@@ -44,8 +44,8 @@ from yum.parser import varReplace
 
 from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
 from pkgdb.model import RpmFiles, RpmProvides, RpmObsoletes, RpmConflicts
-from pkgdb.model import RpmRequires, PackageBuildDepends
-from pkgdb.model import Icon, IconName, Theme
+from pkgdb.model import RpmRequires, PackageBuildDepends, PackageBuildRepo
+from pkgdb.model import Icon, IconName, Theme, Repo
 from pkgdb.model import Application
 
 from pkgdb.lib.desktop import Desktop, DesktopParseError
@@ -686,12 +686,48 @@ class PackageBuildImporter(object):
 
 
     def prune_builds(self):
-        engine = get_engine()
-        engine.execute('delete from packagebuild using(select pb.id from packagebuild pb, packagebuildrepos pbr where pbr.repoid=%i and pb.id=pbr.packagebuildid except select max(pb.id) from packagebuild pb, packagebuildrepos pbr where pbr.repoid=%i and pbr.packagebuildid=pb.id group by pb.name) x where packagebuild.id=x.id' % (self.repo.id, self.repo.id))
+        """Remove builds that are no longer in repo
+        """
+
+        # get what is we think is in repo
+        build_list = session.query(
+                PackageBuild.id,
+                PackageBuild.name,
+                PackageBuild.epoch,
+                PackageBuild.version,
+                PackageBuild.release,
+                PackageBuild.architecture)\
+            .join(PackageBuild.repos)\
+            .filter(Repo.id==self.repo.id)\
+            .all()
+
+        builds = dict(
+                ((b.name, b.epoch, b.version, b.release, b.architecture), b.id)\
+                for b in build_list)
+        
+        # delete what is realy in repo
+        for b in self.yumrepo.sack.returnNewestByName():
+            try:
+                del builds[(b.name, b.epoch, b.version, b.release, b.arch)]
+            except KeyError:
+                pass
+        
+        # delete from db what left
+        # delete build to repo associations
+        session.query(PackageBuildRepo)\
+            .filter(
+                and_(
+                    PackageBuildRepo.packagebuildid.in_(builds.values()),
+                    PackageBuildRepo.repoid==self.repo.id))\
+            .delete()
+
+        # deletion of builds without association to repo
+        # is guaranteed by db trigger
+
         log.info("Repo pruned...")
 
 
-    def close(self):
+    def close(self, prune=True):
         self.prune_builds()
 
 

@@ -172,7 +172,7 @@ def import_local(args):
         session.commit() #pylint:disable-msg=E1101
         rpm.close()
 
-    importer.close()
+    importer.close(prune=False) # do not remove builds records that are not on mirrors
     log.info('Done.')
 
 
