@@ -49,8 +49,10 @@ from turbogears.database import get_engine, session
 from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
         GroupPackageListingAcl, PackageListing, PersonPackageListing, \
         PersonPackageListingAcl, Repo, PackageBuild, Tag
-from pkgdb.model import PackageTable, PackageListingTable, CollectionTable, \
-        ApplicationTag, PackageBuildApplicationsTable, BinaryPackageTag
+from pkgdb.model import PackageTable, PackageListingTable, \
+        PersonPackageListingTable, PersonPackageListingAclTable, \
+        CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
+        BinaryPackageTag
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.utils import STATUS
@@ -621,9 +623,9 @@ class ListQueries(controllers.Controller):
                                 STATUS['Approved'].statuscodeid)
                         ).distinct().order_by('name')
         watcher_query = select((Package.name, PersonPackageListing.username),
-                from_obj=(PackageTable.join(PackageListing).join(
-                    Collection).join(PersonPackageListing).join(
-                        PersonPackageListingAcl))).where(and_(
+                from_obj=(PackageTable.join(PackageListingTable).join(
+                    CollectionTable).join(PersonPackageListingTable).join(
+                        PersonPackageListingAclTable))).where(and_(
                             Package.statuscode == \
                                     STATUS['Approved'].statuscodeid,
                             PackageListing.statuscode == \
