@@ -693,7 +693,7 @@ class PackageBuildImporter(object):
 
     def prune_builds(self):
         engine = get_engine()
-        engine.execute('delete from packagebuild using(select pb.id from packagebuild pb, packagebuildrepos pbs where pbr.repoid=%i and pb.id=pbr.packagebuildid except select max(pb.id) from packagebuild pb, packagebuildrepos pbr where pbr.repoid=%i and pbr.packagebuildid=pb.id group by pb.name) x where packagebuild.id=x.id' % (self.repo.id, self.repo.id))
+        engine.execute('delete from packagebuild using(select pb.id from packagebuild pb, packagebuildrepos pbr where pbr.repoid=%i and pb.id=pbr.packagebuildid except select max(pb.id) from packagebuild pb, packagebuildrepos pbr where pbr.repoid=%i and pbr.packagebuildid=pb.id group by pb.name) x where packagebuild.id=x.id' % (self.repo.id, self.repo.id))
         log.info("Repo pruned...")
 
 
