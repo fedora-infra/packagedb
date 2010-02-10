@@ -403,11 +403,11 @@ class PackageBuildImporter(object):
         else:
             # The build already exists
             # interrupt import unless in force mode
-            if not self.force:
+            if not self.force and (pkgbuild in self.repo.builds):
                 raise PkgImportAlreadyExists('This packagebuild was already imported.')
 
             # check link to repo
-            if not pkgbuild in self.repo.builds:
+            if pkgbuild not in self.repo.builds:
                 self.repo.builds.append(pkgbuild)
 
         # store commit data
