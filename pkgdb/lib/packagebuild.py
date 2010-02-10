@@ -342,13 +342,12 @@ class PackageBuildImporter(object):
         return self._yumrepo
 
 
-    def get_package_listing(self, package):
-        """Find package listing object that associates given package with
-        the collection.
+    def check_package_listing(self, package):
+        """Check if the package is in listing for the currently processed collection.
 
-        :arg package_name: name of the package which build we are going to import
+        :arg package: package object associated with build we are going to import
         :raises PkgImportError: when package is not included in the collection
-        :returns: package listing object
+        :returns: True if the check passed
         """
    
         try:
@@ -362,11 +361,11 @@ class PackageBuildImporter(object):
         except NoResultFound:
             raise PkgImportError('The package (%s) is not '
                     'included in requested collection (%s)!' % (package.name, self.collection.simple_name))
-            
-        return listing
+
+        return True
             
 
-    def store_package_build(self, rpm, listing):
+    def store_package_build(self, rpm):
         """Store packagebuild data in DB
 
         :args rpm: RPMBase instance
@@ -398,8 +397,7 @@ class PackageBuildImporter(object):
                 committime=datetime.datetime.now(), committer='')
             session.add(pkgbuild) #pylint:disable-msg=E1101
 
-            # create link to listing
-            listing.builds.append(pkgbuild)
+            # create link to repo
             self.repo.builds.append(pkgbuild)
 
         else:
@@ -407,10 +405,6 @@ class PackageBuildImporter(object):
             # interrupt import unless in force mode
             if not self.force:
                 raise PkgImportAlreadyExists('This packagebuild was already imported.')
-
-            # check link to listing
-            if not pkgbuild in listing.builds:
-                listing.builds.append(pkgbuild)
 
             # check link to repo
             if not pkgbuild in self.repo.builds:
@@ -704,9 +698,9 @@ class PackageBuildImporter(object):
     def process(self, rpm):
         
         package = self.get_package(rpm)
-        listing = self.get_package_listing(package)
+        self.check_package_listing(package)
 
-        pkgbuild = self.store_package_build(rpm, listing)
+        pkgbuild = self.store_package_build(rpm)
         binary_package = self.store_binary_package(rpm.name)
 
         self.store_filelist(rpm, pkgbuild)

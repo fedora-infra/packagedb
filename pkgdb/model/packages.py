@@ -94,12 +94,6 @@ PackageBuildReposTable = Table('packagebuildrepos', metadata,
         onupdate="CASCADE", ondelete="CASCADE"),
 )
 
-# association tables (many-to-many relationships)
-PackageBuildListingTable = Table('packagebuildlisting', metadata,
-        Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
-        Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
-)
-
 #pylint:enable-msg=C0103
 #
 # Mapped Classes
@@ -460,8 +454,6 @@ mapper(PackageBuild, PackageBuildTable, properties={
     'depends': relation(PackageBuildDepends, backref=backref('build'),
         collection_class = attribute_mapped_collection('packagebuildname'),
         cascade='all, delete-orphan'),
-    'listings': relation(PackageListing, backref=backref('builds'),
-        secondary = PackageBuildListingTable),
     })
 
 
