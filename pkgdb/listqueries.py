@@ -614,7 +614,7 @@ class ListQueries(controllers.Controller):
         # Retrieve Packages, owners, and people on watch* acls
         #pylint:disable-msg=E1101
         owner_query = select((Package.name, PackageListing.owner),
-                from_obj=(PackageTable.join(PackageListing).join(
+                from_obj=(PackageTable.join(PackageListingTable).join(
                     CollectionTable))).where(and_(
                         Package.statuscode == STATUS['Approved'].statuscodeid,
                         PackageListing.statuscode == \
