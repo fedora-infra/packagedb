@@ -68,15 +68,15 @@ parser_importlocal.add_argument('files', nargs='+', metavar='file',
 parser_importlocal.set_defaults(func='import_local')
 
 # update command
-parser_update = subparsers.add_parser('update', help='import latest builds from all repos. Script goes through latest builds backwards. It skips to next repo, when it hits already imported build.')
+parser_update = subparsers.add_parser('update', help='import builds from all active repos. Script goes through builds backwards. It skips already imported builds.')
 parser_update.add_argument('--repo', '-r', metavar='shortname', default='*',
         help='go just through this repo. For list of valid repos run with showrepos command')
 parser_update.add_argument('--cachedir',
         help='directory where the yum cache will be created during the import. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
 parser_update.add_argument('--force', action='store_true',
         help="reimport existing builds. When this option is selected we DON'T skip to next repo on hitting already imported build")
-parser_update.add_argument('--all', default=False, action='store_true',
-        help='with this option the script does not skip to next repo on first already imported build occurence and checks all builds available in the repo')
+parser_update.add_argument('--quick', default=False, action='store_true',
+        help='with this option the script skips to next repo on first already imported build occurence')
 parser_update.add_argument('package', nargs='?',
         help='update just these packages. Wildcards are allowed')
 parser_update.set_defaults(func='update')
@@ -172,7 +172,7 @@ def import_local(args):
         session.commit() #pylint:disable-msg=E1101
         rpm.close()
 
-    importer.close()
+    importer.close(prune=False) # do not remove builds records that are not on mirrors
     log.info('Done.')
 
 
@@ -238,10 +238,10 @@ def update(args):
                 log.info("%s: Already imported - skipping" % pkg.name)
                 session.rollback() #pylint:disable-msg=E1101
                 rpm.close()
-                if args.all:
-                    continue
-                else:
+                if args.quick:
                     break
+                else:
+                    continue
             except PkgImportError, e:
                 log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
                 session.rollback() #pylint:disable-msg=E1101

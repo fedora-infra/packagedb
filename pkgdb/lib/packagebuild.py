@@ -44,8 +44,8 @@ from yum.parser import varReplace
 
 from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
 from pkgdb.model import RpmFiles, RpmProvides, RpmObsoletes, RpmConflicts
-from pkgdb.model import RpmRequires, PackageBuildDepends
-from pkgdb.model import Icon, IconName, Theme
+from pkgdb.model import RpmRequires, PackageBuildDepends, PackageBuildRepo
+from pkgdb.model import Icon, IconName, Theme, Repo
 from pkgdb.model import Application
 
 from pkgdb.lib.desktop import Desktop, DesktopParseError
@@ -342,13 +342,12 @@ class PackageBuildImporter(object):
         return self._yumrepo
 
 
-    def get_package_listing(self, package):
-        """Find package listing object that associates given package with
-        the collection.
+    def check_package_listing(self, package):
+        """Check if the package is in listing for the currently processed collection.
 
-        :arg package_name: name of the package which build we are going to import
+        :arg package: package object associated with build we are going to import
         :raises PkgImportError: when package is not included in the collection
-        :returns: package listing object
+        :returns: True if the check passed
         """
    
         try:
@@ -362,11 +361,11 @@ class PackageBuildImporter(object):
         except NoResultFound:
             raise PkgImportError('The package (%s) is not '
                     'included in requested collection (%s)!' % (package.name, self.collection.simple_name))
-            
-        return listing
+
+        return True
             
 
-    def store_package_build(self, rpm, listing):
+    def store_package_build(self, rpm):
         """Store packagebuild data in DB
 
         :args rpm: RPMBase instance
@@ -398,22 +397,17 @@ class PackageBuildImporter(object):
                 committime=datetime.datetime.now(), committer='')
             session.add(pkgbuild) #pylint:disable-msg=E1101
 
-            # create link to listing
-            listing.builds.append(pkgbuild)
+            # create link to repo
             self.repo.builds.append(pkgbuild)
 
         else:
             # The build already exists
             # interrupt import unless in force mode
-            if not self.force:
+            if not self.force and (pkgbuild in self.repo.builds):
                 raise PkgImportAlreadyExists('This packagebuild was already imported.')
 
-            # check link to listing
-            if not pkgbuild in listing.builds:
-                listing.builds.append(pkgbuild)
-
             # check link to repo
-            if not pkgbuild in self.repo.builds:
+            if pkgbuild not in self.repo.builds:
                 self.repo.builds.append(pkgbuild)
 
         # store commit data
@@ -692,21 +686,57 @@ class PackageBuildImporter(object):
 
 
     def prune_builds(self):
-        engine = get_engine()
-        engine.execute('delete from packagebuild using(select pb.id from packagebuild pb, packagebuildrepos pbs where pbr.repoid=%i and pb.id=pbr.packagebuildid except select max(pb.id) from packagebuild pb, packagebuildrepos pbr where pbr.repoid=%i and pbr.packagebuildid=pb.id group by pb.name) x where packagebuild.id=x.id' % (self.repo.id, self.repo.id))
+        """Remove builds that are no longer in repo
+        """
+
+        # get what is we think is in repo
+        build_list = session.query(
+                PackageBuild.id,
+                PackageBuild.name,
+                PackageBuild.epoch,
+                PackageBuild.version,
+                PackageBuild.release,
+                PackageBuild.architecture)\
+            .join(PackageBuild.repos)\
+            .filter(Repo.id==self.repo.id)\
+            .all()
+
+        builds = dict(
+                ((b.name, b.epoch, b.version, b.release, b.architecture), b.id)\
+                for b in build_list)
+        
+        # delete what is realy in repo
+        for b in self.yumrepo.sack.returnNewestByName():
+            try:
+                del builds[(b.name, b.epoch, b.version, b.release, b.arch)]
+            except KeyError:
+                pass
+        
+        # delete from db what left
+        # delete build to repo associations
+        session.query(PackageBuildRepo)\
+            .filter(
+                and_(
+                    PackageBuildRepo.packagebuildid.in_(builds.values()),
+                    PackageBuildRepo.repoid==self.repo.id))\
+            .delete()
+
+        # deletion of builds without association to repo
+        # is guaranteed by db trigger
+
         log.info("Repo pruned...")
 
 
-    def close(self):
+    def close(self, prune=True):
         self.prune_builds()
 
 
     def process(self, rpm):
         
         package = self.get_package(rpm)
-        listing = self.get_package_listing(package)
+        self.check_package_listing(package)
 
-        pkgbuild = self.store_package_build(rpm, listing)
+        pkgbuild = self.store_package_build(rpm)
         binary_package = self.store_binary_package(rpm.name)
 
         self.store_filelist(rpm, pkgbuild)

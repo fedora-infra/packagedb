@@ -94,12 +94,6 @@ PackageBuildReposTable = Table('packagebuildrepos', metadata,
         onupdate="CASCADE", ondelete="CASCADE"),
 )
 
-# association tables (many-to-many relationships)
-PackageBuildListingTable = Table('packagebuildlisting', metadata,
-        Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
-        Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
-)
-
 #pylint:enable-msg=C0103
 #
 # Mapped Classes
@@ -342,6 +336,21 @@ class PackageBuildDepends(SABase):
             self.packagebuildid, self.packagebuildname)
 
 
+class PackageBuildRepo(SABase):
+    '''PackageBuild Repo association.
+
+    Table -- PackageBuildRepo
+    '''
+    def __init__(self, packagebuildid, repoid):
+        super(PackageBuildRepo, self).__init__()
+        self.packagebuildid = packagebuildid
+        self.repoid = repoid
+
+    def __repr__(self):
+        return 'PackageBuildRepo(%r, %r)' % (
+            self.packagebuildid, self.repoid)
+
+
 
 class PackageBuild(SABase):
     '''Package Builds - Actual rpms
@@ -441,6 +450,8 @@ mapper(PackageListing, PackageListingTable, properties={
 
 mapper(PackageBuildDepends, PackageBuildDependsTable)
 
+mapper(PackageBuildRepo, PackageBuildReposTable)
+
 mapper(PackageBuild, PackageBuildTable, properties={
     'conflicts': relation(RpmConflicts, backref=backref('build'),
         collection_class = attribute_mapped_collection('name'),
@@ -460,8 +471,6 @@ mapper(PackageBuild, PackageBuildTable, properties={
     'depends': relation(PackageBuildDepends, backref=backref('build'),
         collection_class = attribute_mapped_collection('packagebuildname'),
         cascade='all, delete-orphan'),
-    'listings': relation(PackageListing, backref=backref('builds'),
-        secondary = PackageBuildListingTable),
     })
 
 
