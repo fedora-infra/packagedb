@@ -43,14 +43,14 @@ from sqlalchemy.orm import sessionmaker
 from turbogears import expose, validate, error_handler
 from turbogears import controllers, validators
 
-from turbogears.database import get_engine
+from turbogears.database import get_engine, session
 
 
 from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
         GroupPackageListingAcl, PackageListing, PersonPackageListing, \
         PersonPackageListingAcl, Repo, PackageBuild, Tag
-from pkgdb.model import PackageTable, CollectionTable, ApplicationTag, \
-        PackageBuildApplicationsTable, BinaryPackageTag
+from pkgdb.model import PackageTable, PackageListingTable, CollectionTable, \
+        ApplicationTag, PackageBuildApplicationsTable, BinaryPackageTag
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.utils import STATUS
