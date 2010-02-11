@@ -291,15 +291,10 @@ class PackageBuildImporter(object):
         self.force = force
         self.collection = repo.collection
         self._yumrepo = None
-        self.yumbase = yum.YumBase()
-        cachedir = getCacheDir(cachedir)
-        if not cachedir:
+        self._yumbase = None
+        self.cachedir = getCacheDir(cachedir)
+        if not self.cachedir:
             raise PkgImportError('Unable to setup yum cache directory.')
-
-        self.yumbase.repos.setCacheDir(cachedir + varReplace('/$basearch/$releasever', self.yumbase.yumvar))
-
-        self.yumbase.conf.cachedir = cachedir
-        self.yumbase.doTsSetup()
 
 
     def get_package(self, rpm):
@@ -323,6 +318,20 @@ class PackageBuildImporter(object):
             raise PkgImportError('The corresponding package (%s) does not '
                     'exist in the pkgdb!' % package_name)
         return package
+
+    
+    @property
+    def yumbase(self):
+        if not self._yumbase:
+            yumbase = yum.YumBase()
+
+            yumbase.repos.setCacheDir(self.cachedir + varReplace('/$basearch/$releasever', yumbase.yumvar))
+
+            yumbase.conf.cachedir = self.cachedir
+            yumbase.doTsSetup()
+            self._yumbase = yumbase
+
+        return self._yumbase
 
 
     @property
@@ -727,8 +736,28 @@ class PackageBuildImporter(object):
         log.info("Repo pruned...")
 
 
+    def delete_all_builds(self):
+        """Delete all builds that belongs to the repo
+        """
+        # delete build to repo associations
+        # deletion of builds without association to any repo
+        # is guaranteed by db trigger
+        session.query(PackageBuildRepo)\
+            .filter(PackageBuildRepo.repoid==self.repo.id)\
+            .delete()
+
+        log.info("Builds were deleted...")
+
+
     def close(self, prune=True):
-        self.prune_builds()
+        if prune:
+            self.prune_builds()
+
+        if self._yumbase:
+            self._yumbase.cleanPackages()
+            self._yumbase.cleanExpireCache()
+            self._yumbase.close()
+
 
 
     def process(self, rpm):

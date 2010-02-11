@@ -82,8 +82,16 @@ parser_update.add_argument('package', nargs='?',
 parser_update.set_defaults(func='update')
 
 # showrepos command
-parser_showrepos = subparsers.add_parser('showrepos', help='show available active repos')
+parser_showrepos = subparsers.add_parser('showrepos', help='show available active/inactive repos')
+parser_showrepos.add_argument('--inactive', default=False, action='store_true',
+        help='show inactive repos instead of the active ones')
 parser_showrepos.set_defaults(func='show_repos')
+
+# clean command
+parser_clean = subparsers.add_parser('clean', help='Clean up pkgdb database. It removes all builds from inactive repos. For list of inactive repos run "%(prog)s showrepos --inactive". This command also removes all builds that are no longer in active repos.')
+parser_clean.add_argument('--cachedir',
+        help='directory where the yum cache will be created. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
+parser_clean.set_defaults(func='clean')
 
 args = parser.parse_args()
 
@@ -110,7 +118,7 @@ def show_repos(args):
     from pkgdb.model import Repo
 
     #pylint:disable-msg=E1101
-    repos = session.query(Repo).filter_by(active=True).all()
+    repos = session.query(Repo).filter_by(active=(not args.inactive)).all()
     #pylint:enable-msg=E1101
 
     print 'List of active repositories:'
@@ -172,8 +180,21 @@ def import_local(args):
         session.commit() #pylint:disable-msg=E1101
         rpm.close()
 
+    session.begin() #pylint:disable-msg=E1101
     importer.close(prune=False) # do not remove builds records that are not on mirrors
+    session.commit() #pylint:disable-msg=E1101
+
     log.info('Done.')
+
+
+def _get_cachedir(cachedir):
+    if not cachedir:
+        cachedir = config.get('sync-yum.cachedir', '/var/tmp')
+
+    log.info('CacheDir: %s' % cachedir)
+
+    return cachedir
+
 
 
 def update(args):
@@ -190,12 +211,7 @@ def update(args):
     from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
     from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
 
-    cachedir = args.cachedir
-    if not cachedir:
-        cachedir = config.get('sync-yum.cachedir', '/var/tmp')
-
-
-    log.info('CacheDir: %s' % cachedir)
+    cachedir = _get_cachedir(args.cachedir)
 
     # find repo
     #pylint:disable-msg=E1101
@@ -251,7 +267,46 @@ def update(args):
             session.commit() #pylint:disable-msg=E1101
             rpm.close()
             
+        session.begin() #pylint:disable-msg=E1101
         importer.close()
+        session.commit() #pylint:disable-msg=E1101
+
+    log.info('Done.')
+
+
+def clean(args):
+    """Clean up databse.
+
+    Remove all builds from inactive repos. 
+    Remove all builds that are no longer in active repos.
+    """
+    from pkgdb.model import Repo
+    from pkgdb.lib.packagebuild import PackageBuildImporter
+
+    cachedir = _get_cachedir(args.cachedir)
+
+    #pylint:disable-msg=E1101
+    repos = session.query(Repo).all()
+    #pylint:enable-msg=E1101
+
+    for repo in repos:
+        log.info("Cleaning: %s" % repo.name)
+        # prepare importer
+    
+        try:
+            importer = PackageBuildImporter(repo, cachedir=cachedir)
+        except Exception, e:
+            log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
+            continue
+
+        session.begin() #pylint:disable-msg=E1101
+        if repo.active:
+            importer.prune_builds()
+        else:
+            importer.delete_all_builds()
+        importer.close(prune=False)
+        session.commit() #pylint:disable-msg=E1101
+
 
     log.info('Done.')
 
