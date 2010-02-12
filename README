@@ -150,6 +150,10 @@ Run the following scripts to bring it up to date::
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-11-pkgbuildrepos.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-12-packagebuildlisting.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-13-prunebuild.sql
+  python update-schema/repos.py > repos2.sql
+  sudo -u postgres psql pkgdb < repos2.sql
+  rm repos2.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-14-deactivaterepo.sql
 
 Your postgres server is now all set.
 
