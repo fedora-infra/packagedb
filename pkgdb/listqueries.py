@@ -58,7 +58,7 @@ from pkgdb.model.yumdb import yummeta
 from pkgdb.utils import STATUS
 from pkgdb import _
 
-from pkgdb.validators import BooleanValue, CollectionNameVersion
+from pkgdb.validators import CollectionNameVersion
 
 from fedora.tg.util import jsonify_validation_errors
 
@@ -77,7 +77,7 @@ class NotifyList(validators.Schema):
     # database multiple times
     name = validators.UnicodeString(not_empty=False, strip=True)
     version = validators.UnicodeString(not_empty=False, strip=True)
-    eol = BooleanValue
+    eol = validators.StringBool()
     chained_validators = (CollectionNameVersion(),)
 
 #
