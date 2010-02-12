@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2008  Red Hat, Inc.
+# Copyright © 2008, 2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -38,10 +38,16 @@ Collection of validators for parameters coming to pkgdb URLs.
 
 #pylint:disable-msg=W0232,R0201,R0903,W0613
 
-from turbogears import validators
+import re
+
+from turbogears.validators import Invalid, FancyValidator, Set, Regex, \
+        UnicodeString
 from sqlalchemy.exceptions import InvalidRequestError
 
+from fedora.textutils import to_unicode
+
 from pkgdb.model import Collection
+from pkgdb.utils import STATUS
 
 #pylint:disable-msg=W0622
 def _(string):
@@ -53,22 +59,130 @@ def _(string):
     return string
 #pylint:enable-msg=W0622
 
-class BooleanValue(validators.FancyValidator):
-    '''Convert a value into a boolean True or False.
+#
+# SetOf validator can validate its elements
+#
+class SetOf(Set):
+    '''formencode Set() validator with the ability to validate its elements.
 
-    Note: We define no value or "f", "false", or "0" to be false.  Everything
-    else will be True.
+    :kwarg element_validator: Validator to run on each of the elements of the set.
     '''
-    def _to_python(self, value, state):
-        '''We follow basic C conventions here.  Most values are True.  Only
-        specific strings are allowed to be False.
-        '''
-        if not value or value.lower() in ('false', 'f', '0'):
-            return False
-        return True
+    element_validator = None
+    messages = {'incorrect_value': 'list values did not satisfy the element_validator'}
 
-class CollectionName(validators.FancyValidator):
-    '''Test that the value is a recognized colleciton name.'''
+    def validate_python(self, value, state):
+        if self.type_check:
+            try:
+                value = map(self.element_validator.to_python, value)
+            except Invalid:
+                raise
+            except:
+                # Just in case the element validator doesn't throw an Invalid
+                # exception
+                raise Invalid(self.message('incorrect_value', state),
+                        value, state)
+
+#
+# Three sorts of validators:
+#
+# 1) does minimal checking that a string looks sort of right
+#    - For these we'll mostly just use the standard tg and formencode
+#      validators.
+# 2) Hits the db to verify that the string exists in the proper field
+#    - These are appropriate where we're going to use the string anyways.  For
+#      instance, in a select statement.
+#    - These should be checked by making calls against something that's easily
+#      sent to a memcached or redis server.
+# 3) Looks in the db and transforms the string into the type of thing that it
+#    is a key for
+#    - This will do an actual call into the database and load an ORM mapped
+#      object.
+#
+
+class IsCollectionSimpleNameRegex(Regex):
+    '''Test the collection simple name against a simple heuristic
+
+    :kwarg strip: If True, strips whitespace from the beginnng and end of the
+        value.  (default True)
+    :kwarg regex: regular expression object or string to be compiled to match
+        the simple name against. Default: r'^[A-Z]+-([0-9]+|devel)$'
+    '''
+    strip = True
+    regex = re.compile(r'^[A-Z]+-([0-9]+|devel)$')
+
+    messages = {'no_collection': _('%(collection)s does not match the pattern'
+        ' for collection names')}
+
+    def _to_python(self, value, state):
+        value = Regex._to_python(self, value, state)
+        return to_unicode(value)
+
+    def validate_python(self, value, state):
+        if not self.simple_name_re.match(value):
+            raise Invalid(self.message('no_collection', state,
+                collection=value), value, state)
+
+class IsCollectionSimpleName(UnicodeString):
+    '''Test that the value is a recognized collection short name.
+
+    :kwarg eol: If True, include eol releases. (default False)
+    :kwarg strip: If True, strips whitespace from the beginnng and end of the
+        value.  (default True)
+    '''
+    strip = True
+    eol = False
+
+    messages = {'no_collection': _('A collection named %(collection)s does'
+                    ' not exist'),
+                'eol_collection': _('Collection named %(collection)s is eol')
+                }
+
+    def validate_python(self, value, state):
+        try:
+            collection = Collection.by_simple_name(value)
+        except InvalidRequestError:
+            raise Invalid(self.message('no_collection', state,
+                collection=value), value, state)
+        if not self.eol and (collection.statuscode ==
+                STATUS['EOL'].statuscodeid):
+            raise Invalid(self.message('eol_collection', state,
+                collection=value), value, state)
+        return value
+
+class IsCollection(IsCollectionSimpleName):
+    '''Transforms a Collection simplename into a Collection.
+
+    :kwarg eol: If True, include eol releases. (default False)
+    :kwarg strip: If True, strips whitespace from the beginnng and end of the
+        value.  (default True)
+    :rtype: Collection
+    :returns: Collection that the simplename we were given references.
+    '''
+    messages = {'no_collection': _('A collection named %(collection)s does'
+                    ' not exist'),
+                'eol_collection': _('Collection named %(collection)s is eol')
+                }
+
+    def validate_python(self, value, state):
+        try:
+            collection = Collection.by_simple_name(value)
+        except InvalidRequestError:
+            raise Invalid(self.message('no_collection', state,
+                collection=value), value, state)
+        if not self.eol and (collection.statuscode ==
+                STATUS['EOL'].statuscodeid):
+            raise Invalid(self.message('eol_collection', state,
+                collection=value), value, state)
+        return collection
+
+
+
+#
+# Legacy -- Remove when we update the API
+#
+
+class CollectionName(FancyValidator):
+    '''Test that the value is a recognized collection name.'''
     messages = {'no_collection': _('A collection named %(collection)s does'
                     ' not exist.')}
 
@@ -82,7 +196,7 @@ class CollectionName(validators.FancyValidator):
         try:
             Collection.query.filter_by(name=value).first()
         except InvalidRequestError:
-            raise validators.Invalid(self.message('no_collection', state,
+            raise Invalid(self.message('no_collection', state,
                 collection=value), value, state)
         #pylint:enable-msg=E1101
 
@@ -99,7 +213,7 @@ class CollectionName(validators.FancyValidator):
 # we send an error_dict that maps the field to display an error with to the
 # message.
 
-class CollectionNameVersion(validators.FancyValidator):
+class CollectionNameVersion(FancyValidator):
     '''Test the combination of a Collection and Version for validity.'''
     messages = {'nameless_version': _('Version specified without a collection'
                     ' name'),
@@ -142,5 +256,5 @@ class CollectionNameVersion(validators.FancyValidator):
             error_list = sorted(errors.iteritems())
             error_message = '\n'.join([u'%s: %s' % (error, msg)
                     for error, msg in error_list])
-            raise validators.Invalid(error_message, field_dict, state,
+            raise Invalid(error_message, field_dict, state,
                     error_dict=errors)
