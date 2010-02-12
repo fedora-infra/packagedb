@@ -37,6 +37,7 @@ from rpmUtils.miscutils import rpm2cpio
 from cpioarchive import CpioArchive
 from sqlalchemy.sql import and_
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import eagerload
 
 import yum
 from yum.misc import getCacheDir
@@ -386,20 +387,29 @@ class PackageBuildImporter(object):
         Import is interupted if it was and we are also not in 'force' mode.
         The record is created/updated otherwise.
         """
-        try: 
+
+        try:
+            # we assume that in any two repos there 
+            # do not exist two packages with same nvr, 
+            # that are built from different packages. 
+            # We should also filter by packageid otherwise.
             #pylint:disable-msg=E1101
-            pkgbuild = session.query(PackageBuild).filter_by(
+            pkgbuild = session.query(PackageBuild)\
+                .filter_by(
                     name=rpm.name,
                     epoch=rpm.epoch,
-                    packageid=self.get_package(rpm).id,
                     version=rpm.version,
                     architecture=rpm.arch,
-                    release=rpm.release).one()
+                    release=rpm.release)\
+                .options(eagerload(PackageBuild.repos))\
+                .one()
             #pylint:enable-msg=E1101
         except NoResultFound:
+            package = self.get_package(rpm)
+            self.check_package_listing(package)
             # insert the new packagebuild and get its id
             pkgbuild = PackageBuild(
-                packageid=self.get_package(rpm).id, name=rpm.name,
+                packageid=package.id, name=rpm.name,
                 epoch=rpm.epoch, version=rpm.version,
                 release=rpm.release, 
                 size=0, architecture=rpm.arch, license='', changelog='',
@@ -407,17 +417,17 @@ class PackageBuildImporter(object):
             session.add(pkgbuild) #pylint:disable-msg=E1101
 
             # create link to repo
-            self.repo.builds.append(pkgbuild)
+            pkgbuild.repos.append(self.repos)
 
         else:
             # The build already exists
             # interrupt import unless in force mode
-            if not self.force and (pkgbuild in self.repo.builds):
+            if not self.force and (self.repo in pkgbuild.repos):
                 raise PkgImportAlreadyExists('This packagebuild was already imported.')
 
             # check link to repo
-            if pkgbuild not in self.repo.builds:
-                self.repo.builds.append(pkgbuild)
+            if self.repo not in pkgbuild.repos:
+                pkgbuild.repos.append(self.repo)
 
         # store commit data
         #FIXME: should be committime really tz aware?
@@ -767,10 +777,7 @@ class PackageBuildImporter(object):
 
         :args rpm: build 
         """
-        
-        package = self.get_package(rpm)
-        self.check_package_listing(package)
-
+       
         pkgbuild = self.store_package_build(rpm)
         binary_package = self.store_binary_package(rpm.name)
 
