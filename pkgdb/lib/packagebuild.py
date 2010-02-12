@@ -750,6 +750,8 @@ class PackageBuildImporter(object):
 
 
     def close(self, prune=True):
+        """Clean up after import
+        """
         if prune:
             self.prune_builds()
 
@@ -761,6 +763,10 @@ class PackageBuildImporter(object):
 
 
     def process(self, rpm):
+        """Import build
+
+        :args rpm: build 
+        """
         
         package = self.get_package(rpm)
         self.check_package_listing(package)
