@@ -347,6 +347,7 @@ class PackageBuildImporter(object):
             try:
                 self.yumbase._getSacks(thisrepo=self._yumrepo.id)
             except Exception, e:
+                raise
                 raise PkgImportError('Repo %s failed to read! (%s)' % (self._yumrepo, e))
 
         return self._yumrepo
@@ -417,7 +418,7 @@ class PackageBuildImporter(object):
             session.add(pkgbuild) #pylint:disable-msg=E1101
 
             # create link to repo
-            pkgbuild.repos.append(self.repos)
+            pkgbuild.repos.append(self.repo)
 
         else:
             # The build already exists
