@@ -293,6 +293,7 @@ class PackageBuildImporter(object):
         self.collection = repo.collection
         self._yumrepo = None
         self._yumbase = None
+        self._builds = None
         self.cachedir = getCacheDir(cachedir)
         if not self.cachedir:
             raise PkgImportError('Unable to setup yum cache directory.')
@@ -352,6 +353,24 @@ class PackageBuildImporter(object):
         return self._yumrepo
 
 
+    @property
+    def builds(self):
+        if not self._builds:
+            builds_data = session.query(
+                    PackageBuild.name,
+                    PackageBuild.epoch,
+                    PackageBuild.version,
+                    PackageBuild.release,
+                    PackageBuild.architecture)\
+                .join(PackageBuild.repos)\
+                .filter(Repo.id==self.repo.id)\
+                .all()
+            self._builds = set(builds_data)
+
+        return self._builds
+
+
+
     def check_package_listing(self, package):
         """Check if the package is in listing for the currently processed collection.
 
@@ -388,6 +407,13 @@ class PackageBuildImporter(object):
         The record is created/updated otherwise.
         """
 
+        build_key = (rpm.name, rpm.epoch, rpm.version, rpm.release, rpm.arch)
+    
+        if not self.force and build_key in self.builds:
+            # The build already exists
+            # interrupt import unless in force mode
+            raise PkgImportAlreadyExists('This packagebuild was already imported.')
+
         try:
             # we assume that in any two repos there 
             # do not exist two packages with same nvr, 
@@ -417,14 +443,9 @@ class PackageBuildImporter(object):
             session.add(pkgbuild) #pylint:disable-msg=E1101
 
             # create link to repo
-            pkgbuild.repos.append(self.repos)
+            pkgbuild.repos.append(self.repo)
 
         else:
-            # The build already exists
-            # interrupt import unless in force mode
-            if not self.force and (self.repo in pkgbuild.repos):
-                raise PkgImportAlreadyExists('This packagebuild was already imported.')
-
             # check link to repo
             if self.repo not in pkgbuild.repos:
                 pkgbuild.repos.append(self.repo)

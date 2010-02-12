@@ -81,6 +81,8 @@ def setup_parser():
             help='with this option the script skips to next repo on first already imported build occurence')
     parser_update.add_argument('--profile', type=argparse.FileType('w'),
             help='filename where data collected from profiler should be stored. Output is in kcachegrind format.')
+    parser_update.add_argument('--profile-skip', type=int, default=0,
+            help='how many files should be processed before profiling data are taken')
     parser_update.add_argument('package', nargs='?',
             help='update just these packages. Wildcards are allowed')
     parser_update.set_defaults(func='update')
@@ -215,6 +217,7 @@ def update(args):
     from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
 
     cachedir = _get_cachedir(args.cachedir)
+    profile_skip = args.profile_skip
 
     # find repo
     #pylint:disable-msg=E1101
@@ -244,26 +247,33 @@ def update(args):
         except Exception, e:
             log.error('Failed to read repo %s! (%s)' % (repo.name, e))
             continue
+        
+        total = len(pkgbuilds)
+        counter = 1
 
         for pkg in pkgbuilds:
             if args.package and not fnmatch(pkg.name, args.package):
                 continue
             session.begin() #pylint:disable-msg=E1101
-            log.info(" %s" % pkg)
+            log.info(" (%s/%s)%s" % (counter, total, pkg))
+            counter += 1
             rpm = RPM(pkg, yumrepo=importer.yumrepo)
 
             if args.profile:
-                # collect profiling data and die
-                import cProfile
-                from pkgdb.lib.profiling import KCacheGrind
-                p = cProfile.Profile()
-                try:
-                    p.runcall(importer.process, rpm)
-                except:
-                    pass
-                k = KCacheGrind(p)
-                k.output(args.profile)
-                sys.exit(0)
+                if profile_skip == 0:
+                    # collect profiling data and die
+                    import cProfile
+                    from pkgdb.lib.profiling import KCacheGrind
+                    p = cProfile.Profile()
+                    try:
+                        p.runcall(importer.process, rpm)
+                    except:
+                        pass
+                    k = KCacheGrind(p)
+                    k.output(args.profile)
+                    sys.exit(0)
+                else:
+                    profile_skip -= 1;
 
             try:
                 importer.process(rpm)
