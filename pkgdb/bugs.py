@@ -47,9 +47,14 @@ except ImportError:
         # :E0611: This is only found if we are using python-bugzilla 0.3
         from bugzilla import Bug # pylint: disable-msg=E0611
 
+try:
+    from fedora.textutils import to_unicode
+except ImportError:
+    from pkgdb.utils import to_unicode
+
 from pkgdb.model import Package
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import to_unicode, LOG, bugzilla
+from pkgdb.utils import LOG, bugzilla
 from pkgdb import _
 
 class BugList(list):
@@ -81,9 +86,9 @@ class BugList(list):
         if self.query_url != self.public_url:
             bug.url = bug.url.replace(self.query_url, self.public_url)
 
-        bug.bug_status = to_unicode(bug.bug_status, errors='replace')
-        bug.short_desc = to_unicode(bug.short_desc, errors='replace')
-        bug.product = to_unicode(bug.product, errors='replace')
+        bug.bug_status = to_unicode(bug.bug_status)
+        bug.short_desc = to_unicode(bug.short_desc)
+        bug.product = to_unicode(bug.product)
         return {'url': bug.url, 'bug_status': bug.bug_status,
                 'short_desc': bug.short_desc, 'bug_id': bug.bug_id,
                 'product': bug.product}

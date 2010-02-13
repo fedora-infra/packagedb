@@ -60,7 +60,7 @@ provenpkger_grp = config.get('pkgdb.provenpkgergroup', 'provenpackager')
 # Get the newpackager group if one is specified.
 newpkger_grp = config.get('pkgdb.newpkgergroup', 'newpackager')
 
-def to_unicode(obj, encoding='utf-8', errors='strict'):
+def to_unicode(obj, encoding='utf-8', errors='replace'):
     '''return a unicode representation of the object.
 
     :arg obj: object to attempt to convert to unicode.  Note: If this is not

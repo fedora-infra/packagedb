@@ -44,7 +44,10 @@ from turbogears.validators import Invalid, FancyValidator, Set, Regex, \
         UnicodeString
 from sqlalchemy.exceptions import InvalidRequestError
 
-from fedora.textutils import to_unicode
+try:
+    from fedora.textutils import to_unicode
+except ImportError:
+    from pkgdb.utils import to_unicode
 
 from pkgdb.model import Collection
 from pkgdb.utils import STATUS
