@@ -24,6 +24,11 @@
 
 from ConfigParser import ConfigParser
 
+try:
+    from fedora.textutils import to_unicode
+except ImportError:
+    from pkgdb.utils import to_unicode
+
 class DesktopParseError(Exception):
     def __init__(self, value):
         self.parameter = value
@@ -36,13 +41,13 @@ class Desktop(object):
     def __init__(self, name, generic_name=None, comment=None,
             target_type='Application', icon_name=None, 
             categories=[], mimetypes=[]):
-        self.name = name
-        self.generic_name = generic_name
-        self.comment = comment
-        self.target_type = target_type
-        self.icon_name = icon_name
-        self.categories = categories
-        self.mimetypes = mimetypes
+        self.name = to_unicode(name)
+        self.generic_name = to_unicode(generic_name)
+        self.comment = to_unicode(comment)
+        self.target_type = to_unicode(target_type)
+        self.icon_name = to_unicode(icon_name)
+        self.categories = to_unicode(categories)
+        self.mimetypes = to_unicode(mimetypes)
 
 
     @classmethod
@@ -61,43 +66,43 @@ class Desktop(object):
       
         # name
         if conf.has_option('Desktop Entry', 'Name'):
-            name = conf.get('Desktop Entry', 'name').title()
+            name = to_unicode(conf.get('Desktop Entry', 'name').title())
         else: 
             raise DesktopParseError('"Name" entry not found')
 
         # generic_name
         generic_name = ''
         if conf.has_option('Desktop Entry', 'GenericName'):
-            generic_name = conf.get('Desktop Entry', 'GenericName')
+            generic_name = to_unicode(conf.get('Desktop Entry', 'GenericName'))
 
         # comment
         comment = ''
         if conf.has_option('Desktop Entry', 'Comment'):
-            comment = conf.get('Desktop Entry', 'Comment')
+            comment = to_unicode(conf.get('Desktop Entry', 'Comment'))
 
         # target_type
         target_type = None
         if conf.has_option('Desktop Entry', 'Type'):
-            target_type = conf.get('Desktop Entry', 'Type')
+            target_type = to_unicode(conf.get('Desktop Entry', 'Type'))
 
         # icon
         icon_name = None
         if conf.has_option('Desktop Entry', 'Icon'):
-            icon_name = conf.get('Desktop Entry', 'Icon').replace('.png','')
+            icon_name = to_unicode(conf.get('Desktop Entry', 'Icon').replace('.png',''))
 
         # categories
         categories = set()
         if conf.has_option('Desktop Entry', 'Categories'):
             for c in conf.get('Desktop Entry', 'Categories').split(';'):
                 if c.strip():
-                    categories.add(c)
+                    categories.add(to_unicode(c))
 
         # mimetypes
         mimetypes = set()
         if conf.has_option('Desktop Entry', 'MimeType'):
             for mt in conf.get('Desktop Entry', 'MimeType').split(';'):
                 if mt.strip():
-                    mimetypes.add(mt)
+                    mimetypes.add(to_unicode(mt))
 
         return self(name, generic_name=generic_name, 
                 comment=comment, icon_name=icon_name,
