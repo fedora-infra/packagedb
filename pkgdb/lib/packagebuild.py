@@ -348,7 +348,6 @@ class PackageBuildImporter(object):
             try:
                 self.yumbase._getSacks(thisrepo=self._yumrepo.id)
             except Exception, e:
-                raise
                 raise PkgImportError('Repo %s failed to read! (%s)' % (self._yumrepo, e))
 
         return self._yumrepo
