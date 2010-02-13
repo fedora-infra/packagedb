@@ -43,6 +43,11 @@ import yum
 from yum.misc import getCacheDir
 from yum.parser import varReplace
 
+try:
+    from fedora.textutils import to_unicode
+except ImportError:
+    from pkgdb.utils import to_unicode
+
 from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
 from pkgdb.model import RpmFiles, RpmProvides, RpmObsoletes, RpmConflicts
 from pkgdb.model import RpmRequires, PackageBuildDepends, PackageBuildRepo
@@ -74,6 +79,12 @@ class PkgImportAlreadyExists(Exception):
 
 
 class RPM(object):
+    '''
+
+    Note: RPM objects store their strings as byte strings.  This is because we
+    can't tell here what we're going to do with the data.  At some point you
+    may need to transform the data from bytes into unicode.
+    '''
     
     def __init__(self, build, yumrepo):
     
@@ -422,11 +433,11 @@ class PackageBuildImporter(object):
             #pylint:disable-msg=E1101
             pkgbuild = session.query(PackageBuild)\
                 .filter_by(
-                    name=rpm.name,
-                    epoch=rpm.epoch,
-                    version=rpm.version,
-                    architecture=rpm.arch,
-                    release=rpm.release)\
+                    name=to_unicode(rpm.name),
+                    epoch=to_unicode(rpm.epoch),
+                    version=to_unicode(to_unicode(rpm.version)),
+                    architecture=to_unicode(to_unicode(rpm.arch)),
+                    release=to_unicode(rpm.release))\
                 .options(eagerload(PackageBuild.repos))\
                 .one()
             #pylint:enable-msg=E1101
@@ -435,11 +446,11 @@ class PackageBuildImporter(object):
             self.check_package_listing(package)
             # insert the new packagebuild and get its id
             pkgbuild = PackageBuild(
-                packageid=package.id, name=rpm.name,
-                epoch=rpm.epoch, version=rpm.version,
-                release=rpm.release, 
-                size=0, architecture=rpm.arch, license='', changelog='',
-                committime=datetime.datetime.now(), committer='')
+                packageid=package.id, name=to_unicode(rpm.name),
+                epoch=to_unicode(rpm.epoch), version=to_unicode(rpm.version),
+                release=to_unicode(rpm.release),
+                size=0, architecture=to_unicode(rpm.arch), license='',
+                changelog='', committime=datetime.datetime.now(), committer='')
             session.add(pkgbuild) #pylint:disable-msg=E1101
 
             # create link to repo
@@ -460,12 +471,12 @@ class PackageBuildImporter(object):
             committer = committer.replace('- ', '')
             committer = committer.rsplit(' ', 1)[0]
 
-        pkgbuild.committime = committime.replace(tzinfo=utc)
-        pkgbuild.committer = committer
-        pkgbuild.changelog = changelog
+        pkgbuild.committime = to_unicode(committime.replace(tzinfo=utc))
+        pkgbuild.committer = to_unicode(committer)
+        pkgbuild.changelog = to_unicode(changelog)
 
-        pkgbuild.size = rpm.size
-        pkgbuild.license = rpm.license
+        pkgbuild.size = to_unicode(rpm.size)
+        pkgbuild.license = to_unicode(rpm.license)
 
         return pkgbuild
 
