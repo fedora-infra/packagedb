@@ -87,6 +87,8 @@ import simplejson
             </th><th>
             QA Contact
             </th><th>
+            Crit Path
+            </th><th>
             Status
         </th></tr>
         <tr id="${''.join((pkg.collection.name, pkg.collection.version)).replace(' ','')}">
@@ -127,6 +129,10 @@ import simplejson
             </div>
           </td>
           <td py:content="pkg.qacontact">
+          </td><td>
+            <!-- At the moment, this can only be set via the client API -->
+            <input type="checkbox" class="critpath" disabled="true"
+              py:attrs="{'checked': tg.checker(pkg.critpath)}"/>
           </td><td class="status" py:content="pkg.status.locale['C'].statusname">
         </td></tr>
         <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
