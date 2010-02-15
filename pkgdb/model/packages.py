@@ -389,9 +389,29 @@ class PackageBuild(SABase):
         return "%s-%s-%s.%s" % (self.name, self.version, 
                 self.release, self.architecture)
 
-    def download_path(self):
-        return "%s%s%s%s.rpm" % (self.repo.mirror, self.repo.url, 
-                ('','Packages/')[self.repo.url.endswith('os/')], self)
+
+    def download_path(self, reponame=None):
+        """Find download path of the build
+
+        :args reponame: prefered repo from where the build should be downloaded
+        :returns: URI of the build
+        
+        Find download URI of the build. If build is available in <reponame> repo,
+        path to that repo is used. Path to first available repo is returned otherwise.
+        """
+
+        repo = self.repo # default
+
+        #find repo
+        for r in self.repos:
+            if r.shortname == reponame:
+                repo = r
+                break
+
+        # format path
+        return "%s%s%s%s.rpm" % (repo.mirror, repo.url, 
+                ('','Packages/')[repo.url.endswith('os/')], self)
+
     
     def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild

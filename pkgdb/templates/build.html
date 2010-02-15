@@ -36,8 +36,8 @@
         <tr><td class="label">Size:</td><td>${build.size/1024}kB</td></tr>
         <tr><td class="label">License:</td><td>${build.license}</td></tr>
         <tr><td class="label">Package:</td><td><a href="${tg.url('/acls/name/%s' % build.package.name)}">${build.package.name}</a></td></tr>
-        <tr><td class="label">Repository:</td><td>${build.repo.name}</td></tr>
-        <tr><td class="label">File:</td><td><a href="${build.download_path()}">${str(build)+'.rpm'}</a></td></tr>
+        <tr><td class="label">File:</td><td>${str(build)+'.rpm'}</td></tr>
+        <tr><td class="label">Download:</td><td><a py:for="r in build.repos" style="margin-right:8px;" href="${build.download_path(r.shortname)}">${r.name}</a></td></tr>
         </table>
     </div>
 
