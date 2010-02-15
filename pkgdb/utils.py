@@ -27,10 +27,17 @@ Utilities for all classes to use
 # :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
 #   we have to disable this when accessing an attribute of a mapped class.
 
+import sys
+import os
+import gzip
+import bz2
+import subprocess
 import logging
 
-from turbogears import config, view
+import rpm
+import rpmUtils.transaction
 
+from turbogears import config, view
 from cherrypy import request
 
 from bugzilla import Bugzilla
@@ -156,14 +163,56 @@ def init_globals():
             cookiefile=None)
     view.variable_providers.append(custom_template_vars)
 
-__all__ = [STATUS, admin_grp, pkger_grp, LOG, fas, bugzilla, refresh_status,
-        init_globals, to_unicode]
-
 def is_xhr():
     '''Check if the request is coming from AJAX
     '''
-    
+
     requested_with = request.headers.get('X-Requested-With')
     return requested_with and requested_with.lower() == 'xmlhttprequest'
 
-    
+# Modified from yumUtils rpmUtils.rpm2cpio code.  Need to work on it more
+def rpm2cpio(fdno, out=sys.stdout, bufsize=2048):
+    """Performs roughly the equivalent of rpm2cpio(8).
+       Reads the package from fdno, and dumps the cpio payload to out,
+       using bufsize as the buffer size."""
+    ts = rpmUtils.transaction.initReadOnlyTransaction()
+    hdr = ts.hdrFromFdno(fdno)
+    del ts
+
+    compr = hdr[rpm.RPMTAG_PAYLOADCOMPRESSOR] or 'gzip'
+    if compr == 'gzip':
+        f = gzip.GzipFile(None, 'rb', None, os.fdopen(fdno, 'rb', bufsize))
+        while 1:
+            tmp = f.read(bufsize)
+            if tmp == "": break
+            out.write(tmp)
+        out.flush()
+        f.close()
+    elif compr == 'xz':
+        # This is a bit hacky
+        xz_cmd = subprocess.Popen(['/usr/bin/xzcat'], stdout=subprocess.PIPE, stdin=os.fdopen(fdno, 'rb', bufsize), bufsize=bufsize, shell=False)
+        while 1:
+            tmp = xz_cmd.stdout.read(bufsize)
+            if tmp == "": break
+            out.write(tmp)
+        out.flush()
+    #### TODO: Untested
+    #elif compr == 'bzip2':
+    #    f = os.fdopen(fdno, 'rb', bufsize)
+    #    decompressor = bz2.BZ2Decompressor()
+    #    while 1:
+    #        chunk = f.read(bufsize)
+    #        if chunk == "": break
+    #        try:
+    #            tmp = decompressor.decompress(tmp)
+    #        except EOFError:
+    #            break
+    #        out.write(tmp)
+    #    out.flush()
+    #    f.close()
+    else:
+        raise rpmUtils.RpmUtilsError, \
+              'Unsupported payload compressor: "%s"' % compr
+
+__all__ = [LOG, STATUS, admin_grp, bugzilla, fas, init_globals, is_xhr,
+        pkger_grp, refresh_status, rpm2cpio, to_unicode]
