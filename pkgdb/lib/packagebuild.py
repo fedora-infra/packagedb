@@ -33,7 +33,6 @@ from StringIO import StringIO
 import stat
 import rpmUtils
 import ConfigParser
-from rpmUtils.miscutils import rpm2cpio
 from cpioarchive import CpioArchive
 from sqlalchemy.sql import and_
 from sqlalchemy.orm.exc import NoResultFound
@@ -42,6 +41,11 @@ from sqlalchemy.orm import eagerload
 import yum
 from yum.misc import getCacheDir
 from yum.parser import varReplace
+
+# Currently, this is broken for xz so use our version
+#from rpmUtils.miscutils import rpm2cpio
+from pkgdb.utils import rpm2cpio
+
 
 try:
     from fedora.textutils import to_unicode
