@@ -40,7 +40,7 @@ Mapping of package related database tables to python classes.
 #   is not to name them with all uppercase
 
 from sqlalchemy import Table, Column, Integer, String, Text, ForeignKey, ForeignKeyConstraint
-from sqlalchemy.orm import relation, backref
+from sqlalchemy.orm import relation, backref, eagerload
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -438,6 +438,7 @@ class PackageBuild(SABase):
         """
         #pylint:disable-msg=E1101
         fresh = session.query(PackageBuild)\
+                .options(eagerload(PackageBuild.repos))\
                 .order_by(PackageBuild.committime.desc())
         #pylint:enable-msg=E1101
         if limit > 0:
