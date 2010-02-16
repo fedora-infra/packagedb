@@ -106,13 +106,119 @@ class KCacheGrind(object):
         print >> out_file, '%d %d' % (lineno, totaltime)
 
 
+class Profiler(object):
+    """Performance anlyzer
+    
+    collects profiling data, that are saved as kcachegrind profile (.kcg suffix). Optionaly it can 
+    store captured sql statements (.sql) (sqlalchemy log has to be set to INFO level)
+    and some memory stats (.mem). The memory statistics shows reachable and unreachable objects
+    that remain in memory after function call.
 
-def profileit(directory='/var/tmp/profileit', sql=True, mem=False):
+    Output is stored to selected directory, files have name derived from 
+    name of decorated function.
+
+    Usage:
+   
+    p = Profiler(directory='/tmp/profiles')
+    p.profileit(some_function, *args, **kvargs)
+
+    """
+
+    def __init__(self, directory='/var/tmp/profileit', sql=True, mem=True):
+        """Profiler constructor
+
+        :args directory: directory where the output is stored
+        :args sql: capture sql statements
+        :args mem: analyze memory
+        """
+
+        self.directory = directory
+        self.sql = sql
+        self.mem = mem
+
+        # create directory if it does not exist
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+
+    def filename(self, func_name):
+        filename = os.path.join(self.directory, func_name)
+        suffix = 0
+        while os.path.isfile('%s%s.kcg' % (filename, ('', '_%s' % suffix)[suffix>0])):
+            suffix += 1
+
+        return '%s%s' % (filename, ('', '_%s' % suffix)[suffix>0])
+
+
+    
+    def profileit(self, func, *args, **kvargs):
+        """Wraps method in cprofiler call and collects data
+
+        :args func: function 
+        :args args: arguments
+        :args kvargs: keyvalue arguments
+        """
+
+        filename = self.filename(func.__name__)
+        prof_res = open('%s.kcg' % filename, 'w')
+
+        if self.sql:
+            # get ready sql handler
+            sql_log = logging.FileHandler('%s.sql' % filename)
+            sql_log.setLevel(logging.INFO)
+            formatter = logging.Formatter('%(message)s')
+            sql_log.setFormatter(formatter)
+            logging.getLogger('sqlalchemy.engine.base.Engine').addHandler(sql_log)
+
+        # profile
+        import cProfile
+        p = cProfile.Profile()
+
+        # setup memory profiler
+        if self.mem:
+            from guppy import hpy
+            hp = hpy()
+            # the following sequence seems to set consistent results 
+            # it would be nice to know why ;)
+            hp.setref()
+            hp.setref()
+            start = hp.heap().size
+            hp.setref()
+
+        # call the function
+        res = p.runcall(func, *args, **kvargs)
+
+        # store memory data
+        if self.mem:
+            heap = hp.heap()
+            mem_diff = heap.size - start
+            stat = hp.heapu()
+            mem_res = open('%s.mem' % filename, 'w')
+            print >> mem_res, "Memory difference: %s" % mem_diff
+            print >> mem_res, heap 
+            print >> mem_res, stat
+            mem_res.close()
+
+        # stop sql capturing
+        if self.sql:
+            logging.getLogger('sqlalchemy.engine.base.Engine').removeHandler(sql_log)
+
+        # format profiling data
+        k = KCacheGrind(p)
+        k.output(prof_res)
+        prof_res.close()
+
+        return res
+
+
+def profileit(directory='/var/tmp/profileit', sql=True, mem=True):
     """Performance anlyzer decorator
     
     Wraps method in cprofiler call and collects data,
     that are saved as kcachegrind profile (.kcg suffix). Optionaly it can 
-    store captured sql statements (sqlalchemy log has to be set to INFO level)
+    store captured sql statements (.sql) (sqlalchemy log has to be set to INFO level)
+    and some memory stats (.mem). The memory statistics shows reachable and unreachable objects
+    that remain in memory after function call.
 
     Output is stored to selected directory, files have name derived from 
     name of decorated function.
@@ -127,50 +233,13 @@ def profileit(directory='/var/tmp/profileit', sql=True, mem=False):
 
     :args directory: directory where the output is stored
     :args sql: capture sql statements
+    :args mem: analyze memory
     """
 
     def _my(func):
         def _func(*args, **kvargs):
-            # find profiles filename base
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            filename = os.path.join(directory, func.__name__)
-            suffix = 0
-            while os.path.isfile('%s%s.kcg' % (filename, ('', '_%s' % suffix)[suffix>0])):
-                suffix += 1
-
-            prof_res = open('%s%s.kcg' % (filename, ('', '_%s' % suffix)[suffix>0]), 'w')
-
-            if sql:
-                # get ready sql handler
-                sql_log = logging.FileHandler('%s%s.sql' % (filename, ('', '_%s' % suffix)[suffix>0]))
-                sql_log.setLevel(logging.INFO)
-                formatter = logging.Formatter('%(message)s')
-                sql_log.setFormatter(formatter)
-                logging.getLogger('sqlalchemy.engine.base.Engine').addHandler(sql_log)
-
-            # profile
-            import cProfile
-            p = cProfile.Profile()
-
-            if mem:
-                from guppy import hpy
-                hp = hpy()
-                hp.setrelheap()
-
-            res = p.runcall(func, *args, **kvargs)
-
-            if mem:
-                hepa = hp.heap()
-                mem_res = open('%s%s.mem' % (filename, ('', '_%s' % suffix)[suffix>0]), 'w')
-                print >> mem_res, heap 
-                mem_res.close()
-
-            if sql:
-                logging.getLogger('sqlalchemy.engine.base.Engine').removeHandler(sql_log)
-            k = KCacheGrind(p)
-            k.output(prof_res)
-            prof_res.close()
+            prof = Profiler(directory, sql, mem)
+            res = prof.profileit(func, *args, **kvargs)
             return res
         return _func
     return _my
