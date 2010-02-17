@@ -57,17 +57,19 @@
         <div id="nav">
           <h2>Navigation</h2>
           <ul>
-            <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
+            <li class="separator"><strong><a href="${tg.url('/')}">Home</a></strong></li>
+            <li><a href="${tg.url('/apps/name/list/a*')}">Applications</a></li>
+            <li><a href="${tg.url('/builds/name/a*')}">Builds</a></li>
+            <li class="separator"><a href="${tg.url('/acls/list/a*')}">Packages</a></li>
             <li><a href="${tg.url('/collections/')}">View Collections</a></li>
-            <li><a href="${tg.url('/acls/list/a*')}">View Packages</a></li>
             <li><a href="${tg.url('/acls/bugs/list/a*')}">View Bugs</a></li>
             <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
             <li><a href="${tg.url('/acls/orphans')}">Orphan Packages</a></li>
-            <li><a href="${tg.url('/stats/')}">Package Stats</a></li>
+            <li class="separator"><a href="${tg.url('/stats/')}">Package Stats</a></li>
             <li><a href="https://fedorahosted.org/packagedb/report/3">
                 PackageDB Bugs</a></li>
           </ul>
-          <h2>Search</h2>
+          <!--h2>Search</h2>
           <form id="layout_search"
                 action="${tg.url('/search/package/')}"
                 method="get"
@@ -77,7 +79,7 @@
                 <input id="package" name="searchwords" size="9" type="text" />
                 <input id="go" type="submit" value="Go" />
             </p>
-          </form>
+          </form-->
         </div>
       </div>
       <div id="content">

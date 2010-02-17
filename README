@@ -61,7 +61,7 @@ Install Prerequisites
   yum -y install python-genshi TurboGears python-turbojson postgresql-server \
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
     python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi \
-    python-paver httpd mod_ssl babel python-cpio xz
+    python-paver httpd mod_ssl babel python-cpio xz python-argparse
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,13 +141,29 @@ Run the following scripts to bring it up to date::
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-2.applications.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-3.binarypackage.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-4.lang_removal.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-5.tags_trigger_removal.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-6_usage.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-7_icon.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-8_mimetypes.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-9_langremoval2.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-10_critpath.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-11-pkgbuildrepos.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-12-packagebuildlisting.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-13-prunebuild.sql
+  python update-schema/repos2.py > repos2.sql
+  sudo -u postgres psql pkgdb < repos2.sql
+  rm repos2.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-14-deactivaterepo.sql
+  sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-15-uniquerepo.sql
 
 Your postgres server is now all set.
 
 Setting up the cron jobs
 ------------------------
 A cron job is needed to sync information from the yum repositories into the
-packagedb. server-scripts/pkgdb-sync-yum
+packagedb. server-scripts/pkgdb-sync-yum update
+
+For list of params use server-scripts/pkgdb-sync-yum update -h
 
 Other cron jobs are required to sync data out to cvs, bugzilla, and koji
 owner-sync-pkgdb

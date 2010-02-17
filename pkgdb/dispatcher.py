@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -426,7 +426,8 @@ class PackageDispatcher(controllers.Controller):
         #get acl with min personpackagelistingacl.id
         if len(acls) > 0:
             for acl in acls:
-                comaintainers[acl.id] = acl.personpackagelisting.username
+                if acl.personpackagelisting.username != pkg_listing.owner:
+                    comaintainers[acl.id] = acl.personpackagelisting.username
 
             for acl_id in sorted(comaintainers.keys()):
                 try:
@@ -477,7 +478,7 @@ class PackageDispatcher(controllers.Controller):
         If owner.username='orphan', the owner of package set to 'orphan'.
 
         :arg pkg_listing: Package listing to set the owner.
-        :arg owner: User name to change the owner
+        :arg owner: User to change the owner
         :returns: Log message about changes.
         :raises InvalidRequestError: if there's problem retrieving
             information from the database.
@@ -545,9 +546,14 @@ class PackageDispatcher(controllers.Controller):
             approved in ('admin', 'owner'))):
             # Retire package
             if pkg.owner != 'orphan':
+                try:
+                    person = fas.cache['orphan']
+                except KeyError:
+                    return dict(status=False, message=_('specified owner %(owner)s'
+                        ' does not have a fedora account') % {
+                            'owner': 'orphan'})
                 # let set_owner handle bugzilla and other stuff
-                self.set_owner(pkg.package.name, 'orphan',
-                        pkg.collection.simple_name)
+                self._set_owner(pkg.package.name, person)
             pkg.statuscode = STATUS['Deprecated'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
@@ -845,6 +851,8 @@ class PackageDispatcher(controllers.Controller):
         # Make sure a log is created in the db as well.
         if acl_status == 'Awaiting Review':
             acl_action = 'requested'
+        elif acl_status == 'Approved':
+            acl_action = 'been granted'
         else:
             acl_action = 'given up'
         log_msg = '%s has %s the %s acl on %s (%s %s)' % (
@@ -1091,7 +1099,7 @@ class PackageDispatcher(controllers.Controller):
                 person = fas.cache[changes['owner']]
             except KeyError:
                 return dict(status=False, message=_('Specified owner %(owner)s'
-                    ' does not have a Fedora Account') % {
+                    ' does not have a Fedora account') % {
                         'owner': changes['owner']})
             # Make sure the owner is in the correct group
             try:
@@ -1107,7 +1115,8 @@ class PackageDispatcher(controllers.Controller):
 
             # Retrieve the id of the initial package owner
             if not owner_name:
-                # Retrieve the id for the devel_collection
+            # No new owner specifed, use the devel_collection if ownership
+            # information becomes necessary
                 #pylint:disable-msg=E1101
                 devel_collection = Collection.query.filter_by(
                         name='Fedora', version='devel').one()

@@ -115,9 +115,8 @@
                 cbody = ''.join(cbody[:3])
                 ?>
             <td class="body">$cbody
-              <a py:if="more" href="${tg.url('/packages/%s/%s/#Comment%i' %
-                                    (comment.packagebuildname,
-                                    comment.builds.values()[0].repo.shortname,
+              <a py:if="more" href="${tg.url('/applications/%s/#Comment%i' %
+                                    (comment.application.name,
                                     cid))}">(more)</a>
             </td>
             <td class="time">${comment.time.strftime("%H:%M - %h %d")}</td>

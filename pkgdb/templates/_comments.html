@@ -1,54 +1,77 @@
 <html py:strip=""
+      xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:py="http://genshi.edgewall.org/">
+   <xi:include href="_ajax_loader.html" />
     <!--a  href="${tg.url('/commentsfeed/atom1.0?app=%s' % app.name)}">
             <img src="${tg.url('/static/images/feed.png')}"
                  alt="(${len(comments)}) Comments" />
   &nbsp; ${len(comments)} Comments:</a-->
 
-  <py:choose test="len(comments)">
-  <py:when test="0">
-    <h3>No User Comments</h3>
-    <hr style="color:#666;"/>
-    Be the first to comment...
-  </py:when>
-  <py:otherwise>
-    <h3>User Comments (${len(comments)})</h3>
-    <hr />
-  </py:otherwise>
-  </py:choose>
+  <a name="user_comments" />
+  <div id="comments">
+      <py:choose test="len(comments)">
+      <py:when test="0">
+        <h3 class="comment" style="padding-bottom: 7px;">No User Comments</h3>
+        Be the first to comment...
+      </py:when>
+      <py:otherwise>
+        <h3 class="comment" style="padding-bottom: 7px;">User Comments (${len(comments)})</h3>
+      </py:otherwise>
+      </py:choose>
 
-  <py:for each="(comment, cid) in zip(comments, range(1, len(comments)+1))">
-          <?python if comment.published:
-                       color=''
-                   else:
-                       color='#fee'
+      <py:for each="(comment, cid) in zip(comments, range(1, len(comments)+1))">
+              <?python if comment.published:
+                           color=''
+                       else:
+                           color='#fee'
+                       ?>
+              <div class="comment" style="background-color: $color">
+                <div class="comment_head">
+                  <div style="float:right;">${comment.fancy_delta()}</div>
+                  <b style="color:#337acc;">${comment.author}</b> says:
+                  <?python from pkgdb.utils import mod_grp ?>
+                  <py:if test="mod_grp in tg.identity.groups">              
+                    <a href="${tg.url('/comments/toggle_published/%s' %comment.id)}">
+                      <py:choose test="comment.published">
+                        <py:when test="True">
+                          unpublish
+                        </py:when>
+                        <py:when test="False">
+                          publish
+                        </py:when>
+                      </py:choose>
+                    </a>
+                  </py:if>
+                </div>
+                <?python
+                   # there's got to be a standard way of doing this..
+                   body = ''.join("<p>%s</p>" % line \
+                   for line in comment.body.splitlines() if line)
                    ?>
-          <div class="comment" style="background-color: $color">
-            <div class="comment_head">
-              <div style="float:right;">${comment.fancy_delta()}</div>
-              <b style="color:#337acc;">${comment.author}</b> says:
-              <?python from pkgdb.utils import mod_grp ?>
-              <py:if test="mod_grp in tg.identity.groups">              
-                <a href="${tg.url('/comments/toggle_published/%s' %comment.id)}">
-                  <py:choose test="comment.published">
-                    <py:when test="True">
-                      unpublish
-                    </py:when>
-                    <py:when test="False">
-                      publish
-                    </py:when>
-                  </py:choose>
-                </a>
-              </py:if>
-            </div>
-            <?python
-               # there's got to be a standard way of doing this..
-               body = ''.join("<p>%s</p>" % line \
-               for line in comment.body.splitlines() if line)
-               ?>
-            <blockquote xml:space="preserve">${HTML(body)}</blockquote>
-          </div>
-          <hr />
-  </py:for>
+                <blockquote xml:space="preserve">${HTML(body)}</blockquote>
+              </div>
+      </py:for>
+      <py:choose test="tg.identity.anonymous">
+      <py:when test="True">
+        <a href="${tg.url('/login')}">please log in to comment</a>
+      </py:when>
+          
+      <py:when test="False">
+            <h4>Post a comment</h4>
+            <form id="commentForm" method="post"
+                  action="${tg.url('/comments/add/')}"
+                  dojoType="dijit.form.Form">
+              <input type="hidden" name="app" value="$app.name" />
+              <input type="hidden" name="author" value="$tg.identity.user_name"/>
+              <textarea name="body" rows="6" cols="70" style="width: 100%; padding: 0;"></textarea>
+              <button type="submit" dojoType="dijit.form.Button">Post</button>
+              <script type="dojo/method">
+                tagComment("commentForm", "commentForm", "commentList");
+              </script>
+            </form>
+            ${ajax_loader()}
+      </py:when>
+      </py:choose>
+    </div>
 </html>
 

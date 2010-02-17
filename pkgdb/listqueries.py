@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -33,29 +33,32 @@ Send acl information to third party tools.
 #   So this is fine.
 # :C0322: Disable space around operator checking in multiline decorators
 
+import os
+import tempfile
 import itertools
 
-from sqlalchemy import select, and_, create_engine
+from sqlalchemy import select, and_, create_engine, union
 from sqlalchemy.orm import sessionmaker
 
 from turbogears import expose, validate, error_handler
 from turbogears import controllers, validators
 
-from turbogears.database import get_engine
+from turbogears.database import get_engine, session
+
 
 from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
-     GroupPackageListingAcl, PackageListing, PersonPackageListing, \
-     PersonPackageListingAcl, Repo, PackageBuild
-from pkgdb.model import PackageTable, CollectionTable, ReposTable, TagsTable, \
-     ApplicationsTagsTable, ApplicationTag
-from pkgdb.model import YumTagsTable, YumReposTable, \
-    YumPackageBuildTable, YumPackageBuildNamesTable, \
-    YumPackageBuildNamesTagsTable
-from pkgdb.model.yumdb import yummeta, sqliteconn, dbfile
+        GroupPackageListingAcl, PackageListing, PersonPackageListing, \
+        PersonPackageListingAcl, Repo, PackageBuild, Tag
+from pkgdb.model import PackageTable, PackageListingTable, \
+        PersonPackageListingTable, PersonPackageListingAclTable, \
+        CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
+        BinaryPackageTag
+from pkgdb.model import YumTagsTable
+from pkgdb.model.yumdb import yummeta
 from pkgdb.utils import STATUS
 from pkgdb import _
 
-from pkgdb.validators import BooleanValue, CollectionNameVersion
+from pkgdb.validators import CollectionNameVersion
 
 from fedora.tg.util import jsonify_validation_errors
 
@@ -74,7 +77,7 @@ class NotifyList(validators.Schema):
     # database multiple times
     name = validators.UnicodeString(not_empty=False, strip=True)
     version = validators.UnicodeString(not_empty=False, strip=True)
-    eol = BooleanValue
+    eol = validators.StringBool()
     chained_validators = (CollectionNameVersion(),)
 
 #
@@ -334,7 +337,7 @@ class ListQueries(controllers.Controller):
         :buildtags: a dictionary of buildaname : tagdict, where tagdict is a
         dictionary of tag : score key-value pairs. 
         '''
-        if repos.__class__ != [].__class__:
+        if not isinstance(repos, list):
             repos = [repos]
 
         buildtags = {}
@@ -342,96 +345,69 @@ class ListQueries(controllers.Controller):
             buildtags[repo] = {}
 
             #pylint:disable-msg=E1101
-            repoid = Repo.query.filter_by(shortname=repo).one().id
-            builds = PackageBuild.query.filter_by(repoid=repoid)
+            repoid = session.query(Repo).filter_by(shortname=repo).one().id
+            builds = session.query(PackageBuild)\
+                    .join(PackageBuild.repos)\
+                    .filter(Repo.id==repoid)
             #pylint:enable-msg=E1101
 
             for build in builds:
                 buildtags[repo][build.name] = build.scores()
-
         return dict(buildtags=buildtags, repos=repos)
 
     @expose(content_type='application/sqlite')
-    def sqlitebuildtags(self, repos):
+    def sqlitebuildtags(self, repo):
         '''Return a sqlite database of packagebuilds and tags.
 
         The database returned will contain copies or subsets of tables in the
         pkgdb.
 
-        :kwarg repos: A list of repository shortnames (e.g. 'F-11-i386')
+        :arg repo: A repository shortname to retrieve tags for (e.g. 'F-11-i386')
 
         '''
-
-        if repos.__class__ != [].__class__:
-            repos = [repos]
-
         # initialize/clear database
-        open(dbfile, 'w').close()
-        
+        fd, dbfile = tempfile.mkstemp()
+        os.close(fd)
+        sqliteconn = 'sqlite:///%s' % dbfile
+
+        yummeta.bind = create_engine(sqliteconn)
         yummeta.create_all()
 
         # since we're using two databases, we'll need a new session
         default_engine = get_engine()
-        lite_session = sessionmaker(create_engine(sqliteconn))()
-        
-        # copy the repo
-        s = select([ReposTable.c.id, ReposTable.c.name, ReposTable.c.shortname],
-                   ReposTable.c.shortname.in_(repos))
-        e = default_engine.execute(s)
-        fetchedrepos = e.fetchall()
-        e.close()
-        lite_session.execute(YumReposTable.insert(), fetchedrepos)
+        lite_session = sessionmaker(yummeta.bind)()
 
-        #pylint:disable-msg=E1101
-        packagebuilds = PackageBuild.query.join('repos').filter(
-                    ReposTable.c.shortname.in_(repos))
-        #pylint:enable-msg=E1101
+        # Retrieve the tags from the database
+        tags = union(select(
+            (PackageBuild.name.label('name'),
+                Tag.name.label('tag'),
+                ApplicationTag.score.label('score')),
+            and_(Tag.id==ApplicationTag.tagid,
+                ApplicationTag.applicationid==PackageBuildApplicationsTable.c.applicationid,
+                PackageBuildApplicationsTable.c.packagebuildid==PackageBuild.id,
+                PackageBuild.repoid==Repo.id,
+                Repo.shortname=='F-11-i386')),
+            select((PackageBuild.name.label('name'),
+                Tag.name.label('tag'),
+                BinaryPackageTag.score.label('score')),
+            and_(Tag.id==BinaryPackageTag.tagid,
+                BinaryPackageTag.binarypackagename==PackageBuild.name,
+                PackageBuild.repoid==Repo.id,
+                Repo.shortname=='F-11-i386')))
 
-        unique_tags = {}
+        pkg_tags = []
+        for tag in tags.execute().fetchall():
+            pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
 
-        for packagebuild in packagebuilds:
-            build = [(packagebuild.id, packagebuild.name, packagebuild.repoid)]
-            lite_session.execute(YumPackageBuildTable.insert(), build)
-            name = [(packagebuild.name)]
-            lite_session.execute(YumPackageBuildNamesTable.insert(), name)
-
-            build_tags = {}
-
-            # collect tags
-            for app in build.applications: #pylint:disable-msg=E1101
-                #pylint:disable-msg=E1101
-                tags = ApplicationTag.query.join('tag').filter(ApplicationsTagsTable.c.applicationid==app.id)
-                #pylint:enable-msg=E1101
-                for tag in tags:
-                    sc = build_tags.get(tag.tag.name, None)
-                    if sc is None or sc < tag.score:
-                        build_tags[tag.tag.name] = tag.score
-
-            # write tags
-            for tag, score in build_tags.iteritems():
-                tag_id = unique_tags.get(tag, None)
-                if not tag_id:
-                    #pylint:disable-msg=E1103
-                    tag_id = YumTagsTable.query.insert().values(
-                        name=tag 
-                        ).execute().last_inserted_ids()[-1]
-                    #pylint:enable-msg=E1103
-                    unique_tags[tag] = tag_id
-
-                #pylint:disable-msg=E1101
-                YumPackageBuildNamesTagsTable.query.insert().values(
-                    packagebuildname=packagebuild.name, 
-                    tagid=tag_id, score=score
-                    ).execute()
-                #pylint:enable-msg=E1101
-
+        lite_session.execute(YumTagsTable.insert(), pkg_tags)
         lite_session.commit()
 
         f = open(dbfile, 'r')
         dump = f.read()
         f.close()
+        os.unlink(dbfile)
         return dump
-        
+
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
             as_format="plain", accept_format="text/plain",
             content_type="text/plain; charset=utf-8", #pylint:disable-msg=C0322
@@ -469,8 +445,8 @@ class ListQueries(controllers.Controller):
                 Package.id==PackageListing.packageid,
                 Package.statuscode!=STATUS['Removed'].statuscodeid,
                 PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
-                Collection.statuscode.in_(STATUS['Active'].statuscodeid,
-                    STATUS['Under Development'].statuscodeid),
+                Collection.statuscode.in_((STATUS['Active'].statuscodeid,
+                    STATUS['Under Development'].statuscodeid)),
                 ),
             order_by=(Collection.name,), distinct=True)
 
@@ -640,16 +616,16 @@ class ListQueries(controllers.Controller):
         # Retrieve Packages, owners, and people on watch* acls
         #pylint:disable-msg=E1101
         owner_query = select((Package.name, PackageListing.owner),
-                from_obj=(PackageTable.join(PackageListing).join(
+                from_obj=(PackageTable.join(PackageListingTable).join(
                     CollectionTable))).where(and_(
                         Package.statuscode == STATUS['Approved'].statuscodeid,
                         PackageListing.statuscode == \
                                 STATUS['Approved'].statuscodeid)
                         ).distinct().order_by('name')
         watcher_query = select((Package.name, PersonPackageListing.username),
-                from_obj=(PackageTable.join(PackageListing).join(
-                    Collection).join(PersonPackageListing).join(
-                        PersonPackageListingAcl))).where(and_(
+                from_obj=(PackageTable.join(PackageListingTable).join(
+                    CollectionTable).join(PersonPackageListingTable).join(
+                        PersonPackageListingAclTable))).where(and_(
                             Package.statuscode == \
                                     STATUS['Approved'].statuscodeid,
                             PackageListing.statuscode == \

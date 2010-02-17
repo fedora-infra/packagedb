@@ -38,6 +38,9 @@ from pkgdb.model import Application, Package, PackageBuild, Tag
 from pkgdb.utils import STATUS
 from pkgdb import _
 
+import logging
+log = logging.getLogger(__name__)
+
 from cherrypy import request
 
 class Letters(controllers.Controller):
@@ -56,8 +59,9 @@ class Letters(controllers.Controller):
            :kwarg searchwords: optional - string to restrict the list, can use
            % or * as wildcards
         '''
-        if request.path.startswith('/pkgdb/acls/'):
-            if request.path.startswith('/pkgdb/acls/bugs/'):
+        server_webpath = config.get('server.webpath', '/pkgdb')
+        if request.path.startswith("%s/acls/" % server_webpath):
+            if request.path.startswith('%s/acls/bugs/' % server_webpath):
                 mode = 'acls/bugs/'
                 bzUrl = config.get('bugzilla.url',
                                    'https://bugzilla.redhat.com/')

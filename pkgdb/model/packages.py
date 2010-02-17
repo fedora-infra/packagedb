@@ -40,14 +40,14 @@ Mapping of package related database tables to python classes.
 #   is not to name them with all uppercase
 
 from sqlalchemy import Table, Column, Integer, String, Text, ForeignKey, ForeignKeyConstraint
-from sqlalchemy.orm import relation, backref
+from sqlalchemy.orm import relation, backref, eagerload
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.sql import and_
 
-from turbogears.database import metadata, mapper, get_engine
+from turbogears.database import metadata, mapper, get_engine, session
 
 from fedora.tg.json import SABase
 
@@ -85,10 +85,13 @@ BinaryPackagesTable = Table('binarypackages', metadata,
 PackageBuildTable = Table('packagebuild', metadata, autoload=True)
 PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
 
-# association tables (many-to-many relationships)
-PackageBuildListingTable = Table('packagebuildlisting', metadata,
-        Column('packagelistingid', Integer, ForeignKey('packagelisting.id')),
-        Column('packagebuildid', Integer, ForeignKey('packagebuild.id'))
+PackageBuildReposTable = Table('packagebuildrepos', metadata,
+    Column('repoid', Integer, primary_key=True, nullable=False),
+    Column('packagebuildid', Integer, primary_key=True, nullable=False),
+    ForeignKeyConstraint(['repoid'], ['repos.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
 )
 
 #pylint:enable-msg=C0103
@@ -333,6 +336,21 @@ class PackageBuildDepends(SABase):
             self.packagebuildid, self.packagebuildname)
 
 
+class PackageBuildRepo(SABase):
+    '''PackageBuild Repo association.
+
+    Table -- PackageBuildRepo
+    '''
+    def __init__(self, packagebuildid, repoid):
+        super(PackageBuildRepo, self).__init__()
+        self.packagebuildid = packagebuildid
+        self.repoid = repoid
+
+    def __repr__(self):
+        return 'PackageBuildRepo(%r, %r)' % (
+            self.packagebuildid, self.repoid)
+
+
 
 class PackageBuild(SABase):
     '''Package Builds - Actual rpms
@@ -342,8 +360,7 @@ class PackageBuild(SABase):
     Table -- PackageBuild
     '''
     def __init__(self, name, packageid, epoch, version, release, architecture,
-                 size, license, changelog, committime, committer,
-                 repoid):
+                 size, license, changelog, committime, committer):
         super(PackageBuild, self).__init__()
         self.name = name
         self.packageid = packageid
@@ -356,16 +373,45 @@ class PackageBuild(SABase):
         self.changelog = changelog
         self.committime = committime
         self.committer = committer
-        self.repoid = repoid
+
+    repo = property(lambda self:self.repos[0])
 
     def __repr__(self):
-        return 'PackageBuild(%r, packageid=%r, epoch=%r, version=%r,' \
+        return 'PackageBuild(%r, epoch=%r, version=%r,' \
                ' release=%r, architecture=%r, size=%r, license=%r,' \
-               ' changelog=%r, committime=%r, committer=%r, repoid=%r)' % (
-            self.name, self.packageid, self.epoch, self.version,
+               ' changelog=%r, committime=%r, committer=%r, packageid=%r, repoid=%r)' % (
+            self.name, self.epoch, self.version,
             self.release, self.architecture, self.size,
             self.license, self.changelog, self.committime, self.committer,
-            self.repoid)
+            self.packageid, self.repo.id)
+
+    def __str__(self):
+        return "%s-%s-%s.%s" % (self.name, self.version, 
+                self.release, self.architecture)
+
+
+    def download_path(self, reponame=None):
+        """Find download path of the build
+
+        :args reponame: prefered repo from where the build should be downloaded
+        :returns: URI of the build
+        
+        Find download URI of the build. If build is available in <reponame> repo,
+        path to that repo is used. Path to first available repo is returned otherwise.
+        """
+
+        repo = self.repo # default
+
+        #find repo
+        for r in self.repos:
+            if r.shortname == reponame:
+                repo = r
+                break
+
+        # format path
+        return "%s%s%s%s.rpm" % (repo.mirror, repo.url, 
+                ('','Packages/')[repo.url.endswith('os/')], self)
+
     
     def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild
@@ -380,6 +426,24 @@ class PackageBuild(SABase):
                     scores[tag] = score
 
         return scores
+
+
+    @classmethod
+    def most_fresh(self, limit=5):
+        """Query that returns last pkgbuild imports
+
+        :arg limit: top <limit> apps
+
+        Excerpt from changelog is returned as well
+        """
+        #pylint:disable-msg=E1101
+        fresh = session.query(PackageBuild)\
+                .options(eagerload(PackageBuild.repos))\
+                .order_by(PackageBuild.committime.desc())
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            fresh = fresh.limit(limit)
+        return fresh
 
 #
 # Mappers
@@ -407,6 +471,8 @@ mapper(PackageListing, PackageListingTable, properties={
 
 mapper(PackageBuildDepends, PackageBuildDependsTable)
 
+mapper(PackageBuildRepo, PackageBuildReposTable)
+
 mapper(PackageBuild, PackageBuildTable, properties={
     'conflicts': relation(RpmConflicts, backref=backref('build'),
         collection_class = attribute_mapped_collection('name'),
@@ -426,8 +492,6 @@ mapper(PackageBuild, PackageBuildTable, properties={
     'depends': relation(PackageBuildDepends, backref=backref('build'),
         collection_class = attribute_mapped_collection('packagebuildname'),
         cascade='all, delete-orphan'),
-    'listings': relation(PackageListing, backref=backref('builds'),
-        secondary = PackageBuildListingTable),
     })
 
 

@@ -8,6 +8,12 @@ from turbogears.database import metadata, mapper
 
 from fedora.tg.json import SABase
 
+FLAGS = {
+    'EQ': '=',
+    'GT': '>',
+    'LT': '<',
+    'GE': '>=',
+    'LE': '<='}
 
 #
 # Mapped Tables
@@ -39,9 +45,14 @@ class RpmProvides(SABase):
         self.release = release
 
     def __repr__(self):
-        return 'RpmProvides(%r, %r, flags=%r, epoch=%r, version=%r,' \
-               'release=%r)' % (self.name, self.flags, self.packagebuildid,
+        return 'RpmProvides(%r, packagebuildid=%r, flags=%r, epoch=%r, version=%r,' \
+               'release=%r)' % (self.name, self.packagebuildid, self.flags,
                                 self.epoch, self.version, self.release)
+
+    def __str__(self):
+        return "%s %s %s%s%s" % (self.name, FLAGS[self.flags],
+                ('', self.epoch+':')[bool(self.epoch)], self.version,
+                ('', '.'+self.release)[bool(self.release)])
 
 class RpmRequires(SABase):
     '''Packages and files that are required by a specific PackageBuild.
@@ -65,6 +76,12 @@ class RpmRequires(SABase):
                         self.packagebuildid, self.epoch, self.version,
                         self.release, self.prereq)
 
+    def __str__(self):
+        return "%s %s %s%s%s" % (self.name, FLAGS[self.flags],
+                ('', self.epoch+':')[bool(self.epoch)], self.version,
+                ('', '.'+self.release)[bool(self.release)])
+
+
 class RpmObsoletes(SABase):
     '''Packages that are obsoleted by a specific PackageBuild.
 
@@ -85,6 +102,12 @@ class RpmObsoletes(SABase):
                 'release=%r)' % (self.name, self.packagebuildid, self.flags,
                                  self.epoch, self.version, self.release)
 
+    def __str__(self):
+        return "%s %s %s%s%s" % (self.name, FLAGS[self.flags],
+                ('', self.epoch+':')[bool(self.epoch)], self.version,
+                ('', '.'+self.release)[bool(self.release)])
+
+
 class RpmConflicts(SABase):
     '''Packages that are in conflict with a specific PackageBuild.
 
@@ -104,6 +127,13 @@ class RpmConflicts(SABase):
         return 'RpmConflicts(%r, %r, flags=%r, epoch=%r, version=%r,' \
                'release=%r)' % (self.name, self.packagebuildid, self.flags,
                                 self.epoch, self.version, self.release)
+
+    def __str__(self):
+        return "%s %s %s%s%s" % (self.name, FLAGS[self.flags],
+                ('', self.epoch+':')[bool(self.epoch)], self.version,
+                ('', '.'+self.release)[bool(self.release)])
+
+
 
 class RpmFiles(SABase):
     '''Files belonging to a specific PackageBuild.

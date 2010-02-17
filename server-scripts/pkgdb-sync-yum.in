@@ -17,418 +17,335 @@
 # permission of Red Hat, Inc.
 #
 # Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+#            Martin Bacovsky <mbacovsk@redhat.com>
 #
 '''
-sync information from yum into the packagedb
+Import PackageBuilds into the packagedb
 
 Import PackageBuild(rpm) related information from all the `active` repos
 available in the pkgdb.
 '''
 
+__requires__ = 'fedora_packagedb'
+
 # Pylint Errors
 # :E1101: Ignore this anytime we use the session.  SQLAlchemy monkeypatches
 #   extra functionality into here that isn't apparent to pylint
 
-__requires__ = 'fedora_packagedb'
 import os
 import sys
-CONFDIR = '/var/www/pkgdb/0.5.x'
-PKGDBDIR = os.path.join('/var/www/pkgdb/', '0.5.x')
+
+CONFDIR = '@CONFDIR@'
+PKGDBDIR = os.path.join('@DATADIR@', 'fedora-packagedb')
 sys.path.append(PKGDBDIR)
 
-import os
-import sys
-import yum
-import re
+import pkg_resources
 import logging
-import datetime
+import argparse
+from fnmatch import fnmatch
 
 from sqlalchemy.sql import and_
 from turbogears import config, update_config
 from turbogears.database import session
 
-from pkgdb.lib.rpm import RPMParser, RE_APP_ICON_FILE
-
-if len(sys.argv) > 1:
-    update_config(configfile=sys.argv[1],
-        modulename='pkgdb.config')
-elif os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'setup.py')):
-    update_config(configfile='pkgdb.cfg', modulename='pkgdb.config')
-else:
-    update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),
-            modulename='pkgdb.config')
-config.update({'pkgdb.basedir': PKGDBDIR})
-
-from pkgdb.model import PackageBuildTable, PackageTable, IconName, Theme, Icon
-from pkgdb.model import Package, PackageListing, PackageBuild, Repo, \
-        Application, ApplicationTag, Tag, RpmFiles, PackageBuildDepends, \
-        RpmRequires, RpmProvides, RpmConflicts, RpmObsoletes, BinaryPackage
-
 log = logging.getLogger('pkgdb-sync-yum')
 
-def get_pkg_name(rpm):
-    # get the name of the Package, ignore -devel/-doc tags, version etc.
-    # !version sometimes isn't the same as the sourcerpm's
-    namelist = rpm.sourcerpm.split('-')
-    namelist.pop()
-    namelist.pop()
-    packagename = '-'.join(namelist)
-    return packagename
+def setup_parser():
+    # create the argument parser
+    parser = argparse.ArgumentParser(
+        description='Import packagebuilds and applications into Fedora PkgDB.')
 
-#pylint:disable-msg=E1101
-repos = session.query(Repo).filter_by(active=True).all()
-#pylint:enable-msg=E1101
+    parser.add_argument('--config', '-c', help='Fedora PkgDB config file')
+    subparsers = parser.add_subparsers(title='Import commands', 
+            help='for more help run "%(prog)s <command> --help"')
 
-# make a clean start
-yb = yum.YumBase()
-yb.cleanSqlite()
-yb.cleanMetadata()
-yb.cleanExpireCache()
-yb.close()
+    # import local command
+    parser_importlocal = subparsers.add_parser('importlocal', help='import local rpm files. WARNING: Make sure you are choosing the right repo. Make sure the files exist on the mirrors (links from the web ui will not work). Make sure the imported files are most fresh builds (we assume that the last imported is most fresh version).')
+    parser_importlocal.add_argument('--repo', '-r', metavar='shortname', required=True, 
+            help='repository in which the rpm(s) belongs to. For list of valid repos run with showrepos command')
+    parser_importlocal.add_argument('--force', action='store_true',
+            help='reimport existing builds')
+    parser_importlocal.add_argument('files', nargs='+', metavar='file',
+            help='rpm file to be imported into pkgdb')
+    parser_importlocal.set_defaults(func='import_local')
 
-log.debug('Yum related stuff was cleaned')
+    # update command
+    parser_update = subparsers.add_parser('update', help='import builds from all active repos. Script goes through builds backwards. It skips already imported builds.')
+    parser_update.add_argument('--repo', '-r', metavar='shortname', default='*',
+            help='go just through this repo. For list of valid repos run with showrepos command')
+    parser_update.add_argument('--cachedir',
+            help='directory where the yum cache will be created during the import. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
+    parser_update.add_argument('--force', action='store_true',
+            help="reimport existing builds. When this option is selected we DON'T skip to next repo on hitting already imported build")
+    parser_update.add_argument('--quick', default=False, action='store_true',
+            help='with this option the script skips to next repo on first already imported build occurence')
+    parser_update.add_argument('--profile', type=argparse.FileType('w'),
+            help='filename where data collected from profiler should be stored. Output is in kcachegrind format.')
+    parser_update.add_argument('--profile-skip', type=int, default=0,
+            help='how many files should be processed before profiling data are taken')
+    parser_update.add_argument('package', nargs='?',
+            help='update just these packages. Wildcards are allowed')
+    parser_update.set_defaults(func='update')
 
-# get sacks first, so we can search for dependencies
-for repo in repos:
-    yb = yum.YumBase()
+    # showrepos command
+    parser_showrepos = subparsers.add_parser('showrepos', help='show available active/inactive repos')
+    parser_showrepos.add_argument('--inactive', default=False, action='store_true',
+            help='show inactive repos instead of the active ones')
+    parser_showrepos.set_defaults(func='show_repos')
 
-    yb.repos.disableRepo('*')
-    yb.add_enable_repo(str('pkgdb-%s' % repo.shortname),
-                       [str('%s%s' % (repo.mirror, repo.url))])
-    yumrepo = yb.repos.getRepo('pkgdb-%s' % repo.shortname)
+    # clean command
+    parser_clean = subparsers.add_parser('clean', help='Clean up pkgdb database. It removes all builds from inactive repos. For list of inactive repos run "%(prog)s showrepos --inactive". This command also removes all builds that are no longer in active repos.')
+    parser_clean.add_argument('--cachedir',
+            help='directory where the yum cache will be created. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
+    parser_clean.set_defaults(func='clean')
 
-    log.info('Refreshing repo: %s' % yumrepo.name)
+    return parser
 
+
+def setup_framework(args):
+    #configure turbogears framework
+    if args.config:
+        update_config(configfile=args.config, modulename='pkgdb.config')
+    elif os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'setup.py')):
+        update_config(configfile='pkgdb.cfg', modulename='pkgdb.config')
+    else:
+        update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),
+                modulename='pkgdb.config')
+    config.update({'pkgdb.basedir': PKGDBDIR})
+
+    fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
+    username = config.get('fas.username', 'admin')
+    password = config.get('fas.password', 'admin')
+
+
+def show_repos(args):
+    """Print list of active repos
+    """
+    from pkgdb.model import Repo
+
+    #pylint:disable-msg=E1101
+    repos = session.query(Repo).filter_by(active=(not args.inactive)).all()
+    #pylint:enable-msg=E1101
+
+    print 'List of active repositories:'
+    for r in repos:
+        print '%-20s:%-60s' % (r.shortname, r.name)
+
+
+def import_local(args):
+    """Import local rpm files into pkgdb
+
+    Turns local rpms into YumLocalPackage and imports
+    them the usual way. This is usefull for testing
+    or initial import. WARNING: be carefull to associate
+    the builds with the right repo.
+
+    :arg args: set of commandline arguments 
+    """
+    from pkgdb.model import Repo
+    from yum.packages import YumLocalPackage
+    from rpmUtils.transaction import initReadOnlyTransaction
+    from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
+    from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
+
+    # prepare rpm transaction for rpm parser
+    ts = initReadOnlyTransaction()
+
+    # find repo
     try:
-        yb._getSacks(thisrepo=yumrepo.id)
+        #pylint:disable-msg=E1101
+        repo = session.query(Repo).filter_by(shortname=args.repo).one()
+        #pylint:enable-msg=E1101
     except:
-        log.warning('Repo %s failed to read! Skipping...' % yumrepo)
-        continue
+        log.error("Repo (%s) does not exist" % args.repo)
+        exit(1)
+    if not repo.active:
+        log.error("Repo (%s) is not active" % args.repo)
+        exit(1)
 
-    # populate pkgdb with packagebuilds (rpms)
-    rpms = yumrepo.sack.returnNewestByName()[:10]
-    if rpms == []:
-        log.warn('There were no packages in this repo! %s%s' % (
-            repo.mirror, repo.url))
-    for rpm in rpms:
-        packagename = get_pkg_name(rpm)
-        pkg_query = Package.query.filter_by(name=packagename)
+    # prepare importer
+    importer = PackageBuildImporter(repo, force=args.force)
+
+    for f in args.files:
+        session.begin() #pylint:disable-msg=E1101
+        log.info("PackageBuild: %s" % f)
+        pkg = YumLocalPackage(ts=ts, filename=f)    
         try:
-            package = pkg_query.one()
-        except:
-            log.warn('%s - the corresponding package does not exist in the'
-                     ' pkgdb! pkgbuild was not added. Tried: %s' %
-                     (rpm.name, packagename))
-        else:
-            # what's my packagelisting?
-            collectionid = repo.collectionid
-            listing_query = PackageListing.query.filter_by(
-                                packageid=package.id,
-                                collectionid=collectionid)
-            try:
-                listing = listing_query.one()
-            except:
-                log.warn('%s - the corresponding packagelist does not '
-                      'exist in the pkgdb! pkgbuild was not added.' % rpm.name)
-            else:
-                if PackageBuild.query.filter_by(
-                                name=rpm.name,
-                                packageid=package.id,
-                                version=rpm.version,
-                                architecture=rpm.arch,
-                                repoid=repo.id,
-                                release=rpm.release).count() != 0:
-                    # We expect to skip a lot of packages, only note it on
-                    # debug level
-                    log.debug('%s-%s - PackageBuild already in. '
-                             'Skipping to next package.' % (
-                        pkg_query.one().name, rpm.version))
-                    continue
+            importer.process(RPM(pkg, yumrepo=None))
+        except PkgImportAlreadyExists, e:
+            rpm.close()
+            log.info("%s: Already imported - skipping" % pkg.name)
+            session.rollback() #pylint:disable-msg=E1101
+            continue
+        except PkgImportError, e:
+            rpm.close()
+            log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
+            session.rollback() #pylint:disable-msg=E1101
+            continue
 
-                applications = []
-                has_desktop = False
-                has_icon = False
+        session.commit() #pylint:disable-msg=E1101
+        rpm.close()
 
-                check_icon = re.compile(
-                        '^.*/(icons|pixmaps).*/apps/([^/]*)\.png$')
+    session.begin() #pylint:disable-msg=E1101
+    importer.close(prune=False) # do not remove builds records that are not on mirrors
+    session.commit() #pylint:disable-msg=E1101
 
-                # Look for apps and icons
-                for f in rpm.filelist:
-                    if f.endswith('.desktop'):
-                        has_desktop = True
-                        break
-                    if RE_APP_ICON_FILE.match(f):
-                        has_icon = True
-                        log.debug('Icon found')
-                        break
-
-                # Do a bit of house-keeping
-                if rpm.changelog:
-                    (committime, committer, changelog) = rpm.changelog[0]
-                    committime = datetime.datetime.utcfromtimestamp(committime)
-                    committer = committer.replace('- ', '')
-                    committer = committer.rsplit(' ', 1)[0]
-                else:
-                    (committime, committer, changelog) = (
-                        datetime.datetime.now(),'','')
-
-                # insert binary package if necesary
-                try:
-                    session.query(BinaryPackage).filter_by(name=rpm.name).one()
-                except:
-                    binary_package = BinaryPackage(rpm.name)
-                    session.add(binary_package)
-
-                # insert the new packagebuild and get its id
-                pkgbuild = PackageBuild(
-                    packageid=package.id, name=rpm.name,
-                    epoch=rpm.epoch, version=rpm.version,
-                    release=rpm.release, size=rpm.size,
-                    architecture=rpm.arch,
-                    license=rpm.license, changelog=changelog,
-                    committime=committime, committer=committer,
-                    repoid=repo.id)
-                session.add(pkgbuild) #pylint:disable-msg=E1101
+    log.info('Done.')
 
 
-                # FIXME: We should behave differently for various entry types 
-                # download and process .desktop to create app
-                if has_desktop or has_icon:
+def _get_cachedir(cachedir):
+    if not cachedir:
+        cachedir = config.get('sync-yum.cachedir', '/var/tmp')
 
-                    desktop_entries = ()
-                    app_icons = {}
+    log.info('CacheDir: %s' % cachedir)
+
+    return cachedir
+
+
+def update(args):
+    """Import local rpm files into pkgdb
+
+    Turns local rpms into YumLocalPackage and imports
+    them the usual way. This is usefull for testing
+    or initial import. WARNING: be carefull to associate
+    the builds with the right repo.
+
+    :arg args: set of commandline arguments 
+    """
+    from pkgdb.model import Repo
+    from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
+    from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
+
+    cachedir = _get_cachedir(args.cachedir)
+    profile_skip = args.profile_skip
+
+    # find repo
+    #pylint:disable-msg=E1101
+    repos = session.query(Repo)\
+            .filter(and_(
+                Repo.active==True, 
+                Repo.shortname.like(args.repo.replace('*','%'))))\
+            .all()
+    #pylint:disable-msg=E1101
+    if len(repos)==0:
+        log.error("Repo '%s' not found!" % args.repo)
+        exit(1)
+
+    for repo in repos:
+        log.info("Repo: %s" % repo.name)
+        # prepare importer
+    
+        try:
+            importer = PackageBuildImporter(repo, force=args.force,
+                    cachedir=cachedir)
+        except Exception, e:
+            log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
+            continue
+
+        try:
+            pkgbuilds = importer.yumrepo.sack.returnNewestByName()
+        except Exception, e:
+            log.error('Failed to read repo %s! (%s)' % (repo.name, e))
+            continue
+        
+        total = len(pkgbuilds)
+        counter = 1
+
+        for pkg in pkgbuilds:
+            if args.package and not fnmatch(pkg.name, args.package):
+                continue
+            session.begin() #pylint:disable-msg=E1101
+            log.info(" (%s/%s)%s" % (counter, total, pkg))
+            counter += 1
+            rpm = RPM(pkg, yumrepo=importer.yumrepo)
+
+            if args.profile:
+                if profile_skip == 0:
+                    # collect profiling data and die
+                    import cProfile
+                    from pkgdb.lib.profiling import KCacheGrind
+                    p = cProfile.Profile()
                     try:
-                        log.info('Loading %s...' % rpm.name)
-                        rpm_file = yumrepo.getPackage(rpm)
-                        log.info('%s was downloaded' % rpm.name)
-                        parser = RPMParser(rpm_file)
-                        desktop_entries = parser.desktop_entries()
-                        app_icons = parser.get_app_icons()
-                        log.debug(app_icons)
-                    except Exception, e:
-                        log.error('Error occured while processing rpm from'
-                                ' repo %s. %s' % (yumrepo.name, e))
+                        p.runcall(importer.process, rpm)
+                    except:
+                        pass
+                    k = KCacheGrind(p)
+                    k.output(args.profile)
+                    sys.exit(0)
+                else:
+                    profile_skip -= 1;
 
-                    for entry in desktop_entries:
-                        if entry.has_option('Desktop Entry', 'name'):
-                            try:
-                                app = Application.query.filter_by(name=
-                                        entry.get('Desktop Entry', 'name'))\
-                                                .one()
-                            except:
-                                # FIXME: app updates
-                                if entry.has_option('Desktop Entry', 'type'):
-                                    desktoptype = entry.get('Desktop Entry',
-                                            'type')
-                                else:
-                                    desktoptype = None
+            try:
+                importer.process(rpm)
+            except PkgImportAlreadyExists, e:
+                log.info("%s: Already imported - skipping" % pkg.name)
+                session.rollback() #pylint:disable-msg=E1101
+                rpm.close()
+                if args.quick:
+                    break
+                else:
+                    continue
+            except PkgImportError, e:
+                log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
+                session.rollback() #pylint:disable-msg=E1101
+                rpm.close()
+                continue
 
-                                app = Application(
-                                    name=entry.get('Desktop Entry', 'name'),
-                                    description=rpm.description,
-                                    summary=rpm.summary,
-                                    url=rpm.url,
-                                    apptype='desktop',
-                                    desktoptype=desktoptype,
-                                )
-                                session.add(app) #pylint:disable-msg=E1101
-                                log.debug(repr(app))
+            session.commit() #pylint:disable-msg=E1101
+            rpm.close()
+            
+        session.begin() #pylint:disable-msg=E1101
+        importer.close()
+        session.commit() #pylint:disable-msg=E1101
 
-                            # create iconname record
-                            if entry.has_option('Desktop Entry', 'icon'):
-                                iname = entry.get('Desktop Entry', 'icon')
-                                try:
-                                    #pylint:disable-msg=E1101
-                                    icon_name = session.query(IconName).\
-                                            filter_by(name=iname).one()
-                                except:
-                                    icon_name = IconName(name=iname)
-                                    #pylint:disable-msg=E1101
-                                    session.add(icon_name)
-                                    # save into DB so that icon creation does
-                                    # not fail on dupes
-                                    session.flush()
-                                    #pylint:enable-msg=E1101
-                                app.iconname = icon_name
-
-                            applications.append(app)
+    log.info('Done.')
 
 
+def clean(args):
+    """Clean up databse.
 
-                            # add .desktop categories as well as groups from
-                            # comps as prefiled tags
-                            if entry.has_option('Desktop Entry', 'Categories'):
-                                cats = entry.get('Desktop Entry', 'Categories')
-                                for cat in cats.split(';'):
-                                    # Sometimes the category ends up empty:
-                                    # Categories = Foo;Bar;Baz;
-                                    if cat:
-                                        # FIXME handle localized keys properly
-                                        # TODO: filter futile tags
-                                        # FIXME: use Application.tag()
-                                        try:
-                                            #pylint:disable-msg=E1101
-                                            tag = session.query(Tag).filter_by(
-                                                    name=cat).one()
-                                        except:
-                                            tag = Tag(name=cat)
-                                            #pylint:disable-msg=E1101
-                                            session.add(tag)
-                                            #pylint:enable-msg=E1101
-                                            log.debug(repr(tag))
+    Remove all builds from inactive repos. 
+    Remove all builds that are no longer in active repos.
+    """
+    from pkgdb.model import Repo
+    from pkgdb.lib.packagebuild import PackageBuildImporter
 
-                                        try:
-                                            #pylint:disable-msg=E1101
-                                            apptag = session.query(
-                                                    ApplicationTag).filter_by(
-                                                        applicationid=app.id,
-                                                        tag=tag.id).one()
-                                        except:
-                                            apptag = ApplicationTag()
-                                            apptag.tag = tag
-                                            apptag.application = app
-                            
+    cachedir = _get_cachedir(args.cachedir)
 
-                    # store icons...
-                    for (iname, icon_data) in app_icons.iteritems():
-                        log.debug('Theme: %s' % icon_data)
-                        log.debug('Name: %s' % iname)
-                        try:
-                            #pylint:disable-msg=E1101
-                            icon = session.query(Icon, IconName, Theme)\
-                                .filter_by(collectionid==collectionid)\
-                                .filter(Icon.nameid==IconName.id)\
-                                .filter(IconName.name==iname)\
-                                .filter(Icon.themeid==Theme.id)\
-                                .filter(Theme.name==icon_data['theme'])\
-                                .one()
-                        except:
-                            try:
-                                #pylint:disable-msg=E1101
-                                icon_name = session.query(IconName).\
-                                        filter_by(name=iname).one()
-                            except:
-                                icon_name = IconName(name=iname)
-                                session.add(icon_name) #pylint:disable-msg=E1101
-                                # this is necessary for avoiding 
-                                # of duplicite theme and iconname records
-                                # or is it?
-                                session.flush() #pylint:disable-msg=E1101
+    #pylint:disable-msg=E1101
+    repos = session.query(Repo).all()
+    #pylint:enable-msg=E1101
 
-                            try:
-                                #pylint:disable-msg=E1101
-                                icon_theme = session.query(Theme).\
-                                        filter_by(name=icon_data['theme']).one()
-                            except:
-                                icon_theme = Theme(name=icon_data['theme'])
-                                #pylint:disable-msg=E1101
-                                session.add(icon_theme)
-                                session.flush()
-                                #pylint:enable-msg=E1101
+    for repo in repos:
+        log.info("Cleaning: %s" % repo.name)
+        # prepare importer
+    
+        try:
+            importer = PackageBuildImporter(repo, cachedir=cachedir)
+        except Exception, e:
+            log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
+            continue
 
-                            icon = Icon(
-                               name=icon_name,
-                               theme=icon_theme,
-                                )
-                            log.debug(icon)
-
-                            icon.collectionid = collectionid
-                            session.add(icon) #pylint:disable-msg=E1101
-
-                        # update icon data
-                        icon.icon = icon_data['data'].getvalue()
-
-                        try:
-                            icon_data['data'].close()
-                        except:
-                            pass
-
-                        session.flush() #pylint:disable-msg=E1101
+        session.begin() #pylint:disable-msg=E1101
+        if repo.active:
+            importer.prune_builds()
+        else:
+            importer.delete_all_builds()
+        importer.close(prune=False)
+        session.commit() #pylint:disable-msg=E1101
 
 
-                # create application record for packagebuild if there is no
-                # .desktop file
-                if not has_desktop \
-                        and not rpm.name.endswith('-devel') \
-                        and not rpm.name.endswith('-debuginfo'):
-                    app = Application.query.filter_by(name=rpm.name).first()
-                    if not app:
-                        app = Application(
-                            name=rpm.name,
-                            description=rpm.description,
-                            summary=rpm.summary,
-                            url=rpm.url,
-                            apptype='unknown',
-                        )
-                        session.add(app) #pylint:disable-msg=E1101
-                        #session.flush()
-                        log.debug(repr(app))
-                    applications.append(app)
-
-                # associate the build with apps 
-                for app in applications:
-                    pkgbuild.applications.append(app)
-
-                # associate the listing with the packagebuild
-                listing.builds.append(pkgbuild)
-
-                # update PRCOs (treat requires as special case)
-                prcos = [['provides', RpmProvides],
-                         ['conflicts', RpmConflicts],
-                         ['obsoletes', RpmObsoletes]]
-                for prco, prcoclass in prcos:
-                    for (n, f, (e, v, r)) in getattr(rpm, prco):
-                        prcoobj = prcoclass(name=n, flags=f, epoch=e,
-                                        version=v, release=r)
-                        prcoobj.build = pkgbuild
-
-                # requires have the extra PreReq field
-                # also setup package dependencies here
-                dependencies = set()
-                for (n, f, (e, v, r), p) in rpm._requires_with_pre():
-                    rpm_requires = RpmRequires(name=n, flags=f, epoch=e,
-                                        version=v, release=r, prereq=p)
-                    rpm_requires.build = pkgbuild
-
-                    for provider in yb.pkgSack.searchProvides(n):
-                        dependencies.add(provider.name)
-
-                for dep in dependencies:
-                    build_depends = PackageBuildDepends(packagebuildname=dep)
-                    build_depends.build = pkgbuild
-
-                # files
-                for filename in rpm.filelist:
-                    rpm_file = RpmFiles(name=filename)
-                    rpm_file.build = pkgbuild
+    log.info('Done.')
 
 
-                # update the package information
+if __name__ == "__main__":
 
-                if (package.description != rpm.description) or \
-                   (package.summary != rpm.summary) or \
-                   (package.upstreamurl != rpm.url):
-                    PackageTable.update().where(
-                        PackageTable.c.id==package.id
-                        ).values(
-                        description = rpm.description,
-                        summary = rpm.summary,
-                        upstreamurl = rpm.url).execute()
+    parser = setup_parser()
 
-                # keep only the latest packagebuild from each repo
-                PackageBuildTable.delete().where(and_(
-                    PackageBuildTable.c.name==rpm.name,
-                    PackageBuildTable.c.repoid==repo.id))
+    args = parser.parse_args()
 
-                log.info('inserted %s-%s-%s' % (rpm.name,
-                                             rpm.version, rpm.release))
-        # flush per rpm
-        session.flush() #pylint:disable-msg=E1101
-        log.info('Collected data about %s were flushed' % rpm.name)
+    setup_framework(args)
 
-    # finish up for this repo
-    yb.cleanMetadata()
-    yb.cleanExpireCache()
-    yb.cleanSqlite()
-    yb.close()
-    yumrepo.close()
+    # command handling
+    locals().get(args.func)(args)
+

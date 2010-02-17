@@ -1,0 +1,81 @@
+<html py:strip=""
+      xmlns:py="http://genshi.edgewall.org/">
+    <div py:def="search_box(apps=True, builds=True, packages=True)" id="search-applications">
+        <div>
+        <form action="${tg.url('/search_dispatcher')}" method="POST">
+            <h4>Search</h4> 
+            <input name="pattern" value="${pattern}" style="width: ${50+(12,0)[apps]+(10,0)[builds]+(10,0)[packages]}%; margin-bottom: 10px;" />
+            <span style="white-space: nowrap;">
+            <input py:if="apps" class="button" name="submit" type="Submit" value="Applications" />
+            <input py:if="builds" class="button" name="submit" type="Submit" value="Builds" />
+            <input py:if="packages" class="button" name="submit" type="Submit" value="Packages" />
+            <img  id="search-help" style="padding-left: 6px; padding-top: 2px;" src="${tg.url('/static/images/info.png')}" />
+            </span>
+            <div dojoType="dijit.Tooltip" connectId="search-help" position="below">
+                <div py:if="apps">
+                    <h3>Search in Applications</h3>
+                    <p>
+                    Start here if you look for applications, their rating, comments, tagging or installation
+                    </p>
+                    <p>
+                    In search pattern multiple words are allowed.
+                    </p>
+                    <p>
+                    After submittion we perform fulltext search in application's name, summary, comments, tags, usages and assigned mimetypes.
+                    Pattern has to match at least one of the areas. Results are sorted by amount of pattern occurence.
+                    </p>
+                </div>
+                <div py:if="builds">
+                    <h3>Search in Builds</h3>
+                    <p>
+                    Use this type of search to list and install packagebuilds, see their contant and dependencies.
+                    </p>
+                    <p>
+                    In search pattern multiple words are allowed.
+                    </p>
+                    <p>
+                    Found builds match all the words listed in pattern (<b>AND</b>).
+                    For better effectivity and flexibility of the search some of the words can have prefix with special meaning. 
+                    </p>
+                    <p>
+                    Supporetd prefixes are: <br /> <b>file:</b>, <b>provides:</b>, <b>requires:</b>, <b>depends:</b>, <b>repo:</b> and <b>arch:</b>. 
+                    </p>
+                    <p>
+                    If there are more words with same prefix, at least one of them has to match the builds in result set (<b>OR</b>). 
+                    Words without prefix are fulltext searched in name, license, and commiter attributes.
+                    Words with prefix are searched for a full match and you have to use wildcards if you need more flexibility. 
+                    Be aware that patterns with wildcards at the beginning of the word will take more time to proceed.
+                    </p>
+                    <p>
+                    Results are sorted by how they meet the criteria.
+                    </p>
+                    <p>
+                    <b>Examples:</b><br />
+                    Get all builds with /bin/bash in it:
+                    <pre>file:/bin/bash</pre>
+                    Get all noarch builds in all F-11 i386 repos (updates, testing, debug etc.):
+                    <pre>repo:F-11-i386* arch:noarch</pre> 
+                    Get all python related builds in all F-11 i386 repos:
+                    <pre>repo:F-11-i386* python</pre> 
+                    Builds dependant on most packages in F-11 Testing Updates repo for i386 architecture:
+                    <pre>depends:* repo:F-11-i386-tu</pre> 
+                    </p>
+                </div>
+                <div py:if="packages">
+                    <h3>Search in Packages</h3>
+                    <p>
+                    Use this type of search to list packages see its status and set ACLs.
+                    </p>
+                    <p>
+                    Pattern is one word that is fulltext searched in pacakage name.
+                    </p>
+                </div>
+            </div>
+        </form>
+        </div>
+        <!--div class="hint">
+            Type in what you are looking for or what do you want to do. E.g.: "web browser", "edit photo", "read mail", etc. 
+        </div-->
+    </div>
+
+</html>
