@@ -47,10 +47,10 @@ from sqlalchemy.exceptions import InvalidRequestError
 try:
     from fedora.textutils import to_unicode
 except ImportError:
-    from pkgdb.utils import to_unicode
+    from pkgdb.lib.utils import to_unicode
 
 from pkgdb.model import Collection
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 
 #pylint:disable-msg=W0622
 def _(string):

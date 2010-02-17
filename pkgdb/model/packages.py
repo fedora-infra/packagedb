@@ -140,7 +140,7 @@ class Package(SABase):
         This creates a new PackageListing for this Package.  The PackageListing
         has default values set for group acls.
         '''
-        from pkgdb.utils import STATUS
+        from pkgdb.lib.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
         pkg_listing = PackageListing(owner, status.statuscodeid,
                 collectionid=collection.id,
@@ -222,7 +222,7 @@ class PackageListing(SABase):
         :returns: new branch
         :rtype: PackageListing
         '''
-        from pkgdb.utils import STATUS
+        from pkgdb.lib.utils import STATUS
         from pkgdb.model.collections import Branch
         from pkgdb.model.logs import GroupPackageListingAclLog, \
                 PersonPackageListingAclLog

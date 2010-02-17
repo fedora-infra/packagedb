@@ -50,7 +50,7 @@ from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
 from pkgdb.model.packages import Package, PackageListing, PackageTable
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import admin_grp, STATUS
+from pkgdb.lib.utils import admin_grp, STATUS
 
 MASS_BRANCH_SET = 500
 

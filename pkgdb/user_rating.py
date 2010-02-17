@@ -36,7 +36,7 @@ from fedora.tg.util import request_format
 
 from pkgdb.model import Tag, PackageBuild, Application
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import is_xhr
+from pkgdb.lib.utils import is_xhr
 
 log = logging.getLogger('pkgdb.user_rating')
 

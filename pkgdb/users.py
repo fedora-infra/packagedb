@@ -40,7 +40,7 @@ from turbogears import controllers, expose, paginate, redirect, identity
 
 from pkgdb.model import Collection, Package, PackageListing, \
         PersonPackageListing, PersonPackageListingAcl
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 from fedora.tg.util import request_format

@@ -44,13 +44,13 @@ from yum.parser import varReplace
 
 # Currently, this is broken for xz so use our version
 #from rpmUtils.miscutils import rpm2cpio
-from pkgdb.utils import rpm2cpio
+from pkgdb.lib.utils import rpm2cpio
 
 
 try:
     from fedora.textutils import to_unicode
 except ImportError:
-    from pkgdb.utils import to_unicode
+    from pkgdb.lib.utils import to_unicode
 
 from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
 from pkgdb.model import RpmFiles, RpmProvides, RpmObsoletes, RpmConflicts

@@ -37,7 +37,7 @@ from cherrypy import request
 from fedora.tg.util import request_format
 
 from pkgdb.model import Comment, PackageBuild, Application
-from pkgdb.utils import mod_grp, is_xhr
+from pkgdb.lib.utils import mod_grp, is_xhr
 import logging
 log = logging.getLogger('pkgdb.comments')
 

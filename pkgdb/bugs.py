@@ -50,11 +50,11 @@ except ImportError:
 try:
     from fedora.textutils import to_unicode
 except ImportError:
-    from pkgdb.utils import to_unicode
+    from pkgdb.lib.utils import to_unicode
 
 from pkgdb.model import Package
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import LOG, bugzilla
+from pkgdb.lib.utils import LOG, bugzilla
 from pkgdb import _
 
 class BugList(list):

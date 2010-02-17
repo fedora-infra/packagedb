@@ -30,7 +30,7 @@ from turbogears import controllers, expose, identity
 from pkgdb.model import PackageListing, PersonPackageListing, \
         PersonPackageListingAcl
 
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 DEVEL = 8 # collection id

@@ -35,7 +35,7 @@ from turbogears import controllers, expose, paginate, config
 from turbogears.database import session
 
 from pkgdb.model import Application, Package, PackageBuild, Tag
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 import logging

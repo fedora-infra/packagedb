@@ -39,7 +39,7 @@ from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 from fedora.tg.util import request_format

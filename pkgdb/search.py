@@ -35,7 +35,7 @@ from turbogears import controllers, expose, validate, paginate, redirect
 from turbogears.validators import Int
 
 from pkgdb.model import Collection, Package, PackageBuild, Repo
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 

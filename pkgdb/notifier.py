@@ -24,7 +24,7 @@ Classes for notifications
 import turbomail
 from turbogears import config
 from pkgdb import _
-from pkgdb.utils import LOG
+from pkgdb.lib.utils import LOG
 
 class Event(object):
     '''Data structure to constrain an event record to just a few fields.

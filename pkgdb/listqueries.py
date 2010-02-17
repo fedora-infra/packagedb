@@ -55,7 +55,7 @@ from pkgdb.model import PackageTable, PackageListingTable, \
         BinaryPackageTag
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 from pkgdb.validators import CollectionNameVersion

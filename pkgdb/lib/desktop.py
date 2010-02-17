@@ -27,7 +27,7 @@ from ConfigParser import ConfigParser
 try:
     from fedora.textutils import to_unicode
 except ImportError:
-    from pkgdb.utils import to_unicode
+    from pkgdb.lib.utils import to_unicode
 
 class DesktopParseError(Exception):
     def __init__(self, value):
