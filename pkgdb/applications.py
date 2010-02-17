@@ -400,7 +400,7 @@ class ApplicationsController(controllers.Controller):
                 .order_by(Application.name.asc())\
                 .all()
         
-        return dict(app_list=app_list)
+        return dict(app_list=app_list, list_type='tag')
 
 
     @expose(template='pkgdb.templates.apps')
@@ -430,17 +430,22 @@ class ApplicationsController(controllers.Controller):
         app_list = session.query(
                     Application.name, 
                     Application.summary, 
-                    Application.description)\
+                    Application.description,
+                    func.avg(ApplicationUsage.rating).label('avg'),
+                    func.count().label('count'))\
                 .join(ApplicationUsage, Usage)\
-                .distinct()\
                 .filter(and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
                     Usage.name == usage))\
+                .group_by(
+                    Application.name, 
+                    Application.summary, 
+                    Application.description)\
                 .order_by(Application.name.asc())\
                 .all()
         
-        return dict(app_list=app_list)
+        return dict(app_list=app_list, list_type='usage')
 
 
 class ApplicationController(controllers.Controller):
