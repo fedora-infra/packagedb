@@ -11,6 +11,15 @@
           </td>
           <td><div class="app-name"><a href="${tg.url('/applications/%s' % app['name'])}">${app['name']}</a></div>${app['summary']}</td>
           <td>${app['description']}</td>
+          <td py:if="list_type=='usage'">
+            <div dojoType="dijit.Tooltip" connectId="Ratingresult${app['name'].replace(' ','-')}"
+                label="Rated: ${'%.1f' % app['avg']} out of 5">
+            </div>
+            <ul class="rating-result" id="Ratingresult${app['name'].replace(' ','-')}">
+                <li style="width: ${app['avg']*100/5}%;">${app['avg']}/5</li>
+            </ul>
+            <span class="rating-votes"> ${app['count']} votes</span>
+          </td>
         </tr>
         <tr py:if="len(app_list)==0">
           <td colspan="3">No application found</td>

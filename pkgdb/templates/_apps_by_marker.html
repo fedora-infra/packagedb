@@ -48,8 +48,10 @@
                 handleAs: "text",
                 load: function(response){
                     hide_ajax_loader(target_id);
-                    var dest = dojo.byId(target_id);
-                    dest.innerHTML = response;
+                    var dest = dijit.byId(target_id);
+                    dest.destroyDescendants();
+
+                    dest.attr('content', response);
                 }
             });
         }
@@ -73,8 +75,8 @@
     </ul>
     <hr style="width: 100%; display: inline-block; border: 0;" />
     </div>
-    <div id="apps-by-marker-content">
-    &nbsp;
+    <div id="apps-by-marker-content" dojoType="dojox.layout.ContentPane">
+    Please select ${marker_type}...
     </div>
     ${ajax_loader()}
     
