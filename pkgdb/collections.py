@@ -371,7 +371,7 @@ class Collections(controllers.Controller):
                 'branch': branch})
             return dict(exc='InvalidBranch')
 
-        # Retrieve the a koji session to get the lisst of packages from
+        # Retrieve a koji session to get the list of packages from
         koji_name = to_branch.koji_name
         if not koji_name:
             session.rollback() #pylint:disable-msg=E1101
