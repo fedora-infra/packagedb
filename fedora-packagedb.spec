@@ -7,7 +7,7 @@ Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
 Group:          Development/Languages
-License:        GPLv2
+License:        GPLv2+
 URL:            http://fedorahosted.org/packagedb
 Source0:        http://toshio.fedorapeople.org/fedora/%{name}-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
