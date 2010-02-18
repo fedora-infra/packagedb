@@ -161,9 +161,9 @@ def profileit(directory='/var/tmp/profileit', sql=True, mem=False):
             res = p.runcall(func, *args, **kvargs)
 
             if mem:
-                hepa = hp.heap()
+                heap = hp.heap()
                 mem_res = open('%s%s.mem' % (filename, ('', '_%s' % suffix)[suffix>0]), 'w')
-                print >> mem_res, heap 
+                mem_res.write('%s\n' %  heap)
                 mem_res.close()
 
             if sql:
