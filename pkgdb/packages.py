@@ -29,10 +29,10 @@ Controller for displaying PackageBuild(Rpm) related information
 
 from turbogears import controllers, expose, redirect
 
-from pkgdb.model import PackageBuild, Repo
-
 from fedora.tg.util import request_format
 
+from pkgdb.model import PackageBuild, Repo
+from pkgdb import _
 
 class Package(controllers.Controller):
     '''Display general information related to PackageBuilds.
