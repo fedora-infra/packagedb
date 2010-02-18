@@ -4,16 +4,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Project Author(s): Martin Bacovsky <mbacovsk@redhat.com>
 #
@@ -45,7 +45,7 @@ class KCacheGrind(object):
 
     def output(self, out_file):
         self.out_file = out_file
-        print >> out_file, 'events: Ticks'
+        out_file.write('events: Ticks\n')
         self._print_summary()
         for entry in self.data:
             self._entry(entry)
@@ -55,24 +55,24 @@ class KCacheGrind(object):
         for entry in self.data:
             totaltime = int(entry.totaltime * 1000)
             max_cost = max(max_cost, totaltime)
-        print >> self.out_file, 'summary: %d' % (max_cost,)
+        self.out_file.write('summary: %d' % (max_cost,))
 
     def _entry(self, entry):
         out_file = self.out_file
 
         code = entry.code
-        #print >> out_file, 'ob=%s' % (code.co_filename,)
+        #out_file.write('ob=%s\n' % (code.co_filename,))
         if isinstance(code, str):
-            print >> out_file, 'fi=~'
+            out_file.write('fi=~\n')
         else:
-            print >> out_file, 'fi=%s' % (code.co_filename,)
-        print >> out_file, 'fn=%s' % (label(code),)
+            out_file.write('fi=%s\n' % (code.co_filename,))
+        out_file.write('fn=%s\n' % (label(code),))
 
         inlinetime = int(entry.inlinetime * 1000)
         if isinstance(code, str):
-            print >> out_file, '0 ', inlinetime
+            out_file.write('0 \n', inlinetime)
         else:
-            print >> out_file, '%d %d' % (code.co_firstlineno, inlinetime)
+            out_file.write('%d %d\n' % (code.co_firstlineno, inlinetime))
 
         # recursive calls are counted in entry.calls
         if entry.calls:
@@ -92,18 +92,18 @@ class KCacheGrind(object):
     def _subentry(self, lineno, subentry):
         out_file = self.out_file
         code = subentry.code
-        #print >> out_file, 'cob=%s' % (code.co_filename,)
-        print >> out_file, 'cfn=%s' % (label(code),)
+        #out_file.write('cob=%s\n' % (code.co_filename,))
+        out_file.write('cfn=%s\n' % (label(code),))
         if isinstance(code, str):
-            print >> out_file, 'cfi=~'
-            print >> out_file, 'calls=%d 0' % (subentry.callcount,)
+            out_file.write('cfi=~\n')
+            out_file.write('calls=%d 0\n' % (subentry.callcount,))
         else:
-            print >> out_file, 'cfi=%s' % (code.co_filename,)
-            print >> out_file, 'calls=%d %d' % (
-                subentry.callcount, code.co_firstlineno)
+            out_file.write('cfi=%s\n' % (code.co_filename,))
+            out_file.write('calls=%d %d\n' % (
+                subentry.callcount, code.co_firstlineno))
 
         totaltime = int(subentry.totaltime * 1000)
-        print >> out_file, '%d %d' % (lineno, totaltime)
+        out_file.write('%d %d\n' % (lineno, totaltime))
 
 
 class Profiler(object):
@@ -194,9 +194,9 @@ class Profiler(object):
             mem_diff = heap.size - start
             stat = hp.heapu()
             mem_res = open('%s.mem' % filename, 'w')
-            print >> mem_res, "Memory difference: %s" % mem_diff
-            print >> mem_res, heap 
-            print >> mem_res, stat
+            mem_res.write('Memory difference: %s\n' % mem_diff)
+            mem_res.write('%s\n' % heap)
+            mem_res.write('%s\n' % stat)
             mem_res.close()
 
         # stop sql capturing
