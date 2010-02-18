@@ -196,20 +196,19 @@ def rpm2cpio(fdno, out=sys.stdout, bufsize=2048):
             if tmp == "": break
             out.write(tmp)
         out.flush()
-    #### TODO: Untested
-    #elif compr == 'bzip2':
-    #    f = os.fdopen(fdno, 'rb', bufsize)
-    #    decompressor = bz2.BZ2Decompressor()
-    #    while 1:
-    #        chunk = f.read(bufsize)
-    #        if chunk == "": break
-    #        try:
-    #            tmp = decompressor.decompress(tmp)
-    #        except EOFError:
-    #            break
-    #        out.write(tmp)
-    #    out.flush()
-    #    f.close()
+    elif compr == 'bzip2':
+        f = os.fdopen(fdno, 'rb', bufsize)
+        decompressor = bz2.BZ2Decompressor()
+        while 1:
+            chunk = f.read(bufsize)
+            if chunk == "": break
+            try:
+                tmp = decompressor.decompress(tmp)
+            except EOFError:
+                break
+            out.write(tmp)
+        out.flush()
+        f.close()
     else:
         raise rpmUtils.RpmUtilsError, \
               'Unsupported payload compressor: "%s"' % compr
