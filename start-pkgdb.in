@@ -28,9 +28,9 @@ elif os.path.exists(os.path.join(os.path.dirname(__file__), "setup.py")):
 else:
     update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),modulename="pkgdb.config")
 
-import pkgdb.utils
+import pkgdb.lib.utils
 
-pkgdb.utils.init_globals()
+pkgdb.lib.utils.init_globals()
 startup.call_on_startup.append(fedora.tg.util.enable_csrf)
 
 from pkgdb.controllers import Root
