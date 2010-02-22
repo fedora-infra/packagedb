@@ -157,10 +157,10 @@ class PackageDispatcher(controllers.Controller):
             #pylint:disable-msg=E1101
             acl_users = PersonPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
-                    PersonPackageListingAcl.c.personpackagelistingid ==
-                    PersonPackageListing.c.id,
-                    PersonPackageListing.c.packagelistingid == pkg_listing.id,
-                    PersonPackageListingAcl.c.acl.in_(acls)))
+                    PersonPackageListingAcl.personpackagelistingid ==
+                    PersonPackageListing.id,
+                    PersonPackageListing.packagelistingid == pkg_listing.id,
+                    PersonPackageListingAcl.acl.in_(acls)))
             #pylint:enable-msg=E1101
 
             for acl in acl_users:
@@ -412,14 +412,14 @@ class PackageDispatcher(controllers.Controller):
         #get acls to comparison
         #pylint:disable-msg=E1101
         acls = PersonPackageListingAcl.query.filter(and_(
-                   PersonPackageListingAcl.c.personpackagelistingid
-                       == PersonPackageListing.c.id,
-                   PersonPackageListing.c.packagelistingid
-                       == PackageListing.c.id,
-                   PackageListing.c.id == pkg_listing.id,
-                   PersonPackageListingAcl.c.statuscode 
+                   PersonPackageListingAcl.personpackagelistingid
+                       == PersonPackageListing.id,
+                   PersonPackageListing.packagelistingid
+                       == PackageListing.id,
+                   PackageListing.id == pkg_listing.id,
+                   PersonPackageListingAcl.statuscode 
                        == STATUS['Approved'].statuscodeid,
-                   PersonPackageListingAcl.c.acl == 'approveacls')
+                   PersonPackageListingAcl.acl == 'approveacls')
                    ).all()
         #pylint:enable-msg=E1101
         comaintainers = {}
@@ -750,11 +750,11 @@ class PackageDispatcher(controllers.Controller):
             #pylint:disable-msg=E1101
             acl = GroupPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
-                    GroupPackageListingAcl.c.grouppackagelistingid \
-                            == GroupPackageListing.c.id,
-                    GroupPackageListing.c.groupname == group_name,
-                    GroupPackageListingAcl.c.acl == acl_name,
-                    GroupPackageListing.c.packagelistingid == pkg_listing_id
+                    GroupPackageListingAcl.grouppackagelistingid \
+                            == GroupPackageListing.id,
+                    GroupPackageListing.groupname == group_name,
+                    GroupPackageListingAcl.acl == acl_name,
+                    GroupPackageListing.packagelistingid == pkg_listing_id
                 )).one()
         except InvalidRequestError:
             pass
@@ -822,12 +822,12 @@ class PackageDispatcher(controllers.Controller):
             #pylint:disable-msg=E1101
             acl = PersonPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
-                    PersonPackageListingAcl.c.personpackagelistingid == \
-                            PersonPackageListing.c.id,
-                    PersonPackageListing.c.username == \
+                    PersonPackageListingAcl.personpackagelistingid == \
+                            PersonPackageListing.id,
+                    PersonPackageListing.username == \
                             identity.current.user_name,
-                    PersonPackageListingAcl.c.acl == acl_name,
-                    PersonPackageListing.c.packagelistingid == pkg_listing_id)
+                    PersonPackageListingAcl.acl == acl_name,
+                    PersonPackageListing.packagelistingid == pkg_listing_id)
                 ).one()
         except InvalidRequestError:
             pass
@@ -938,11 +938,11 @@ class PackageDispatcher(controllers.Controller):
         for group in (provenpkger_grp,):
             #pylint:disable-msg=E1101
             changed_acls.append(GroupPackageListingAcl.query.filter(and_(
-                    GroupPackageListingAcl.c.grouppackagelistingid
-                        == GroupPackageListing.c.id,
-                    GroupPackageListing.c.packagelistingid 
+                    GroupPackageListingAcl.grouppackagelistingid
+                        == GroupPackageListing.id,
+                    GroupPackageListing.packagelistingid 
                         == pkg_listing.id,
-                    GroupPackageListing.c.groupname == group)).all())
+                    GroupPackageListing.groupname == group)).all())
             #pylint:enable-msg=E1101
 
         # Create a log of changes
@@ -1167,11 +1167,11 @@ class PackageDispatcher(controllers.Controller):
                         #pylint:disable-msg=E1101
                         changed_acls.append(GroupPackageListingAcl.query.filter(
                             and_(
-                            GroupPackageListingAcl.c.grouppackagelistingid
-                                == GroupPackageListing.c.id,
-                            GroupPackageListing.c.packagelistingid
+                            GroupPackageListingAcl.grouppackagelistingid
+                                == GroupPackageListing.id,
+                            GroupPackageListing.packagelistingid
                                 == pkg_listing.id,
-                            GroupPackageListing.c.groupname
+                            GroupPackageListing.groupname
                                 == group)).all())
                         #pylint:enable-msg=E1101
                     log_msg = '%s added a %s %s branch for %s' % (
@@ -1502,11 +1502,11 @@ class PackageDispatcher(controllers.Controller):
         for pkg_listing in package_listings:
             #pylint:disable-msg=E1101
             acls = PersonPackageListingAcl.query.filter(and_(
-                       PersonPackageListingAcl.c.personpackagelistingid
-                               == PersonPackageListing.c.id,
-                       PersonPackageListing.c.packagelistingid
+                       PersonPackageListingAcl.personpackagelistingid
+                               == PersonPackageListing.id,
+                       PersonPackageListing.packagelistingid
                             == pkg_listing.id,
-                       PersonPackageListing.c.username == username)).all()
+                       PersonPackageListing.username == username)).all()
             #pylint:enable-msg=E1101
 
             for acl in acls:
@@ -1602,9 +1602,9 @@ class PackageDispatcher(controllers.Controller):
             pass # Gah -- pylint bug
             #pylint:disable-msg=E1101
             package_listings = PackageListing.query\
-                    .filter(and_(PackageListing.c.collectionid==Collection.c.id,
-                        Collection.c.statuscode!=STATUS['EOL'].statuscodeid,
-                        PackageListing.c.packageid == pkg.id)).all()
+                    .filter(and_(PackageListing.collectionid==Collection.id,
+                        Collection.statuscode!=STATUS['EOL'].statuscodeid,
+                        PackageListing.packageid == pkg.id)).all()
 
         for pkg_listing in package_listings:
             if not owner:
