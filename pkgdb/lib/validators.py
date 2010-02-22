@@ -74,7 +74,7 @@ class SetOf(Set):
     messages = {'incorrect_value': 'list values did not satisfy the element_validator'}
 
     def validate_python(self, value, state):
-        if self.type_check:
+        if self.element_validator:
             try:
                 value = map(self.element_validator.to_python, value)
             except Invalid:
