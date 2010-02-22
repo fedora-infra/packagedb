@@ -50,7 +50,7 @@ import simplejson
         <?python
         # Determine whether the present user is already involved with this
         # packagelisting and if they are allowed to change acls
-        from pkgdb.utils import admin_grp, pkger_grp
+        from pkgdb.lib.utils import admin_grp, pkger_grp
 
         interested = False # Does the person already have an acl line?
         aclChanger = False # Is the person allowed to make changes?
