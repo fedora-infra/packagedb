@@ -58,7 +58,7 @@ from pkgdb.model.yumdb import yummeta
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
-from pkgdb.validators import CollectionNameVersion
+from pkgdb.lib.validators import CollectionNameVersion
 
 from fedora.tg.util import jsonify_validation_errors
 
