@@ -41,13 +41,13 @@ class Desktop(object):
     def __init__(self, name, generic_name=None, comment=None,
             target_type='Application', icon_name=None, 
             categories=[], mimetypes=[]):
-        self.name = to_unicode(name)
-        self.generic_name = to_unicode(generic_name)
-        self.comment = to_unicode(comment)
-        self.target_type = to_unicode(target_type)
-        self.icon_name = to_unicode(icon_name)
-        self.categories = to_unicode(categories)
-        self.mimetypes = to_unicode(mimetypes)
+        self.name = name
+        self.generic_name = generic_name
+        self.comment = comment
+        self.target_type = target_type
+        self.icon_name = icon_name
+        self.categories = categories
+        self.mimetypes = mimetypes
 
 
     @classmethod
