@@ -45,10 +45,18 @@ import argparse
 from fnmatch import fnmatch
 
 from sqlalchemy.sql import and_
+from sqlalchemy.exceptions import SADeprecationWarning
+
 from turbogears import config, update_config
 from turbogears.database import session
 
 log = logging.getLogger('pkgdb-sync-yum')
+
+# suppress sqlalchemy warnings
+# FIXME: update the code to avoid warnings 
+import warnings
+warnings.filterwarnings('ignore', '.*', SADeprecationWarning)
+
 
 def setup_parser():
     # create the argument parser
@@ -75,12 +83,16 @@ def setup_parser():
             help='go just through this repo. For list of valid repos run with showrepos command')
     parser_update.add_argument('--cachedir',
             help='directory where the yum cache will be created during the import. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
+    parser_update.add_argument('--verbose', action='store_true',
+            help="set verbose output")
+    parser_update.add_argument('--quiet', action='store_true',
+            help="print just error messages")
     parser_update.add_argument('--force', action='store_true',
             help="reimport existing builds. When this option is selected we DON'T skip to next repo on hitting already imported build")
     parser_update.add_argument('--quick', default=False, action='store_true',
             help='with this option the script skips to next repo on first already imported build occurence')
-    parser_update.add_argument('--profile', type=argparse.FileType('w'),
-            help='filename where data collected from profiler should be stored. Output is in kcachegrind format.')
+    parser_update.add_argument('--profile', metavar='dir',
+            help='directory where data collected from profiler should be stored. Output is in kcachegrind format.')
     parser_update.add_argument('--profile-skip', type=int, default=0,
             help='how many files should be processed before profiling data are taken')
     parser_update.add_argument('package', nargs='?',
@@ -116,6 +128,11 @@ def setup_framework(args):
     fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
+
+    if args.verbose:
+        log.setLevel(logging.INFO)
+    if args.quiet:
+        log.setLevel(logging.ERROR)
 
 
 def show_repos(args):
@@ -261,16 +278,13 @@ def update(args):
 
             if args.profile:
                 if profile_skip == 0:
+                    from pkgdb.lib.profiling import Profiler
+                    p = Profiler(directory=args.profile)
                     # collect profiling data and die
-                    import cProfile
-                    from pkgdb.lib.profiling import KCacheGrind
-                    p = cProfile.Profile()
                     try:
-                        p.runcall(importer.process, rpm)
+                        p.profileit(importer.process, rpm)
                     except:
                         pass
-                    k = KCacheGrind(p)
-                    k.output(args.profile)
                     sys.exit(0)
                 else:
                     profile_skip -= 1;

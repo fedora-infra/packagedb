@@ -342,6 +342,10 @@ class PackageBuildImporter(object):
         if not self._yumbase:
             yumbase = yum.YumBase()
 
+            # suppress yum plugins output
+            yum_log = logging.getLogger('yum.verbose.YumPlugins')
+            yum_log.setLevel(logging.ERROR)
+
             yumbase.repos.setCacheDir(self.cachedir + varReplace('/$basearch/$releasever', yumbase.yumvar))
 
             yumbase.conf.cachedir = self.cachedir
@@ -512,7 +516,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmFiles).filter_by(build=pkgbuild).delete()
+        session.query(RpmFiles).filter_by(build=pkgbuild)\
+            .delete()
         #pylint:enable-msg=E1101
         for filename in rpm.filelist:
             rpm_file = RpmFiles(name=filename)
