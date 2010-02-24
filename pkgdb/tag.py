@@ -58,9 +58,9 @@ class Tags(controllers.Controller):
         # get a list even if only one string is provided
         "apps": validators.Set()})
     def packages(self, apps):
-        '''Retrieve all tags belonging to one or more PackageBuilds.
+        '''Retrieve all tags belonging to one or more Applications.
 
-        :arg apps: The name (or list of names) of a generic PackageBuild
+        :arg apps: The name (or list of names) of an application
         to lookup
         '''
 
