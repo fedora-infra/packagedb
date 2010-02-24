@@ -132,6 +132,12 @@ level='DEBUG'
 qualname='pkgdb'
 handlers=['debug_out']
 
+[[[pkgdb-sync-yum]]]
+# Set to alter the verbosity of import script
+level='DEBUG'
+qualname='pkgdb-sync-yum'
+handlers=['debug_out']
+
 [[[allinfo]]]
 level='INFO'
 qualname='*'
@@ -147,3 +153,10 @@ propagate=0
 level='DEBUG'
 qualname='pkgdb.repo'
 handlers=['cron_out']
+
+[[[database]]]
+# Set to INFO to make SQLAlchemy display SQL commands
+level='ERROR'
+qualname='sqlalchemy.engine'
+handlers=['error_out']
+propagate=0
