@@ -278,13 +278,15 @@ def update(args):
 
             if args.profile:
                 if profile_skip == 0:
+
+                    def import_rpm(r):
+                        importer.process(r)
+                        session.flush()
+
                     from pkgdb.lib.profiling import Profiler
                     p = Profiler(directory=args.profile)
                     # collect profiling data and die
-                    try:
-                        p.profileit(importer.process, rpm)
-                    except:
-                        pass
+                    p.profileit(import_rpm, rpm)
                     sys.exit(0)
                 else:
                     profile_skip -= 1;
@@ -294,7 +296,6 @@ def update(args):
             except PkgImportAlreadyExists, e:
                 log.info("%s: Already imported - skipping" % pkg.name)
                 session.rollback() #pylint:disable-msg=E1101
-                rpm.close()
                 if args.quick:
                     break
                 else:
@@ -302,12 +303,12 @@ def update(args):
             except PkgImportError, e:
                 log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
                 session.rollback() #pylint:disable-msg=E1101
-                rpm.close()
                 continue
-
-            session.commit() #pylint:disable-msg=E1101
-            rpm.close()
+            finally:
+                rpm.close()
             
+            session.commit() #pylint:disable-msg=E1101
+
         session.begin() #pylint:disable-msg=E1101
         importer.close()
         session.commit() #pylint:disable-msg=E1101
