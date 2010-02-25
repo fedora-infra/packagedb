@@ -20,33 +20,47 @@
 
 from datetime import datetime
 
-periods = ['year', 'month', 'day', 'hour', 'minute']
+periods = ['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond']
+
 periods_short = {
     'year':'y', 
     'month':'m', 
     'day':'d', 
     'hour':'h',
-    'minute':'min'
+    'minute':'min',
+    'second': 's',
+    'millisecond': 'ms',
+    'microsecond': 'us'
     }
+
 periods_long = dict(((p,p) for p in periods))
 
-def fancy_delta(dt, precision=2, short=False):
-    delta = FancyDateTimeDelta(dt)
-    return delta.format(precision, short)
+def fancy_delta(dt, precision=2, short=False, now=None, verbose=True, gran='minute'):
+    """a FancyDateTimeDelta formatter wrapper
+    """
+
+    delta = FancyDateTimeDelta(dt, now=now)
+    return delta.format(precision=precision, short=short, verbose=verbose, gran=gran)
 
 class FancyDateTimeDelta(object):
     """
     Format the date / time difference between the supplied date and
     the current time using approximate measurement boundaries
     
-    delta = FancyDateTimeDelta(datetime(2009,10,10,23,30))
-    delta.format()
-    >>> 1 day, 7 hours ago
-
+       delta = FancyDateTimeDelta(datetime(2009,10,10,23,30))
+       delta.format()
+       >>> 1 day, 7 hours ago
     """
 
-    def __init__(self, dt):
-        now = datetime.now(dt.tzinfo)
+    def __init__(self, dt, now=None):
+        """
+        computes the difference between now and dt
+
+        :args dt: datetime object
+        :kargs now: datetime > dt, datetime.now() is used by default
+        """
+        if now is None:
+            now = datetime.now(dt.tzinfo)
         delta = now - dt
         self.year = delta.days / 365
         self.month = delta.days / 30 - (12 * self.year)
@@ -56,8 +70,21 @@ class FancyDateTimeDelta(object):
             self.day = delta.days % 30
         self.hour = delta.seconds / 3600
         self.minute = delta.seconds / 60 - (60 * self.hour)
+        self.second = delta.seconds - (60 * self.minute)
+        self.millisecond = delta.microseconds / 1000
+        self.microsecond = delta.microseconds - (1000 * self.millisecond)
 
-    def format(self, precision=2, short=False):
+    def format(self, precision=2, short=False, verbose=True, gran='minute'):
+        """
+        format the computed difference
+
+        :kargs precision: how many pieces will be displayed 
+        :kargs short: whether units are displayed in short form second -> s
+        :kargs verbose: more freeform feel
+        :kargs gran: granularity of the results, smallest computed unit, default 'minute'
+        :returns: formated diferrence
+        """
+
         fmt = []
         if short:
             periods_d = periods_short
@@ -70,11 +97,20 @@ class FancyDateTimeDelta(object):
                 unit = periods_d[period]
                 if value > 1 and not short:
                     unit += "s"
-                fmt.append("%s %s" % (value, unit))
+                if not short:
+                    unit = ' ' + unit
+                fmt.append("%s%s" % (value, unit))
+            if period == gran: # we reached the desired granularity
+                break
         if len(fmt) > 0:
-            formated = ", ".join(fmt[:precision]) + " ago"
+            formated = ' '.join(fmt[:precision])
+            if verbose:
+                formated += " ago"
         else:
-            formated = 'now'
+            if verbose:
+                formated = 'now'
+            else:
+                formated = ''
 
         return formated
 
