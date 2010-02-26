@@ -110,8 +110,11 @@ class Root(controllers.RootController):
 
         popular = Application.most_popular(limit=10)
 
+        discussed = Application.most_discussed(limit=5)
+
         return dict(title=self.app_title, version=release.VERSION,
-            pattern='', comments=comments, fresh=fresh, popular=popular)
+            pattern='', comments=comments, fresh=fresh, popular=popular,
+            discussed=discussed)
 
 
     @expose(template='pkgdb.templates.home')
