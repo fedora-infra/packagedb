@@ -517,7 +517,7 @@ class PackageBuildImporter(object):
         """
         #pylint:disable-msg=E1101
         session.query(RpmFiles).filter_by(build=pkgbuild)\
-            .delete()
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for filename in rpm.filelist:
             rpm_file = RpmFiles(name=filename)
@@ -531,7 +531,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmProvides).filter_by(build=pkgbuild).delete()
+        session.query(RpmProvides).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for (n, f, (e, v, r)) in rpm.provides:
             obj = RpmProvides(name=n, flags=f, epoch=e,
@@ -546,7 +547,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmObsoletes).filter_by(build=pkgbuild).delete()
+        session.query(RpmObsoletes).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for (n, f, (e, v, r)) in rpm.obsoletes:
             obj = RpmObsoletes(name=n, flags=f, epoch=e,
@@ -561,7 +563,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmConflicts).filter_by(build=pkgbuild).delete()
+        session.query(RpmConflicts).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for (n, f, (e, v, r)) in rpm.conflicts:
             obj = RpmConflicts(name=n, flags=f, epoch=e,
@@ -576,7 +579,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmRequires).filter_by(build=pkgbuild).delete()
+        session.query(RpmRequires).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for (n, f, (e, v, r), p) in rpm.requires_with_pre():
             obj = RpmRequires(name=n, flags=f, epoch=e,
@@ -591,7 +595,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(PackageBuildDepends).filter_by(build=pkgbuild).delete()
+        session.query(PackageBuildDepends).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         providers = set()
         for (n, f, (e, v, r), p) in rpm.requires_with_pre():

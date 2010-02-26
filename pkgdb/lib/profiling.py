@@ -70,7 +70,7 @@ class KCacheGrind(object):
 
         inlinetime = int(entry.inlinetime * 1000)
         if isinstance(code, str):
-            out_file.write('0 \n', inlinetime)
+            out_file.write('0 %d\n' % inlinetime)
         else:
             out_file.write('%d %d\n' % (code.co_firstlineno, inlinetime))
 
@@ -113,6 +113,10 @@ class Profiler(object):
     store captured sql statements (.sql) (sqlalchemy log has to be set to INFO level)
     and some memory stats (.mem). The memory statistics shows reachable and unreachable objects
     that remain in memory after function call.
+
+    To capture sql statements sqlalchemy.engine logger naeeds to have level
+    set to INFO in configuration. If logging sql statements is not wanted
+    use default handler that has level set to ERROR, such as 'error_out'.
 
     Output is stored to selected directory, files have name derived from 
     name of decorated function.
@@ -162,13 +166,16 @@ class Profiler(object):
         filename = self.filename(func.__name__)
         prof_res = open('%s.kcg' % filename, 'w')
 
+        sa_logger = None
+
         if self.sql:
             # get ready sql handler
             sql_log = logging.FileHandler('%s.sql' % filename)
-            sql_log.setLevel(logging.INFO)
             formatter = logging.Formatter('%(message)s')
             sql_log.setFormatter(formatter)
-            logging.getLogger('sqlalchemy.engine.base.Engine').addHandler(sql_log)
+            sql_log.setLevel(logging.INFO)
+            sa_logger = logging.getLogger('sqlalchemy.engine')
+            sa_logger.addHandler(sql_log)
 
         # profile
         import cProfile
@@ -201,7 +208,7 @@ class Profiler(object):
 
         # stop sql capturing
         if self.sql:
-            logging.getLogger('sqlalchemy.engine.base.Engine').removeHandler(sql_log)
+            sa_logger.removeHandler(sql_log)
 
         # format profiling data
         k = KCacheGrind(p)
