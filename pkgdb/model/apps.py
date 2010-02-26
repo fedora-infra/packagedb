@@ -514,6 +514,31 @@ class Application(SABase):
         return comments
         
 
+    @classmethod
+    def most_discussed(self, limit=5):
+        """Query that returns most commented apps
+
+        :arg limit: top <limit> apps
+        """
+        #pylint:disable-msg=E1101
+        comments = session.query(
+                    Application.name, 
+                    Application.summary, 
+                    func.count().label('count'))\
+                .join(Comment)\
+                .filter(and_(
+                    Application.apptype == 'desktop', 
+                    Application.desktoptype == 'Application'))\
+                .group_by(
+                    Application.name, 
+                    Application.summary)\
+                .order_by(desc('count'))
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            comments = comments.limit(limit)
+        return comments
+        
+
 #class Blacklist(SABase):
 #
 #    def __init__(self, name, bltype=None, just_store=False):
