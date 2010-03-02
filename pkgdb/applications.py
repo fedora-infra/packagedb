@@ -520,7 +520,9 @@ class AppIconController(controllers.Controller):
         self.app_title = app_title
 
     @expose(content_type='image/png')
-    def show(self, app_name):
+    def show(self, *app_name):
+        app_name = '/'.join(app_name)
+
         # TODO: themes 
         icon_data = session.query(Icon.icon)\
                 .join(Icon.name, IconName.applications)\
