@@ -73,6 +73,8 @@ class ApplicationsController(controllers.Controller):
         redirect('/apps/name/list/a*')
 
     @expose(template='pkgdb.templates.apps_search')
+    @paginate('app_list', limit=50, default_order=('-score','name'), max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def search(self, pattern=''):
         '''Applications search result
 
@@ -85,7 +87,6 @@ class ApplicationsController(controllers.Controller):
         '''
 
         app_list = []
-        pkg_list = []
 
         if pattern == '':
             flash('Insert search pattern...')
@@ -123,7 +124,7 @@ class ApplicationsController(controllers.Controller):
         app_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
                 
         return dict(title=self.app_title, version=release.VERSION,
-            pattern=pattern, app_list=app_list, pkg_list=pkg_list)
+            pattern=pattern, app_list=app_list)
 
 
     def _applications_search_query(self, pattern):
