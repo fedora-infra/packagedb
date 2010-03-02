@@ -145,7 +145,7 @@ class Package(SABase):
         pkg_listing = PackageListing(owner, status.statuscodeid,
                 collectionid=collection.id,
                 qacontact=qacontact)
-        pkg_listing.package = self
+        pkg_listing.packageid = self.id
         for group in DEFAULT_GROUPS:
             new_group = GroupPackageListing(group)
             #pylint:disable-msg=E1101

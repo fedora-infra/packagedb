@@ -924,6 +924,13 @@ class PackageDispatcher(controllers.Controller):
 
         # Create the package
         pkg = Package(package, summary, STATUS['Approved'].statuscodeid)
+        try:
+            session.flush() #pylint:disable-msg=E1101
+        except SQLError, e:
+            return dict(status=False, message=_('Unable to create'
+                ' Package for %(pkg)s, %(user)s),'
+                ' Approved: Error: %(error)s') % { 'pkg': package,
+                    'user': person['username'], 'error': e})
         pkg_listing = pkg.create_listing(devel_collection, person['username'],
                 STATUS['Approved'],
                 author_name = identity.current.user_name)
@@ -932,8 +939,8 @@ class PackageDispatcher(controllers.Controller):
         except SQLError, e:
             return dict(status=False, message=_('Unable to create'
                 ' PackageListing for %(pkg)s(Fedora devel), %(user)s),'
-                ' %(status)s') % { 'pkg': package, 'user': person['username'],
-                    'status': STATUS['Approved'].statuscodeid})
+                ' Approved: Error: %(error)s') % { 'pkg': package,
+                    'user': person['username'], 'error': e})
         changed_acls = []
         for group in (provenpkger_grp,):
             #pylint:disable-msg=E1101
