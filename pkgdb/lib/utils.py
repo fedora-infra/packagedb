@@ -52,20 +52,21 @@ STATUS = {}
 fas = None
 LOG = None
 bugzilla = None
+
 # Get the admin group if one is specified.
-admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
+admin_grp = config.get('pkgdb.admin_grp', 'cvsadmin')
 
 # Get the packager group if one is specified.
-pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
+pkger_grp = config.get('pkgdb.pkger_grp', 'packager')
 
 # Get the moderator group if one is specified.
-mod_grp = config.get('pkgdb.modgroup', 'sysadmin')
+mod_grp = config.get('pkgdb.mod_grp', 'sysadmin')
 
 # Get the provenpackager group if one is specified.
-provenpkger_grp = config.get('pkgdb.provenpkgergroup', 'provenpackager')
+provenpkger_grp = config.get('pkgdb.provenpkger_grp', 'provenpackager')
 
 # Get the newpackager group if one is specified.
-newpkger_grp = config.get('pkgdb.newpkgergroup', 'newpackager')
+newpkger_grp = config.get('pkgdb.newpkger_grp', 'newpackager')
 
 def to_unicode(obj, encoding='utf-8', errors='replace'):
     '''return a unicode representation of the object.
