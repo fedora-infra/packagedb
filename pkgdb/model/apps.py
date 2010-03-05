@@ -167,6 +167,9 @@ TagsTable = Table('tags', metadata,
 IconNamesTable = Table('iconnames', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('name', Text, nullable=False, unique=True),
+    Column('mstatusid' nullable=False, default=0),
+    ForeignKeyConstraint(['mstatusid'], ['mediastatuses.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
 )
                         
 ThemesTable = Table('themes', metadata,
@@ -178,7 +181,8 @@ IconsTable = Table('icons', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('nameid', nullable=False),
     Column('collectionid', nullable=False),                   
-    Column('themeid', nullable=False),                   
+    Column('themeid', nullable=False),
+    Column('mstatusid' nullable=False, default=0),
     Column('icon', Binary, nullable=False),
     Column('orig_size', Integer, nullable=False),
     ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE",
@@ -187,8 +191,19 @@ IconsTable = Table('icons', metadata,
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['themeid'], ['themes.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
+    ForeignKeyConstraint(['mstatusid'], ['mediastatuses.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
 )
 
+
+MediaStatusesTable = Table('mediastatuses', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('name', Text, nullable=False)
+)
+
+MS_NEW = 0
+MS_EXPORTED = 1
+MS_SYNCED = 2
 
 def _create_apptag(tag, score):
     """Creator function for apptags association proxy """
@@ -681,9 +696,10 @@ class MimeType(SABase):
 
 class IconName(SABase):
 
-    def __init__(self, name):
+    def __init__(self, name, mstatusid=0):
         super(IconName, self).__init__()
         self.name = name
+        self.mstatusid = mstatusid
 
     def __repr__(self):
         return 'IconName(%r)' % (self.name)
@@ -700,13 +716,15 @@ class Theme(SABase):
         
 class Icon(SABase):
 
-    def __init__(self, icon=None, name=None, collection=None, theme=None, orig_size=0):
+    def __init__(self, icon=None, name=None, collection=None, 
+            theme=None, orig_size=0, mstatusid=0):
         super(Icon, self).__init__()
         self.icon = icon
         self.name = name
         self.collection = collection
         self.theme = theme
         self.orig_size = orig_size
+        self.mstatusid = mstatusid
 
     def __repr__(self):
         return 'Icon(%r, collection=%r, theme=%r, orig_size=%r)' % (
