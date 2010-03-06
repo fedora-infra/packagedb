@@ -52,13 +52,14 @@ from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
         CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
-        BinaryPackageTag
+        BinaryPackageTag, BranchTable
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
-from pkgdb.lib.validators import CollectionNameVersion
+from pkgdb.lib.validators import CollectionNameVersion, SetOf, \
+        IsCollectionSimpleNameRegex
 
 from fedora.tg.util import jsonify_validation_errors
 
@@ -686,3 +687,41 @@ class ListQueries(controllers.Controller):
         return dict(title=_('%(app)s -- Notification List') % {
             'app': self.app_title}, packages=pkgs, collections=collections,
             name=name, version=version, eol=eol)
+
+    @expose(allow_json=True)
+    @validate(validators = {'collctn_list': SetOf(element_validator=IsCollectionSimpleNameRegex())})
+    @error_handler()
+    def critpath(self, collctn_list=None):
+        '''Retrieve the list of packages that are critpath
+
+        Critical path packages are subject to more testing or stringency of
+        criteria for updating when a release occurs.
+
+        :kwarg collctn_list: List of collection shortnames for which to
+            retrieve the packages from.  The default is all non-EOL
+            collections.
+        :returns: dict keyed by collection shortname.  The values are the list
+            of critpath packages for each collection
+        '''
+        # Check for validation errors requesting this form
+        errors = jsonify_validation_errors()
+        if errors:
+            return errors
+
+        pkg_names = select((BranchTable.c.branchname, PackageTable.c.name))\
+                .where(and_(PackageTable.c.id==PackageListingTable.c.packageid,
+                    PackageListingTable.c.collectionid==CollectionTable.c.id,
+                    CollectionTable.c.id==BranchTable.c.collectionid))
+        if collctn_list:
+            pkg_names = pkg_names.where(BranchTable.c.branchname.in_(collctn_list))
+        else:
+            pkg_names = pkg_names.where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+
+        pkgs = {}
+        for pkg in pkg_names.execute():
+            try:
+                pkgs[pkg[0]].add(pkg[1])
+            except KeyError:
+                pkgs[pkg[0]] = set(pkg[1])
+
+        return dict(pkgs=pkgs)
