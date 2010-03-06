@@ -1,6 +1,3 @@
-%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%{!?pyver: %define pyver %(%{__python} -c "import sys ; print sys.version[:3]")}
-
 Name:           fedora-packagedb
 Version:        0.4.90
 Release:        1%{?dist}
@@ -14,7 +11,11 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
 Requires: python-TurboMail
-Requires: python-sqlalchemy >= 0.4
+%if 0%{?rhel} <= 5
+Requires: python-sqlalchemy0.5
+%else
+Requires: python-sqlalchemy >= 0.5
+%endif
 Requires: python-psycopg2
 Requires: python-genshi
 Requires: python-fedora >= 0.3.12
@@ -27,7 +28,11 @@ Requires: python-cpio
 BuildRequires: python-devel
 BuildRequires: python-genshi
 BuildRequires: TurboGears
+%if 0%{?rhel} || 0%{?fedora} >= 13
+BuildRequires: python-setuptools
+%else
 BuildRequires: python-setuptools-devel
+%endif
 BuildRequires: python-paver
 
 %description
@@ -36,7 +41,7 @@ The Fedora Packagedb tracks who owns a package in the Fedora Collection.
 %package clients
 Summary:        Keep track of ownership of packages in Fedora
 Group:          Development/Tools
-License:        GPLv2
+License:        GPLv2+
 Requires: python-fedora >= 0.3.7
 Requires: python-configobj
 
@@ -64,10 +69,9 @@ mv %{buildroot}%{_bindir}/pkgdb.wsgi %{buildroot}%{_sbindir}/
 install -d %{buildroot}%{_sysconfdir}/httpd/conf.d
 install -m 0644 httpd-pkgdb.conf %{buildroot}%{_sysconfdir}/httpd/conf.d/pkgdb.conf
 
-install -d %{buildroot}%{_datadir}/fedora-packagedb/update-schema
-install -m 0755 update-schema/pkgdb-0.3.10-0.3.11.py %{buildroot}%{_datadir}/fedora-packagedb/update-schema
-install -m 0644 update-schema/pkgdb-0.3.3-0.3.4.sql %{buildroot}%{_datadir}/fedora-packagedb/update-schema
-install -m 0644 update-schema/pkgdb-0.3.5-0.3.6.sql %{buildroot}%{_datadir}/fedora-packagedb/update-schema
+install -m 0755 -d %{buildroot}%{_datadir}/fedora-packagedb/update-schema
+cp -pr update-schema/*.py %{buildroot}%{_datadir}/fedora-packagedb/update-schema
+cp -pr update-schema/*.sql %{buildroot}%{_datadir}/fedora-packagedb/update-schema
 
 %clean
 rm -rf %{buildroot}
@@ -80,7 +84,7 @@ rm -rf %{buildroot}
 %{_sbindir}/start-pkgdb
 %{_sbindir}/pkgdb.wsgi
 %{_bindir}/pkgdb-sync-bugzilla
-%{_bindir}/pkgdb-sync-repo
+%{_bindir}/pkgdb-sync-yum
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
 %config(noreplace) %{_sysconfdir}/pkgdb-sync-bugzilla.cfg
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/pkgdb.conf
@@ -91,6 +95,9 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Sat Mar 6 2010 Toshio Kuratomi <toshio@fedoraproject.org> - 0.4.90-1
+- 0.4.90 is an 0.5 beta
+
 * Wed Nov 11 2009 Toshio Kuratomi <toshio@fedoraproject.org> - 0.4.1-1
 - 0.4.1 bugfix release.
 
