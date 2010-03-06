@@ -689,7 +689,8 @@ class ListQueries(controllers.Controller):
             name=name, version=version, eol=eol)
 
     @expose(allow_json=True)
-    @validate(validators = {'collctn_list': SetOf(element_validator=IsCollectionSimpleNameRegex())})
+    @validate(validators = {'collctn_list': SetOf(use_set=True,
+            element_validator=IsCollectionSimpleNameRegex())})
     @error_handler()
     def critpath(self, collctn_list=None):
         '''Retrieve the list of packages that are critpath
@@ -711,7 +712,8 @@ class ListQueries(controllers.Controller):
         pkg_names = select((BranchTable.c.branchname, PackageTable.c.name))\
                 .where(and_(PackageTable.c.id==PackageListingTable.c.packageid,
                     PackageListingTable.c.collectionid==CollectionTable.c.id,
-                    CollectionTable.c.id==BranchTable.c.collectionid))
+                    CollectionTable.c.id==BranchTable.c.collectionid,
+                    PackageListingTable.c.critpath==True))
         if collctn_list:
             pkg_names = pkg_names.where(BranchTable.c.branchname.in_(collctn_list))
         else:
@@ -722,6 +724,7 @@ class ListQueries(controllers.Controller):
             try:
                 pkgs[pkg[0]].add(pkg[1])
             except KeyError:
-                pkgs[pkg[0]] = set(pkg[1])
+                pkgs[pkg[0]] = set()
+                pkgs[pkg[0]].add(pkg[1])
 
         return dict(pkgs=pkgs)
