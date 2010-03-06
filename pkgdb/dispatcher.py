@@ -33,11 +33,12 @@ Controller to process requests to change package information.
 
 import xmlrpclib
 
-from sqlalchemy import and_
+from sqlalchemy import and_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
 from sqlalchemy.orm import eagerload, lazyload
 
-from turbogears import controllers, expose, identity, config, flash
+from turbogears import controllers, error_handler, expose, identity, config,\
+        flash, validators, validate
 from turbogears.database import session
 
 import simplejson
@@ -47,13 +48,16 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
         PersonPackageListingAcl, PackageListing, PackageListingLog, Package, \
         Collection, PersonPackageListingAclLog, GroupPackageListingAclLog, \
         PackageLog, Branch
+from pkgdb.model import BranchTable, CollectionTable, PackageTable, \
+        PackageListingTable
+
+from fedora.tg.util import tg_url, jsonify_validation_errors
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
 from pkgdb.lib.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, \
         newpkger_grp, LOG, STATUS
-
-from fedora.tg.util import tg_url
+from pkgdb.lib.validators import SetOf, IsCollectionSimpleNameRegex
 
 MAXSYSTEMUID = 9999
 
@@ -1644,3 +1648,92 @@ class PackageDispatcher(controllers.Controller):
                     'commit'))
 
         return dict(status=True, pkg_listings=package_listings)
+
+    # Check that the requestor is in a group that could potentially set owner.
+    @expose(allow_json=True)
+    @identity.require(identity.not_anonymous())
+    @validate(validators = {'pkg_list': SetOf(use_set=True,
+            element_validator=validators.UnicodeString(not_empty=False)),
+        'critpath': validators.StringBool(),
+        'collctn_list': SetOf(use_set=True,
+            element_validator=IsCollectionSimpleNameRegex()),
+        'reset': validators.StringBool(),
+        })
+    @error_handler()
+    def set_critpath(self, pkg_list=None, critpath=True, collctn_list=None, reset=False):
+        '''Mark packages as being in the critical path.
+
+        Critical path packages are subject to more testing or stringency of
+        criteria for updating when a release occurs.
+
+        :kwarg pkg_list: List of package names to set as critical path.
+            Default: all packages within `collctn_list`
+        :kwarg critpath: Boolean.  True (default) means this package is in the
+            critical path.  False means that it should be taken out
+        :kwarg collctn_list: List of collection shortnames that this change
+            will be applied on.  The default is all non-EOL collections.
+        :kwarg reset: If True, clear the critpath flag from all packages in
+            collctn_list before setting critpath on the packages in pkg_list.
+            Default is False
+        :raises InvalidBranch: 
+        :returns: On success, return nothing
+        '''
+        # Check for validation errors requesting this form
+        errors = jsonify_validation_errors()
+        if errors:
+            return errors
+
+        # Remove critpath from all packages in the given collections
+        if reset:
+            pkg_listing_ids = select((PackageListingTable.c.id,),
+                    from_obj=(PackageListingTable.join(CollectionTable).join(BranchTable,
+                        onclause=CollectionTable.c.id==BranchTable.c.collectionid)))\
+                        .where(PackageListingTable.c.critpath==True)
+            if collctn_list:
+                pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
+            else:
+                pkg_listing_ids = pkg_listing_ids\
+                        .where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+
+            try:
+                PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
+                        .values(critpath=False).execute()
+                session.flush()
+            except InvalidRequestError, e:
+                session.rollback() #pylint:disable-msg=E1101
+                flash(_('Reseting critpath produced an error: %s') %e)
+                return dict(exc='UpdateUnsuccessful')
+
+            if not critpath:
+                # Shortcut -- if the call is asking to unmark packages and
+                # we've just done that due to reset, we're done
+                return dict()
+
+        if pkg_list:
+            pkg_listing_ids = select((PackageListingTable.c.id,), from_obj=(PackageTable\
+                .join(PackageListingTable).join(CollectionTable)\
+                .join(BranchTable, onclause=CollectionTable.c.id==BranchTable.c.collectionid)))\
+                .where(and_(PackageTable.c.name.in_(pkg_list),
+                        PackageListingTable.c.critpath!=critpath))
+        else:
+            pkg_listing_ids = select((PackageListingTable.c.id,)).where(and_(
+                    not_(PackageListingTable.c.statuscode.in_((STATUS['EOL'].statuscodeid,
+                        STATUS['Removed'].statuscodeid))),
+                    PackageListingTable.c.critpath!=critpath))
+
+        if collctn_list:
+            pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
+        else:
+            pkg_listing_ids = pkg_listing_ids\
+                    .where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+
+        try:
+            PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
+                    .values(critpath=critpath).execute()
+            session.flush()
+        except InvalidRequestError, e:
+            session.rollback() #pylint:disable-msg=E1101
+            flash(_('Updating critpath produced an error: %s') % e)
+            return dict(exc='UpdateUnsuccessful')
+
+        return dict()
