@@ -87,7 +87,7 @@ class KCacheGrind(object):
 
         for subentry in calls:
             self._subentry(lineno, subentry)
-        print >> out_file
+        out_file.write('\n')
 
     def _subentry(self, lineno, subentry):
         out_file = self.out_file
