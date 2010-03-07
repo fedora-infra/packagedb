@@ -62,7 +62,7 @@
         ${pkglist(pkgs, mode='acls/name/',release=True, releasewhere='orphaned')}
       </div>
       <div py:otherwise="" py:strip="">
-        ${pkglist(pkgs)}
+        ${pkglist(pkgs, mode='acls/name/')}
       </div>
     </p>
     ${paginate_nav()}
