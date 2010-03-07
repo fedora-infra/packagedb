@@ -28,6 +28,7 @@ import logging
 import pytz
 import re
 import os
+import sys
 import atexit
 from StringIO import StringIO
 import stat
@@ -131,8 +132,10 @@ class RPM(object):
                 try:
                     log.info("          Downloading...")
                     filename = self.yumrepo.getPackage(self.build)
-                except Exception, e:
-                    raise PkgImportError(e)
+                except:
+                    exc_class, exc, tb = sys.exc_info()
+                    e = PkgImportError(exc)
+                    raise e.__class__, e, tb
 
             self._fdno = os.open(filename, os.O_RDONLY)
 
@@ -144,7 +147,9 @@ class RPM(object):
             try:
                 rpm2cpio(self._fdno, out=cpio)
             except Exception, e:
-                raise PkgImportError("Invalid RPM file (%s). Yum cache broken?" % e)
+                exc_class, exc, tb = sys.exc_info()
+                e = PkgImportError("Invalid RPM file (%s). Yum cache broken?" % exc)
+                raise e.__class__, e, tb
             self._cpio = cpio
 
         # Back to the beginning of the file
@@ -332,8 +337,10 @@ class PackageBuildImporter(object):
         try:
             package = pkg_query.one()
         except:
-            raise PkgImportError('The corresponding package (%s) does not '
+            exc_class, exc, tb = sys.exc_info()
+            e = PkgImportError('The corresponding package (%s) does not '
                     'exist in the pkgdb!' % package_name)
+            raise e.__class__, e, tb
         return package
 
     
@@ -366,8 +373,10 @@ class PackageBuildImporter(object):
             # populate sack
             try:
                 self.yumbase._getSacks(thisrepo=self._yumrepo.id)
-            except Exception, e:
-                raise PkgImportError('Repo %s failed to read! (%s)' % (self._yumrepo, e))
+            except:
+                exc_class, exc, tb = sys.exc_info()
+                e = PkgImportError('Repo %s failed to read! (%s)' % (self._yumrepo, exc))
+                raise e.__class__, e, tb
 
         return self._yumrepo
 
