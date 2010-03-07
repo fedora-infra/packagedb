@@ -15,7 +15,6 @@ include pkgdb/templates/*.html
 include pkgdb/templates/plain/*.txt
 include pkgdb/config/*.cfg
 recursive-include pkgdb/static/ *
-recursive-exclude pkgdb/static/js/dojox/ *
 include fedora-packagedb.spec
 include yum.repos.d/*
 include clients/*
