@@ -396,11 +396,16 @@ class ListQueries(controllers.Controller):
                 BinaryPackageTag.binarypackagename==PackageBuild.name,
                 PackageBuildRepo.repoid==Repo.id,
                 PackageBuildRepo.packagebuildid==PackageBuild.id,
-                Repo.shortname=='F-11-i386')))
+                Repo.shortname=='F-11-i386'))).distinct()
 
         pkg_tags = []
+        ### HACK: Should be able to do this in SQL somehow I think but it
+        # requires merging the scores somehow
+        used_tags = set()
         for tag in tags.execute().fetchall():
-            pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
+            if (tag[0], tag[1]) not in used_tags:
+                pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
+                used_tags.add((tag[0], tag[1]))
 
         lite_session.execute(YumTagsTable.insert(), pkg_tags)
         lite_session.commit()
