@@ -396,7 +396,7 @@ class ListQueries(controllers.Controller):
                 BinaryPackageTag.binarypackagename==PackageBuild.name,
                 PackageBuildRepo.repoid==Repo.id,
                 PackageBuildRepo.packagebuildid==PackageBuild.id,
-                Repo.shortname=='F-11-i386'))).distinct()
+                Repo.shortname=='F-11-i386')))
 
         pkg_tags = []
         ### HACK: Should be able to do this in SQL somehow I think but it
