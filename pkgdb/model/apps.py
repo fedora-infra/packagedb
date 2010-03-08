@@ -462,13 +462,21 @@ class Application(SABase):
                     Application.name, 
                     Application.summary, 
                     Application.description,
+                    IconName.name.label('iconname'),
+                    IconName.mstatusid.label('mstatus'),
                     func.sum(ApplicationUsage.rating).label('total'),
                     func.count(ApplicationUsage.rating).label('count'))\
                 .join('usages')\
+                .outerjoin('iconname')\
                 .filter(and_(
                     Application.apptype == 'desktop',
                     Application.desktoptype == 'Application'))\
-                .group_by(Application.name, Application.summary, Application.description)\
+                .group_by(
+                    Application.name, 
+                    Application.summary, 
+                    Application.description,
+                    IconName.name,
+                    IconName.mstatusid)\
                 .order_by(desc('count'))
         #pylint:enable-msg=E1101
         if limit > 0:
@@ -487,11 +495,14 @@ class Application(SABase):
         fresh = session.query(
                     Application.name, 
                     Application.summary, 
+                    IconName.name.label('iconname'),
+                    IconName.mstatusid.label('mstatus'),
                     PackageBuild.changelog,
                     PackageBuild.committime,
                     PackageBuild.committer)\
                 .distinct()\
                 .join('builds')\
+                .outerjoin('iconname')\
                 .filter(and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype=='Application'))\
@@ -513,11 +524,14 @@ class Application(SABase):
         #pylint:disable-msg=E1101
         comments = session.query(
                     Application.name, 
-                    Application.summary, 
+                    Application.summary,
+                    IconName.name.label('iconname'),
+                    IconName.mstatusid.label('mstatus'),
                     Comment.body,
                     Comment.time,
                     Comment.author)\
                 .join('comments')\
+                .outerjoin('iconname')\
                 .filter(and_(
                     Application.apptype == 'desktop',
                     Application.desktoptype == 'Application',
@@ -539,19 +553,31 @@ class Application(SABase):
         comments = session.query(
                     Application.name, 
                     Application.summary, 
+                    IconName.name.label('iconname'),
+                    IconName.mstatusid.label('mstatus'),
                     func.count().label('count'))\
                 .join(Comment)\
+                .outerjoin('iconname')\
                 .filter(and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application'))\
                 .group_by(
                     Application.name, 
-                    Application.summary)\
+                    Application.summary,
+                    IconName.name,
+                    IconName.mstatusid)\
                 .order_by(desc('count'))
         #pylint:enable-msg=E1101
         if limit > 0:
             comments = comments.limit(limit)
         return comments
+
+
+    def icon_url(self):
+        if self.iconname:
+            return icon_url(self.iconname.name, self.iconname.mstatusid)
+        else:
+            return icon_url(None, 0)
         
 
 #class Blacklist(SABase):
@@ -705,6 +731,17 @@ class IconName(SABase):
         return 'IconName(%r)' % (self.name)
        
 
+def icon_url(icon_name, status=0):
+    if icon_name:
+        if status == MS_SYNCED:
+            return '/static/appicon/%s/%s.png' % \
+                (icon_name, icon_name)
+        else:
+            return '/appicon/show/%s' % icon_name
+    else:
+        return '/static/appicon/noicon.png'
+        
+
 class Theme(SABase):
 
     def __init__(self, name):
@@ -729,7 +766,7 @@ class Icon(SABase):
     def __repr__(self):
         return 'Icon(%r, collection=%r, theme=%r, orig_size=%r)' % (
             self.name, self.collection.name, self.theme.name, self.orig_size)
-        
+
 #
 # Mappers
 #

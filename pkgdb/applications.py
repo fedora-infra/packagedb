@@ -107,7 +107,9 @@ class ApplicationsController(controllers.Controller):
                     'comments': [],
                     'tags': [],
                     'mimetypes': [],
-                    'usage': []
+                    'usage': [],
+                    'iconname': app['iconname'],
+                    'mstatus': app['mstatus']
                 }
             result['score'] += app['score']
             if app['foundin'] == 'Tags':
@@ -131,15 +133,22 @@ class ApplicationsController(controllers.Controller):
         p = re.compile(r'\W+')
         s_pattern = p.sub(' ', pattern).split(' ')
 
-        # name
-        q_name = session.query(
-                Application.name,
+        std_columns = (
                 Application.apptype,
                 Application.summary,
                 Application.description,
+                IconName.name.label('iconname'),
+                IconName.mstatusid.label('mstatus'),
+        )
+
+        # name
+        q_name = session.query(
+                Application.name,
                 literal_column("'Name'", Text).label('foundin'),
                 literal_column('100', Integer).label('score'),
-                Application.name.label('data'))\
+                Application.name.label('data'),
+                *std_columns)\
+            .outerjoin(Application.iconname)\
             .filter(
                 and_(
                     Application.desktoptype == 'Application',
@@ -151,12 +160,11 @@ class ApplicationsController(controllers.Controller):
         # summary
         q_summary = session.query(
                 Application.name,
-                Application.apptype,
-                Application.summary,
-                Application.description,
                 literal_column("'Summary'", Text).label('foundin'),
                 literal_column('90', Integer).label('score'),
-                Application.summary.label('data'))\
+                Application.summary.label('data'),
+                *std_columns)\
+            .outerjoin(Application.iconname)\
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
@@ -168,12 +176,11 @@ class ApplicationsController(controllers.Controller):
         # descr
         q_descr = session.query(
                 Application.name,
-                Application.apptype,
-                Application.summary,
-                Application.description,
                 literal_column("'Description'", Text).label('foundin'),
                 literal_column('70', Integer).label('score'),
-                Application.description.label('data'))\
+                Application.description.label('data'),
+                *std_columns)\
+            .outerjoin(Application.iconname)\
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
@@ -185,15 +192,14 @@ class ApplicationsController(controllers.Controller):
         # usage
         q_usage = session.query(
                 Application.name,
-                Application.apptype,
-                Application.summary,
-                Application.description,
                 literal_column("'Usage'", Text).label('foundin'),
                 literal_column('20', Integer).label('score'),
-                Usage.name.label('data'))\
+                Usage.name.label('data'),
+                *std_columns)\
             .join(
                 Application.usages, 
                 ApplicationUsage.usage)\
+            .outerjoin(Application.iconname)\
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
@@ -205,15 +211,14 @@ class ApplicationsController(controllers.Controller):
         # tags
         q_tags = session.query(
                 Application.name,
-                Application.apptype,
-                Application.summary,
-                Application.description,
                 literal_column("'Tags'", Text).label('foundin'),
                 literal_column('10', Integer).label('score'),
-                Tag.name.label('data'))\
+                Tag.name.label('data'),
+                *std_columns)\
             .join(
                 Application.tags, 
                 ApplicationTag.tag)\
+            .outerjoin(Application.iconname)\
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
@@ -226,14 +231,13 @@ class ApplicationsController(controllers.Controller):
         # comments
         q_comments = session.query(
                 Application.name,
-                Application.apptype,
-                Application.summary,
-                Application.description,
                 literal_column("'Comments'", Text).label('foundin'),
                 literal_column('1', Integer).label('score'),
-                Comment.body.label('data'))\
+                Comment.body.label('data'),
+                *std_columns)\
             .join(
                 Application.comments)\
+            .outerjoin(Application.iconname)\
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
@@ -246,14 +250,13 @@ class ApplicationsController(controllers.Controller):
         # mimetypes
         q_mimetypes = session.query(
                 Application.name,
-                Application.apptype,
-                Application.summary,
-                Application.description,
                 literal_column("'MimeTypes'", Text).label('foundin'),
                 literal_column('10', Integer).label('score'),
-                MimeType.name.label('data'))\
+                MimeType.name.label('data'),
+                *std_columns)\
             .join(
                 Application.mimetypes)\
+            .outerjoin(Application.iconname)\
             .filter(
                 and_(
                     Application.apptype == 'desktop', 
@@ -293,7 +296,10 @@ class ApplicationsController(controllers.Controller):
         app_list = session.query(
                     Application.name, 
                     Application.summary, 
-                    Application.description)\
+                    Application.description,
+                    IconName.name.label('iconname'),
+                    IconName.mstatusid.label('mstatus'))\
+                .outerjoin('iconname')\
                 .filter(and_(
                     Application.apptype == 'desktop',
                     Application.desktoptype == 'Application',
@@ -392,8 +398,11 @@ class ApplicationsController(controllers.Controller):
         app_list = session.query(
                     Application.name, 
                     Application.summary, 
-                    Application.description)\
+                    Application.description,
+                    IconName.name.label('iconname'),
+                    IconName.mstatusid.label('mstatus'))\
                 .join(ApplicationTag, Tag)\
+                .outerjoin('iconname')\
                 .filter(and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
@@ -433,8 +442,11 @@ class ApplicationsController(controllers.Controller):
                     Application.summary, 
                     Application.description,
                     func.avg(ApplicationUsage.rating).label('avg'),
-                    func.count().label('count'))\
+                    func.count().label('count'),
+                    IconName.name.label('iconname'),
+                    IconName.mstatusid.label('mstatus'))\
                 .join(ApplicationUsage, Usage)\
+                .outerjoin('iconname')\
                 .filter(and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
@@ -442,7 +454,9 @@ class ApplicationsController(controllers.Controller):
                 .group_by(
                     Application.name, 
                     Application.summary, 
-                    Application.description)\
+                    Application.description,
+                    IconName.name,
+                    IconName.mstatusid)\
                 .order_by(Application.name.asc())\
                 .all()
         
@@ -521,13 +535,13 @@ class AppIconController(controllers.Controller):
         self.app_title = app_title
 
     @expose(content_type='image/png')
-    def show(self, *app_name):
-        app_name = '/'.join(app_name)
+    def show(self, *icon_name):
+        icon_name = '/'.join(icon_name)
 
         # TODO: themes 
         icon_data = session.query(Icon.icon)\
-                .join(Icon.name, IconName.applications)\
-                .filter(Application.name==app_name)\
+                .join(Icon.name)\
+                .filter(IconName.name==icon_name)\
                 .first()
         if not icon_data:
             redirect('/static/images/noicon.png')

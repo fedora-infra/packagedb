@@ -32,7 +32,7 @@
         <table>
         <tr py:for="app in app_list">
           <td class="col-icon"><a href="${tg.url('/applications/%s' % app['name'])}">
-                <img src="${tg.url('/appicon/show/%s' % app['name'])}" />
+                <img src="${tg.url(icon_url(app['iconname'], app['mstatus']))}" />
               </a>
           </td>
           <td><div class="app-name"><a href="${tg.url('/applications/%s' % app['name'])}">${HTML(highlight(app['name'], pattern))}</a></div>${HTML(highlight(app['summary'], pattern))}</td>
