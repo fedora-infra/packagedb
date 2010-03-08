@@ -155,6 +155,9 @@ Run the following scripts to bring it up to date::
   rm repos2.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-14-deactivaterepo.sql
   sudo -u postgres psql pkgdb < update-schema/pkgdb-0.4.0-0.5.0-15-uniquerepo.sql
+  python update-schema/repos3.py > repos3.sql
+  sudo -u postgres psql pkgdb < repos3.sql
+  rm repos3.sql
 
 Your postgres server is now all set.
 
