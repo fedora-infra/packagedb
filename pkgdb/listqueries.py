@@ -388,7 +388,7 @@ class ListQueries(controllers.Controller):
                 PackageBuildApplicationsTable.c.packagebuildid==PackageBuild.id,
                 PackageBuildRepo.repoid==Repo.id,
                 PackageBuildRepo.packagebuildid==PackageBuild.id,
-                Repo.shortname=='F-11-i386')),
+                Repo.shortname==repo)),
             select((PackageBuild.name.label('name'),
                 Tag.name.label('tag'),
                 BinaryPackageTag.score.label('score')),
@@ -396,7 +396,7 @@ class ListQueries(controllers.Controller):
                 BinaryPackageTag.binarypackagename==PackageBuild.name,
                 PackageBuildRepo.repoid==Repo.id,
                 PackageBuildRepo.packagebuildid==PackageBuild.id,
-                Repo.shortname=='F-11-i386')))
+                Repo.shortname==repo)))
 
         pkg_tags = []
         ### HACK: Should be able to do this in SQL somehow I think but it
