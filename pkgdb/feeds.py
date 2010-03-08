@@ -37,7 +37,8 @@ from sqlalchemy.orm import eagerload
 from turbogears.feed import FeedController
 from turbogears.database import session
 
-from pkgdb.model import Comment, PackageBuildTable, Application
+from pkgdb.model import Comment, PackageBuildTable, PackageBuildReposTable,\
+        Application
 
 class ApplicationFeed(FeedController):
     '''A feed of all the latest PackageBuilds.
@@ -67,7 +68,8 @@ class ApplicationFeed(FeedController):
 
         #pylint:disable-msg=E1101
         apps = Application.query.options(eagerload('builds')).join('builds')\
-                .filter(PackageBuildTable.c.repoid==repoid)\
+                .filter(PackageBuildTable.c.id==PackageBuildReposTable.c.packagebuildid)\
+                .filter(PackageBuildReposTable.c.repoid==repoid)\
                 .order_by(Application.id.desc())[:items]
         #pylint:enable-msg=E1101
         for app in apps:

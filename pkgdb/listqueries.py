@@ -48,7 +48,7 @@ from turbogears.database import get_engine, session
 
 from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
         GroupPackageListingAcl, PackageListing, PersonPackageListing, \
-        PersonPackageListingAcl, Repo, PackageBuild, Tag
+        PersonPackageListingAcl, Repo, PackageBuild, PackageBuildRepo, Tag
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
         CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
@@ -386,14 +386,16 @@ class ListQueries(controllers.Controller):
             and_(Tag.id==ApplicationTag.tagid,
                 ApplicationTag.applicationid==PackageBuildApplicationsTable.c.applicationid,
                 PackageBuildApplicationsTable.c.packagebuildid==PackageBuild.id,
-                PackageBuild.repoid==Repo.id,
+                PackageBuildRepo.repoid==Repo.id,
+                PackageBuildRepo.packagebuildid==PackageBuild.id,
                 Repo.shortname=='F-11-i386')),
             select((PackageBuild.name.label('name'),
                 Tag.name.label('tag'),
                 BinaryPackageTag.score.label('score')),
             and_(Tag.id==BinaryPackageTag.tagid,
                 BinaryPackageTag.binarypackagename==PackageBuild.name,
-                PackageBuild.repoid==Repo.id,
+                PackageBuildRepo.repoid==Repo.id,
+                PackageBuildRepo.packagebuildid==PackageBuild.id,
                 Repo.shortname=='F-11-i386')))
 
         pkg_tags = []
