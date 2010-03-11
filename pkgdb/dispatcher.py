@@ -597,8 +597,7 @@ class PackageDispatcher(controllers.Controller):
         self._send_log_msg(log_msg, _('%(pkg)s (un)retirement') % {
             'pkg': pkg.package.name}, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
-        return dict(status=True, retirement=retirement,
-               aclStatusFields=self.acl_status_translations)
+        return dict(status=True, retirement=retirement)
 
     @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
