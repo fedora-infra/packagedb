@@ -557,7 +557,7 @@ class PackageDispatcher(controllers.Controller):
                         ' does not have a fedora account') % {
                             'owner': 'orphan'})
                 # let set_owner handle bugzilla and other stuff
-                self._set_owner(pkg.package.name, person)
+                self._set_owner(pkg, person)
             pkg.statuscode = STATUS['Deprecated'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
