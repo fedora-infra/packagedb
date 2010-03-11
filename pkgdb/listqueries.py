@@ -365,6 +365,8 @@ class ListQueries(controllers.Controller):
 
         :arg repo: A repository shortname to retrieve tags for (e.g. 'F-11-i386')
 
+        .. versionadded:: 0.5.0
+
         '''
         # initialize/clear database
         fd, dbfile = tempfile.mkstemp()
@@ -407,7 +409,10 @@ class ListQueries(controllers.Controller):
                 pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
                 used_tags.add((tag[0], tag[1]))
 
-        lite_session.execute(YumTagsTable.insert(), pkg_tags)
+        if pkg_tags:
+            # If there's no tags, we'll return an empty database
+            lite_session.execute(YumTagsTable.insert(), pkg_tags)
+
         lite_session.commit()
 
         f = open(dbfile, 'r')
