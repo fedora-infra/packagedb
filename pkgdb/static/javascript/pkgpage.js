@@ -1,18 +1,18 @@
 /*
- * Copyright © 2007-2009  Red Hat, Inc.
+ * Copyright (c) 2007-2010  Red Hat, Inc.
  *
- * This copyrighted material is made available to anyone wishing to use, modify,
- * copy, or redistribute it subject to the terms and conditions of the GNU
- * General Public License v.2.  This program is distributed in the hope that it
- * will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
- * implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.  You should have
- * received a copy of the GNU General Public License along with this program;
- * if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
- * Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
- * incorporated in the source code or documentation are not subject to the GNU
- * General Public License and may only be used or replicated with the express
- * permission of Red Hat, Inc.
+ * This copyrighted material is made available to anyone wishing to use,
+ * modify, copy, or redistribute it subject to the terms and conditions of the
+ * GNU General Public License v.2, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY expressed or implied, including the implied warranties of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.  You should have received a copy of the
+ * GNU General Public License along with this program; if not, write to the
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+ * code or documentation are not subject to the GNU General Public License and
+ * may only be used or replicated with the express permission of Red Hat, Inc.
  *
  * Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
  */
@@ -20,7 +20,7 @@
 /*
  * Create select lists for approving acls
  */
-function set_acl_approval_box(aclTable, add, aclStatusFields) {
+function set_acl_approval_box(aclTable, add) {
     logDebug('Enter set_acl_approval_box');
     if (add) {
         /* Adding Status option lists is easy.  Just replace all the child
@@ -46,12 +46,12 @@ function set_acl_approval_box(aclTable, add, aclStatusFields) {
                 connect(newAclStatusList, 'onfocus', save_status);
 
                 /* Populate it with options */
-                for (var aclNum in aclStatusFields) {
-                    if (aclStatusName === aclStatusFields[aclNum]) {
+                for (var aclNum in pkgpage.acl_status) {
+                    if (aclStatusName === pkgpage.acl_status[aclNum]) {
                         aclOption = OPTION({'selected' : 'true'},
-                                aclStatusFields[aclNum]);
+                                pkgpage.acl_status[aclNum]);
                     } else {
-                        aclOption = OPTION(null, aclStatusFields[aclNum]);
+                        aclOption = OPTION(null, pkgpage.acl_status[aclNum]);
                     }
                     appendChildNodes(newAclStatusList, aclOption);
                 }
@@ -205,10 +205,50 @@ function toggle_retirement(retirementDiv, data) {
         swapElementClass(pkglTable, 'orphan', 'owned');
         retirementButton.value = 'Retire package';
         statusBox.innerHTML = 'Orphaned';
-        set_acl_approval_box(aclTable, true, data['aclStatusFields']);
+        set_acl_approval_box(aclTable, true);
         removeElementClass(ownerButton, 'invisible');
         removeElementClass(addMyselfButton, 'invisible');
     }
+}
+
+function request_owner_change(event) {
+    var new_owner;
+    var url, query_params;
+    var pkg = scrapeText(getElement('pkg'));
+    var requestContainer = getFirstParentByTagAndClassName(event.target(),
+            'div', 'requestContainer');
+    busy(requestContainer, event);
+    url = create_url(requestContainer, 'set_owner');
+    query_params = url[1];
+
+    /* Find the current owner */
+    owner = scrapeText(getFirstElementByTagAndClassName('span', 'ownerName', parent=requestContainer));
+
+    /* Figure out who the new owner is */
+    if (owner === 'orphan') {
+        if (!fedora.identity.anonymous) {
+            new_owner = fedora.identity.username;
+        }
+    } else {
+        new_owner = 'orphan';
+    }
+
+    /* collection */
+    collctn = getFirstParentByTagAndClassName(requestContainer, 'tr').getAttribute('id');
+
+    query_params = merge(query_params, {'owner': new_owner,
+            'collectn_list': [collctn]});
+    url = url[0];
+
+    if (url[url.length - 1] != '/') {
+        url = url + '/';
+    }
+    url = url + pkg;
+
+    var req = loadJSONDoc(url, query_params);
+    req.addCallback(partial(toggle_owner, requestContainer));
+    req.addErrback(partial(display_error, requestContainer));
+    req.addBoth(unbusy, requestContainer);
 }
 
 function toggle_owner(ownerDiv, data) {
@@ -217,13 +257,14 @@ function toggle_owner(ownerDiv, data) {
         display_error(null, data);
         return;
     }
+    var pkg_listing = data['pkg_listings'][0]
     var pkglTable = getFirstParentByTagAndClassName(ownerDiv, 'table', 'pkglist');
     var statusBox = getElementsByTagAndClassName('td', 'status', pkglTable)[0];
     var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
             ownerDiv)[0];
     var aclTable = getElementsByTagAndClassName('table', 'acls', pkglTable)[0];
 
-    if (data['owner'] === 'orphan') {
+    if (pkg_listing['owner'] === 'orphan') {
         /* Reflect the fact that the package is now orphaned */
         swapElementClass(ownerDiv, 'owned', 'orphaned');
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
@@ -237,11 +278,11 @@ function toggle_owner(ownerDiv, data) {
         swapElementClass(ownerButton, 'unorphanButton', 'orphanButton');
         swapElementClass(pkglTable, 'orphan', 'owned');
         ownerButton.setAttribute('value', 'Release Ownership');
-        set_acl_approval_box(aclTable, true, data['aclStatusFields']);
+        set_acl_approval_box(aclTable, true);
         statusBox.innerHTML = 'Owned';
     }
     var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerDiv)[0];
-    var newOwnerName = SPAN({'class' : 'ownerName'}, data['owner']);
+    var newOwnerName = SPAN({'class' : 'ownerName'}, pkg_listing['owner']);
     insertSiblingNodesBefore(ownerName, newOwnerName);
     removeElement(ownerName);
 }
@@ -499,8 +540,6 @@ function init(event) {
 
     var ownerButtons = getElementsByTagAndClassName('input', 'ownerButton');
     for (var buttonNum in ownerButtons) {
-        var request_owner_change = partial(make_request, '/toggle_owner',
-                toggle_owner, null);
         connect(ownerButtons[buttonNum], 'onclick', request_owner_change);
     }
 

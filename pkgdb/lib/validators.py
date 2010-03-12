@@ -4,16 +4,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
@@ -47,10 +47,10 @@ from sqlalchemy.exceptions import InvalidRequestError
 try:
     from fedora.textutils import to_unicode
 except ImportError:
-    from pkgdb.utils import to_unicode
+    from pkgdb.lib.utils import to_unicode
 
 from pkgdb.model import Collection
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 
 #pylint:disable-msg=W0622
 def _(string):
@@ -74,7 +74,7 @@ class SetOf(Set):
     messages = {'incorrect_value': 'list values did not satisfy the element_validator'}
 
     def validate_python(self, value, state):
-        if self.type_check:
+        if self.element_validator:
             try:
                 value = map(self.element_validator.to_python, value)
             except Invalid:
@@ -111,7 +111,7 @@ class IsCollectionSimpleNameRegex(Regex):
         the simple name against. Default: r'^[A-Z]+-([0-9]+|devel)$'
     '''
     strip = True
-    regex = re.compile(r'^[A-Z]+-([0-9]+|devel)$')
+    regex = re.compile(r'^([A-Z]+-[0-9]+|devel)$')
 
     messages = {'no_collection': _('%(collection)s does not match the pattern'
         ' for collection names')}
@@ -121,7 +121,7 @@ class IsCollectionSimpleNameRegex(Regex):
         return to_unicode(value)
 
     def validate_python(self, value, state):
-        if not self.simple_name_re.match(value):
+        if not self.regex.match(value):
             raise Invalid(self.message('no_collection', state,
                 collection=value), value, state)
 

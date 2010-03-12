@@ -29,8 +29,8 @@
                 <div class="comment_head">
                   <div style="float:right;">${comment.fancy_delta()}</div>
                   <b style="color:#337acc;">${comment.author}</b> says:
-                  <?python from pkgdb.utils import mod_grp ?>
-                  <py:if test="mod_grp in tg.identity.groups">              
+                  <?python from pkgdb.lib.utils import mod_grp ?>
+                  <py:if test="mod_grp in tg.identity.groups">
                     <a href="${tg.url('/comments/toggle_published/%s' %comment.id)}">
                       <py:choose test="comment.published">
                         <py:when test="True">

@@ -33,7 +33,7 @@ options(
             'TurboGears[future] >= 1.0',
             'TurboMail',
             'python_fedora >= 0.3.12',
-            'SQLAlchemy >= 0.5',
+            'SQLAlchemy >= 0.5.5',
             # Doesn't use setuptools so not on RHEL5
             #'python_bugzilla >= 0.5',
         ],
@@ -44,9 +44,6 @@ options(
         packages=find_packages(),
         package_data = find_package_data(where='pkgdb',
             package='pkgdb'),
-        data_files = [
-            (os.path.join(NAME, 'yum.repos.d'), glob.glob('yum.repos.d/*'))
-            ],
         keywords = [
             # Use keywords if you'll be adding your package to the
             # Python Cheeseshop
@@ -98,7 +95,7 @@ options(
         domain='fedora-packagedb',
         ),
     data = Bunch(
-        datafiles=['yum.repos.d'],
+        #datafiles=[],
         localefiles=['locale'],
         docfiles=['docs'],
         conffiles=['pkgdb.cfg', 'pkgdb-client.cfg', {'httpd-pkgdb.conf': 'httpd/conf.d/pkgdb.conf'}],

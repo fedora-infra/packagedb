@@ -8,23 +8,55 @@
         }
 
         function filter_markers(pattern) {
-            if (pattern.search(/^\^/) != 0) {
-                pattern = '.*'+pattern;
+            if (pattern == '') {
+                dojo.byId('apps-marker-label').style.display = '';
+                var lis = dojo.query('#apps-marker-list li');
+                var lis_l = lis.length;
+                if (lis.length == 0) return false;
+                var shuffle = [];
+                var i = lis_l+1;
+                while ( --i ) {
+                    shuffle[i-1] = i-1;
+                }
+                i = lis_l;
+                while ( --i ) {
+                    var j = Math.floor( Math.random() * ( i + 1 ) );
+                    var tempi = shuffle[i];
+                    var tempj = shuffle[j];
+                    shuffle[i] = tempj;
+                    shuffle[j] = tempi;
+                }
+                i = lis_l;
+                while ( --i ) {
+                    lis[i].style.display = 'none';
+                }
+                i = shuffle.slice(0,20).length + 1
+                while( --i ) {
+                    lis[shuffle[i-1]].style.display = '';
+                }
+
             }
             else {
-                pattern = pattern.slice(1);
+                dojo.byId('apps-marker-label').style.display = 'none';
+
+                if (pattern.search(/^\^/) != 0) {
+                    pattern = '.*'+pattern;
+                }
+                else {
+                    pattern = pattern.slice(1);
+                }
+                var pat = new RegExp('^marker-'+pattern+'.*', 'i');
+                dojo.query('#apps-marker-list li')
+                .forEach(
+                    function f(x) {
+                        if(x.id.search(pat) == 0) {
+                            x.style.display = '';
+                        }
+                        else {
+                            x.style.display = 'none';
+                        }
+                    });
             }
-            var pat = new RegExp('^marker-'+pattern+'.*', 'i');
-            dojo.query('#apps-marker-list li')
-            .forEach(
-                function f(x) {
-                    if(x.id.search(pat) == 0) {
-                        x.style.display = '';
-                    }
-                    else {
-                        x.style.display = 'none';
-                    }
-                });
         }
 
         function switch_navi(target) {
@@ -48,8 +80,10 @@
                 handleAs: "text",
                 load: function(response){
                     hide_ajax_loader(target_id);
-                    var dest = dojo.byId(target_id);
-                    dest.innerHTML = response;
+                    var dest = dijit.byId(target_id);
+                    dest.destroyDescendants();
+
+                    dest.attr('content', response);
                 }
             });
         }
@@ -66,6 +100,7 @@
     </ul>
 
     <div class="navi-frame">
+    <h4 id="apps-marker-label" style="display: none; padding-left: 4px; font-weight: lighter; margin-top: -10px;">Some random ${marker_type}s:</h4>
     <ul id="apps-marker-list">
         <li py:for="m in markers" id="marker-${m.name.lower()}" style="display: none;">
             <a href="#markers-navi" onclick="load_apps('${m.name}', 'apps-by-marker-content');switch_navi(this); return false;" title="${m.name}">${m.name}</a>
@@ -73,8 +108,8 @@
     </ul>
     <hr style="width: 100%; display: inline-block; border: 0;" />
     </div>
-    <div id="apps-by-marker-content">
-    &nbsp;
+    <div id="apps-by-marker-content" dojoType="dojox.layout.ContentPane">
+    Please select ${marker_type}...
     </div>
     ${ajax_loader()}
     
@@ -88,6 +123,7 @@
             var tag = dojo.query("#apps-marker-list a[title='${value}']")[0];
             switch_navi(tag);
         }
+        else filter_markers('');
       </script>
   </div>
 </html>

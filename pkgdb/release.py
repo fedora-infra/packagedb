@@ -3,7 +3,7 @@ Information about this pkgdb release
 '''
 from pkgdb import _
 
-VERSION = '0.4.1'
+VERSION = '0.4.92'
 NAME = 'fedora-packagedb'
 DESCRIPTION = _('The Fedora Package Database')
 LONG_DESCRIPTION = _('''
@@ -14,7 +14,7 @@ information from other tools.
 ''')
 AUTHOR = 'Toshio Kuratomi'
 EMAIL = 'toshio@fedoraproject.org'
-COPYRIGHT = '2007-2009 Red Hat, Inc.'
+COPYRIGHT = '2007-2010 Red Hat, Inc.'
 URL = 'https://fedorahosted.org/packagedb'
 DOWNLOAD_URL = 'https://fedorahosted.org/releases/p/a/packagedb/'
 LICENSE = 'GPLv2+'

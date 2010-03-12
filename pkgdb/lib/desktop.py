@@ -5,16 +5,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Author(s): Martin Bacovsky <mbacovsk@redhat.com>
 #
@@ -27,7 +27,7 @@ from ConfigParser import ConfigParser
 try:
     from fedora.textutils import to_unicode
 except ImportError:
-    from pkgdb.utils import to_unicode
+    from pkgdb.lib.utils import to_unicode
 
 class DesktopParseError(Exception):
     def __init__(self, value):
@@ -41,13 +41,13 @@ class Desktop(object):
     def __init__(self, name, generic_name=None, comment=None,
             target_type='Application', icon_name=None, 
             categories=[], mimetypes=[]):
-        self.name = to_unicode(name)
-        self.generic_name = to_unicode(generic_name)
-        self.comment = to_unicode(comment)
-        self.target_type = to_unicode(target_type)
-        self.icon_name = to_unicode(icon_name)
-        self.categories = to_unicode(categories)
-        self.mimetypes = to_unicode(mimetypes)
+        self.name = name
+        self.generic_name = generic_name
+        self.comment = comment
+        self.target_type = target_type
+        self.icon_name = icon_name
+        self.categories = categories
+        self.mimetypes = mimetypes
 
 
     @classmethod

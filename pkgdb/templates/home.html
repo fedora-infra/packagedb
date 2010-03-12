@@ -30,11 +30,15 @@ The Package Database is a central repository of package information in Fedora. Y
 
     ${search_box()}
 
+    <div style="">
+    ${app_box('Most discussed', discussed, 'discussed')}
+    ${app_box('Most popular', popular, 'popular')}
+    ${app_box('Latest comments', comments, 'comments')}
     ${build_box('Most fresh Builds', fresh)}
-    ${app_box('Latest comments', comments)}
-    ${app_box('Most popular', popular)}
+    </div>
 
   </div>
+  <div style="clear: left;"></div>
 
   </body>
 </html>

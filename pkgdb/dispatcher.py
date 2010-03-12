@@ -4,16 +4,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
@@ -33,11 +33,12 @@ Controller to process requests to change package information.
 
 import xmlrpclib
 
-from sqlalchemy import and_
+from sqlalchemy import and_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
 from sqlalchemy.orm import eagerload, lazyload
 
-from turbogears import controllers, expose, identity, config, flash
+from turbogears import controllers, error_handler, expose, identity, config,\
+        flash, validators, validate
 from turbogears.database import session
 
 import simplejson
@@ -47,13 +48,16 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
         PersonPackageListingAcl, PackageListing, PackageListingLog, Package, \
         Collection, PersonPackageListingAclLog, GroupPackageListingAclLog, \
         PackageLog, Branch
+from pkgdb.model import BranchTable, CollectionTable, PackageTable, \
+        PackageListingTable
+
+from fedora.tg.util import tg_url, jsonify_validation_errors
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, \
+from pkgdb.lib.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, \
         newpkger_grp, LOG, STATUS
-
-from fedora.tg.util import tg_url
+from pkgdb.lib.validators import SetOf, IsCollectionSimpleNameRegex
 
 MAXSYSTEMUID = 9999
 
@@ -157,10 +161,10 @@ class PackageDispatcher(controllers.Controller):
             #pylint:disable-msg=E1101
             acl_users = PersonPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
-                    PersonPackageListingAcl.c.personpackagelistingid ==
-                    PersonPackageListing.c.id,
-                    PersonPackageListing.c.packagelistingid == pkg_listing.id,
-                    PersonPackageListingAcl.c.acl.in_(acls)))
+                    PersonPackageListingAcl.personpackagelistingid ==
+                    PersonPackageListing.id,
+                    PersonPackageListing.packagelistingid == pkg_listing.id,
+                    PersonPackageListingAcl.acl.in_(acls)))
             #pylint:enable-msg=E1101
 
             for acl in acl_users:
@@ -412,14 +416,14 @@ class PackageDispatcher(controllers.Controller):
         #get acls to comparison
         #pylint:disable-msg=E1101
         acls = PersonPackageListingAcl.query.filter(and_(
-                   PersonPackageListingAcl.c.personpackagelistingid
-                       == PersonPackageListing.c.id,
-                   PersonPackageListing.c.packagelistingid
-                       == PackageListing.c.id,
-                   PackageListing.c.id == pkg_listing.id,
-                   PersonPackageListingAcl.c.statuscode 
+                   PersonPackageListingAcl.personpackagelistingid
+                       == PersonPackageListing.id,
+                   PersonPackageListing.packagelistingid
+                       == PackageListing.id,
+                   PackageListing.id == pkg_listing.id,
+                   PersonPackageListingAcl.statuscode 
                        == STATUS['Approved'].statuscodeid,
-                   PersonPackageListingAcl.c.acl == 'approveacls')
+                   PersonPackageListingAcl.acl == 'approveacls')
                    ).all()
         #pylint:enable-msg=E1101
         comaintainers = {}
@@ -553,7 +557,7 @@ class PackageDispatcher(controllers.Controller):
                         ' does not have a fedora account') % {
                             'owner': 'orphan'})
                 # let set_owner handle bugzilla and other stuff
-                self._set_owner(pkg.package.name, person)
+                self._set_owner(pkg, person)
             pkg.statuscode = STATUS['Deprecated'].statuscodeid
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
@@ -593,8 +597,7 @@ class PackageDispatcher(controllers.Controller):
         self._send_log_msg(log_msg, _('%(pkg)s (un)retirement') % {
             'pkg': pkg.package.name}, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
-        return dict(status=True, retirement=retirement,
-               aclStatusFields=self.acl_status_translations)
+        return dict(status=True, retirement=retirement)
 
     @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
@@ -750,11 +753,11 @@ class PackageDispatcher(controllers.Controller):
             #pylint:disable-msg=E1101
             acl = GroupPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
-                    GroupPackageListingAcl.c.grouppackagelistingid \
-                            == GroupPackageListing.c.id,
-                    GroupPackageListing.c.groupname == group_name,
-                    GroupPackageListingAcl.c.acl == acl_name,
-                    GroupPackageListing.c.packagelistingid == pkg_listing_id
+                    GroupPackageListingAcl.grouppackagelistingid \
+                            == GroupPackageListing.id,
+                    GroupPackageListing.groupname == group_name,
+                    GroupPackageListingAcl.acl == acl_name,
+                    GroupPackageListing.packagelistingid == pkg_listing_id
                 )).one()
         except InvalidRequestError:
             pass
@@ -822,12 +825,12 @@ class PackageDispatcher(controllers.Controller):
             #pylint:disable-msg=E1101
             acl = PersonPackageListingAcl.query.options(
                     eagerload('status.locale')).filter(and_(
-                    PersonPackageListingAcl.c.personpackagelistingid == \
-                            PersonPackageListing.c.id,
-                    PersonPackageListing.c.username == \
+                    PersonPackageListingAcl.personpackagelistingid == \
+                            PersonPackageListing.id,
+                    PersonPackageListing.username == \
                             identity.current.user_name,
-                    PersonPackageListingAcl.c.acl == acl_name,
-                    PersonPackageListing.c.packagelistingid == pkg_listing_id)
+                    PersonPackageListingAcl.acl == acl_name,
+                    PersonPackageListing.packagelistingid == pkg_listing_id)
                 ).one()
         except InvalidRequestError:
             pass
@@ -924,6 +927,13 @@ class PackageDispatcher(controllers.Controller):
 
         # Create the package
         pkg = Package(package, summary, STATUS['Approved'].statuscodeid)
+        try:
+            session.flush() #pylint:disable-msg=E1101
+        except SQLError, e:
+            return dict(status=False, message=_('Unable to create'
+                ' Package for %(pkg)s, %(user)s),'
+                ' Approved: Error: %(error)s') % { 'pkg': package,
+                    'user': person['username'], 'error': e})
         pkg_listing = pkg.create_listing(devel_collection, person['username'],
                 STATUS['Approved'],
                 author_name = identity.current.user_name)
@@ -932,17 +942,17 @@ class PackageDispatcher(controllers.Controller):
         except SQLError, e:
             return dict(status=False, message=_('Unable to create'
                 ' PackageListing for %(pkg)s(Fedora devel), %(user)s),'
-                ' %(status)s') % { 'pkg': package, 'user': person['username'],
-                    'status': STATUS['Approved'].statuscodeid})
+                ' Approved: Error: %(error)s') % { 'pkg': package,
+                    'user': person['username'], 'error': e})
         changed_acls = []
         for group in (provenpkger_grp,):
             #pylint:disable-msg=E1101
             changed_acls.append(GroupPackageListingAcl.query.filter(and_(
-                    GroupPackageListingAcl.c.grouppackagelistingid
-                        == GroupPackageListing.c.id,
-                    GroupPackageListing.c.packagelistingid 
+                    GroupPackageListingAcl.grouppackagelistingid
+                        == GroupPackageListing.id,
+                    GroupPackageListing.packagelistingid 
                         == pkg_listing.id,
-                    GroupPackageListing.c.groupname == group)).all())
+                    GroupPackageListing.groupname == group)).all())
             #pylint:enable-msg=E1101
 
         # Create a log of changes
@@ -1167,11 +1177,11 @@ class PackageDispatcher(controllers.Controller):
                         #pylint:disable-msg=E1101
                         changed_acls.append(GroupPackageListingAcl.query.filter(
                             and_(
-                            GroupPackageListingAcl.c.grouppackagelistingid
-                                == GroupPackageListing.c.id,
-                            GroupPackageListing.c.packagelistingid
+                            GroupPackageListingAcl.grouppackagelistingid
+                                == GroupPackageListing.id,
+                            GroupPackageListing.packagelistingid
                                 == pkg_listing.id,
-                            GroupPackageListing.c.groupname
+                            GroupPackageListing.groupname
                                 == group)).all())
                         #pylint:enable-msg=E1101
                     log_msg = '%s added a %s %s branch for %s' % (
@@ -1502,11 +1512,11 @@ class PackageDispatcher(controllers.Controller):
         for pkg_listing in package_listings:
             #pylint:disable-msg=E1101
             acls = PersonPackageListingAcl.query.filter(and_(
-                       PersonPackageListingAcl.c.personpackagelistingid
-                               == PersonPackageListing.c.id,
-                       PersonPackageListing.c.packagelistingid
+                       PersonPackageListingAcl.personpackagelistingid
+                               == PersonPackageListing.id,
+                       PersonPackageListing.packagelistingid
                             == pkg_listing.id,
-                       PersonPackageListing.c.username == username)).all()
+                       PersonPackageListing.username == username)).all()
             #pylint:enable-msg=E1101
 
             for acl in acls:
@@ -1602,9 +1612,9 @@ class PackageDispatcher(controllers.Controller):
             pass # Gah -- pylint bug
             #pylint:disable-msg=E1101
             package_listings = PackageListing.query\
-                    .filter(and_(PackageListing.c.collectionid==Collection.c.id,
-                        Collection.c.statuscode!=STATUS['EOL'].statuscodeid,
-                        PackageListing.c.packageid == pkg.id)).all()
+                    .filter(and_(PackageListing.collectionid==Collection.id,
+                        Collection.statuscode!=STATUS['EOL'].statuscodeid,
+                        PackageListing.packageid == pkg.id)).all()
 
         for pkg_listing in package_listings:
             if not owner:
@@ -1637,3 +1647,92 @@ class PackageDispatcher(controllers.Controller):
                     'commit'))
 
         return dict(status=True, pkg_listings=package_listings)
+
+    # Check that the requestor is in a group that could potentially set owner.
+    @expose(allow_json=True)
+    @identity.require(identity.not_anonymous())
+    @validate(validators = {'pkg_list': SetOf(use_set=True,
+            element_validator=validators.UnicodeString(not_empty=False)),
+        'critpath': validators.StringBool(),
+        'collctn_list': SetOf(use_set=True,
+            element_validator=IsCollectionSimpleNameRegex()),
+        'reset': validators.StringBool(),
+        })
+    @error_handler()
+    def set_critpath(self, pkg_list=None, critpath=True, collctn_list=None, reset=False):
+        '''Mark packages as being in the critical path.
+
+        Critical path packages are subject to more testing or stringency of
+        criteria for updating when a release occurs.
+
+        :kwarg pkg_list: List of package names to set as critical path.
+            Default: all packages within `collctn_list`
+        :kwarg critpath: Boolean.  True (default) means this package is in the
+            critical path.  False means that it should be taken out
+        :kwarg collctn_list: List of collection shortnames that this change
+            will be applied on.  The default is all non-EOL collections.
+        :kwarg reset: If True, clear the critpath flag from all packages in
+            collctn_list before setting critpath on the packages in pkg_list.
+            Default is False
+        :raises InvalidBranch: 
+        :returns: On success, return nothing
+        '''
+        # Check for validation errors requesting this form
+        errors = jsonify_validation_errors()
+        if errors:
+            return errors
+
+        # Remove critpath from all packages in the given collections
+        if reset:
+            pkg_listing_ids = select((PackageListingTable.c.id,),
+                    from_obj=(PackageListingTable.join(CollectionTable).join(BranchTable,
+                        onclause=CollectionTable.c.id==BranchTable.c.collectionid)))\
+                        .where(PackageListingTable.c.critpath==True)
+            if collctn_list:
+                pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
+            else:
+                pkg_listing_ids = pkg_listing_ids\
+                        .where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+
+            try:
+                PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
+                        .values(critpath=False).execute()
+                session.flush()
+            except InvalidRequestError, e:
+                session.rollback() #pylint:disable-msg=E1101
+                flash(_('Reseting critpath produced an error: %s') %e)
+                return dict(exc='UpdateUnsuccessful')
+
+            if not critpath:
+                # Shortcut -- if the call is asking to unmark packages and
+                # we've just done that due to reset, we're done
+                return dict()
+
+        if pkg_list:
+            pkg_listing_ids = select((PackageListingTable.c.id,), from_obj=(PackageTable\
+                .join(PackageListingTable).join(CollectionTable)\
+                .join(BranchTable, onclause=CollectionTable.c.id==BranchTable.c.collectionid)))\
+                .where(and_(PackageTable.c.name.in_(pkg_list),
+                        PackageListingTable.c.critpath!=critpath))
+        else:
+            pkg_listing_ids = select((PackageListingTable.c.id,)).where(and_(
+                    not_(PackageListingTable.c.statuscode.in_((STATUS['EOL'].statuscodeid,
+                        STATUS['Removed'].statuscodeid))),
+                    PackageListingTable.c.critpath!=critpath))
+
+        if collctn_list:
+            pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
+        else:
+            pkg_listing_ids = pkg_listing_ids\
+                    .where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+
+        try:
+            PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
+                    .values(critpath=critpath).execute()
+            session.flush()
+        except InvalidRequestError, e:
+            session.rollback() #pylint:disable-msg=E1101
+            flash(_('Updating critpath produced an error: %s') % e)
+            return dict(exc='UpdateUnsuccessful')
+
+        return dict()

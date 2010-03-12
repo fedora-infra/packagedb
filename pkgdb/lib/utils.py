@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2008-2009  Red Hat, Inc.
+# Copyright © 2008-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
@@ -52,20 +52,21 @@ STATUS = {}
 fas = None
 LOG = None
 bugzilla = None
+
 # Get the admin group if one is specified.
-admin_grp = config.get('pkgdb.admingroup', 'cvsadmin')
+admin_grp = config.get('pkgdb.admin_grp', 'cvsadmin')
 
 # Get the packager group if one is specified.
-pkger_grp = config.get('pkgdb.pkgergroup', 'packager')
+pkger_grp = config.get('pkgdb.pkger_grp', 'packager')
 
 # Get the moderator group if one is specified.
-mod_grp = config.get('pkgdb.modgroup', 'sysadmin')
+mod_grp = config.get('pkgdb.mod_grp', 'sysadmin')
 
 # Get the provenpackager group if one is specified.
-provenpkger_grp = config.get('pkgdb.provenpkgergroup', 'provenpackager')
+provenpkger_grp = config.get('pkgdb.provenpkger_grp', 'provenpackager')
 
 # Get the newpackager group if one is specified.
-newpkger_grp = config.get('pkgdb.newpkgergroup', 'newpackager')
+newpkger_grp = config.get('pkgdb.newpkger_grp', 'newpackager')
 
 def to_unicode(obj, encoding='utf-8', errors='replace'):
     '''return a unicode representation of the object.
@@ -196,20 +197,19 @@ def rpm2cpio(fdno, out=sys.stdout, bufsize=2048):
             if tmp == "": break
             out.write(tmp)
         out.flush()
-    #### TODO: Untested
-    #elif compr == 'bzip2':
-    #    f = os.fdopen(fdno, 'rb', bufsize)
-    #    decompressor = bz2.BZ2Decompressor()
-    #    while 1:
-    #        chunk = f.read(bufsize)
-    #        if chunk == "": break
-    #        try:
-    #            tmp = decompressor.decompress(tmp)
-    #        except EOFError:
-    #            break
-    #        out.write(tmp)
-    #    out.flush()
-    #    f.close()
+    elif compr == 'bzip2':
+        f = os.fdopen(fdno, 'rb', bufsize)
+        decompressor = bz2.BZ2Decompressor()
+        while 1:
+            chunk = f.read(bufsize)
+            if chunk == "": break
+            try:
+                tmp = decompressor.decompress(tmp)
+            except EOFError:
+                break
+            out.write(tmp)
+        out.flush()
+        f.close()
     else:
         raise rpmUtils.RpmUtilsError, \
               'Unsupported payload compressor: "%s"' % compr

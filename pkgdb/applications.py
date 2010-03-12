@@ -4,16 +4,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Project Author(s): Martin Bacovsky <mbacovsk@redhat.com>
 #
@@ -39,7 +39,7 @@ from turbogears.database import session
 from pkgdb.model import Comment, Application, Icon, IconName, PackageBuild
 from pkgdb.model import Tag, Usage, ApplicationUsage, ApplicationTag
 from pkgdb.model import MimeType
-from pkgdb.utils import mod_grp
+from pkgdb.lib.utils import mod_grp
 from pkgdb import release, _
 from pkgdb.lib.text_utils import excerpt
 
@@ -73,6 +73,8 @@ class ApplicationsController(controllers.Controller):
         redirect('/apps/name/list/a*')
 
     @expose(template='pkgdb.templates.apps_search')
+    @paginate('app_list', limit=50, default_order=('-score','name'), max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def search(self, pattern=''):
         '''Applications search result
 
@@ -85,7 +87,6 @@ class ApplicationsController(controllers.Controller):
         '''
 
         app_list = []
-        pkg_list = []
 
         if pattern == '':
             flash('Insert search pattern...')
@@ -123,7 +124,7 @@ class ApplicationsController(controllers.Controller):
         app_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
                 
         return dict(title=self.app_title, version=release.VERSION,
-            pattern=pattern, app_list=app_list, pkg_list=pkg_list)
+            pattern=pattern, app_list=app_list)
 
 
     def _applications_search_query(self, pattern):
@@ -400,7 +401,7 @@ class ApplicationsController(controllers.Controller):
                 .order_by(Application.name.asc())\
                 .all()
         
-        return dict(app_list=app_list)
+        return dict(app_list=app_list, list_type='tag')
 
 
     @expose(template='pkgdb.templates.apps')
@@ -430,17 +431,22 @@ class ApplicationsController(controllers.Controller):
         app_list = session.query(
                     Application.name, 
                     Application.summary, 
-                    Application.description)\
+                    Application.description,
+                    func.avg(ApplicationUsage.rating).label('avg'),
+                    func.count().label('count'))\
                 .join(ApplicationUsage, Usage)\
-                .distinct()\
                 .filter(and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
                     Usage.name == usage))\
+                .group_by(
+                    Application.name, 
+                    Application.summary, 
+                    Application.description)\
                 .order_by(Application.name.asc())\
                 .all()
         
-        return dict(app_list=app_list)
+        return dict(app_list=app_list, list_type='usage')
 
 
 class ApplicationController(controllers.Controller):
@@ -515,7 +521,9 @@ class AppIconController(controllers.Controller):
         self.app_title = app_title
 
     @expose(content_type='image/png')
-    def show(self, app_name):
+    def show(self, *app_name):
+        app_name = '/'.join(app_name)
+
         # TODO: themes 
         icon_data = session.query(Icon.icon)\
                 .join(Icon.name, IconName.applications)\

@@ -5,16 +5,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Author(s): Martin Bacovsky <mbacovsk@redhat.com>
 #
@@ -28,6 +28,7 @@ import logging
 import pytz
 import re
 import os
+import sys
 import atexit
 from StringIO import StringIO
 import stat
@@ -44,13 +45,13 @@ from yum.parser import varReplace
 
 # Currently, this is broken for xz so use our version
 #from rpmUtils.miscutils import rpm2cpio
-from pkgdb.utils import rpm2cpio
+from pkgdb.lib.utils import rpm2cpio
 
 
 try:
     from fedora.textutils import to_unicode
 except ImportError:
-    from pkgdb.utils import to_unicode
+    from pkgdb.lib.utils import to_unicode
 
 from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
 from pkgdb.model import RpmFiles, RpmProvides, RpmObsoletes, RpmConflicts
@@ -131,8 +132,10 @@ class RPM(object):
                 try:
                     log.info("          Downloading...")
                     filename = self.yumrepo.getPackage(self.build)
-                except Exception, e:
-                    raise PkgImportError(e)
+                except:
+                    exc_class, exc, tb = sys.exc_info()
+                    e = PkgImportError(exc)
+                    raise e.__class__, e, tb
 
             self._fdno = os.open(filename, os.O_RDONLY)
 
@@ -144,7 +147,9 @@ class RPM(object):
             try:
                 rpm2cpio(self._fdno, out=cpio)
             except Exception, e:
-                raise PkgImportError("Invalid RPM file (%s). Yum cache broken?" % e)
+                exc_class, exc, tb = sys.exc_info()
+                e = PkgImportError("Invalid RPM file (%s). Yum cache broken?" % exc)
+                raise e.__class__, e, tb
             self._cpio = cpio
 
         # Back to the beginning of the file
@@ -332,8 +337,10 @@ class PackageBuildImporter(object):
         try:
             package = pkg_query.one()
         except:
-            raise PkgImportError('The corresponding package (%s) does not '
+            exc_class, exc, tb = sys.exc_info()
+            e = PkgImportError('The corresponding package (%s) does not '
                     'exist in the pkgdb!' % package_name)
+            raise e.__class__, e, tb
         return package
 
     
@@ -341,6 +348,10 @@ class PackageBuildImporter(object):
     def yumbase(self):
         if not self._yumbase:
             yumbase = yum.YumBase()
+
+            # suppress yum plugins output
+            yum_log = logging.getLogger('yum.verbose.YumPlugins')
+            yum_log.setLevel(logging.ERROR)
 
             yumbase.repos.setCacheDir(self.cachedir + varReplace('/$basearch/$releasever', yumbase.yumvar))
 
@@ -362,8 +373,10 @@ class PackageBuildImporter(object):
             # populate sack
             try:
                 self.yumbase._getSacks(thisrepo=self._yumrepo.id)
-            except Exception, e:
-                raise PkgImportError('Repo %s failed to read! (%s)' % (self._yumrepo, e))
+            except:
+                exc_class, exc, tb = sys.exc_info()
+                e = PkgImportError('Repo %s failed to read! (%s)' % (self._yumrepo, exc))
+                raise e.__class__, e, tb
 
         return self._yumrepo
 
@@ -512,7 +525,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmFiles).filter_by(build=pkgbuild).delete()
+        session.query(RpmFiles).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for filename in rpm.filelist:
             rpm_file = RpmFiles(name=filename)
@@ -526,7 +540,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmProvides).filter_by(build=pkgbuild).delete()
+        session.query(RpmProvides).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for (n, f, (e, v, r)) in rpm.provides:
             obj = RpmProvides(name=n, flags=f, epoch=e,
@@ -541,7 +556,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmObsoletes).filter_by(build=pkgbuild).delete()
+        session.query(RpmObsoletes).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for (n, f, (e, v, r)) in rpm.obsoletes:
             obj = RpmObsoletes(name=n, flags=f, epoch=e,
@@ -556,7 +572,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmConflicts).filter_by(build=pkgbuild).delete()
+        session.query(RpmConflicts).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for (n, f, (e, v, r)) in rpm.conflicts:
             obj = RpmConflicts(name=n, flags=f, epoch=e,
@@ -571,7 +588,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(RpmRequires).filter_by(build=pkgbuild).delete()
+        session.query(RpmRequires).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         for (n, f, (e, v, r), p) in rpm.requires_with_pre():
             obj = RpmRequires(name=n, flags=f, epoch=e,
@@ -586,7 +604,8 @@ class PackageBuildImporter(object):
         :args pkgbuild: pkgbuild record in pkgdb  
         """
         #pylint:disable-msg=E1101
-        session.query(PackageBuildDepends).filter_by(build=pkgbuild).delete()
+        session.query(PackageBuildDepends).filter_by(build=pkgbuild)\
+            .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         providers = set()
         for (n, f, (e, v, r), p) in rpm.requires_with_pre():

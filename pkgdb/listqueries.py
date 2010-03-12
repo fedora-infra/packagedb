@@ -4,16 +4,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
@@ -48,17 +48,18 @@ from turbogears.database import get_engine, session
 
 from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
         GroupPackageListingAcl, PackageListing, PersonPackageListing, \
-        PersonPackageListingAcl, Repo, PackageBuild, Tag
+        PersonPackageListingAcl, Repo, PackageBuild, PackageBuildRepo, Tag
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
         CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
-        BinaryPackageTag
+        BinaryPackageTag, BranchTable
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
-from pkgdb.utils import STATUS
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
-from pkgdb.validators import CollectionNameVersion
+from pkgdb.lib.validators import CollectionNameVersion, SetOf, \
+        IsCollectionSimpleNameRegex
 
 from fedora.tg.util import jsonify_validation_errors
 
@@ -364,6 +365,8 @@ class ListQueries(controllers.Controller):
 
         :arg repo: A repository shortname to retrieve tags for (e.g. 'F-11-i386')
 
+        .. versionadded:: 0.5.0
+
         '''
         # initialize/clear database
         fd, dbfile = tempfile.mkstemp()
@@ -385,21 +388,31 @@ class ListQueries(controllers.Controller):
             and_(Tag.id==ApplicationTag.tagid,
                 ApplicationTag.applicationid==PackageBuildApplicationsTable.c.applicationid,
                 PackageBuildApplicationsTable.c.packagebuildid==PackageBuild.id,
-                PackageBuild.repoid==Repo.id,
-                Repo.shortname=='F-11-i386')),
+                PackageBuildRepo.repoid==Repo.id,
+                PackageBuildRepo.packagebuildid==PackageBuild.id,
+                Repo.shortname==repo)),
             select((PackageBuild.name.label('name'),
                 Tag.name.label('tag'),
                 BinaryPackageTag.score.label('score')),
             and_(Tag.id==BinaryPackageTag.tagid,
                 BinaryPackageTag.binarypackagename==PackageBuild.name,
-                PackageBuild.repoid==Repo.id,
-                Repo.shortname=='F-11-i386')))
+                PackageBuildRepo.repoid==Repo.id,
+                PackageBuildRepo.packagebuildid==PackageBuild.id,
+                Repo.shortname==repo)))
 
         pkg_tags = []
+        ### HACK: Should be able to do this in SQL somehow I think but it
+        # requires merging the scores somehow
+        used_tags = set()
         for tag in tags.execute().fetchall():
-            pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
+            if (tag[0], tag[1]) not in used_tags:
+                pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
+                used_tags.add((tag[0], tag[1]))
 
-        lite_session.execute(YumTagsTable.insert(), pkg_tags)
+        if pkg_tags:
+            # If there's no tags, we'll return an empty database
+            lite_session.execute(YumTagsTable.insert(), pkg_tags)
+
         lite_session.commit()
 
         f = open(dbfile, 'r')
@@ -686,3 +699,44 @@ class ListQueries(controllers.Controller):
         return dict(title=_('%(app)s -- Notification List') % {
             'app': self.app_title}, packages=pkgs, collections=collections,
             name=name, version=version, eol=eol)
+
+    @expose(allow_json=True)
+    @validate(validators = {'collctn_list': SetOf(use_set=True,
+            element_validator=IsCollectionSimpleNameRegex())})
+    @error_handler()
+    def critpath(self, collctn_list=None):
+        '''Retrieve the list of packages that are critpath
+
+        Critical path packages are subject to more testing or stringency of
+        criteria for updating when a release occurs.
+
+        :kwarg collctn_list: List of collection shortnames for which to
+            retrieve the packages from.  The default is all non-EOL
+            collections.
+        :returns: dict keyed by collection shortname.  The values are the list
+            of critpath packages for each collection
+        '''
+        # Check for validation errors requesting this form
+        errors = jsonify_validation_errors()
+        if errors:
+            return errors
+
+        pkg_names = select((BranchTable.c.branchname, PackageTable.c.name))\
+                .where(and_(PackageTable.c.id==PackageListingTable.c.packageid,
+                    PackageListingTable.c.collectionid==CollectionTable.c.id,
+                    CollectionTable.c.id==BranchTable.c.collectionid,
+                    PackageListingTable.c.critpath==True))
+        if collctn_list:
+            pkg_names = pkg_names.where(BranchTable.c.branchname.in_(collctn_list))
+        else:
+            pkg_names = pkg_names.where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+
+        pkgs = {}
+        for pkg in pkg_names.execute():
+            try:
+                pkgs[pkg[0]].add(pkg[1])
+            except KeyError:
+                pkgs[pkg[0]] = set()
+                pkgs[pkg[0]].add(pkg[1])
+
+        return dict(pkgs=pkgs)

@@ -18,6 +18,8 @@ NEWS
 * packages/id has gone away.   Use owners/name instead.
 * collections/id is deprecated.  Use collections/name instead. (name is the
   shortname for the collection.  For instance, F-12)
+* /acls/dispatcher/toggle_owner has been removed.  Port code to using
+  /acls/dispatcher/set_owner
 
 -----
 0.4.1

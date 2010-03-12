@@ -16,6 +16,7 @@
     ${ajax_loader_script()}
     <script type="text/javascript">
         dojo.require("dijit.Tooltip");
+        dojo.require("dojox.layout.ContentPane");
         dojo.addOnLoad(function(){
         });
     </script>
@@ -36,7 +37,7 @@
     </div>
     
     <div py:if="fresh" class="best-of-box">
-        <h4>5 freshly builded apps</h4>
+        <h4>Five freshest apps</h4>
         <table>
         <tr py:for="app in fresh">
           <td class="col-icon"><a href="${tg.url('/applications/%s' % app[0])}">
