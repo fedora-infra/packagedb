@@ -27,7 +27,7 @@
     <xi:include href="_apps_search.html" />
     ${search_box(packages=False, builds=False)}
 
-    <div py:if="app_list" class="app-search-result-box">
+    <div py:if="pattern" class="app-search-result-box">
         ${paginate_nav()}
         <table>
         <tr py:for="app in app_list">
