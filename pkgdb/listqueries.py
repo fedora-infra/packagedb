@@ -1,42 +1,68 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
 '''
 Send acl information to third party tools.
 '''
+#
+#pylint Explanations
+#
 
+# :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
+#   we have to disable this when accessing an attribute of a mapped class.
+# :W0232: no __init__ method: This only applies to a validator schema.  Those
+#   don't have methods, just attributes so it's expected.
+# :R0903: Too few public methods: This only applies to the validator schema
+#   and two classes that we're using as data structures that can return json.
+#   So this is fine.
+# :C0322: Disable space around operator checking in multiline decorators
+
+import os
+import tempfile
 import itertools
 
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, create_engine, union
+from sqlalchemy.orm import sessionmaker
+
 from turbogears import expose, validate, error_handler
 from turbogears import controllers, validators
 
-from pkgdb.model import (Package, Branch, GroupPackageListing, Collection,
-        GroupPackageListingAcl, PackageListing, PersonPackageListing,
-        PersonPackageListingAcl,)
-from pkgdb.model import PackageTable, CollectionTable
-from pkgdb.utils import STATUS
+from turbogears.database import get_engine, session
+
+
+from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
+        GroupPackageListingAcl, PackageListing, PersonPackageListing, \
+        PersonPackageListingAcl, Repo, PackageBuild, PackageBuildRepo, Tag
+from pkgdb.model import PackageTable, PackageListingTable, \
+        PersonPackageListingTable, PersonPackageListingAclTable, \
+        CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
+        BinaryPackageTag, BranchTable
+from pkgdb.model import YumTagsTable
+from pkgdb.model.yumdb import yummeta
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
-from pkgdb.validators import BooleanValue, CollectionNameVersion
+from pkgdb.lib.validators import CollectionNameVersion, SetOf, \
+        IsCollectionSimpleNameRegex
 
 from fedora.tg.util import jsonify_validation_errors
+
 
 #
 # Validators
@@ -45,14 +71,14 @@ from fedora.tg.util import jsonify_validation_errors
 class NotifyList(validators.Schema):
     '''Validator schema for the notify method.'''
     # validator schemas don't have methods (R0903, W0232)
-    # pylint: disable-msg=R0903,W0232
+    #pylint:disable-msg=R0903,W0232
 
     # We don't use a more specific validator for collection or version because
     # the chained validator does it for us and we don't want to hit the
     # database multiple times
     name = validators.UnicodeString(not_empty=False, strip=True)
     version = validators.UnicodeString(not_empty=False, strip=True)
-    eol = BooleanValue
+    eol = validators.StringBool()
     chained_validators = (CollectionNameVersion(),)
 
 #
@@ -64,7 +90,7 @@ class AclList(object):
     '''
     # This class is just a data structure that can convert itself to json so
     # there's no need for a lot of methods.
-    # pylint: disable-msg=R0903
+    #pylint:disable-msg=R0903
 
     ### FIXME: Reevaluate whether we need this data structure at all.  Once
     # jsonified, it is transformed into a dict of lists so it might not be
@@ -83,7 +109,7 @@ class BugzillaInfo(object):
     '''
     # This class is just a data structure that can convert itself to json so
     # there's no need for a lot of methods.
-    # pylint: disable-msg=R0903
+    #pylint:disable-msg=R0903
 
     ### FIXME: Reevaluate whether we need this data structure at all.  Once
     # jsonified, it is transformed into a dict of lists so it might not be
@@ -187,10 +213,11 @@ class ListQueries(controllers.Controller):
             except KeyError:
                 branch[acl] = AclList(people=[identity])
 
-    @expose(template="genshi-text:pkgdb.templates.plain.vcsacls",
-            as_format="plain", accept_format="text/plain",
-            content_type="text/plain; charset=utf-8", format='text')
-    @expose(template="pkgdb.templates.vcsacls", allow_json=True)
+    @expose(template='genshi-text:pkgdb.templates.plain.vcsacls',
+            as_format='plain', accept_format='text/plain',
+            content_type='text/plain; charset=utf-8', #pylint:disable-msg=C0322
+            format='text') #pylint:disable-msg=C0322
+    @expose(template='pkgdb.templates.vcsacls', allow_json=True)
     def vcs(self):
         '''Return ACLs for the version control system.
 
@@ -209,7 +236,7 @@ class ListQueries(controllers.Controller):
         # Get the vcs group acls from the db
 
         group_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname,
             GroupPackageListing.groupname), and_(
@@ -242,7 +269,7 @@ class ListQueries(controllers.Controller):
         # Get the package owners from the db
         # Exclude the orphan user from that.
         owner_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname, PackageListing.owner),
             and_(
@@ -266,7 +293,7 @@ class ListQueries(controllers.Controller):
 
         # Get the vcs user acls from the db
         person_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Branch.branchname, PersonPackageListing.username),
             and_(
@@ -295,16 +322,116 @@ class ListQueries(controllers.Controller):
         return dict(title=_('%(app)s -- VCS ACLs') % {'app': self.app_title},
                 packageAcls=package_acls)
 
+    @expose(template='pkgdb.templates.buildtags', as_format='xml',
+            accept_format='application/xml', #pylint:disable-msg=C0322
+            allow_json=True) #pylint:disable-msg=E1101
+    def buildtags(self, repos):
+        '''Return an XML object with all the PackageBuild tags and their scores.
+        The PackageBuild tags are tags binded to applications belonging to 
+        the packagebuild. When there are more apps with same tag within one 
+        packaebuild, the maximum score is taken.
+
+        :arg repoName: A repo shortname to lookup packagebuilds into
+        for tags
+
+        Returns:
+        :buildtags: a dictionary of buildaname : tagdict, where tagdict is a
+        dictionary of tag : score key-value pairs. 
+        '''
+        if not isinstance(repos, list):
+            repos = [repos]
+
+        buildtags = {}
+        for repo in repos:
+            buildtags[repo] = {}
+
+            #pylint:disable-msg=E1101
+            repoid = session.query(Repo).filter_by(shortname=repo).one().id
+            builds = session.query(PackageBuild)\
+                    .join(PackageBuild.repos)\
+                    .filter(Repo.id==repoid)
+            #pylint:enable-msg=E1101
+
+            for build in builds:
+                buildtags[repo][build.name] = build.scores()
+        return dict(buildtags=buildtags, repos=repos)
+
+    @expose(content_type='application/sqlite')
+    def sqlitebuildtags(self, repo):
+        '''Return a sqlite database of packagebuilds and tags.
+
+        The database returned will contain copies or subsets of tables in the
+        pkgdb.
+
+        :arg repo: A repository shortname to retrieve tags for (e.g. 'F-11-i386')
+
+        .. versionadded:: 0.5.0
+
+        '''
+        # initialize/clear database
+        fd, dbfile = tempfile.mkstemp()
+        os.close(fd)
+        sqliteconn = 'sqlite:///%s' % dbfile
+
+        yummeta.bind = create_engine(sqliteconn)
+        yummeta.create_all()
+
+        # since we're using two databases, we'll need a new session
+        default_engine = get_engine()
+        lite_session = sessionmaker(yummeta.bind)()
+
+        # Retrieve the tags from the database
+        tags = union(select(
+            (PackageBuild.name.label('name'),
+                Tag.name.label('tag'),
+                ApplicationTag.score.label('score')),
+            and_(Tag.id==ApplicationTag.tagid,
+                ApplicationTag.applicationid==PackageBuildApplicationsTable.c.applicationid,
+                PackageBuildApplicationsTable.c.packagebuildid==PackageBuild.id,
+                PackageBuildRepo.repoid==Repo.id,
+                PackageBuildRepo.packagebuildid==PackageBuild.id,
+                Repo.shortname==repo)),
+            select((PackageBuild.name.label('name'),
+                Tag.name.label('tag'),
+                BinaryPackageTag.score.label('score')),
+            and_(Tag.id==BinaryPackageTag.tagid,
+                BinaryPackageTag.binarypackagename==PackageBuild.name,
+                PackageBuildRepo.repoid==Repo.id,
+                PackageBuildRepo.packagebuildid==PackageBuild.id,
+                Repo.shortname==repo)))
+
+        pkg_tags = []
+        ### HACK: Should be able to do this in SQL somehow I think but it
+        # requires merging the scores somehow
+        used_tags = set()
+        for tag in tags.execute().fetchall():
+            if (tag[0], tag[1]) not in used_tags:
+                pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
+                used_tags.add((tag[0], tag[1]))
+
+        if pkg_tags:
+            # If there's no tags, we'll return an empty database
+            lite_session.execute(YumTagsTable.insert(), pkg_tags)
+
+        lite_session.commit()
+
+        f = open(dbfile, 'r')
+        dump = f.read()
+        f.close()
+        os.unlink(dbfile)
+        return dump
+
     @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
             as_format="plain", accept_format="text/plain",
-            content_type="text/plain; charset=utf-8", format='text')
+            content_type="text/plain; charset=utf-8", #pylint:disable-msg=C0322
+            format='text') #pylint:disable-msg=C0322
     @expose(template="pkgdb.templates.bugzillaacls", allow_json=True)
     def bugzilla(self):
         '''Return the package attributes used by bugzilla.
 
         Note: The data returned by this function is for the way the current
         Fedora bugzilla is setup as of (2007/6/25).  In the future, bugzilla
-        will change to have separate products for each collection-version.
+        may change to have separate products for each collection-version.
         When that happens we'll have to change what this function returns.
 
         The returned data looks like this:
@@ -322,7 +449,7 @@ class ListQueries(controllers.Controller):
 
         # select all packages that are in an active release
         package_info = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Collection.name, Package.name,
             PackageListing.owner, PackageListing.qacontact,
             Package.summary),
@@ -331,8 +458,8 @@ class ListQueries(controllers.Controller):
                 Package.id==PackageListing.packageid,
                 Package.statuscode!=STATUS['Removed'].statuscodeid,
                 PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
-                Collection.statuscode.in_(STATUS['Active'].statuscodeid,
-                    STATUS['Under Development'].statuscodeid),
+                Collection.statuscode.in_((STATUS['Active'].statuscodeid,
+                    STATUS['Under Development'].statuscodeid)),
                 ),
             order_by=(Collection.name,), distinct=True)
 
@@ -370,8 +497,7 @@ class ListQueries(controllers.Controller):
             # These are packages that have different owners in different
             # branches.  Need to find one to be the owner of the bugzilla
             # component
-            # SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             package_info = select((Collection.name,
                 Collection.version,
                 Package.name, PackageListing.owner),
@@ -386,7 +512,7 @@ class ListQueries(controllers.Controller):
                     ),
                 order_by=(Collection.name, Collection.version),
                 distinct=True)
-            # pylint: enable-msg=E1101
+            #pylint:enable-msg=E1101
 
             # Organize the results so that we have:
             # [packagename][collectionname][collectionversion] = owner
@@ -444,7 +570,7 @@ class ListQueries(controllers.Controller):
         # Retrieve the user acls
 
         person_acls = select((
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             Package.name,
             Collection.name, PersonPackageListing.username),
             and_(
@@ -480,7 +606,8 @@ class ListQueries(controllers.Controller):
     @error_handler()
     @expose(template='genshi-text:pkgdb.templates.plain.notify',
             as_format='plain', accept_format='text/plain',
-            content_type='text/plain; charset=utf-8', format='text')
+            content_type='text/plain; charset=utf-8', #pylint:disable-msg=C0322
+            format='text') #pylint:disable-msg=C0322
     @expose(template='pkgdb.templates.notify', allow_json=True)
     def notify(self, name=None, version=None, eol=False):
         '''List of usernames that should be notified of changes to a package.
@@ -500,19 +627,18 @@ class ListQueries(controllers.Controller):
             return errors
 
         # Retrieve Packages, owners, and people on watch* acls
-        # :E1101: SQLAlchemy mapped classes are monkey patched
-        # pylint: disable-msg=E1101
+        #pylint:disable-msg=E1101
         owner_query = select((Package.name, PackageListing.owner),
-                from_obj=(PackageTable.join(PackageListing).join(
+                from_obj=(PackageTable.join(PackageListingTable).join(
                     CollectionTable))).where(and_(
                         Package.statuscode == STATUS['Approved'].statuscodeid,
                         PackageListing.statuscode == \
                                 STATUS['Approved'].statuscodeid)
                         ).distinct().order_by('name')
         watcher_query = select((Package.name, PersonPackageListing.username),
-                from_obj=(PackageTable.join(PackageListing).join(
-                    Collection).join(PersonPackageListing).join(
-                        PersonPackageListingAcl))).where(and_(
+                from_obj=(PackageTable.join(PackageListingTable).join(
+                    CollectionTable).join(PersonPackageListingTable).join(
+                        PersonPackageListingAclTable))).where(and_(
                             Package.statuscode == \
                                     STATUS['Approved'].statuscodeid,
                             PackageListing.statuscode == \
@@ -522,29 +648,31 @@ class ListQueries(controllers.Controller):
                             PersonPackageListingAcl.statuscode ==
                                 STATUS['Approved'].statuscodeid
                         )).distinct().order_by('name')
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
 
         if not eol:
             # Filter out eol distributions
-            # :E1101: SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             owner_query = owner_query.where(Collection.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
             watcher_query = watcher_query.where(Collection.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
+            #pylint:enable-msg=E1101
 
         # Only grab from certain collections
         if name:
-            # SQLAlchemy mapped classes are monkey patched
-            # pylint: disable-msg=E1101
+            #pylint:disable-msg=E1101
             owner_query = owner_query.where(Collection.name==name)
             watcher_query = watcher_query.where(Collection.name==name)
+            #pylint:enable-msg=E1101
             if version:
                 # Limit the versions of those collections
+                #pylint:disable-msg=E1101
                 owner_query = owner_query.where(Collection.version==version)
                 watcher_query = watcher_query.where(Collection.version==version)
+                #pylint:enable-msg=E1101
 
         pkgs = {}
         # turn the query into a python object
@@ -555,12 +683,11 @@ class ListQueries(controllers.Controller):
             pkgs.setdefault(pkg[0], set()).update(
                     (pkg[1],))
 
-        # SQLAlchemy mapped classes are monkey patched
-        # pylint: disable-msg=E1101
         # Retrieve list of collection information for generating the
         # collection form
+        #pylint:disable-msg=E1101
         collection_list = Collection.query.order_by('name').order_by('version')
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         collections = {}
         for collection in collection_list:
             try:
@@ -572,3 +699,44 @@ class ListQueries(controllers.Controller):
         return dict(title=_('%(app)s -- Notification List') % {
             'app': self.app_title}, packages=pkgs, collections=collections,
             name=name, version=version, eol=eol)
+
+    @expose(allow_json=True)
+    @validate(validators = {'collctn_list': SetOf(use_set=True,
+            element_validator=IsCollectionSimpleNameRegex())})
+    @error_handler()
+    def critpath(self, collctn_list=None):
+        '''Retrieve the list of packages that are critpath
+
+        Critical path packages are subject to more testing or stringency of
+        criteria for updating when a release occurs.
+
+        :kwarg collctn_list: List of collection shortnames for which to
+            retrieve the packages from.  The default is all non-EOL
+            collections.
+        :returns: dict keyed by collection shortname.  The values are the list
+            of critpath packages for each collection
+        '''
+        # Check for validation errors requesting this form
+        errors = jsonify_validation_errors()
+        if errors:
+            return errors
+
+        pkg_names = select((BranchTable.c.branchname, PackageTable.c.name))\
+                .where(and_(PackageTable.c.id==PackageListingTable.c.packageid,
+                    PackageListingTable.c.collectionid==CollectionTable.c.id,
+                    CollectionTable.c.id==BranchTable.c.collectionid,
+                    PackageListingTable.c.critpath==True))
+        if collctn_list:
+            pkg_names = pkg_names.where(BranchTable.c.branchname.in_(collctn_list))
+        else:
+            pkg_names = pkg_names.where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+
+        pkgs = {}
+        for pkg in pkg_names.execute():
+            try:
+                pkgs[pkg[0]].add(pkg[1])
+            except KeyError:
+                pkgs[pkg[0]] = set()
+                pkgs[pkg[0]].add(pkg[1])
+
+        return dict(pkgs=pkgs)

@@ -4,16 +4,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 #
@@ -23,7 +23,7 @@ Mapping of database tables for logs to python classes.
 
 from sqlalchemy import Table
 from sqlalchemy import select, literal_column, not_
-from sqlalchemy.orm import polymorphic_union, relation, backref
+from sqlalchemy.orm import polymorphic_union, relation
 from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
@@ -83,7 +83,8 @@ class PackageListingLog(Log):
     def __init__(self, username, action, description=None, changetime=None,
             packagelistingid=None):
         # pylint: disable-msg=R0913
-        super(PackageListingLog, self).__init__(username, description, changetime)
+        super(PackageListingLog, self).__init__(username, description,
+                changetime)
         self.action = action
         self.packagelistingid = packagelistingid
 

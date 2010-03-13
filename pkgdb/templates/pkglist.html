@@ -3,34 +3,52 @@
   xmlns:py="http://genshi.edgewall.org/"
   xmlns:xi="http://www.w3.org/2001/XInclude"
   py:strip="">
-  <div py:def="pkglist(packages, mode='name', full_desc=False, release=False,
-    releasewhere=None)"
-    class="PackageList">
+  <div py:def="pkglist(packages, mode=None, full_desc=False, release=False,
+               releasewhere=None)"
+    class="PackageGroup">
     <dl py:for="pkg in packages">
       <dt>
-        <a href="${tg.url('/packages/%s/%s' % (mode.strip('/') or 'name', pkg.name))}"
-          py:content="pkg.name" class="PackageName">Package Name</a>
-        -- ${pkg.summary}
+        <py:choose test="mode">
+          <py:when test="'tag/'">
+            <a href="${tg.url('/packages/%s/%s' %
+                     (pkg.name, pkg.repo.shortname))}"
+               py:content="'%s (%s)' % (pkg.name, pkg.repo.shortname)"
+               class="PackageName">Build Name</a>
+          </py:when>
+          <py:when test="'/packages'">
+            <a href="${tg.url('%s/%s/%s' %(mode, pkg.name, pkg.repo.shortname))}"
+               py:content="pkg.name" class="PackageName">Package Name</a>
+            <em>-- ${pkg.package.summary}</em>
+          </py:when>
+          <py:otherwise>
+            <a href="${tg.url('/%s%s' % (mode, pkg.name))}"
+               py:content="pkg.name" class="PackageName">Package Name</a>
+           -- ${pkg.summary}
+          </py:otherwise>
+        </py:choose>
       </dt>
-      <dd py:if="full_desc" py:content="pkg.description" />
-      <dd py:if="release" py:choose="releasewhere">
-        <div py:when="'orphaned'" py:strip="True">
-          <span py:for="collection in sorted((plist.collection.name, plist.collection.version, plist.collection.branchname) for plist in sorted(pkg.listings2.values()) if plist.status.locale['C'].statusname=='Orphaned' and (eol or plist.collection.status.locale['C'].statusname!='EOL'))" py:strip="True">
-          [<a py:content="collection[2]"
-            href="${tg.url('/packages/%s/%s#%s%s' %
-            (mode, pkg.name, collection[0], collection[1]))}">
-            Collection shortname</a>]
-          </span>
-        </div>
-        <div py:otherwise="" py:strip="True">
-          <span py:for="collection in (plist.collection for plist in sorted(pkg.listings2.values()))" py:strip="True">
-          [<a py:content="collection.branchname"
-            href="${tg.url('/packages/%s/%s#%s%s' %
-            (mode, pkg.name, collection.name, collection.version))}">
-            Collection shortname</a>]
-          </span>
-        </div>
-      </dd>
+      <dd py:if="full_desc" py:content="pkg.package.description" />
+      <py:if test="release">
+        <dd py:choose="releasewhere">
+          <py:when test="'orphaned'">
+            <py:for each="collection in sorted((plist.collection.name, plist.collection.version, plist.collection.branchname) for plist in sorted(pkg.listings2.values()) if plist.status.locale['C'].statusname=='Orphaned' and (eol or plist.collection.status.locale['C'].statusname!='EOL'))">
+              [<a py:content="collection[2]"
+                  href="${tg.url('/%s%s#%s%s' %
+                        (mode, pkg.name, collection[0], collection[1]))}">
+                Collection shortname</a>]
+            </py:for>
+          </py:when>
+          <py:otherwise>
+            <py:for each="repo in buildrepos[pkg.name]">
+              [<a py:content="repo.shortname"
+                  href="${tg.url('/packages/%s/%s' %
+                        (pkg.name, pkg.repo.shortname))}">
+                Collection shortname</a>]
+            </py:for>
+          </py:otherwise>
+        </dd>
+        <br />
+      </py:if>
     </dl>
   </div>
 </html>

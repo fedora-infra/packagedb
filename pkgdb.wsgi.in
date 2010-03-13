@@ -1,5 +1,6 @@
 #!/usr/bin/python -tt
-__requires__ = 'fedora_packagedb'
+import __main__
+__main__.__requires__ = 'fedora_packagedb'
 
 import sys
 import os
@@ -22,8 +23,8 @@ turbogears.update_config(configfile=os.path.join('@CONFDIR@', 'pkgdb.cfg'),
 # This must always be off when used with mod_wsgi
 turbogears.config.update({'global': {'autoreload.on': False}})
 
-import pkgdb.utils
-pkgdb.utils.init_globals()
+import pkgdb.lib.utils
+pkgdb.lib.utils.init_globals()
 turbogears.startup.call_on_startup.append(fedora.tg.util.enable_csrf)
 
 import pkgdb.controllers

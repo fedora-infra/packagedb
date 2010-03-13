@@ -1,0 +1,23 @@
+<html py:strip=""
+      xmlns:py="http://genshi.edgewall.org/">
+  <div py:def="build_box(title, data)" py:strip="True">
+    <div py:if="data" class="best-of-box" style="float:left; width: 48%; margin: 1%;">
+        <h4>${title}</h4>
+        <table>
+        <tr py:for="b in data">
+          <td class="col-icon"><a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b.repo.shortname, b.name, b.epoch, b.version, b.release, b.architecture))}">
+                <img src="${tg.url('/static/images/build.png')}" />
+              </a>
+          </td>
+          <td>
+            <div class="app-name"><a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b.repo.shortname, b.name, b.epoch, b.version, b.release, b.architecture))}">${str(b)}</a></div>
+            <ul>
+                <li py:for="cl in b.changelog.split('\n')">${cl}</li>
+            </ul>
+          </td>
+        </tr>
+        </table>
+    </div>
+  </div>
+</html>    
+

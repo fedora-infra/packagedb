@@ -42,10 +42,10 @@
         View: Orphaned Packages (${pkgCount}) - 
         <div py:choose="eol" py:strip="">
           <div py:when="True" py:strip="">
-            <a href="${tg.url('/packages/orphans/')}">hide</a>
+            <a href="${tg.url('/acls/orphans/')}">hide</a>
           </div>
           <div py:when="False" py:strip="">
-            <a href="${tg.url('/packages/orphans/eol')}">show</a>
+            <a href="${tg.url('/acls/orphans/eol')}">show</a>
           </div>
         </div> EOL packages
       </div>
@@ -59,10 +59,10 @@
     ${paginate_nav()}
     <p py:choose="fasname" py:strip="">
       <div py:when="'orphan'" py:strip="">
-        ${pkglist(pkgs, release=True, releasewhere='orphaned')}
+        ${pkglist(pkgs, mode='acls/name/',release=True, releasewhere='orphaned')}
       </div>
       <div py:otherwise="" py:strip="">
-        ${pkglist(pkgs)}
+        ${pkglist(pkgs, mode='acls/name/')}
       </div>
     </p>
     ${paginate_nav()}

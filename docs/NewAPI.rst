@@ -363,7 +363,7 @@ database.  In general the following rules are followed:
    underscore.
 3) If it is abbreviated in one place, it is abbreviated everywhere.
 4) Numeric id parameters are being removed.  We'll pass symbolic names or fully
-   expanded names instead.  (pkg='foo', collectn='F-8' instead of
+   expanded names instead.  (pkg='foo', collctn='F-8' instead of
    pkg_listing_id='10998')
 
 ========================  ================
@@ -372,14 +372,15 @@ Current Name              New Name
 package                   pkg
 packageName               pkg_name
 package_name              pkg_name
-collection                collectn  (Use this for collection short name)
-collectionName            collectn_name
-collectionVersion         collectn_ver
-cc_list                   cc_list
+packageList               pkg_lst
+collection                collctn  (Use this for collection short name)
+collectionName            collctn_name
+collectionVersion         collctn_ver
+cc_list                   cc_lst
 qacontact                 qa_contact
 fasname                   username
-pkg_listing_id            pkg_listing_id
-collection_id             collectn_id
+pkg_listing_id            pkglisting_id
+collection_id             collctn_id
 ========================  ================
 
 -----------------

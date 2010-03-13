@@ -10,8 +10,8 @@
     _hostname = socket.gethostname()
     _version = pkgdb.release.VERSION
     ?>
-
-  <head py:match="head" py:attrs="select('@*')">
+  <py:match path="head" once="true">
+  <head py:attrs="select('@*')">
     <meta content="text/html; charset=UTF-8" http-equiv="content-type"
       py:replace="''" />
     <title>${title}</title>
@@ -21,26 +21,30 @@
     <link href="${tg.url('/static/images/favicon.ico')}"
       type="image/vnd.microsoft.icon" rel="shortcut icon" /> 
     <link href="${tg.url('/static/images/favicon.ico')}"
-      type="image/x-icon" rel="shortcut icon"/> 
+      type="image/x-icon" rel="shortcut icon"/>
+
     <style type="text/css" media="screen">
       @import url("https://fedoraproject.org/static/css/fedora.css");
+      @import url("https://fedoraproject.org/static/css/application-chrome.css");
       @import url("${tg.url('/static/css/pkgdb.css')}");
       @import url("${tg.url('/static/js/dijit/themes/tundra/tundra.css')}");
     </style>
 
     <script src="${tg.tg_js}/MochiKit_1_4.js" type="text/javascript"></script>
-    <jsglobals />
+
     <script type="text/javascript">
-        <!--
-         function jump(page, form){
-             urlparts = page.split('?_csrf_token');
-             window.location= urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf_token'+urlparts[1];
-             return false
-         }
-        //-->
-    </script> 
+      function jump(page,form){
+           urlparts = page.split('?_csrf');
+           window.location = urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf'+urlparts[1];
+           return false
+      };
+    </script>
+    <jsglobals />
+    ${select('*[local-name()!="title"]')}
   </head>
-  <body py:match="body" py:attrs="select('@*')" class="tundra">
+  </py:match>
+  <py:match path="body" once="true">
+  <body py:attrs="select('@*')" class="tundra">
     <div py:for="js in tg_js_bodytop" py:replace="XML(js.display())" />
     <div id="wrapper">
       <div id="head">
@@ -53,28 +57,34 @@
         <div id="nav">
           <h2>Navigation</h2>
           <ul>
-            <li><strong><a href="${tg.url('/')}">Packages Home</a></strong></li>
+            <li class="separator"><strong><a href="${tg.url('/')}">Home</a></strong></li>
+            <li><a href="${tg.url('/apps/name/list/a*')}">Applications</a></li>
+            <li><a href="${tg.url('/builds/name/a*')}">Builds</a></li>
+            <li class="separator"><a href="${tg.url('/acls/list/a*')}">Packages</a></li>
             <li><a href="${tg.url('/collections/')}">View Collections</a></li>
-            <li><a href="${tg.url('/packages/index/a*')}">View Packages</a></li>
-            <li><a href="${tg.url('/packages/bugs/index/a*')}">View Bugs</a></li>
+            <li><a href="${tg.url('/acls/bugs/list/a*')}">View Bugs</a></li>
             <li><a href="${tg.url('/users/packages/')}">My Packages</a></li>
-            <li><a href="${tg.url('/packages/orphans')}">Orphan Packages</a></li>
-            <li><a href="${tg.url('/stats/')}">Package Stats</a></li>
-            <li><a href="https://fedorahosted.org/packagedb/report/3">PackageDB Bugs</a></li>
+            <li><a href="${tg.url('/acls/orphans')}">Orphan Packages</a></li>
+            <li class="separator"><a href="${tg.url('/stats/')}">Package Stats</a></li>
+            <li><a href="https://fedorahosted.org/packagedb/report/3">
+                PackageDB Bugs</a></li>
           </ul>
-          <h2>Search</h2>
-          <form name="layout_search" action="${tg.url('/search/package/both/0/AND/')}" method="get" onsubmit="return jump('${tg.url('/search/package/both/0/AND/')}', 'layout_search')">
+          <!--h2>Search</h2>
+          <form id="layout_search"
+                action="${tg.url('/search/package/')}"
+                method="get"
+                onsubmit="return jump('${tg.url('/search/package/')}',
+                          'layout_search')">
             <p>
                 <input id="package" name="searchwords" size="9" type="text" />
                 <input id="go" type="submit" value="Go" />
             </p>
-    </form>
-
+          </form-->
         </div>
-
       </div>
       <div id="content">
-        <div id="status_block" py:if="tg_flash" class="flash" py:content="tg_flash"></div>
+        <div id="status_block" py:if="tg_flash"
+             class="flash" py:content="tg_flash"></div>
         <div py:replace="select('*|text()')" />
       </div>
     </div>
@@ -83,19 +93,24 @@
       <div id="footer">
         <p>PackageDB Version: ${_version} -- Server: ${_hostname}</p>
         <p class="copy">
-        Copyright &copy; 2007-2009 Red Hat, Inc. and others.
+        Copyright &copy; 2007-2010 Red Hat, Inc. and others.
         Please send any comments or corrections to the <a href="mailto:webmaster@fedoraproject.org">websites team</a>.
         </p>
         <p class="disclaimer">
-        The Fedora Project is maintained and driven by the community and sponsored by Red Hat.  This is a community maintained site.  Red Hat is not responsible for content.
+          The Fedora Project is maintained and driven by the community and
+          sponsored by Red Hat.  This is a community maintained site.  Red Hat is
+          not responsible for content.
         </p>
         <ul>
-          <li class="first"><a href="http://fedoraproject.org/wiki/Legal">Legal</a></li>
-          <li><a href="http://fedoraproject.org/wiki/Legal/TrademarkGuidelines">Trademark Guidelines</a></li>
+          <li class="first">
+            <a href="http://fedoraproject.org/wiki/Legal">Legal</a></li>
+          <li><a href="http://fedoraproject.org/wiki/Legal/TrademarkGuidelines">
+              Trademark Guidelines</a></li>
         </ul>
       </div>
     </div>
   </body>
+  </py:match>
 
   <xi:include href="${tg.fedora_template('login.html')}" />
   <xi:include href="${tg.fedora_template('jsglobals.html')}" />

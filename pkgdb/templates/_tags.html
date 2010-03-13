@@ -1,0 +1,38 @@
+<html xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      py:strip="">
+   <xi:include href="_ajax_loader.html" />
+   <div class="group-header">
+     <span style="float:right;">${len(app.scores.keys())}</span>
+     <span class="title">Tags</span> [
+     <py:choose test="tg.identity.anonymous">
+      <py:when test="True">
+        <a href="${tg.url('/login')}">Log in to tag</a>
+      </py:when>
+      <py:when test="False">
+        <a href="javascript:showTagForm()">Add</a>
+      </py:when>
+      </py:choose>
+     ]
+   </div>
+   <div class="group-data" id="tagFormContainer" style="display: none;">
+        <form id="tagForm" method="post"
+              action="${tg.url('/tag/add/')}"
+              dojoType="dijit.form.Form">
+          <input type="hidden" name="app" value="$app.name" />
+          <input type="text" name="tags" size="8" />
+          <button type="submit" dojoType="dijit.form.Button">Tag</button>
+          <a href="javascript:hideTagForm()" style="text-decoration: none;"><b>x</b></a>
+          <script type="dojo/method">
+            tagComment("tagForm", "tag-list", "tagList");
+          </script>
+        </form>
+   </div>
+   <div class="group-data" id="tag-list">
+     <ul>
+       <li py:for="tag in sorted(app.scores.keys(), lambda a,b: cmp(a.name.lower(), b.name.lower()))">
+            <a href="${tg.url('/apps/tag/list/%s' % tag.name)}">${tag.name}</a></li>
+     </ul>
+   </div>
+   ${ajax_loader()}
+</html>

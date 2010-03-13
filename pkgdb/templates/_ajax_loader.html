@@ -1,0 +1,29 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  py:strip="">
+
+    <span py:def="ajax_loader()" class="ajax-loader" style="display: none;">
+        <img src="${tg.url('/static/images/ajax_loader.gif')}" />
+    </span>
+
+    <script py:def="ajax_loader_script()" type="text/javascript">
+        function show_ajax_loader(target_id) {
+            var target = dojo.byId(target_id);
+            var loader = dojo.query('#'+target_id+' + .ajax-loader')[0];
+            loader.style.display = '';
+            loader.style.paddingLeft = (target.offsetWidth-32)/2+'px';
+            loader.style.paddingRight = (target.offsetWidth-32)/2+'px';
+            loader.style.paddingTop = (target.offsetHeight-38)/2+'px';
+            loader.style.paddingBottom = (target.offsetHeight-38)/2+'px';
+            loader.style.top = -1*(target.offsetHeight/2+23)+'px';
+        }
+
+        function hide_ajax_loader(target_id) {
+            var loader = dojo.query('#'+target_id+' + .ajax-loader')[0];
+            loader.style.display = 'none';
+        }
+    </script>
+
+</html>

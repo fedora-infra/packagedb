@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+
+  <head>
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true" >
+    </script>
+    <script type="text/javascript">
+      dojo.require("dojo.parser");
+      dojo.require("dijit.layout.ContentPane" );
+      dojo.require("dijit.form.ValidationTextBox");
+      dojo.require("dijit.form.Textarea");
+      dojo.require("dijit.form.Form");
+      dojo.require("dijit.form.Button");
+    </script>
+
+    <script type="text/javascript">
+      function jump(page,form){
+           urlparts = page.split('?_csrf');
+           window.location = urlparts[0] + document.forms.namedItem(form).searchwords.value + '?_csrf'+urlparts[1];
+           return false
+      };
+
+      function toggle(hiddenId,buttonId){
+           e = dojo.byId(hiddenId);
+           but = dojo.byId(buttonId);
+           if(e.style.display=="none") {
+             e.style.display="";
+             but.innerHTML="(less)";
+           } else {
+             e.style.display="none";
+             but.innerHTML="(more)";
+           }
+      };
+
+      function tagComment(formId, loaderId, destinationId){
+          var form = dijit.byId(formId);
+          dojo.connect(form, "onSubmit", function(e){
+              e.preventDefault();
+              if(form.isValid()){
+                  dojo.fadeIn({
+                      node: loaderId,
+                      duration: 2000
+                  }).play();
+                  dojo.xhrPost( {
+                      form: formId,
+                      handleAs: "text",
+                      load: function(response){
+                                dojo.fadeOut({
+                                    node: loaderId,
+                                    duration: 1000
+                                    }).play();
+                                dojo.byId(destinationId).innerHTML = response;
+                                }
+                      });
+                  }
+              });
+      };
+    </script>
+    <script type="text/javascript">
+    dojo.addOnLoad(function(){
+          tagComment("tagForm", "tagLoader", "tagList");
+          tagComment("commentForm", "commentLoader", "commentList");
+          document.getElementById("moredeps").style.display="none";
+          document.getElementById("showdeps").innerHTML="(more)";
+      });
+    </script>
+  </head>
+  
+  <body>
+    <h2>$build.name</h2>
+
+      <ul id="actions">
+        <li><a href="${tg.url('/acls/name/'+build.name)}" class="pkgdb">
+            Package Admin</a>
+        </li>
+        <li><a href="http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=$build.name" class="koji">Build Status</a>
+        </li>
+        <li><a href="https://admin.fedoraproject.org/updates/$build.name"
+               class="bodhi">Update Status</a>
+        </li>
+        <li><a href="http://cvs.fedoraproject.org/viewcvs/rpms/$build.name/${build.repo.shortname}" class="cvs">Package Source</a>
+        </li>
+        <li><a href="${tg.url('/acls/bugs/'+build.name)}" class="bugz">
+            Bug Reports</a>
+        </li>
+      </ul>
+      
+    <p>$build.package.summary</p>
+
+    <div class="header-list">
+      <table>
+        <tr>
+          <td>Project page:</td>
+          <td>
+            <a href="$build.package.upstreamurl">$build.package.upstreamurl</a>
+          </td>
+        </tr>
+        <tr>
+          <td>Version:</td>
+          <td>${build.version+'-'+build.release}</td>
+        </tr>
+        <tr>
+          <td>Size:</td>
+          <td>${round(build.size/(1024.0**2),2)} M</td>          
+        </tr>
+        <tr>
+          <td>License:</td>
+          <td>$build.license</td>  
+        </tr>
+        <tr>
+          <td>Owner:</td>
+          <td>
+            <a href="${tg.url('/users/packages/%s' % build.listings[0].owner)}">
+              ${build.listings[0].owner}
+            </a>
+          </td>
+        <tr>
+          <td>Arches:</td>
+          <td><py:for each="arch in arches">$arch, </py:for></td>
+        </tr>
+        <tr>
+          <td>Repositories:</td>
+          <td>
+            ${build.repo.shortname} 
+            <py:for each="repo in other_repos">
+              <a href="${tg.url('/packages/%s/%s/' %
+                       (build.name, repo.shortname))}">
+                $repo.shortname
+              </a>&nbsp;
+            </py:for>
+          </td>
+        </tr>
+        </tr>
+      </table>
+    </div>
+
+    <br />
+    <div id="left-pane">
+      <p>$build.package.description</p>
+    
+      <div id="dependencies">
+        <p>dependencies
+          <a id="showdeps" py:if="len(build.depends) >10"
+             onclick="toggle('moredeps','showdeps')" href="#">(more)</a>:
+
+          <py:for each="dep in build.depends.keys()[:10]">
+            <a href="${tg.url('/packages/%s/%s' % (dep, repo))}">$dep</a>
+          </py:for>
+          <span id="moredeps" >
+            <py:for each="dep in build.depends.keys()[10:]">
+              <a href="${tg.url('/packages/%s/%s' % (dep, repo))}">$dep</a>
+            </py:for>
+          </span>
+        </p>
+      </div>
+
+      <br />
+      <p id="changelog"><a name="Changelog">Last changelog entry:</a></p>
+      <p>
+        <b>${build.committime.strftime("%h %d, %Y")}</b> - 
+        <?python
+            (name, email) = build.committer.rsplit(' ',1)
+            email = email.strip('<>')
+        ?>
+        <a href="mailto:$email">$name</a>
+        $build.changelog
+      </p>
+
+    </div>
+  </body>
+</html>

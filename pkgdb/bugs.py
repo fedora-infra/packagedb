@@ -4,16 +4,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s):        Toshio Kuratomi <tkuratom@redhat.com>
 #                           Seth Vidal <svidal@redhat.com>
@@ -47,9 +47,14 @@ except ImportError:
         # :E0611: This is only found if we are using python-bugzilla 0.3
         from bugzilla import Bug # pylint: disable-msg=E0611
 
+try:
+    from fedora.textutils import to_unicode
+except ImportError:
+    from pkgdb.lib.utils import to_unicode
+
 from pkgdb.model import Package
 from pkgdb.letter_paginator import Letters
-from pkgdb.utils import to_unicode, LOG, bugzilla
+from pkgdb.lib.utils import LOG, bugzilla
 from pkgdb import _
 
 class BugList(list):
@@ -81,9 +86,9 @@ class BugList(list):
         if self.query_url != self.public_url:
             bug.url = bug.url.replace(self.query_url, self.public_url)
 
-        bug.bug_status = to_unicode(bug.bug_status, errors='replace')
-        bug.short_desc = to_unicode(bug.short_desc, errors='replace')
-        bug.product = to_unicode(bug.product, errors='replace')
+        bug.bug_status = to_unicode(bug.bug_status)
+        bug.short_desc = to_unicode(bug.short_desc)
+        bug.product = to_unicode(bug.product)
         return {'url': bug.url, 'bug_status': bug.bug_status,
                 'short_desc': bug.short_desc, 'bug_id': bug.bug_id,
                 'product': bug.product}
@@ -116,7 +121,7 @@ class Bugs(controllers.Controller):
         '''
 
         self.app_title = app_title
-        self.index = Letters(app_title)
+        self.list = Letters(app_title)
 
     @expose(template='pkgdb.templates.pkgbugs', allow_json=True)
     def default(self, package_name, *args, **kwargs):

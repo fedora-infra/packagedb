@@ -4,18 +4,19 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+# Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
 Mapping of package related database tables to python classes.
@@ -31,25 +32,32 @@ Mapping of package related database tables to python classes.
 
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
-# :R0903: Mapped classes will have few methods as SQLAlchemy will monkey patch
-#   more methods in later.
+# :W0201: some attributes are added to the model by SQLAlchemy so they don't
+#   appear in __init__
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+#   is not to name them with all uppercase
 
-from sqlalchemy import Table
-from sqlalchemy.orm import relation, backref
+from sqlalchemy import Table, Column, Integer, String, Text, ForeignKey, ForeignKeyConstraint
+from sqlalchemy.orm import relation, backref, eagerload
 from sqlalchemy.orm.collections import mapped_collection, \
         attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.sql import and_
 
-from turbogears.database import metadata, mapper, get_engine
+from turbogears.database import metadata, mapper, get_engine, session
 
 from fedora.tg.json import SABase
 
 from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
         GroupPackageListing, GroupPackageListingAcl
+from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
+        RpmObsoletes, RpmFiles
+
+import logging
+error_log = logging.getLogger('pkgdb.model.packages')
 
 get_engine()
 
@@ -65,11 +73,28 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
-# pylint: disable-msg=C0103
+#pylint:disable-msg=C0103
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
-# pylint: enable-msg=C0103
 
+BinaryPackagesTable = Table('binarypackages', metadata, 
+    Column('name', Text,  nullable=False, primary_key=True),
+    useexisting=True
+)
+
+PackageBuildTable = Table('packagebuild', metadata, autoload=True)
+PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
+
+PackageBuildReposTable = Table('packagebuildrepos', metadata,
+    Column('repoid', Integer, primary_key=True, nullable=False),
+    Column('packagebuildid', Integer, primary_key=True, nullable=False),
+    ForeignKeyConstraint(['repoid'], ['repos.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+
+#pylint:enable-msg=C0103
 #
 # Mapped Classes
 #
@@ -82,10 +107,9 @@ class Package(SABase):
 
     Table -- Package
     '''
-
-    # pylint: disable-msg=R0903,R0913
     def __init__(self, name, summary, statuscode, description=None,
-            reviewurl=None, shouldopen=None):
+            reviewurl=None, shouldopen=None, upstreamurl=None):
+        #pylint:disable-msg=R0913
         super(Package, self).__init__()
         self.name = name
         self.summary = summary
@@ -93,12 +117,13 @@ class Package(SABase):
         self.description = description
         self.reviewurl = reviewurl
         self.shouldopen = shouldopen
+        self.upstreamurl = upstreamurl
 
     def __repr__(self):
-        return 'Package(%r, %r, %r, description=%r, reviewurl=%r, ' \
-               'shouldopen=%r)' % (
+        return 'Package(%r, %r, %r, description=%r, ' \
+               'upstreamurl=%r, reviewurl=%r, shouldopen=%r)' % (
                 self.name, self.summary, self.statuscode, self.description,
-                self.reviewurl, self.shouldopen)
+                self.upstreamurl, self.reviewurl, self.shouldopen)
 
     def create_listing(self, collection, owner, status,
             qacontact=None, author_name=None):
@@ -115,16 +140,17 @@ class Package(SABase):
         This creates a new PackageListing for this Package.  The PackageListing
         has default values set for group acls.
         '''
-        # pylint: disable-msg=E1101
-        from pkgdb.utils import STATUS
+        from pkgdb.lib.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
         pkg_listing = PackageListing(owner, status.statuscodeid,
                 collectionid=collection.id,
                 qacontact=qacontact)
-        pkg_listing.package = self
+        pkg_listing.packageid = self.id
         for group in DEFAULT_GROUPS:
             new_group = GroupPackageListing(group)
+            #pylint:disable-msg=E1101
             pkg_listing.groups2[group] = new_group
+            #pylint:enable-msg=E1101
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
                     acl_status = STATUS['Approved'].statuscodeid
@@ -133,9 +159,9 @@ class Package(SABase):
                 group_acl = GroupPackageListingAcl(acl, acl_status)
                 # :W0201: grouppackagelisting is added to the model by
                 #   SQLAlchemy so it doesn't appear in __init__
-                # pylint: disable-msg=W0201
+                #pylint:disable-msg=W0201
                 group_acl.grouppackagelisting = new_group
-                # pylint: enable-msg=W0201
+                #pylint:enable-msg=W0201
 
         # Create a log message
         log = PackageListingLog(author_name,
@@ -147,28 +173,42 @@ class Package(SABase):
 
         return pkg_listing
 
+
+class BinaryPackage(SABase):
+
+    def __init__(self, name):
+        super(BinaryPackage, self).__init__()
+        self.name = name
+
+
+    def __repr__(self):
+        return 'BinaryPackage(%r)' % self.name
+
+
+
 class PackageListing(SABase):
     '''This associates a package with a particular collection.
 
     Table -- PackageListing
     '''
-    # pylint: disable-msg=R0903
     def __init__(self, owner, statuscode, packageid=None, collectionid=None,
-            qacontact=None):
-        # pylint: disable-msg=R0913
+            qacontact=None, specfile=None):
+        #pylint:disable-msg=R0913
         super(PackageListing, self).__init__()
         self.packageid = packageid
         self.collectionid = collectionid
         self.owner = owner
         self.qacontact = qacontact
         self.statuscode = statuscode
+        self.specfile = specfile
 
     packagename = association_proxy('package', 'name')
 
     def __repr__(self):
         return 'PackageListing(%r, %r, packageid=%r, collectionid=%r,' \
-                ' qacontact=%r)' % (self.owner, self.statuscode,
-                        self.packageid, self.collectionid, self.qacontact)
+               ' qacontact=%r, specfile=%r)' % (self.owner, self.statuscode,
+                        self.packageid, self.collectionid, self.qacontact,
+                        self.specfile)
 
     def clone(self, branch, author_name):
         '''Clone the permissions on this PackageListing to another `Branch`.
@@ -182,21 +222,25 @@ class PackageListing(SABase):
         :returns: new branch
         :rtype: PackageListing
         '''
-        from pkgdb.utils import STATUS
+        from pkgdb.lib.utils import STATUS
         from pkgdb.model.collections import Branch
         from pkgdb.model.logs import GroupPackageListingAclLog, \
                 PersonPackageListingAclLog
         # Retrieve the PackageListing for the to clone branch
         try:
+            #pylint:disable-msg=E1101
             clone_branch = PackageListing.query.join('package'
                     ).join('collection').filter(
                         and_(Package.name==self.package.name,
                             Branch.branchname==branch)).one()
+            #pylint:enable-msg=E1101
         except InvalidRequestError:
             ### Create a new package listing for this release ###
 
             # Retrieve the collection to make the branch for
+            #pylint:disable-msg=E1101
             clone_collection = Branch.query.filter_by(branchname=branch).one()
+            #pylint:enable-msg=E1101
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
                     self.owner, STATUS['Approved'], qacontact=self.qacontact,
@@ -205,12 +249,16 @@ class PackageListing(SABase):
         log_params = {'user': author_name,
                 'pkg': self.package.name, 'branch': branch}
         # Iterate through the acls in the master_branch
+        #pylint:disable-msg=E1101
         for group_name, group in self.groups2.iteritems():
+        #pylint:enable-msg=E1101
             log_params['group'] = group_name
             if group_name not in clone_branch.groups2:
                 # Associate the group with the packagelisting
+                #pylint:disable-msg=E1101
                 clone_branch.groups2[group_name] = \
                         GroupPackageListing(group_name)
+                #pylint:enable-msg=E1101
             clone_group = clone_branch.groups2[group_name]
             for acl_name, acl in group.acls2.iteritems():
                 if acl_name not in clone_group.acls2:
@@ -230,12 +278,16 @@ class PackageListing(SABase):
                         acl.statuscode, log_msg)
                 log.acl = clone_group.acls2[acl_name]
 
+        #pylint:disable-msg=E1101
         for person_name, person in self.people2.iteritems():
+        #pylint:enable-msg=E1101
             log_params['person'] = person_name
             if person_name not in clone_branch.people2:
                 # Associate the person with the packagelisting
+                #pylint:disable-msg=E1101
                 clone_branch.people2[person_name] = \
                         PersonPackageListing(person_name)
+                #pylint:enable-msg=E1101
             clone_person = clone_branch.people2[person_name]
             for acl_name, acl in person.acls2.iteritems():
                 if acl_name not in clone_person.acls2:
@@ -267,18 +319,147 @@ def collection_alias(pkg_listing):
     This is used to make Branch keys for the dictionary mapping of pkg listings
     into packages.
     '''
-    return pkg_listing.collection.simple_name()
+    return pkg_listing.collection.simple_name
+
+class PackageBuildDepends(SABase):
+    '''PackageBuild Dependencies to one another.
+
+    Table(junction) -- PackageBuildDepends
+    '''
+    def __init__(self, packagebuildname, packagebuildid=None):
+        super(PackageBuildDepends, self).__init__()
+        self.packagebuildid = packagebuildid
+        self.packagebuildname = packagebuildname
+
+    def __repr__(self):
+        return 'PackageBuildDepends(%r, %r)' % (
+            self.packagebuildid, self.packagebuildname)
+
+
+class PackageBuildRepo(SABase):
+    '''PackageBuild Repo association.
+
+    Table -- PackageBuildRepo
+    '''
+    def __init__(self, packagebuildid, repoid):
+        super(PackageBuildRepo, self).__init__()
+        self.packagebuildid = packagebuildid
+        self.repoid = repoid
+
+    def __repr__(self):
+        return 'PackageBuildRepo(%r, %r)' % (
+            self.packagebuildid, self.repoid)
+
+
+
+class PackageBuild(SABase):
+    '''Package Builds - Actual rpms
+
+    This is a very specific unitary package with version, release and everything.
+
+    Table -- PackageBuild
+    '''
+    def __init__(self, name, packageid, epoch, version, release, architecture,
+                 size, license, changelog, committime, committer):
+        super(PackageBuild, self).__init__()
+        self.name = name
+        self.packageid = packageid
+        self.epoch = epoch
+        self.version = version
+        self.release = release
+        self.architecture = architecture
+        self.size = size
+        self.license = license
+        self.changelog = changelog
+        self.committime = committime
+        self.committer = committer
+
+    repo = property(lambda self:self.repos[0])
+
+    def __repr__(self):
+        return 'PackageBuild(%r, epoch=%r, version=%r,' \
+               ' release=%r, architecture=%r, size=%r, license=%r,' \
+               ' changelog=%r, committime=%r, committer=%r, packageid=%r, repoid=%r)' % (
+            self.name, self.epoch, self.version,
+            self.release, self.architecture, self.size,
+            self.license, self.changelog, self.committime, self.committer,
+            self.packageid, self.repo.id)
+
+    def __str__(self):
+        return "%s-%s-%s.%s" % (self.name, self.version, 
+                self.release, self.architecture)
+
+
+    def download_path(self, reponame=None):
+        """Find download path of the build
+
+        :args reponame: prefered repo from where the build should be downloaded
+        :returns: URI of the build
+        
+        Find download URI of the build. If build is available in <reponame> repo,
+        path to that repo is used. Path to first available repo is returned otherwise.
+        """
+
+        repo = self.repo # default
+
+        #find repo
+        for r in self.repos:
+            if r.shortname == reponame:
+                repo = r
+                break
+
+        # format path
+        return "%s%s%s%s.rpm" % (repo.mirror, repo.url, 
+                ('','Packages/')[repo.url.endswith('os/')], self)
+
+    
+    def scores(self):
+        '''Return a dictionary of tagname: score for a given packegebuild
+        '''
+
+        scores = {}
+        for app in self.applications: #pylint:disable-msg=E1101
+            tags = app.scores
+            for tag, score in tags.iteritems():
+                sc = scores.get(tag, None)
+                if sc is None or sc < score:
+                    scores[tag] = score
+
+        return scores
+
+
+    @classmethod
+    def most_fresh(self, limit=5):
+        """Query that returns last pkgbuild imports
+
+        :arg limit: top <limit> apps
+
+        Excerpt from changelog is returned as well
+        """
+        #pylint:disable-msg=E1101
+        fresh = session.query(PackageBuild)\
+                .options(eagerload(PackageBuild.repos))\
+                .order_by(PackageBuild.committime.desc())
+        #pylint:enable-msg=E1101
+        if limit > 0:
+            fresh = fresh.limit(limit)
+        return fresh
 
 #
 # Mappers
 #
+
 mapper(Package, PackageTable, properties={
     # listings is here for compatibility.  Will be removed in 0.4.x
     'listings': relation(PackageListing),
     'listings2': relation(PackageListing,
         backref=backref('package'),
-        collection_class=mapped_collection(collection_alias))
+        collection_class=mapped_collection(collection_alias)),
+    'builds': relation(PackageBuild,
+        backref=backref('package'),
+        collection_class=attribute_mapped_collection('name'))
     })
+
 mapper(PackageListing, PackageListingTable, properties={
     'people': relation(PersonPackageListing),
     'people2': relation(PersonPackageListing, backref=backref('packagelisting'),
@@ -287,3 +468,36 @@ mapper(PackageListing, PackageListingTable, properties={
     'groups2': relation(GroupPackageListing, backref=backref('packagelisting'),
         collection_class = attribute_mapped_collection('groupname')),
     })
+
+mapper(PackageBuildDepends, PackageBuildDependsTable)
+
+mapper(PackageBuildRepo, PackageBuildReposTable)
+
+mapper(PackageBuild, PackageBuildTable, properties={
+    'conflicts': relation(RpmConflicts, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'requires': relation(RpmRequires, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'provides': relation(RpmProvides, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'obsoletes': relation(RpmObsoletes, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'files': relation(RpmFiles, backref=backref('build'),
+        collection_class = attribute_mapped_collection('name'),
+        cascade='all, delete-orphan'),
+    'depends': relation(PackageBuildDepends, backref=backref('build'),
+        collection_class = attribute_mapped_collection('packagebuildname'),
+        cascade='all, delete-orphan'),
+    })
+
+
+mapper(BinaryPackage, BinaryPackagesTable,
+    properties={
+        'packagebuilds': relation(PackageBuild, cascade='all'),
+    })
+
+

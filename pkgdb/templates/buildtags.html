@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<buildtags xmlns:py="http://genshi.edgewall.org/">
+  <repo py:for="repo in buildtags" name="repo">
+    <py:for each="build in buildtags[repo]">
+      <build name="$build">
+        <py:for each="tag in buildtags[repo][build].keys()">
+          <tag score="${buildtags[repo][build][tag]}">$tag</tag>
+        </py:for>
+      </build>
+    </py:for>
+  </repo>
+</buildtags>

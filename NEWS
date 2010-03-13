@@ -4,7 +4,22 @@ NEWS
 
 :Authors: Toshio Kuratomi
 :Date: 11 Nov 2009
-:Version: 0.4.1
+:Version: 0.5.0
+
+---
+0.5
+---
+
+* Remove pkgdb-sync-repo in favor of pkgdb-sync-yum.py.  This uses the yum api
+  to get the repo data and is thus far superior to parsing the db ourselves.  It
+  also gets more information from the yum metadata.
+* shouldopen has gone away
+* /packages/ urls have moved to /acls/
+* packages/id has gone away.   Use owners/name instead.
+* collections/id is deprecated.  Use collections/name instead. (name is the
+  shortname for the collection.  For instance, F-12)
+* /acls/dispatcher/toggle_owner has been removed.  Port code to using
+  /acls/dispatcher/set_owner
 
 -----
 0.4.1

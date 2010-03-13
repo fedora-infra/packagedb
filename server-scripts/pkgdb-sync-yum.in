@@ -1,0 +1,380 @@
+#!/usr/bin/python -tt
+# -*- coding: utf-8 -*-
+#
+# Copyright © 2009  Red Hat, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
+#
+# Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+#            Martin Bacovsky <mbacovsk@redhat.com>
+#
+'''
+Import PackageBuilds into the packagedb
+
+Import PackageBuild(rpm) related information from all the `active` repos
+available in the pkgdb.
+'''
+
+__requires__ = 'fedora_packagedb'
+
+# Pylint Errors
+# :E1101: Ignore this anytime we use the session.  SQLAlchemy monkeypatches
+#   extra functionality into here that isn't apparent to pylint
+
+import os
+import sys
+
+CONFDIR = '@CONFDIR@'
+PKGDBDIR = os.path.join('@DATADIR@', 'fedora-packagedb')
+sys.path.append(PKGDBDIR)
+
+import pkg_resources
+import logging
+import argparse
+from fnmatch import fnmatch
+
+from sqlalchemy.sql import and_
+from sqlalchemy.exceptions import SADeprecationWarning
+
+from turbogears import config, update_config
+from turbogears.database import session
+
+log = logging.getLogger('pkgdb-sync-yum')
+
+# suppress sqlalchemy warnings
+# FIXME: update the code to avoid warnings 
+import warnings
+warnings.filterwarnings('ignore', '.*', SADeprecationWarning)
+
+
+def setup_parser():
+    # create the argument parser
+    parser = argparse.ArgumentParser(
+        description='Import packagebuilds and applications into Fedora PkgDB.')
+
+    parser.add_argument('--config', '-c', help='Fedora PkgDB config file')
+    subparsers = parser.add_subparsers(title='Import commands', 
+            help='for more help run "%(prog)s <command> --help"')
+
+    # import local command
+    parser_importlocal = subparsers.add_parser('importlocal', help='import local rpm files. WARNING: Make sure you are choosing the right repo. Make sure the files exist on the mirrors (links from the web ui will not work). Make sure the imported files are most fresh builds (we assume that the last imported is most fresh version).')
+    parser_importlocal.add_argument('--repo', '-r', metavar='shortname', required=True, 
+            help='repository in which the rpm(s) belongs to. For list of valid repos run with showrepos command')
+    parser_importlocal.add_argument('--force', action='store_true',
+            help='reimport existing builds')
+    parser_importlocal.add_argument('files', nargs='+', metavar='file',
+            help='rpm file to be imported into pkgdb')
+    parser_importlocal.set_defaults(func='import_local')
+
+    # update command
+    parser_update = subparsers.add_parser('update', help='import builds from all active repos. Script goes through builds backwards. It skips already imported builds.')
+    parser_update.add_argument('--repo', '-r', metavar='shortname', default='*',
+            help='go just through this repo. For list of valid repos run with showrepos command')
+    parser_update.add_argument('--cachedir',
+            help='directory where the yum cache will be created during the import. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
+    parser_update.add_argument('--verbose', action='store_true',
+            help="set verbose output")
+    parser_update.add_argument('--quiet', action='store_true',
+            help="print just error messages")
+    parser_update.add_argument('--force', action='store_true',
+            help="reimport existing builds. When this option is selected we DON'T skip to next repo on hitting already imported build")
+    parser_update.add_argument('--quick', default=False, action='store_true',
+            help='with this option the script skips to next repo on first already imported build occurence')
+    parser_update.add_argument('--profile', metavar='dir',
+            help='directory where data collected from profiler should be stored. Output is in kcachegrind format.')
+    parser_update.add_argument('--profile-skip', type=int, default=0,
+            help='how many files should be processed before profiling data are taken')
+    parser_update.add_argument('package', nargs='?',
+            help='update just these packages. Wildcards are allowed')
+    parser_update.set_defaults(func='update')
+
+    # showrepos command
+    parser_showrepos = subparsers.add_parser('showrepos', help='show available active/inactive repos')
+    parser_showrepos.add_argument('--inactive', default=False, action='store_true',
+            help='show inactive repos instead of the active ones')
+    parser_showrepos.set_defaults(func='show_repos')
+
+    # clean command
+    parser_clean = subparsers.add_parser('clean', help='Clean up pkgdb database. It removes all builds from inactive repos. For list of inactive repos run "%(prog)s showrepos --inactive". This command also removes all builds that are no longer in active repos.')
+    parser_clean.add_argument('--cachedir',
+            help='directory where the yum cache will be created. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
+    parser_clean.set_defaults(func='clean')
+
+    return parser
+
+
+def setup_framework(args):
+    #configure turbogears framework
+    if args.config:
+        update_config(configfile=args.config, modulename='pkgdb.config')
+    elif os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'setup.py')):
+        update_config(configfile='pkgdb.cfg', modulename='pkgdb.config')
+    else:
+        update_config(configfile=os.path.join(CONFDIR,'pkgdb.cfg'),
+                modulename='pkgdb.config')
+    config.update({'pkgdb.basedir': PKGDBDIR})
+
+    fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
+    username = config.get('fas.username', 'admin')
+    password = config.get('fas.password', 'admin')
+
+    if args.verbose:
+        log.setLevel(logging.INFO)
+    if args.quiet:
+        log.setLevel(logging.ERROR)
+
+
+def show_repos(args):
+    """Print list of active repos
+    """
+    from pkgdb.model import Repo
+
+    #pylint:disable-msg=E1101
+    repos = session.query(Repo).filter_by(active=(not args.inactive)).all()
+    #pylint:enable-msg=E1101
+
+    print 'List of active repositories:'
+    for r in repos:
+        print '%-20s:%-60s' % (r.shortname, r.name)
+
+
+def import_local(args):
+    """Import local rpm files into pkgdb
+
+    Turns local rpms into YumLocalPackage and imports
+    them the usual way. This is usefull for testing
+    or initial import. WARNING: be carefull to associate
+    the builds with the right repo.
+
+    :arg args: set of commandline arguments 
+    """
+    from pkgdb.model import Repo
+    from yum.packages import YumLocalPackage
+    from rpmUtils.transaction import initReadOnlyTransaction
+    from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
+    from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
+
+    # prepare rpm transaction for rpm parser
+    ts = initReadOnlyTransaction()
+
+    # find repo
+    try:
+        #pylint:disable-msg=E1101
+        repo = session.query(Repo).filter_by(shortname=args.repo).one()
+        #pylint:enable-msg=E1101
+    except:
+        log.error("Repo (%s) does not exist" % args.repo)
+        exit(1)
+    if not repo.active:
+        log.error("Repo (%s) is not active" % args.repo)
+        exit(1)
+
+    # prepare importer
+    importer = PackageBuildImporter(repo, force=args.force)
+
+    for f in args.files:
+        session.begin() #pylint:disable-msg=E1101
+        log.info("PackageBuild: %s" % f)
+        pkg = YumLocalPackage(ts=ts, filename=f)    
+        try:
+            importer.process(RPM(pkg, yumrepo=None))
+        except PkgImportAlreadyExists, e:
+            rpm.close()
+            log.info("%s: Already imported - skipping" % pkg.name)
+            session.rollback() #pylint:disable-msg=E1101
+            continue
+        except PkgImportError, e:
+            rpm.close()
+            log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
+            session.rollback() #pylint:disable-msg=E1101
+            continue
+
+        session.commit() #pylint:disable-msg=E1101
+        rpm.close()
+
+    session.begin() #pylint:disable-msg=E1101
+    importer.close(prune=False) # do not remove builds records that are not on mirrors
+    session.commit() #pylint:disable-msg=E1101
+
+    log.info('Done.')
+
+
+def _get_cachedir(cachedir):
+    if not cachedir:
+        cachedir = config.get('sync-yum.cachedir', '/var/tmp')
+
+    log.info('CacheDir: %s' % cachedir)
+
+    return cachedir
+
+
+def update(args):
+    """Import local rpm files into pkgdb
+
+    Turns local rpms into YumLocalPackage and imports
+    them the usual way. This is usefull for testing
+    or initial import. WARNING: be carefull to associate
+    the builds with the right repo.
+
+    :arg args: set of commandline arguments 
+    """
+    from pkgdb.model import Repo
+    from datetime import datetime
+    from pkgdb.lib.dt_utils import fancy_delta
+    from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
+    from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
+
+    started = datetime.now()
+
+    cachedir = _get_cachedir(args.cachedir)
+    profile_skip = args.profile_skip
+
+    total_packages = 0
+
+    # find repo
+    #pylint:disable-msg=E1101
+    repos = session.query(Repo)\
+            .filter(and_(
+                Repo.active==True, 
+                Repo.shortname.like(args.repo.replace('*','%'))))\
+            .all()
+    #pylint:disable-msg=E1101
+    if len(repos)==0:
+        log.error("Repo '%s' not found!" % args.repo)
+        exit(1)
+
+    for repo in repos:
+        log.info("Repo: %s" % repo.name)
+        # prepare importer
+    
+        try:
+            importer = PackageBuildImporter(repo, force=args.force,
+                    cachedir=cachedir)
+        except Exception, e:
+            log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
+            continue
+
+        try:
+            pkgbuilds = importer.yumrepo.sack.returnNewestByName()
+        except Exception, e:
+            log.error('Failed to read repo %s! (%s)' % (repo.name, e))
+            continue
+        
+        total = len(pkgbuilds)
+        counter = 1
+
+        for pkg in pkgbuilds:
+            if args.package and not fnmatch(pkg.name, args.package):
+                continue
+            session.begin() #pylint:disable-msg=E1101
+            log.info(" (%s/%s)%s" % (counter, total, pkg))
+            counter += 1
+            rpm = RPM(pkg, yumrepo=importer.yumrepo)
+
+            if args.profile:
+                if profile_skip == 0:
+
+                    def import_rpm(r):
+                        importer.process(r)
+                        session.flush()
+
+                    from pkgdb.lib.profiling import Profiler
+                    p = Profiler(directory=args.profile)
+                    # collect profiling data and die
+                    p.profileit(import_rpm, rpm)
+                    sys.exit(0)
+                else:
+                    profile_skip -= 1;
+            try:
+                try:
+                    importer.process(rpm)
+                except PkgImportAlreadyExists, e:
+                    log.info("%s: Already imported - skipping" % pkg.name)
+                    session.rollback() #pylint:disable-msg=E1101
+                    if args.quick:
+                        break
+                    else:
+                        continue
+                except PkgImportError, e:
+                    log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
+                    session.rollback() #pylint:disable-msg=E1101
+                    continue
+            finally:
+                rpm.close()
+
+            session.commit() #pylint:disable-msg=E1101
+
+        session.begin() #pylint:disable-msg=E1101
+        importer.close()
+        session.commit() #pylint:disable-msg=E1101
+        total_packages += counter-1
+
+    finished = datetime.now()
+    run_delta = finished - started
+    run_sec = run_delta.days*24*3600 + run_delta.seconds + run_delta.microseconds/1000000
+    log.info('Processed %i packages in %s. That make avg %.1f packages per second.' %
+        (total_packages, 
+            fancy_delta(started, now=finished, precision=None, verbose=False, short=True, gran='millisecond'),
+            1.0*total_packages/run_sec))
+    log.info('Done.')
+
+
+def clean(args):
+    """Clean up databse.
+
+    Remove all builds from inactive repos. 
+    Remove all builds that are no longer in active repos.
+    """
+    from pkgdb.model import Repo
+    from pkgdb.lib.packagebuild import PackageBuildImporter
+
+    cachedir = _get_cachedir(args.cachedir)
+
+    #pylint:disable-msg=E1101
+    repos = session.query(Repo).all()
+    #pylint:enable-msg=E1101
+
+    for repo in repos:
+        log.info("Cleaning: %s" % repo.name)
+        # prepare importer
+    
+        try:
+            importer = PackageBuildImporter(repo, cachedir=cachedir)
+        except Exception, e:
+            log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
+            continue
+
+        session.begin() #pylint:disable-msg=E1101
+        if repo.active:
+            importer.prune_builds()
+        else:
+            importer.delete_all_builds()
+        importer.close(prune=False)
+        session.commit() #pylint:disable-msg=E1101
+
+
+    log.info('Done.')
+
+
+if __name__ == "__main__":
+
+    parser = setup_parser()
+
+    args = parser.parse_args()
+
+    setup_framework(args)
+
+    # command handling
+    locals().get(args.func)(args)
+

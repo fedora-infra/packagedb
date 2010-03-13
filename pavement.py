@@ -1,5 +1,4 @@
 #!/usr/bin/python -tt
-__requires__ = 'TurboGears[future]'
 import pkg_resources
 
 from paver.easy import path as paver_path
@@ -34,20 +33,17 @@ options(
             'TurboGears[future] >= 1.0',
             'TurboMail',
             'python_fedora >= 0.3.12',
-            'SQLAlchemy >= 0.4alpha',
+            'SQLAlchemy >= 0.5.5',
             # Doesn't use setuptools so not on RHEL5
             #'python_bugzilla >= 0.5',
         ],
         scripts = ['start-pkgdb', 'pkgdb.wsgi', 'clients/pkgdb-client',
-            'server-scripts/pkgdb-sync-repo',
+            'server-scripts/pkgdb-sync-yum',
             'server-scripts/pkgdb-sync-bugzilla'],
         zip_safe=False,
         packages=find_packages(),
         package_data = find_package_data(where='pkgdb',
             package='pkgdb'),
-        data_files = [
-            (os.path.join(NAME, 'yum.repos.d'), glob.glob('yum.repos.d/*'))
-            ],
         keywords = [
             # Use keywords if you'll be adding your package to the
             # Python Cheeseshop
@@ -99,7 +95,7 @@ options(
         domain='fedora-packagedb',
         ),
     data = Bunch(
-        datafiles=['yum.repos.d'],
+        #datafiles=[],
         localefiles=['locale'],
         docfiles=['docs'],
         conffiles=['pkgdb.cfg', 'pkgdb-client.cfg', {'httpd-pkgdb.conf': 'httpd/conf.d/pkgdb.conf'}],
@@ -124,7 +120,7 @@ options(
     # finds file location instead.
     substitute = Bunch(
         # Files to substitute on
-        onfiles=['start-pkgdb', 'pkgdb.wsgi', 'server-scripts/pkgdb-sync-repo',
+        onfiles=['start-pkgdb', 'pkgdb.wsgi', 'server-scripts/pkgdb-sync-yum',
             'server-scripts/pkgdb-sync-bugzilla',
             'update-schema/pkgdb-0.3.10-0.3.11.py', 'httpd-pkgdb.conf'],
         # Strings to substitute inside the files
@@ -298,7 +294,6 @@ def _install_sbin(args, paths):
 # Any install target needs to first look in:
 # Commandline
 # Default config
-#
 @task
 def install_doc():
     pass
@@ -310,6 +305,15 @@ def install_public_code():
 @task
 def install_private_code():
     pass
+
+def _db_autodoc_run(*args, **kwargs):
+    cmd = subprocess.Popen('/usr/bin/postgresql_autodoc -d pkgdb -u pkgdbadmin -h localhost --password -t dia'.split(' '))
+    return cmd.wait()
+
+@task
+def db_autodoc():
+    autodocopts = options.module
+    dry('postgresql_autodoc -d pkgdb -u pkgdbadmin -h localhost --password -t dia', _db_autodoc_run, autodocopts)
 
 ### Frontends -- these are what you invoke with paver ###
 @task

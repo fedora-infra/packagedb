@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 """This module contains functions called from console script entry points."""
 
+import sys
 import pkgdata
-
 sys.path.append(pkgdata.get_location('public_code'))
 
-from pkgdb.utils import startup
-startup()
+from pkgdb.lib.utils import init_globals
+init_globals()
 
-import sys
 from os import getcwd
-from os.path import dirname, exists, join
-import os.path
+from os.path import dirname
 
 import pkg_resources
 pkg_resources.require("TurboGears>=1.0.4.4")
@@ -40,8 +38,7 @@ def start():
     else:
         configfile = pkgdata.get_filename('pkgdb.cfg', 'config')
 
-    turbogears.update_config(configfile=configfile,
-        modulename="pkgdb.config")
+    turbogears.update_config(configfile=configfile, modulename="pkgdb.config")
 
     from pkgdb.controllers import Root
 

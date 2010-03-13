@@ -2,18 +2,18 @@
  * Copyright © 2007  Ricky Zhou
  * Copyright © 2007, 2009  Red Hat, Inc.
  *
- * This copyrighted material is made available to anyone wishing to use, modify,
- * copy, or redistribute it subject to the terms and conditions of the GNU
- * General Public License v.2.  This program is distributed in the hope that it
- * will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
- * implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.  You should have
- * received a copy of the GNU General Public License along with this program;
- * if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
- * Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
- * incorporated in the source code or documentation are not subject to the GNU
- * General Public License and may only be used or replicated with the express
- * permission of Red Hat, Inc.
+ * This copyrighted material is made available to anyone wishing to use,
+ * modify, copy, or redistribute it subject to the terms and conditions of the
+ * GNU General Public License v.2, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY expressed or implied, including the implied warranties of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.  You should have received a copy of the
+ * GNU General Public License along with this program; if not, write to the
+ * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+ * code or documentation are not subject to the GNU General Public License and
+ * may only be used or replicated with the express permission of Red Hat, Inc.
  *
  * Author(s): Ricky Zhou <ricky@fedoraproject.org>
  *            Toshio Kuratomi <tkuratom@redhat.com>
@@ -27,24 +27,22 @@
   width: 25ex;
 }
 
+#nav li.separator {
+    margin-bottom: 20px;
+}
+
 #content
 {
   margin-left: 25ex!important;
 }
 
-#content table th
-{
-  border: 1px solid #bbb;
-}
-
-#content table td
-{
-  border: 1px solid #ddd;
-}
-
 #content table
 {
   margin: 1ex 0;
+}
+
+#content table td {
+  border: 1px solid #bbb;
 }
 
 .filter
@@ -77,24 +75,24 @@
 {
   float: right;
 }
-.actions
+#actions
 {
-  list-style: none;
   line-height: 1;
+  list-style: none;
   margin: 1ex 0!important;
 }
 
-.actions li
+#actions li
 {
-  display: inline;
-  margin-right: 1ex;
+    margin-right: 1ex;
+    display: inline;
 }
 
-#smalltext
+.smalltext
 {
     line-height: 80%;
     font-size: 80%;
-    background-color: #efefef;
+    background-color: #f4f4f4;;
     padding: .3em;
 }
 
@@ -136,6 +134,14 @@
   margin-left: 2em;
 }
 
+#left-pane {
+  width: 90%;
+}
+#tags {
+    width: 40%;
+    float: right;
+    margin-right: 10%;
+}
 /* Want to merge somehow -- talk to mizmo and ricky */
 #head h1 {
   float: left;
@@ -146,3 +152,476 @@
 }
 
 /* Requested to merge */
+
+/* application */
+
+.comment {
+    border-bottom: 1px solid #ebebef;
+    margin-bottom: 10px;
+}
+
+
+.thin-comment {
+    border-bottom: 1px solid #ebebef;
+}
+
+
+.label {
+    font-weight: bold;
+    width: 45px;
+}
+
+.highlight {
+    background: #ffff99;
+}
+
+#app-viewer-tabs {
+    background: #ffffff url(../images/tabs-background.png) repeat-x;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    padding: 5px 8px;
+    margin-top: 15px;
+}
+
+#app-viewer-tabs ul {
+    list-style: none;
+    display: inline;
+    margin: 0;
+}
+
+#app-viewer-tabs li {
+    display: inline;
+    padding: 2px 5px;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    color: #999;
+}
+
+
+#app-viewer-tabs a {
+    text-decoration: none;
+}
+
+#app-viewer-tabs .selected {
+    background: #d7ebf9;
+}
+
+
+
+/* info-box */
+
+#info-bar {
+    float: right; 
+    /*margin-top: 35px;*/
+    width: 210px;
+}
+
+.info-box h4 {
+    color: #f7f7f9;
+    background-color: #b4bccb;
+    border-radius: 4px 4px 0 0;
+    -moz-border-radius: 4px 4px 0 0;
+    -webkit-border-radius: 4px 4px 0 0;
+    font-size: 1em;
+    padding: 3px;
+    padding-left: 8px;
+    margin-bottom: 0;
+
+}
+
+.info-box .group-header {
+    background-color: #ebebef;
+    padding: 3px;
+    padding-left: 8px;
+}
+
+.group-header .title {
+    font-weight: bold;
+    color: #337acc;
+}
+
+.info-box .group-data {
+    background-color: #f7f7f9;
+    color: #337acc;
+    padding: 3px;
+    padding-left: 14px;
+}
+
+.seamless-list {
+    margin: 0;
+}
+
+.seamless-list li {
+    list-style: none;
+}
+
+#info-bar ul {
+    margin: 0;
+    margin-left: 3px;
+}
+
+#info-bar li {
+    list-style: none;
+}
+
+#user_ratings table th {
+    border: 0;
+    border-top: 1px solid #c4ccdb;
+    background-color: #ebebef;
+    white-space: nowrap;
+    text-align: left;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+#user_ratings table td {
+    border: 0;
+    border-bottom: 1px solid #dddddd;
+    white-space: nowrap;
+    text-align: left;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+#user_ratings ul {
+    margin: 0;
+}
+
+
+#user_ratings .rating-votes {
+    font-size: 80%;
+    margin-left: 5px;
+}
+
+#user_ratings .usage-label {
+    color: #337acc;
+    font-weight: bold;
+
+}
+
+.rating-result {
+    background: transparent url(../images/star_bar.png);
+    width: 80px;
+    height: 16px;
+    background-position: left top;
+    float: left;
+}
+
+.rating-result li {
+    list-style: none;
+    text-indent: -1000em;
+    height: 16px;
+    background: transparent url(../images/star_bar.png);
+    background-position: left bottom;
+}
+
+#search-applications {
+    background-color: #c0c0c0;
+    background-image: url(../images/search_bg.png);
+    background-repeat: no-repeat;
+    background-position: right;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    padding: 15px 8px 3px 75px;
+    margin: 10px 0;
+
+}
+
+#search-applications form {
+    vertical-align: middle;
+}
+
+#search-applications h4 {
+    display: inline;
+    color: white;
+    font-size: 130%;
+    margin-left: -62px;
+
+}
+
+#search-applications .button {
+    background-color: #888888;
+    color: white;
+    font-size: 0.9em;
+    margin-left: 5px;
+    margin-bottom: 3px;
+    padding: 2px;
+    text-transform: uppercase;
+    vertical-align: middle;
+
+}
+
+#search-applications .hint {
+    margin-left: 66px;
+    font-size: 70%;
+}
+
+.dijitTooltip {
+    max-width: 60em;
+}
+
+.dijitTooltip h3 {
+    color: #337acc !important;
+}
+
+/* 
+ * best-of-box
+ */
+
+#info-bar .best-of-box {
+    width: 220px;
+}
+
+.best-of-box h4 {
+    color: #337acc;
+    font-weight: bold;
+    font-size: 100%;
+    border-bottom: 1px solid #337acc;
+}
+
+#content .best-of-box table {
+    border: 0;
+    border-spacing: 0px 2px;
+    width: 100%;
+    border-collapse: separate;
+    margin-top: 0px;
+}
+
+.best-of-box tr {
+    background-color: #f5f7f7;
+    margin-bottom: 2px;
+}
+
+#content .best-of-box td {
+    font-size: 80%;
+    border: 0;
+    padding: 1px 4px;
+}
+
+#content .best-of-box .col-icon {
+    width: 20px;
+    padding: 1px;
+    padding-left: 3px;
+}
+
+.best-of-box img {
+    width: 16px;
+    height: 16px;
+}
+
+#content .best-of-box a {
+    text-decoration: none;
+    color: #777;
+}
+
+#content .best-of-box a:visited {
+    text-decoration: none;
+    color: #777 !important;
+}
+
+.ajax-loader {
+    position:relative; 
+    font-size: 32px; 
+    z-index:2; 
+    top: 0px; 
+    left: 0px; 
+    background: url(../images/loader_bg.png); 
+    padding: 0px 0px;
+}
+
+
+/* 
+ * app-search-result-box
+ */
+
+.app-search-result-box {
+}
+
+
+.app-search-result-box h4 {
+    color: #337acc;
+    font-weight: bold;
+    font-size: 100%;
+    border-bottom: 1px solid #337acc;
+}
+
+/* #content is necessary to overweight
+ * #content table {} style */
+#content .app-search-result-box table {
+    border: 0;
+    border-spacing: 0px 2px;
+    width: 100%;
+    border-collapse: separate;
+    margin-top: 0px;
+}
+
+
+.app-search-result-box tr {
+    background-color: #f5f7f7;
+    margin-bottom: 2px;
+}
+
+#content .app-search-result-box td {
+    font-size: 80%;
+    border: 0;
+    padding: 1px 4px;
+}
+
+.app-search-result-box .app-name, .best-of-box .app-name  {
+    font-size: 120%;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+#content .best-of-box ul {
+    margin: 0;
+}
+
+.best-of-box li {
+    list-style: none;
+}
+
+#content .app-search-result-box .app-name a {
+    text-decoration: none;
+    color: #777;
+}
+
+#content .app-search-result-box .app-name a:visited {
+    text-decoration: none;
+    color: #777 !important;
+}
+
+#content .app-search-result-box .col-icon {
+    width: 36px;
+    padding: 1px;
+    padding-left: 3px;
+}
+
+#content .app-search-result-box .col-date {
+    text-align: center;
+}
+
+.app-search-result-box img {
+    width: 32px;
+    height: 32px;
+}
+
+.compact-date {
+    white-space: nowrap;
+}
+
+
+/*
+ * Apps by tags, usages
+ *
+ */
+
+#apps-marker-list {
+    list-style: none;
+    display: inline;
+    margin: 0;
+}
+
+#apps-marker-list li {
+    float: left;
+    width: 10em;
+    list-style: none;
+    display: inline;
+    padding: 2px 5px;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+}
+
+#apps-marker-list .selected {
+    background: #d7ebf9;
+}
+
+#apps-marker-list a {
+    text-decoration: none;
+}
+
+#content #apps-markers-navi {
+    yylist-style: none;
+    display: inline;
+    margin: 0;
+    margin-left: 3px;
+}
+
+#apps-markers-navi li {
+    display: inline;
+    padding: 2px 5px;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    color: #999;
+}
+
+
+#apps-markers-navi a {
+    text-decoration: none;
+}
+
+#apps-markers-navi .selected {
+    background: #d7ebf9;
+}
+
+.navi-frame {
+    margin: 10px 0;
+    border: 1px solid #d7ebf9;
+    padding: 15px 5px 0 5px;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    
+}
+
+.download-button .dijitButtonNode{
+    color: #337acc;
+    font-size: 120%;
+    font-weight: bold;
+    border: 1px solid #aaaaaa;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    background: url(../images/download_button_slice.png) repeat-x;
+    
+}
+
+.download-icon {
+    width: 20px;
+    height: 20px;
+    background: url(../images/download_20x20.png) no-repeat;
+}
+
+#app-install {
+    background-color: white;
+    padding: 10px;
+    border: 1px solid #cacace;
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+ 
+}
+
+#app-install ul {
+    list-style: none; 
+}
+
+#app-install li {
+    list-style: none; 
+    white-space: nowrap;
+}
+
+#builds ul {
+    list-style: none; 
+}
+
+#builds li {
+    list-style: none; 
+    white-space: nowrap;
+}
+

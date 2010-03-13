@@ -5,16 +5,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Author(s): Nigel Jones <nigelj@fedoraproject.org>
 #            Toshio Kuratomi <tkuratom@redhat.com>
@@ -29,18 +29,18 @@ Controller to show information about packages by user.
 
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
+# :C0322: Disable space around operator checking in multiline decorators
 
 import urllib
 
 import sqlalchemy
 from sqlalchemy.orm import lazyload
 
-from turbogears import controllers, expose, paginate, config, \
-        redirect, identity
+from turbogears import controllers, expose, paginate, redirect, identity
 
 from pkgdb.model import Collection, Package, PackageListing, \
-        StatusTranslation, PersonPackageListing, PersonPackageListingAcl
-from pkgdb.utils import STATUS
+        PersonPackageListing, PersonPackageListingAcl
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 from fedora.tg.util import request_format
@@ -69,8 +69,8 @@ class Users(controllers.Controller):
         raise redirect('/users/info/')
 
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
-    @paginate('pkgs', limit=100, default_order='name',
-            max_limit=None, max_pages=13)
+    @paginate('pkgs', limit=100, default_order='name', max_limit=None,
+            max_pages=13) #pylint:disable-msg=C0322
     def packages(self, fasname=None, acls=None, eol=None):
         '''List packages that the user is interested in.
 
@@ -140,18 +140,18 @@ class Users(controllers.Controller):
         if not eol:
             # We don't want EOL releases, filter those out of each clause
             query = query.join(['listings2', 'collection']).filter(
-                        Collection.c.statuscode != STATUS['EOL'].statuscodeid)
+                        Collection.statuscode != STATUS['EOL'].statuscodeid)
 
         queries = []
         if 'owner' in acls:
             # Return any package for which the user is the owner
             queries.append(query.filter(sqlalchemy.and_(
-                        Package.c.statuscode.in_((
+                        Package.statuscode.in_((
                             STATUS['Approved'].statuscodeid,
                             STATUS['Awaiting Review'].statuscodeid,
                             STATUS['Under Review'].statuscodeid)),
-                        PackageListing.c.owner==fasname,
-                        PackageListing.c.statuscode.in_((
+                        PackageListing.owner==fasname,
+                        PackageListing.statuscode.in_((
                             STATUS['Approved'].statuscodeid,
                             STATUS['Awaiting Branch'].statuscodeid,
                             STATUS['Awaiting Review'].statuscodeid))
@@ -162,20 +162,20 @@ class Users(controllers.Controller):
             # Return any package on which the user has an Approved acl.
             queries.append(query.join(['listings2', 'people2']).join(
                     ['listings2', 'people2', 'acls2']).filter(sqlalchemy.and_(
-                    Package.c.statuscode.in_((STATUS['Approved'].statuscodeid,
+                    Package.statuscode.in_((STATUS['Approved'].statuscodeid,
                     STATUS['Awaiting Review'].statuscodeid,
                     STATUS['Under Review'].statuscodeid)),
-                    PersonPackageListing.c.username == fasname,
-                    PersonPackageListingAcl.c.statuscode == \
+                    PersonPackageListing.username == fasname,
+                    PersonPackageListingAcl.statuscode == \
                             STATUS['Approved'].statuscodeid,
-                    PackageListing.c.statuscode.in_(
+                    PackageListing.statuscode.in_(
                         (STATUS['Approved'].statuscodeid,
                             STATUS['Awaiting Branch'].statuscodeid,
                             STATUS['Awaiting Review'].statuscodeid))
                     )))
             # Return only those acls which the user wants listed
             queries[-1] = queries[-1].filter(
-                    PersonPackageListingAcl.c.acl.in_(acls))
+                    PersonPackageListingAcl.acl.in_(acls))
 
         if len(queries) == 2:
             my_pkgs = Package.query.select_from(

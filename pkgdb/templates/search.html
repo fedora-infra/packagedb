@@ -7,26 +7,33 @@
   <xi:include href="pkglist.html" />
   <head />
   <body>
-    <div id="smalltext"><p>Search in a specific collection: </p>
-    <p><span py:for="coll in sorted(collections.keys())">
-            [<a py:content="coll" href="${tg.url('/search/package/' +
-                searchon + '/' + collections[coll] + '/' + operator + '/' + query)}" >Collection</a>]
-    </span></p>
-    <br />
-    <p><a href="${tg.url('/search/')}">Advanced search</a></p>
-    </div> 
+    <div class="smalltext">
+      Look in a different collection:
+      <p>
+        <py:for each="collection in collections">
+          <a href="${tg.url('/search/package/%s/%s/%s/%s' %
+                   (query, collection.id, searchon, operator))}">
+            $collection.branchname</a>,
+        </py:for>
+      </p>
+      <p><a href="${tg.url('/search/')}">Advanced search</a></p>
+    </div>
     <br />
     <div py:choose="">
-      <div py:when="count > 0" py:strip="True">
-        <p>${count} matches found in <strong>${release}</strong> for package 
-        <strong>$query:</strong></p>
+      <div py:when="len(builds) > 0" py:strip="True">
+        <p>${len(builds)} matches found in
+          <strong>${'%s %s' % (active_collection.name,\
+                               active_collection.version)}</strong>
+          for package <strong>$query:</strong></p>
         ${paginate_nav()}
-        ${pkglist(packages, full_desc=True, release=True)}
+        ${pkglist(builds, '/packages', full_desc=False, release=True)}
         ${paginate_nav()}
       </div>
       <p py:otherwise="">
         We are sorry, but there were no matches to display for: 
-        <strong>${query}</strong> in collection: <strong>${release}</strong>.
+        <strong>${query}</strong> in collection:
+        <strong>${'%s %s' % (active_collection.name, \
+                             active_collection.version)}</strong>.
       </p>
     </div>
   </body>

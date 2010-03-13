@@ -5,16 +5,16 @@
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
-# General Public License v.2.  This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
-# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.  You should have
-# received a copy of the GNU General Public License along with this program;
-# if not, write to the Free Software Foundation, Inc., 51 Franklin Street,
-# Fifth Floor, Boston, MA 02110-1301, USA. Any Red Hat trademarks that are
-# incorporated in the source code or documentation are not subject to the GNU
-# General Public License and may only be used or replicated with the express
-# permission of Red Hat, Inc.
+# General Public License v.2, or (at your option) any later version.  This
+# program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY expressed or implied, including the implied warranties of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.  You should have received a copy of the GNU
+# General Public License along with this program; if not, write to the Free
+# Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA. Any Red Hat trademarks that are incorporated in the source
+# code or documentation are not subject to the GNU General Public License and
+# may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #            Toshio Kuratomi <tkuratom@redhat.com>
@@ -29,20 +29,17 @@ Controller to search for packages and eventually users.
 
 # :E1101: SQLAlchemy monkey patches the mapper classes with the database fields
 #   so we have to diable this all over.
-# :E1103: Since pylint doesn't know about the query method of the mapped
-#   classes, it doesn't know what type is returned.  Because of that it doesn't
-#   know that we have a filter() method on the returned type.
 
 from sqlalchemy.sql import func, and_, select
-from sqlalchemy.orm import lazyload
-
-from turbogears import controllers, expose, validate, paginate, redirect, \
-        config
+from turbogears import controllers, expose, validate, paginate, redirect
 from turbogears.validators import Int
 
-from pkgdb.model import Collection, PackageListing, Package
-from pkgdb.utils import STATUS
+from pkgdb.model import Collection, Package, PackageBuild, Repo
+from pkgdb.lib.utils import STATUS
 from pkgdb import _
+
+
+COLLECTION = 21
 
 class Search(controllers.Controller):
     '''Controller for searching the pkgdb.
@@ -60,45 +57,41 @@ class Search(controllers.Controller):
 
         Provides a form with multiple fields for a comprehensive package
         search.
+
+        :collections: list of pkgdb collections
         '''
-        # pylint: disable-msg=E1101
         # a little helper so we don't have to write/update form selects manually
-        releases = select([Collection.id,
+        #pylint:disable-msg=E1101
+        collections = select([Collection.id,
                     Collection.name, Collection.version]).execute()
-        # pylint: enable-msg=E1101
+        #pylint:enable-msg=E1101
         return dict(title=_('%(app)s -- Advanced Search') % {
-            'app': self.app_title}, releases=releases)
+            'app': self.app_title}, collections=collections)
 
     @expose(template='pkgdb.templates.search', allow_json=True)
-    @validate(validators={'release':Int()})
-    @paginate('packages', limit=20, max_pages=13)
-    def package(self, searchon='both', release=0, operator='AND',
-                        searchwords=''):
-        '''Searches for packages
+    @validate(validators={'collection':Int()})
+    @paginate('builds', limit=20, max_pages=13)
+    def package(self, searchwords='', collection=COLLECTION, searchon='both',
+                operator='AND'):
+        '''Searches for packagebuilds
 
-        This method returns a list of packages (PackageListing objects)
-        matching the given search words. Other information useful in the
-        view is also returned: 
-            :query: words that were used for the search, unchanged
-            :count: number of packages
-            :release: long name of the release
-            :searchon: same as the argument, unchanged
-            :packages: a nested list of pkglistings grouped by package name
-            :collections: a dict of all the available collection branchnames as 
-                keys and their corresponding ids 
-            :operator: 'AND'/'OR' unchanged
- 
-        :kwarg searchwords: one or more words which will be used to search
-            in the packages' name and description for matches. If absent, all
-            packages from all collections will be returned.
-        :kwarg release: if the number is a valid PackageListing.collectionid,
-            the search will be limited to that release. Otherwise (eg "0"),
-            the search will return packages from all releases.
-        :kwarg searchon: area of the search, should be one of: description,
-            name, both
-        :kwarg operator: can be either 'AND' or 'OR'
+        This method returns a list of PackageBuilds that match the given
+        searchwords. Other information useful to the view is also returned:
+        :query: words that were used for the search, unchanged
+        :active_collection: the matching Collection object
+        :collections: all the Collections in the pkgdb
+        :builds: a list of all the found PackageBuilds
+        :buildrepos: a dictionary of 'buildname': list of corresponding Repo
+                     key-value pairs.
+        :operator: 'AND'/'OR' unchanged
+        :searchon: same as the argument, unchanged
+
+        :kwarg collection: id of a collection
+        :kwarg searchon: where to search; one of: 'description', 'name' or 'both'
+        :kwarg operator: 'AND' or 'OR'
+        :kwarg searchwords: one or more words which will be used to search for
+        matches. 
         '''
-        # pylint: disable-msg=E1101
 
         if searchwords == '' or searchwords.isspace():
             raise redirect('/search/')
@@ -108,143 +101,131 @@ class Search(controllers.Controller):
 
         descriptions, names, exact = [], [], []
         if operator == 'OR':
-            query = query.split()  # -> list
+            query = query.split()
             for searchword in query:
                 if searchon == 'description':
-                    descriptions += PackageListing.query.options(
-                            lazyload('people2'), lazyload('groups2'),
-                            lazyload('status')).filter(
-                                    and_(PackageListing.packageid==Package.id,
-                                        PackageListing.statuscode!= \
-                                                STATUS['Removed'].statuscodeid,
-                                        Package.statuscode!= \
-                                                STATUS['Removed'].statuscodeid,
-                                        func.lower(Package.description).like(
-                                            '%'+searchword+'%')))
+                    #pylint:disable-msg=E1101
+                    descriptions += PackageBuild.query.join(
+                        PackageBuild.package).filter(and_(
+                            PackageBuild.statuscode!=
+                                STATUS['Removed'].statuscodeid,
+                            Package.statuscode!=STATUS['Removed'].statuscodeid,
+                            func.lower(Package.description).like(
+                                '%' + searchword + '%')))
+                #pylint:enable-msg=E1101
                 elif searchon in ['name', 'both']:
-                    exact += PackageListing.query.options(lazyload('people2'),
-                            lazyload('groups2'), lazyload('status')).filter(
-                                    and_(PackageListing.packageid==Package.id,
-                                        PackageListing.statuscode!= \
-                                                STATUS['Removed'].statuscodeid,
-                                        Package.statuscode!= \
-                                                STATUS['Removed'].statuscodeid,
-                                        func.lower(Package.name).like(
-                                            searchword)))
-                    names += PackageListing.query.options(lazyload('people2'),
-                            lazyload('groups2'), lazyload('status')).filter(
-                                    and_(PackageListing.packageid==Package.id,
-                                        PackageListing.statuscode!= \
-                                                STATUS['Removed'].statuscodeid,
-                                        Package.statuscode!= \
-                                                STATUS['Removed'].statuscodeid,
-                                        func.lower(Package.name).like(
-                                            '%'+searchword+'%')))
+                    #pylint:disable-msg=E1101
+                    exact += PackageBuild.query.filter_by(name=searchword
+                            ).filter(PackageBuild.statuscode!= \
+                                    STATUS['Removed'].statuscodeid)
+                    names += PackageBuild.query.filter(and_(
+                        PackageBuild.statuscode!= \
+                                STATUS['Removed'].statuscodeid,
+                    func.lower(PackageBuild.name).like('%'+searchwords+'%')))
+                    #pylint:enable-msg=E1101
                     if searchon == 'both':
-                        descriptions += PackageListing.query.options(
-                                lazyload('people2'), lazyload('groups2'),
-                                lazyload('status')).filter(and_(
-                                    PackageListing.packageid==Package.id,
-                                    PackageListing.statuscode!= \
+                        #pylint:disable-msg=E1101
+                        descriptions += PackageBuild.query.join(
+                            PackageBuild.package).filter(and_(
+                                    PackageBuild.statuscode!= \
                                             STATUS['Removed'].statuscodeid,
                                     Package.statuscode!= \
                                             STATUS['Removed'].statuscodeid,
-                                    func.lower(Package.description).like(
-                                        '%'+searchword+'%')))
-
-        else:      # AND operator
-            if searchon in ['name', 'both']: 
-                exact = PackageListing.query.options(lazyload('people2'),
-                        lazyload('groups2'), lazyload('status')).filter(and_(
-                            PackageListing.packageid==Package.id,
-                            PackageListing.statuscode!= \
-                                    STATUS['Removed'].statuscodeid,
-                            Package.statuscode!= \
-                                    STATUS['Removed'].statuscodeid,
-                            func.lower(Package.name).like(query))).all()
-                # query the DB for every searchword and build a Query object
+                                            func.lower(Package.description
+                                                ).like('%'+searchwords+'%')))
+                        #pylint:enable-msg=E1101
+        else: # AND operator
+            if searchon in ['name', 'both']:
+                #pylint:disable-msg=E1101
+                exact = PackageBuild.query.filter_by(name=query).filter(
+                        PackageBuild.statuscode!=STATUS['Removed'].statuscodeid)
+                # query the db for every searchword and build a Query object
                 # to filter succesively
                 query = query.split()
-                names = PackageListing.query.options(lazyload('people2'),
-                        lazyload('groups2'), lazyload('status')).filter(and_(
-                            PackageListing.packageid==Package.id,
-                            PackageListing.statuscode!= \
-                                    STATUS['Removed'].statuscodeid,
-                            Package.statuscode!= \
-                                    STATUS['Removed'].statuscodeid,
-                            func.lower(Package.name).like(
+                names = PackageBuild.query.filter(and_(
+                    PackageBuild.statuscode!= \
+                            STATUS['Removed'].statuscodeid,
+                            func.lower(PackageBuild.name).like(
                                 '%' + query[0] + '%')))
+                #pylint:enable-msg=E1101
                 for searchword in query:
-                    # pylint: disable-msg=E1103
-                    names = names.filter(func.lower(Package.name).like(
-                                            '%' + searchword + '%'))
-                names = names.all()
+                    #pylint:disable-msg=E1101
+                    names = names.filter(func.lower(PackageBuild.name).like(
+                        '%' + searchword + '%'))
+                    #pylint:enable-msg=E1101
                 if searchon == 'both':
-                    descriptions = PackageListing.query.options(
-                            lazyload('people2'), lazyload('groups2'),
-                            lazyload('status')).filter(and_(
-                                PackageListing.packageid==Package.id,
-                                PackageListing.statuscode!= \
-                                        STATUS['Removed'].statuscodeid,
+                    #pylint:disable-msg=E1101
+                    descriptions = PackageBuild.query\
+                            .join(PackageBuild.package)\
+                            .filter(and_(PackageBuild.statuscode!= \
+                                STATUS['Removed'].statuscodeid,
                                 Package.statuscode!= \
                                         STATUS['Removed'].statuscodeid,
-                                func.lower(Package.description).like(
-                                    '%' + query[0] + '%')))
+                                func.lower(Package.description)\
+                                        .like('%' + query[0] + '%')))
+                    #pylint:enable-msg=E1101
                     for searchword in query:
-                        # pylint: disable-msg=E1103
-                        descriptions = descriptions.filter(
-                                func.lower(Package.description).like(
-                                    '%' + searchword + '%'))
-                    descriptions = descriptions.all()
-
+                        #pylint:disable-msg=E1101
+                        descriptions = descriptions.filter(func.lower(
+                            Package.description).like('%'+searchword+'%'))
+                        #pylint:enable-msg=E1101
+                    descriptions = descriptions
             elif searchon == 'description':
+                #pylint:disable-msg=E1101
                 query = query.split()
-                descriptions = PackageListing.query.options(
-                        lazyload('people2'), lazyload('groups2'),
-                        lazyload('status')).filter(and_(
-                            PackageListing.packageid==Package.id,
-                            PackageListing.statuscode!= \
+                descriptions = PackageBuild.query.join(
+                    PackageBuild.package).filter(and_(
+                            PackageBuild.statuscode!= \
                                     STATUS['Removed'].statuscodeid,
                             Package.statuscode!= \
                                     STATUS['Removed'].statuscodeid,
                             func.lower(Package.description).like(
-                                '%' + query[0] + '%')))
-                for searchword in query:
-                    # pylint: disable-msg=E1103
-                    descriptions = descriptions.filter(
-                            func.lower(Package.description).like(
-                                '%' + searchword + '%'))
-                descriptions = descriptions.all()
+                                '%' + searchwords + '%')))
+                #pylint:enable-msg=E1101
+
+#                for searchword in query:
+#                    #pylint:disable-msg=E1103
+#                    descriptions = descriptions.filter(
+#                            func.lower(Package.description).like(
+#                                '%' + searchword + '%'))
+#                   #pylint:enable-msg=E1101
+#                descriptions = descriptions.all()
 
         # Return a list of all packages but keeping the order
-        unique_pkgs = set()   # order and remove duplicates
-        packages = []
+        buildset = set()
+        for group in [exact, names, descriptions]:
+            if group:
+                #pylint:disable-msg=E1101
+                for b in group.join(PackageBuild.repos).filter(
+                    Repos.collectionid==collection).all():
+                    buildset.add(b)
+                #pylint:enable-msg=E1101
 
-        for pkgl in exact + names + descriptions:
-            if pkgl.package not in unique_pkgs:
-                if (not release) or (pkgl.collectionid == release):
-                    unique_pkgs.add(pkgl.package)
-                    packages.append(pkgl.package)
-        count = len(packages)
+        #pylint:disable-msg=E1101
+        active_collection = Collection.query.filter_by(id=collection).one()
+        #pylint:enable-msg=E1101
+        # transform the set into a list again
+        builds = []
+        while buildset:
+            builds.append(buildset.pop())
 
-        collections = {} # build a dict of all the available releases
-                         # branchnames as keys and string ids as values
-        for coll in Collection.query.options(lazyload('listings2'),
-                lazyload('status')).all():
-            collections[coll.branchname] = str(coll.id)
-            if coll.id == release:
-                release = '%s %s' % (coll.name, coll.version)
+        # dictionary of buildname : [repolist]
+        buildrepos = {}
+        for build in builds:
+            #pylint:disable-msg=E1101
+            buildrepos[build.name] = Repo.query.join(Repo.collection).join(
+                Repo.builds).filter(and_(PackageBuild.name==build.name,
+                                         Collection.id==collection)).all()
+            #pylint:enable-msg=E1101
 
-        collections["ALL"] = '0'
-        if not release:
-            release = 'all'
+        collections = Collection.query.all() #pylint:disable-msg=E1101
 
         return dict(title=_('%(app)s -- Search packages for: %(words)s')
-                % {'app': self.app_title, 'words': searchwords},
-                   query=searchwords,
-                   packages=packages,
-                   count=count,
-                   release=release,
-                   collections=collections,
-                   searchon=searchon,
-                   operator=operator)
+                    % {'app': self.app_title, 'words': searchwords},
+                    query=searchwords,
+                    builds=builds,
+                    buildrepos=buildrepos,
+                    collections=collections,
+                    active_collection=active_collection,
+                    searchon=searchon,
+                    operator=operator)
