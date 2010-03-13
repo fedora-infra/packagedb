@@ -357,6 +357,7 @@ Currently, this is more involved.
 4) copy the dist/fedora-packagedb-VERSION.tar.bz2 and fedora-packagedb.spec files
    to where you build Fedora RPMS.  Do a test build::
      cp dist/fedora-packagedb-*.tar.bz2 fedora-packagedb.spec /srv/cvs/fedora-packagedb/
+     scp dist/fedora-packagedb-*.tar.bz2 fedorahosted.org:/srv/web/releases/p/a/packagedb/
      pushd /srv/cvs/fedora-packagedb/
      rpmbuild-md5 -bs --nodeps fedora-packagedb.spec
      mock -r epel-5-i386 *.src.rpm
