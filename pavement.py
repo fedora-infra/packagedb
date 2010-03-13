@@ -148,7 +148,7 @@ def publish_doc():
 @needs(['sdist'])
 def publish_tarball():
     options.order('publish', add_rest=True)
-    tarname = '%s-%s.tar.gz' % (options.name, options.version)
+    tarname = '%s-%s.tar.bz2' % (options.name, options.version)
     command = 'scp dist/%s %s' % (tarname, options.tarball_location)
     dry(command, paver_sh, command)
 
