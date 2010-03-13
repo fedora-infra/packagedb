@@ -35,9 +35,18 @@
                 <img src="${tg.url('/appicon/show/%s' % app['name'])}" />
               </a>
           </td>
-          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app['name'])}">${HTML(highlight(app['name'], pattern))}</a></div>${HTML(highlight(app['summary'], pattern))}</td>
-          <td>
+          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app['name'])}">${HTML(highlight(app['name'], pattern))}</a></div><span py:choose="" py:strip="">
+              <span py:when="app['summary']" py:strip="">
+                ${HTML(highlight(app['summary'], pattern))}
+              </span>
+              <span py:when="app['descr']" py:strip="">
                 ${HTML(highlight(app['descr'], pattern))} 
+              </span>
+            </span></td>
+            <td>
+                <py:if test="app['summary']">
+                ${HTML(highlight(app['descr'], pattern))}
+                </py:if>
                 <py:if test="app['usage']">
                 <b>Usage:</b> ${HTML(highlight(', '.join(app['usage']), pattern))} 
                 </py:if>
