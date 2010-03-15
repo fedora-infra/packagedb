@@ -37,6 +37,8 @@ from sqlalchemy.orm import eagerload
 from turbogears.feed import FeedController
 from turbogears.database import session
 
+from fedora.tg.util import tg_url
+
 from pkgdb.model import Comment, PackageBuildTable, PackageBuildReposTable,\
         Application
 
@@ -47,7 +49,13 @@ class ApplicationFeed(FeedController):
     because they have a .desktop file
     '''
     def __init__(self):
-        self.baseurl = config.get('base_url_filter.base_url')
+        baseurl = config.get('base_url_filter.base_url')
+        while baseurl.endswith('/'):
+            baseurl = baseurl[:-1]
+        baseurl = '%s%s' % (baseurl, tg_url('/'))
+        if baseurl.endswith('/'):
+            baseurl = baseurl[:-1]
+        self.baseurl = baseurl
 
     def get_feed_data(self, **kwargs):
         entries = []
@@ -86,7 +94,7 @@ class ApplicationFeed(FeedController):
             entry["summary"] = app.builds[0].changelog
 
             
-            entry["link"] = self.baseurl + '/packages/%s/%s' % (
+            entry["link"] = '%s/packages/%s/%s' % (self.baseurl,
                                            apps.build.name,
                                            apps.build.repo.shortname
                                            )
@@ -107,7 +115,13 @@ class CommentsFeed(FeedController):
 
     '''
     def __init__(self):
-        self.baseurl = config.get('base_url_filter.base_url')
+        baseurl = config.get('base_url_filter.base_url')
+        while baseurl.endswith('/'):
+            baseurl = baseurl[:-1]
+        baseurl = '%s%s' % (baseurl, tg_url('/'))
+        if baseurl.endswith('/'):
+            baseurl = baseurl[:-1]
+        self.baseurl = baseurl
 
 
     def get_feed_data(self, **kwargs):
@@ -150,7 +164,7 @@ class CommentsFeed(FeedController):
             
             entry["summary"] = comment.body
             
-            entry["link"] = self.baseurl + '/applications/%s/#Comment%i' % (
+            entry["link"] = '%s/applications/%s/#Comment%i' % (self.baseurl,
                 comment.application.name, comment.id)
             entries.append(entry)
             

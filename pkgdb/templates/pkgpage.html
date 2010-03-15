@@ -263,8 +263,8 @@ import simplejson
         </tr>
       </div> <!--! here ends the pkgl def declaration -->
         <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
-            <table py:when="pkg.status.locale['C'].statusname=='Orphaned'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
-            <table py:when="pkg.status.locale['C'].statusname!='Orphaned'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
+            <table py:when="pkg.status.locale['C'].statusname in ('Orphaned','Deprecated')" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
+            <table py:when="pkg.status.locale['C'].statusname not in ('Orphaned', 'Deprecated')" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
         </div>
     </form>
   </body>

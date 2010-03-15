@@ -39,12 +39,13 @@ def excerpt(text, pattern, max=60, all=False):
 
     :returns:    list of sentences
     """
-
-
     p = re.compile(r'\W+')
     pattern = p.sub(' ', pattern)
+    pattern_list = pattern.split()
 
-    p = re.compile('(\\b[A-Z][^.]*)?(%s)([^.]*(?:\\.|$))' % pattern.replace(' ','|'), re.I|re.S|re.L)
+    if not pattern_list:
+        return ''
+    p = re.compile('(\\b[A-Z][^.]*)?(%s)([^.]*(?:\\.|$))' % '|'.join(pattern_list), re.I|re.S|re.L)
     if all:
         sentences = p.findall(text)
     else:
@@ -91,7 +92,7 @@ def excerpt(text, pattern, max=60, all=False):
         if end == -1:
             end = stop
         result.append(dots+b[start:]+p+e[:end]+dots)
-            
+
     if not all:
         return ''.join(result)
 
