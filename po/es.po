@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: fedora-packagedb 0.4.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2009-11-11 16:32-0800\n"
-"PO-Revision-Date: 2010-03-15 19:59-0300\n"
-"Last-Translator: Héctor Daniel Cabrera <logan@fedoraproject.org>\n"
+"PO-Revision-Date: 2010-03-15 20:02-0300\n"
+"Last-Translator: Domingo Becker <domingobecker@gmail.com>\n"
 "Language-Team: Fedora Spanish <trans-es@lists.fedoraproject.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -64,9 +64,9 @@ msgid "The collection_id you were linked to, %(id)s, does not exist.  If you rec
 msgstr "El id_de la colección al que está enlazado, %(id)s, no existe. Si recibe este error desde un enlace del sitio web fedoraproject.org, por favor infórmelo."
 
 #: pkgdb/collections.py:242
-#, fuzzy, python-format
+#, python-format
 msgid "%(count)s/%(num)s packages were unbranched for %(branch)s\n"
-msgstr "%(count)s/%(num)s paquetes no poseen ramificación para %(branch)s\n"
+msgstr "%(count)s/%(num)s paquetes fueron deramificados de %(branch)s\n"
 
 #: pkgdb/collections.py:248
 #, python-format
@@ -126,7 +126,7 @@ msgstr ""
 #: pkgdb/dispatcher.py:230
 #, python-format
 msgid "Email address %(bugzilla_email)s is not a valid bugzilla email address.  Either make a bugzilla account with that email address or change your email address in the Fedora Account System https://admin.fedoraproject.org/accounts/ to a valid bugzilla email address and try again."
-msgstr "La dirección de correo %(bugzilla_email)s no es una dirección válida en bugzilla. Genere una cuenta en bugzilla con esa dirección, o modifique su dirección de correo en el Sistema de cuentas de Fedora (https://admin.fedoraproject.org/accounts/), ingrese allí una dirección de correo electrónico que sea válida en bugzilla, e inténtelo nuevamente. "
+msgstr "La dirección de correo %(bugzilla_email)s no es una dirección válida en bugzilla. Genere una cuenta en bugzilla con esa dirección, o modifique su dirección de correo en el Sistema de cuentas de Fedora (https://admin.fedoraproject.org/accounts/), ingrese allí una dirección de correo electrónico que sea válida en bugzilla, e intentelo nuevamente. "
 
 #: pkgdb/dispatcher.py:254
 #: pkgdb/dispatcher.py:261
@@ -152,7 +152,6 @@ msgstr "No existe tal paquete %(pkg_id)s"
 
 #: pkgdb/dispatcher.py:478
 #: pkgdb/dispatcher.py:750
-#, fuzzy
 msgid "This package is retired.  It must be unretired first"
 msgstr "Este paquete ha sido retirado. Primero debe modificarse esta condición"
 
@@ -177,17 +176,17 @@ msgid "%(pkg)s ownership updated"
 msgstr "Ha sido actualizada la pertenencia de %(pkg)s "
 
 #: pkgdb/dispatcher.py:600
-#, fuzzy, python-format
+#, python-format
 msgid "The (un)retiring of package %(pkg)s could not be completed. Check your permissions."
-msgstr "No es posible modificar la condición de retirado del paquete %(pkg)s. Verifique sus permisos. "
+msgstr "Nuo es posible modificar la condición de retirado del paquete %(pkg)s. Verifique sus permisos. "
 
 #: pkgdb/dispatcher.py:615
-#, fuzzy, python-format
+#, python-format
 msgid "Unable to (un)retire package %(pkg)s"
 msgstr "No es posible modificar la condición de retirado del paquete %(pkg)s"
 
 #: pkgdb/dispatcher.py:618
-#, fuzzy, python-format
+#, python-format
 msgid "%(pkg)s (un)retirement"
 msgstr "Modificación de retirado de %(pkg)s"
 
@@ -218,7 +217,7 @@ msgstr "No es posible crear acl %(acl)s en %(pkg)s con el estado %(status)s"
 
 #: pkgdb/dispatcher.py:710
 #: pkgdb/dispatcher.py:1595
-#, fuzzy, python-format
+#, python-format
 msgid "%(pkg)s had acl change status"
 msgstr "El paquete %(pkg)s tenía el estado acl modificado"
 
@@ -243,7 +242,7 @@ msgid "Not able to create acl %(acl)s on %(pkg)s (%(collctn)s %(ver)s) with stat
 msgstr "No es posible crear acl %(acl)s en %(pkg)s (%(collctn)s %(ver)s) con estado %(status)s"
 
 #: pkgdb/dispatcher.py:818
-#, fuzzy, python-format
+#, python-format
 msgid "%(pkg)s had group_acl changed"
 msgstr "El paquete %(pkg)s tenía el group_acl modificado"
 
@@ -264,9 +263,8 @@ msgstr "%(pkg)s: el usuario %(user)s tiene %(action)s %(acl)s"
 
 #: pkgdb/dispatcher.py:921
 #: pkgdb/dispatcher.py:1124
-#, fuzzy
 msgid "User must be in admin_grp"
-msgstr "El usuario debe formar parte de admin_grp"
+msgstr "El usuario debe ser del grupo admin_grp"
 
 #: pkgdb/dispatcher.py:928
 #, python-format
@@ -309,7 +307,7 @@ msgstr "No es posible definir shouldopen en el paquete %(pkg)s"
 #: pkgdb/dispatcher.py:1159
 #, python-format
 msgid "Specified owner %(owner)s does not have a Fedora Account"
-msgstr "El dueño indicado %(owner)s no posee una cuenta Fedora"
+msgstr "El dueño inidicado %(owner)s no posee una cuenta Fedora"
 
 #: pkgdb/dispatcher.py:1196
 #, python-format
@@ -364,7 +362,7 @@ msgstr "No es posible clonar  \"%(package)s %(master)s\" en \"%(package)s %(bran
 #: pkgdb/dispatcher.py:1501
 #, python-format
 msgid "Unable to save clone of %(package)s %(master)s for %(branch)s to the database: %(error)s"
-msgstr "No es posible almacenar el clon de %(package)s %(master)s de %(branch)s en la base de datos: %(error)s"
+msgstr "No es posible alamcenar el clon de %(package)s %(master)s de %(branch)s en la base de datos: %(error)s"
 
 #: pkgdb/dispatcher.py:1508
 #, python-format
@@ -374,7 +372,7 @@ msgstr "El usuario %(user)s ha clonado %(pkg)s %(branch)s de %(master)s"
 #: pkgdb/dispatcher.py:1510
 #, python-format
 msgid "%(pkg)s %(branch)s cloned from %(master)s"
-msgstr "%(pkg)s %(branch)s ha sido clonado de %(master)s"
+msgstr "%(pkg)s %(branch)s ha sido cloando de %(master)s"
 
 #: pkgdb/dispatcher.py:1538
 #, python-format
@@ -603,7 +601,7 @@ msgstr "Colecciones"
 
 #: pkgdb/templates/collectionoverview.html:10
 msgid "Collection - Set of Linux packages created and hosted by the Fedora Project"
-msgstr "Colección - Conjunto de paquetes Linux creados y alojados por el Proyecto fedora"
+msgstr "Colección - Conjunto de paquetes linux creados y alojados por el Proyecto fedora"
 
 #: pkgdb/templates/collectionoverview.html:10
 #: pkgdb/templates/pkgpage.html:83
@@ -635,7 +633,6 @@ msgid "Actions"
 msgstr "Acciones"
 
 #: pkgdb/templates/collectionoverview.html:36
-#, fuzzy
 msgid "Branch every package in 'Fedora devel' to this branch.  This copies the permissions and makes it possible to create a branch on the cvs server."
 msgstr "Ramifica cada paquete en 'Fedora devel' hacia esta rama. Esto copia los permisos y hace posible crear una rama en el servidor cvs."
 
@@ -686,7 +683,6 @@ msgid "Navigation"
 msgstr "Navegación"
 
 #: pkgdb/templates/layout.html:56
-#, fuzzy
 msgid "Packages Home"
 msgstr "Página inicial de paquetes"
 
@@ -735,7 +731,7 @@ msgid ""
 "Copyright © 2007-2009 Red Hat, Inc. and others.\n"
 "        Please send any comments or corrections to the"
 msgstr ""
-"Copyright © 2007-2009 Red Hat, Inc. y otros.\n"
+"Copyright © 2007-2009 Red Hat, Inc. y otross.\n"
 "        Por favor envíe cualquier comentario o corrección al "
 
 #: pkgdb/templates/layout.html:87
@@ -832,15 +828,13 @@ msgid "QA Contact"
 msgstr "Contacto QA"
 
 #: pkgdb/templates/pkgpage.html:97
-#, fuzzy
 msgid "Spec File"
 msgstr "Archivo de especificación"
 
 #: pkgdb/templates/pkgpage.html:202
 #: pkgdb/templates/pkgpage.html:210
-#, fuzzy
 msgid "group members can commit?"
-msgstr "¿los miembros del grupo pueden realizar modificaciones?"
+msgstr "¿los miembros del grupo pueden subir modificaciones?"
 
 #: pkgdb/templates/search.html:10
 msgid "Search in a specific collection:"
