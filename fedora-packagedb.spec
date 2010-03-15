@@ -1,5 +1,5 @@
 Name:           fedora-packagedb
-Version:        0.5.0
+Version:        0.5.1
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -95,6 +95,10 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Mon Mar 15 2010 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.1-1
+- 0.5.1 release.
+- Fix some cosmetic bugs and one broken link
+
 * Fri Mar 12 2010 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.0-1
 - 0.5.x release.
 
