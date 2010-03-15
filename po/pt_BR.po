@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fedora-packagedb 0.4.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2009-11-11 16:32-0800\n"
-"PO-Revision-Date: 2010-03-14 02:59-0300\n"
+"PO-Revision-Date: 2010-03-14 03:16-0300\n"
 "Last-Translator: Andrik Machado Batista <andrikmb@gmail.com>\n"
 "Language-Team: Andrik <andrikmb@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -20,9 +20,10 @@ msgstr ""
 "X-Poedit-Country: BRAZIL\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
+# bugzilla.bug considerado como endereço ou não traduzível.
 #: pkgdb/bugs.py:80
 msgid "Can only store bugzilla.Bug type"
-msgstr ""
+msgstr "Pode armazenar apenas do tipo bugzilla.Bug"
 
 #: pkgdb/bugs.py:138
 #, fuzzy, python-format
@@ -43,7 +44,7 @@ msgstr "O pacote não tem uma %%description: %s\n"
 #: pkgdb/bugs.py:168
 #, python-format
 msgid "%(app)s -- Open Bugs for %(pkg)s"
-msgstr ""
+msgstr "%(app)s -- Abrir Bugs para %(pkg)s"
 
 #: pkgdb/collections.py:77
 #, fuzzy, python-format
@@ -265,7 +266,7 @@ msgstr ""
 #: pkgdb/dispatcher.py:921
 #: pkgdb/dispatcher.py:1124
 msgid "User must be in admin_grp"
-msgstr ""
+msgstr "Usuário precisa estar em admin_grp"
 
 #: pkgdb/dispatcher.py:928
 #, fuzzy, python-format
@@ -282,12 +283,12 @@ msgstr ""
 #: pkgdb/dispatcher.py:1217
 #, python-format
 msgid "Unable to create PackageListing for %(pkg)s(Fedora devel), %(user)s), %(status)s"
-msgstr ""
+msgstr "Incapaz de criar PackageListing para %(pkg)s(Fedora devel), %(user)s), %(status)s"
 
 #: pkgdb/dispatcher.py:1045
 #, python-format
 msgid "%(pkg)s was added for %(owner)s"
-msgstr ""
+msgstr "%(pkg)s foram adicionados por %(owner)s"
 
 #: pkgdb/dispatcher.py:1066
 #: pkgdb/dispatcher.py:1136
@@ -304,7 +305,7 @@ msgstr "Permissão negada"
 #: pkgdb/dispatcher.py:1082
 #, python-format
 msgid "Unable to set shouldopen on Package %(pkg)s"
-msgstr ""
+msgstr "Incapaz de setar shouldopen no Pacote %(pkg)s"
 
 #: pkgdb/dispatcher.py:1159
 #, python-format
@@ -764,6 +765,8 @@ msgid ""
 "Copyright © 2007-2009 Red Hat, Inc. and others.\n"
 "        Please send any comments or corrections to the"
 msgstr ""
+"Copyright © 2007-2009 Red Hat, Inc. e outros.\n"
+"        Por favor envie qualquer comentário ou correções para o"
 
 #: pkgdb/templates/layout.html:87
 #, fuzzy
