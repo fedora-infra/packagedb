@@ -454,8 +454,8 @@ class PackageBuildImporter(object):
                 .filter_by(
                     name=to_unicode(rpm.name),
                     epoch=to_unicode(rpm.epoch),
-                    version=to_unicode(to_unicode(rpm.version)),
-                    architecture=to_unicode(to_unicode(rpm.arch)),
+                    version=to_unicode(rpm.version),
+                    architecture=to_unicode(rpm.arch),
                     release=to_unicode(rpm.release))\
                 .options(eagerload(PackageBuild.repos))\
                 .one()
@@ -490,7 +490,7 @@ class PackageBuildImporter(object):
             committer = committer.replace('- ', '')
             committer = committer.rsplit(' ', 1)[0]
 
-        pkgbuild.committime = to_unicode(committime.replace(tzinfo=utc))
+        pkgbuild.committime = committime.replace(tzinfo=utc)
         pkgbuild.committer = to_unicode(committer)
         pkgbuild.changelog = to_unicode(changelog)
 
