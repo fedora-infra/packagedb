@@ -495,7 +495,7 @@ class PackageBuildImporter(object):
         pkgbuild.committer = to_unicode(committer)
         pkgbuild.changelog = to_unicode(changelog)
 
-        pkgbuild.size = to_unicode(rpm.size)
+        pkgbuild.size = rpm.size or 0 
         pkgbuild.license = to_unicode(rpm.license)
 
         return pkgbuild
