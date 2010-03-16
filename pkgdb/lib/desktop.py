@@ -1,4 +1,3 @@
-#!/usr/bin/python -tt
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2010  Red Hat, Inc.
