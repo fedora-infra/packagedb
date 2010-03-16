@@ -357,6 +357,9 @@ class PackageBuildImporter(object):
 
             yumbase.conf.cachedir = self.cachedir
             yumbase.doTsSetup()
+            archlist=['x86_64', 'ia32e', 'athlon', 'i686', 'i586', 'i486', 'i386', 'noarch']
+            yumbase.doSackSetup(archlist=archlist)
+
             self._yumbase = yumbase
 
         return self._yumbase
@@ -369,7 +372,7 @@ class PackageBuildImporter(object):
             self.yumbase.add_enable_repo('pkgdb-%s' % self.repo.shortname,
                        ['%s%s' % (self.repo.mirror, self.repo.url)])
             self._yumrepo = self.yumbase.repos.getRepo('pkgdb-%s' % self.repo.shortname)
-           
+
             # populate sack
             try:
                 self.yumbase._getSacks(thisrepo=self._yumrepo.id)
