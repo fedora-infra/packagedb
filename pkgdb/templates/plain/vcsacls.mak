@@ -10,6 +10,6 @@ acl_holders= ','.join(itertools.chain(
   packageAcls[pkg][branch]['commit'].people))
 %>
 avail | ${acl_holders} | rpms/${pkg}/${branch}\
-  %endfor
-%endfor
+  % endfor
+% endfor
 
