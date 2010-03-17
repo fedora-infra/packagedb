@@ -421,7 +421,7 @@ class ListQueries(controllers.Controller):
         os.unlink(dbfile)
         return dump
 
-    @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
+    @expose(template="mako:/plain/bugzillaacls.mak",
             as_format="plain", accept_format="text/plain",
             content_type="text/plain; charset=utf-8", #pylint:disable-msg=C0322
             format='text') #pylint:disable-msg=C0322
