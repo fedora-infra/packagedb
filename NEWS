@@ -6,6 +6,27 @@ NEWS
 :Date: 11 Nov 2009
 :Version: 0.5.0
 
+-----
+0.5.2
+-----
+* Switch plain text templates to mako
+* Fix notify list to ignore EOL collections
+* Add a plain text template for the notify list (largely for debugging)
+* Fix some links to point at /acls/
+* Change overview page to be more reflective of endusers now
+* Fixes to the yum-import-sync script
+
+-----
+0.5.1
+-----
+* Fix different metadata being displayed when searching with or without wildcards
+* Sort collections on pkg acls page.
+* Fix style of deprecated packages to be the same as orphans
+* Fix broken link from application page to /acls/
+* Make search display prettier
+* Display "No results found" when a search has no results
+* Fix links in rss feeds
+
 ---
 0.5
 ---
