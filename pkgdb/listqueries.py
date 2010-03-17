@@ -213,7 +213,7 @@ class ListQueries(controllers.Controller):
             except KeyError:
                 branch[acl] = AclList(people=[identity])
 
-    @expose(template='genshi-text:pkgdb.templates.plain.vcsacls',
+    @expose(template='mako:/plain/vcsacls.mak',
             as_format='plain', accept_format='text/plain',
             content_type='text/plain; charset=utf-8', #pylint:disable-msg=C0322
             format='text') #pylint:disable-msg=C0322
