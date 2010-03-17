@@ -653,10 +653,10 @@ class ListQueries(controllers.Controller):
         if not eol:
             # Filter out eol distributions
             #pylint:disable-msg=E1101
-            owner_query = owner_query.where(Collection.statuscode.in_(
+            owner_query = owner_query.where(CollectionTable.c.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
-            watcher_query = watcher_query.where(Collection.statuscode.in_(
+            watcher_query = watcher_query.where(CollectionTable.c.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
             #pylint:enable-msg=E1101
