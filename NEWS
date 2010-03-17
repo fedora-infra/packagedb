@@ -15,6 +15,7 @@ NEWS
 * Fix some links to point at /acls/
 * Change overview page to be more reflective of endusers now
 * Fixes to the yum-import-sync script
+* Fix to the pkgdb-sync-bugzilla script due to new URLS
 
 -----
 0.5.1
