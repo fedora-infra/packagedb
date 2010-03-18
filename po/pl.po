@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: pl\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2009-11-11 16:32-0800\n"
-"PO-Revision-Date: 2010-03-12 22:36+0100\n"
+"PO-Revision-Date: 2010-03-18 19:48+0100\n"
 "Last-Translator: Piotr Drąg <piotrdrag@gmail.com>\n"
 "Language-Team: Polish <trans-pl@lists.fedoraproject.org>\n"
 "MIME-Version: 1.0\n"
@@ -15,37 +15,37 @@ msgstr ""
 
 #: pkgdb/bugs.py:80
 msgid "Can only store bugzilla.Bug type"
-msgstr ""
+msgstr "Można przechować tylko typ bugzilla.Bug"
 
 #: pkgdb/bugs.py:138
 #, python-format
 msgid "Invalid URL: redirecting: %(url)s"
-msgstr ""
+msgstr "Nieprawidłowy adres URL: przekierowywanie: %(url)s"
 
 #: pkgdb/bugs.py:160
 #, python-format
 msgid "%(app)s -- Not a Valid Package Name"
-msgstr ""
+msgstr "%(app)s - nieprawidłowa nazwa pakietu"
 
 #: pkgdb/bugs.py:162 pkgdb/dispatcher.py:571
 #, python-format
 msgid "No such package %(pkg)s"
-msgstr ""
+msgstr "Brak pakietu %(pkg)s"
 
 #: pkgdb/bugs.py:168
 #, python-format
 msgid "%(app)s -- Open Bugs for %(pkg)s"
-msgstr ""
+msgstr "%(app)s - otwarte błędy pakietu %(pkg)s"
 
 #: pkgdb/collections.py:77
 #, python-format
 msgid "%(app)s -- Collection Overview"
-msgstr ""
+msgstr "%(app)s - przegląd zbioru"
 
 #: pkgdb/collections.py:94 pkgdb/collections.py:116
 #, python-format
 msgid "%(app)s -- Invalid Collection Id"
-msgstr ""
+msgstr "%(app)s - nieprawidłowy identyfikator zbioru"
 
 #: pkgdb/collections.py:96
 msgid ""
@@ -53,6 +53,9 @@ msgid ""
 "this error from a link on the fedoraproject.org website, please report "
 "it."
 msgstr ""
+"collection_id, do którego prowadził odnośnik, nie jest prawidłowym "
+"identyfikatorem. Jeśli ten błąd pojawił się z odnośnika na stronie WWW "
+"fedoraproject.org, to proszę go zgłosić."
 
 #: pkgdb/collections.py:117
 #, python-format
@@ -61,52 +64,58 @@ msgid ""
 "received this error from a link on the fedoraproject.org website, please "
 "report it."
 msgstr ""
+"collection_id, do którego prowadził odnośnik, %(id)s, nie istnieje. Jeśli "
+"ten błąd pojawił się z odnośnika na stronie WWW fedoraproject.org, to proszę "
+"go zgłosić."
 
 #: pkgdb/collections.py:242
 #, python-format
 msgid "%(count)s/%(num)s packages were unbranched for %(branch)s\n"
-msgstr ""
+msgstr "%(count)s/%(num)s pakietów nie posiadało gałęzi dla %(branch)s\n"
 
 #: pkgdb/collections.py:248
 #, python-format
 msgid "Succesfully branched all %(num)s packages"
-msgstr ""
+msgstr "Pomyślnie utworzono gałęzie dla wszystkich %(num)s pakietów"
 
 #: pkgdb/collections.py:253
 #, python-format
 msgid "Mass branching status for %(branch)s"
-msgstr ""
+msgstr "Stan masowego tworzenia gałęzi dla %(branch)s"
 
 #: pkgdb/collections.py:294
 #, python-format
 msgid "Unable to locate a branch for %(branch)s"
-msgstr ""
+msgstr "Nie można ustalić położenie gałęzi dla %(branch)s"
 
 #: pkgdb/collections.py:300
 #, python-format
 msgid "Will not branch packages in EOL collection %(branch)s"
-msgstr ""
+msgstr "Gałęzie nie zostaną utworzone dla zbioru EOL %(branch)s"
 
 #: pkgdb/collections.py:308
 #, python-format
 msgid "Unable to mass branch for %(branch)s because it is not managed by koji"
 msgstr ""
+"Nie można masowo utworzyć gałęzi dla %(branch)s, ponieważ nie jest "
+"zarządzana przez program Koji"
 
 #: pkgdb/collections.py:316
 msgid "Unable to log into koji"
-msgstr ""
+msgstr "Nie można zalogować się do programu Koji"
 
 #: pkgdb/collections.py:341
 msgid "Mass branch started.  You will be emailed the results."
 msgstr ""
+"Rozpoczęto masowe tworzenie gałęzi. Wyniki zostaną wysłane na adres e-mail."
 
 #: pkgdb/controllers.py:49
 msgid "Fedora Package Database"
-msgstr ""
+msgstr "Baza danych o pakietach Fedory"
 
 #: pkgdb/controllers.py:63 pkgdb/templates/login.html:11
 msgid "Login to the PackageDB"
-msgstr ""
+msgstr "Zaloguj się do bazy danych o pakietach"
 
 #: pkgdb/dispatcher.py:170
 #, python-format
@@ -116,6 +125,10 @@ msgid ""
 "To make changes to this package see:\n"
 "  %(url)s\n"
 msgstr ""
+"%(msg)s\n"
+"\n"
+"Aby wprowadzić zmiany w tym pakiecie należy zobaczyć:\n"
+"  %(url)s\n"
 
 #: pkgdb/dispatcher.py:230
 #, python-format
@@ -126,11 +139,17 @@ msgid ""
 "https://admin.fedoraproject.org/accounts/ to a valid bugzilla email "
 "address and try again."
 msgstr ""
+"Adres e-mail %(bugzilla_email)s nie jest prawidłowym adresem e-mail "
+"Bugzilli. Należy utworzyć konto Bugzilli z tym adresem e-mail lub zmienić "
+"adres e-mail w Systemie kont Fedory https://admin.fedoraproject.org/"
+"accounts/ na prawidłowy adres e-mail Bugzilli spróbować ponownie."
 
 #: pkgdb/dispatcher.py:254 pkgdb/dispatcher.py:261
 #, python-format
 msgid "%(user)s must be in one of these groups: %(groups)s to own a package"
 msgstr ""
+"%(user)s musi być w jednej z tych grup: %(groups)s, aby zostać właścicielem "
+"pakietu"
 
 #: pkgdb/dispatcher.py:272 pkgdb/dispatcher.py:278
 #, python-format
@@ -138,40 +157,41 @@ msgid ""
 "%(user)s must be in one of these groups: %(groups)s to hold the %(acl)s "
 "acl"
 msgstr ""
+"%(user)s musi być w jednej z tych grup: %(groups)s, aby utrzymać ACL %(acl)s"
 
 #: pkgdb/dispatcher.py:448
 #, python-format
 msgid "Would have reassigned bug #%(bug_num)s from %(former)s to %(current)s"
-msgstr ""
+msgstr "Zmieniono by przydział błędu #%(bug_num)s z %(former)s na %(current)s"
 
 #: pkgdb/dispatcher.py:472
 #, python-format
 msgid "No such package %(pkg_id)s"
-msgstr ""
+msgstr "Brak pakietu %(pkg_id)s"
 
 #: pkgdb/dispatcher.py:478 pkgdb/dispatcher.py:750
 msgid "This package is retired.  It must be unretired first"
-msgstr ""
+msgstr "Ten pakiet jest wycofany. Musi najpierw zostać przywrócony"
 
 #: pkgdb/dispatcher.py:507
 #, python-format
 msgid "Acls error: %(err)s"
-msgstr ""
+msgstr "Błąd ACL: %(err)s"
 
 #: pkgdb/dispatcher.py:531
 #, python-format
 msgid "Package %(pkg)s not available for taking"
-msgstr ""
+msgstr "Pakiet %(pkg)s nie jest dostępny do przejęcia"
 
 #: pkgdb/dispatcher.py:543
 #, python-format
 msgid "Not able to change owner information for %(pkg)s"
-msgstr ""
+msgstr "Nie można zmienić informacji o właścicielu dla %(pkg)s"
 
 #: pkgdb/dispatcher.py:547
 #, python-format
 msgid "%(pkg)s ownership updated"
-msgstr ""
+msgstr "Właściciel %(pkg)s został zaktualizowany"
 
 #: pkgdb/dispatcher.py:600
 #, python-format
@@ -179,26 +199,28 @@ msgid ""
 "The (un)retiring of package %(pkg)s could not be completed. Check your "
 "permissions."
 msgstr ""
+"Nie można ukończyć wycofania/przywrócenia pakietu %(pkg)s. Proszę sprawdzić "
+"uprawnienia."
 
 #: pkgdb/dispatcher.py:615
 #, python-format
 msgid "Unable to (un)retire package %(pkg)s"
-msgstr ""
+msgstr "Nie można wycofać/przywrócić pakietu %(pkg)s."
 
 #: pkgdb/dispatcher.py:618
 #, python-format
 msgid "%(pkg)s (un)retirement"
-msgstr ""
+msgstr "Wycofanie/przywrócenie %(pkg)s"
 
 #: pkgdb/dispatcher.py:648
 #, python-format
 msgid "Invalid Status: %(status)s"
-msgstr ""
+msgstr "Nieprawidłowy stan: %(status)s"
 
 #: pkgdb/dispatcher.py:660
 #, python-format
 msgid "PackageListing %(pkg)s does not exist"
-msgstr ""
+msgstr "Lista pakietów %(pkg)s nie istnieje"
 
 #: pkgdb/dispatcher.py:667
 #, python-format
@@ -206,26 +228,27 @@ msgid ""
 "No such user %(username), for package %(pkg)s in %(collection)s "
 "%(version)s"
 msgstr ""
+"Brak użytkownika %(username) dla pakietu %(pkg)s w %(collection)s %(version)s"
 
 #: pkgdb/dispatcher.py:677
 #, python-format
 msgid "%(user)s is not allowed to approve Package ACLs"
-msgstr ""
+msgstr "%(user)s nie może akceptować ACL pakietów"
 
 #: pkgdb/dispatcher.py:706
 #, python-format
 msgid "Not able to create acl %(acl)s on %(pkg)s with status %(status)s"
-msgstr ""
+msgstr "Nie można utworzyć ACL %(acl)s dla %(pkg)s ze stanem %(status)s"
 
 #: pkgdb/dispatcher.py:710 pkgdb/dispatcher.py:1595
 #, python-format
 msgid "%(pkg)s had acl change status"
-msgstr ""
+msgstr "Zmieniono stan ACL %(pkg)s"
 
 #: pkgdb/dispatcher.py:745
 #, python-format
 msgid "Package Listing with id: %(pkg)s does not exist"
-msgstr ""
+msgstr "Lista pakietów z identyfikatorem: %(pkg)s nie istnieje"
 
 #: pkgdb/dispatcher.py:756
 #, python-format
@@ -233,11 +256,13 @@ msgid ""
 "%(user)s is not allowed to approve Package ACLs for %(pkg)s (%(collctn)s "
 "%(ver)s)"
 msgstr ""
+"%(user)s nie ma zezwolenia na akceptowanie ACL pakietów dla %(pkg)s "
+"(%(collctn)s %(ver)s)"
 
 #: pkgdb/dispatcher.py:764
 #, python-format
 msgid "%(group)s is not a group that can commit to packages"
-msgstr ""
+msgstr "%(group)s nie jest grupą, która może wprowadzać zmiany w pakietach"
 
 #: pkgdb/dispatcher.py:810
 #, python-format
@@ -245,40 +270,42 @@ msgid ""
 "Not able to create acl %(acl)s on %(pkg)s (%(collctn)s %(ver)s) with "
 "status %(status)s"
 msgstr ""
+"Nie można utworzyć ACL %(acl)s dla %(pkg)s (%(collctn)s %(ver)s) ze stanem "
+"%(status)s"
 
 #: pkgdb/dispatcher.py:818
 #, python-format
 msgid "%(pkg)s had group_acl changed"
-msgstr ""
+msgstr "%(pkg)s ma zmienione group_acl"
 
 #: pkgdb/dispatcher.py:839
 #, python-format
 msgid "No such package listing %(pkg)s"
-msgstr ""
+msgstr "Brak listy pakietów %(pkg)s"
 
 #: pkgdb/dispatcher.py:891
 #, python-format
 msgid "Not able to create acl %(acl)s for %(user)s on %(pkg)s"
-msgstr ""
+msgstr "Nie można utworzyć ACL %(acl)s dla %(user)s w %(pkg)s"
 
 #: pkgdb/dispatcher.py:897
 #, python-format
 msgid "%(pkg)s: %(user)s has %(action)s %(acl)s"
-msgstr ""
+msgstr "%(pkg)s: %(user)s posiada %(action)s %(acl)s"
 
 #: pkgdb/dispatcher.py:921 pkgdb/dispatcher.py:1124
 msgid "User must be in admin_grp"
-msgstr ""
+msgstr "Użytkownik musi być w admin_grp"
 
 #: pkgdb/dispatcher.py:928
 #, python-format
 msgid "Package %(pkg)s already exists"
-msgstr ""
+msgstr "Pakiet %(pkg)s już istnieje"
 
 #: pkgdb/dispatcher.py:934
 #, python-format
 msgid "Specified owner ID %(owner)s does not have a Fedora Account"
-msgstr ""
+msgstr "Podany identyfikator właściciela %(owner)s nie posiada konta Fedory"
 
 #: pkgdb/dispatcher.py:956 pkgdb/dispatcher.py:1039 pkgdb/dispatcher.py:1217
 #, python-format
@@ -286,75 +313,77 @@ msgid ""
 "Unable to create PackageListing for %(pkg)s(Fedora devel), %(user)s), "
 "%(status)s"
 msgstr ""
+"Nie można utworzyć listy pakietów dla %(pkg)s(Fedora devel), %(user)s), "
+"%(status)s"
 
 #: pkgdb/dispatcher.py:1045
 #, python-format
 msgid "%(pkg)s was added for %(owner)s"
-msgstr ""
+msgstr "%(pkg)s został dodany dla %(owner)s"
 
 #: pkgdb/dispatcher.py:1066 pkgdb/dispatcher.py:1136 pkgdb/dispatcher.py:1533
 #, python-format
 msgid "Package %(pkg)s does not exist"
-msgstr ""
+msgstr "Pakiet %(pkg)s nie istnieje"
 
 #: pkgdb/dispatcher.py:1075
 msgid "Permission denied"
-msgstr ""
+msgstr "Brak uprawnień"
 
 #: pkgdb/dispatcher.py:1082
 #, python-format
 msgid "Unable to set shouldopen on Package %(pkg)s"
-msgstr ""
+msgstr "Nie można ustawić shouldopen dla pakietu %(pkg)s"
 
 #: pkgdb/dispatcher.py:1159
 #, python-format
 msgid "Specified owner %(owner)s does not have a Fedora Account"
-msgstr ""
+msgstr "Podany właściciel %(owner)s nie posiada konta Fedory"
 
 #: pkgdb/dispatcher.py:1196
 #, python-format
 msgid "No collection %(collctn)s"
-msgstr ""
+msgstr "Brak zbioru %(collctn)s"
 
 #: pkgdb/dispatcher.py:1307
 #, python-format
 msgid "New cclist member %(user)s is not in FAS"
-msgstr ""
+msgstr "Nowy element listy CC %(user)s nie jest w FAS"
 
 #: pkgdb/dispatcher.py:1342
 #, python-format
 msgid "New comaintainer%(user)s does not have a Fedora Account"
-msgstr ""
+msgstr "Nowy współopiekun %(user)s nie posiada konta Fedory"
 
 #: pkgdb/dispatcher.py:1395
 #, python-format
 msgid "Group %(group)s is not allowed to commit"
-msgstr ""
+msgstr "Grupa %(group)s nie ma zezwolenia na wprowadzanie zmian"
 
 #: pkgdb/dispatcher.py:1428
 #, python-format
 msgid "Unable to modify PackageListing %(pkg)s(%(collctn)s-%(ver)s)"
-msgstr ""
+msgstr "Nie można zmodyfikować listy pakietów %(pkg)s(%(collctn)s-%(ver)s)"
 
 #: pkgdb/dispatcher.py:1436
 #, python-format
 msgid "%(pkg)s summary updated by %(user)s"
-msgstr ""
+msgstr "Podsumowanie %(pkg)s zostało zaktualizowane przez %(user)s"
 
 #: pkgdb/dispatcher.py:1442
 #, python-format
 msgid "%(pkg)s (%(collctn)s, %(ver)s) updated by %(user)s"
-msgstr ""
+msgstr "%(pkg)s (%(collctn)s, %(ver)s) został zaktualizowany przez %(user)s"
 
 #: pkgdb/dispatcher.py:1477
 #, python-format
 msgid "\"%(package)s\" does not exist on branch \"%(master)s\""
-msgstr ""
+msgstr "\"%(package)s\" nie istnieje w gałęzi \"%(master)s\""
 
 #: pkgdb/dispatcher.py:1486
 #, python-format
 msgid "\"%(branch)s\" is not a valid branch name"
-msgstr ""
+msgstr "\"%(branch)s\" nie jest prawidłową nazwą gałęzi"
 
 #: pkgdb/dispatcher.py:1492
 #, python-format
@@ -362,6 +391,8 @@ msgid ""
 "Unable to clone \"%(package)s %(master)s\" to \"%(package)s %(branch)s\":"
 " %(msg)s"
 msgstr ""
+"Nie można sklonować \"%(package)s %(master)s\" do \"%(package)s %(branch)s\":"
+" %(msg)s"
 
 #: pkgdb/dispatcher.py:1501
 #, python-format
@@ -369,61 +400,63 @@ msgid ""
 "Unable to save clone of %(package)s %(master)s for %(branch)s to the "
 "database: %(error)s"
 msgstr ""
+"Nie można zapisać klonu %(package)s %(master)s dla %(branch)s w bazie "
+"danych: %(error)s"
 
 #: pkgdb/dispatcher.py:1508
 #, python-format
 msgid "%(user)s cloned %(pkg)s %(branch)s from %(master)s"
-msgstr ""
+msgstr "%(user)s sklonował %(pkg)s %(branch)s z %(master)s"
 
 #: pkgdb/dispatcher.py:1510
 #, python-format
 msgid "%(pkg)s %(branch)s cloned from %(master)s"
-msgstr ""
+msgstr "%(pkg)s %(branch)s sklonowano z %(master)s"
 
 #: pkgdb/dispatcher.py:1538
 #, python-format
 msgid "%(user)s is not in admin_grp"
-msgstr ""
+msgstr "%(user)s nie jest w admin_grp"
 
 #: pkgdb/dispatcher.py:1552
 #, python-format
 msgid "Collection %(collctn)s does not exist"
-msgstr ""
+msgstr "Zbiór %(collctn)s nie istnieje"
 
 #: pkgdb/dispatcher.py:1588
 #, python-format
 msgid "Unable to save changes to the database: %(err)s"
-msgstr ""
+msgstr "Nie można zapisać zmian w bazie danych: %(err)s"
 
 #: pkgdb/letter_paginator.py:89
 #, python-format
 msgid "%(app)s -- Packages Overview %(mode)s"
-msgstr ""
+msgstr "%(app)s - informacje o pakietach %(mode)s"
 
 #: pkgdb/listqueries.py:295
 #, python-format
 msgid "%(app)s -- VCS ACLs"
-msgstr ""
+msgstr "%(app)s - ACL VCS"
 
 #: pkgdb/listqueries.py:476
 #, python-format
 msgid "%(app)s -- Bugzilla ACLs"
-msgstr ""
+msgstr "%(app)s - ACL Bugzilli"
 
 #: pkgdb/listqueries.py:572
 #, python-format
 msgid "%(app)s -- Notification List"
-msgstr ""
+msgstr "%(app)s - lista powiadamiania"
 
 #: pkgdb/notifier.py:60
 #, python-format
 msgid "Would have sent: %(subject)s"
-msgstr ""
+msgstr "Wysłano by: %(subject)s"
 
 #: pkgdb/packages.py:85
 #, python-format
 msgid "%(app)s -- Invalid Package Name"
-msgstr ""
+msgstr "%(app)s - nieprawidłowa nazwa pakietu"
 
 #: pkgdb/packages.py:87
 #, python-format
@@ -432,47 +465,53 @@ msgid ""
 "Package Database. If you received this error from a link on the "
 "fedoraproject.org website, please report it."
 msgstr ""
+"packagename, do którego prowadził odnośnik (%(pkg)s), nie znajduje się w "
+"bazie danych o pakietach. Jeśli ten błąd pojawił się z odnośnika na stronie "
+"WWW fedoraproject.org, to proszę go zgłosić."
 
 #: pkgdb/packages.py:105
 #, python-format
 msgid "%(app)s -- Not a Collection"
-msgstr ""
+msgstr "%(app)s - nie jest zbiorem"
 
 #: pkgdb/packages.py:107
 #, python-format
 msgid "%(name)s %(ver)s is not a Collection."
-msgstr ""
+msgstr "%(name)s %(ver)s nie jest zbiorem."
 
 #: pkgdb/packages.py:145
 #, python-format
 msgid "%(app)s -- Not in Collection"
-msgstr ""
+msgstr "%(app)s - nie jest w zbiorze"
 
 #: pkgdb/packages.py:147
 #, python-format
 msgid "The package %(pkg)s is not in Collection %(collctn_name)s %(collctn_ver)s."
-msgstr ""
+msgstr "Pakiet %(pkg)s nie jest w zbiorze %(collctn_name)s %(collctn_ver)s."
 
 #: pkgdb/packages.py:235
 #, python-format
 msgid "%(title)s -- %(pkg)s"
-msgstr ""
+msgstr "%(title)s - %(pkg)s"
 
 #: pkgdb/packages.py:252
 #, python-format
 msgid "%(app)s -- Invalid Package Id"
-msgstr ""
+msgstr "%(app)s - nieprawidłowy identyfikator pakietu"
 
 #: pkgdb/packages.py:254
 msgid ""
 "The packageId you were linked to is not a valid id.  If you received this"
 " error from a link on the fedoraproject.org website, please report it."
 msgstr ""
+"packageId do którego prowadził odnośnik, nie jest prawidłowym "
+"identyfikatorem. Jeśli ten błąd pojawił się z odnośnika na stronie WWW "
+"fedoraproject.org, to proszę go zgłosić."
 
 #: pkgdb/packages.py:263
 #, python-format
 msgid "%(app)s -- Unknown Package"
-msgstr ""
+msgstr "%(app)s - nieznany pakiet"
 
 #: pkgdb/packages.py:265
 #, python-format
@@ -481,15 +520,18 @@ msgid ""
 "received this error from a link on the fedoraproject.org website, please "
 "report it."
 msgstr ""
+"packageId do którego prowadził odnośnik, %(pkg)s, nie istnieje. Jeśli ten "
+"błąd pojawił się z odnośnika na stronie WWW fedoraproject.org, to proszę go "
+"zgłosić."
 
 #: pkgdb/packages.py:286
 #, python-format
 msgid "%(app)s -- Orphaned Packages"
-msgstr ""
+msgstr "%(app)s - porzucone pakiety"
 
 #: pkgdb/release.py:8
 msgid "The Fedora Package Database"
-msgstr ""
+msgstr "Baza danych o pakietach Fedory"
 
 #: pkgdb/release.py:9
 msgid ""
@@ -501,83 +543,91 @@ msgid ""
 "for important package information and allows querying of the package\n"
 "information from other tools.\n"
 msgstr ""
+"\n"
+"Śledzenie właścicieli, opiekunów i stron zainteresowanych w rozwoju danego\n"
+"pakietu oprogramowania w Fedorze. Ta baza danych jest centralnym miejscem\n"
+"przechowywania ważnych informacji o pakietach i umożliwia odpytywanie tych\n"
+"informacji przez inne narzędzia.\n"
 
 #: pkgdb/search.py:69
 #, python-format
 msgid "%(app)s -- Advanced Search"
-msgstr ""
+msgstr "%(app)s - wyszukiwanie zaawansowane"
 
 #: pkgdb/search.py:242
 #, python-format
 msgid "%(app)s -- Search packages for: %(words)s"
-msgstr ""
+msgstr "%(app)s - wyszukiwanie pakietów dla: %(words)s"
 
 #: pkgdb/stats.py:58
 msgid "need to be logged in"
-msgstr ""
+msgstr "należy być zalogowanym"
 
 #: pkgdb/stats.py:113
 #, python-format
 msgid "%(app)s -- Package Stats"
-msgstr ""
+msgstr "%(app)s - statystyki pakietu"
 
 #: pkgdb/users.py:126 pkgdb/users.py:219
 msgid "You must be logged in to view your information"
-msgstr ""
+msgstr "Należy być zalogowanym, aby wyświetlić informacje"
 
 #: pkgdb/users.py:130
 #, python-format
 msgid "%(app)s -- %(name)s -- Packages"
-msgstr "%(app)s -- %(name)s -- Pakiety"
+msgstr "%(app)s - %(name)s - Pakiety"
 
 #: pkgdb/users.py:223
 #, python-format
 msgid "%(app)s -- %(name)s -- Info"
-msgstr "%(app)s -- %(name)s -- Informacje"
+msgstr "%(app)s - %(name)s - Informacje"
 
 #: pkgdb/utils.py:93
 #, python-format
 msgid "refresh forced for %(user)s"
-msgstr ""
+msgstr "wymuszono odświeżenie dla %(user)s"
 
 #: pkgdb/validators.py:72
 #, python-format
 msgid "A collection named %(collection)s does not exist."
-msgstr ""
+msgstr "Zbiór o nazwie %(collection)s nie istnieje."
 
 #: pkgdb/validators.py:104
 msgid "Version specified without a collection name"
-msgstr ""
+msgstr "Podano wersję bez nazwy zbioru"
 
 #: pkgdb/validators.py:106
 #, python-format
 msgid "There is no collection for %(name)s-%(version)s"
-msgstr ""
+msgstr "Brak zbioru dla %(name)s-%(version)s"
 
 #: pkgdb/validators.py:107
 #, python-format
 msgid "Collection named %(name)s does not exist"
-msgstr ""
+msgstr "Zbiór o nazwie %(name)s nie istnieje"
 
 #: pkgdb/yumrepo.py:198
 #, python-format
 msgid "Expected Repo format 9 or 10, got %(ver)s"
-msgstr ""
+msgstr "Oczekiwano formatu repozytorium 9 lub 10, otrzymano %(ver)s"
 
 #: pkgdb/yumrepo.py:316
 #, python-format
 msgid "Packages without descriptions: %(num)s"
-msgstr ""
+msgstr "Pakiety bez opisów: %(num)s"
 
 #: pkgdb/controllers.bak/root.py:30
 msgid ""
 "The credentials you supplied were not correct or did not grant access to "
 "this resource."
 msgstr ""
+"Podane dane uwierzytelniające nie są poprawne lub nie zapewniają dostępu do "
+"tego zasobu."
 
 #: pkgdb/controllers.bak/root.py:33
 msgid "You must provide your credentials before accessing this resource."
 msgstr ""
+"Należy podać dane uwierzytelniające przed uzyskaniem dostępu do tego zasobu."
 
 #: pkgdb/controllers.bak/root.py:36
 msgid "Please log in."
@@ -598,29 +648,31 @@ msgstr "Właściciel"
 
 #: pkgdb/templates/bugzillaacls.html:9
 msgid "Initial QA"
-msgstr ""
+msgstr "Początkowe pole QA"
 
 #: pkgdb/templates/bugzillaacls.html:9
 msgid "Initial CCList"
-msgstr ""
+msgstr "Początkowa lista CC"
 
 #: pkgdb/templates/collectionoverview.html:8
 msgid "Collections"
-msgstr ""
+msgstr "Zbiory"
 
 #: pkgdb/templates/collectionoverview.html:10
 msgid ""
 "Collection - Set of Linux packages created and hosted by the Fedora "
 "Project"
 msgstr ""
+"Zbiór - zestaw pakietów systemu Linux utworzonych i hostowanych przez "
+"Projekt Fedora"
 
 #: pkgdb/templates/collectionoverview.html:10 pkgdb/templates/pkgpage.html:83
 msgid "Collection"
-msgstr ""
+msgstr "Zbiór"
 
 #: pkgdb/templates/collectionoverview.html:12
 msgid "Collection Version - Version of the Collection"
-msgstr ""
+msgstr "Wersja zbioru"
 
 #: pkgdb/templates/collectionoverview.html:12
 msgid "Version"
@@ -631,6 +683,8 @@ msgid ""
 "Number of Packages - How many packages are in the cvs repository for this"
 " colleciton version.  May not have been built for this distribution"
 msgstr ""
+"Liczba pakietów - ile pakietów znajduje się w repozytorium CVS dla tej "
+"wersji zbioru. Mogły nie zostać zbudowane dla tej dystrybucji"
 
 #: pkgdb/templates/collectionoverview.html:14
 msgid "Number of Packages"
@@ -641,6 +695,8 @@ msgid ""
 "Actions that may be carried out against all the packages in this "
 "collection.  Usually need to be in the cvsadmin group to operate on these"
 msgstr ""
+"Czynności, które mogą być wykonywane dla wszystkich pakietów w tym zbiorze. "
+"Zwykle należy być w grupie cvsadmin, aby móc je wykonywać"
 
 #: pkgdb/templates/collectionoverview.html:16
 msgid "Actions"
@@ -651,6 +707,8 @@ msgid ""
 "Branch every package in 'Fedora devel' to this branch.  This copies the "
 "permissions and makes it possible to create a branch on the cvs server."
 msgstr ""
+"Tworzy tę gałąź dla każdego pakietu w zbiorze \"Fedora devel\". Kopiuje "
+"uprawnienia i umożliwia utworzenie gałęzi w serwerze CVS."
 
 #: pkgdb/templates/collectionpage.html:16 pkgdb/templates/pkgbugs.html:20
 #: pkgdb/templates/pkgpage.html:24 pkgdb/templates/pkgpage.html:89
@@ -663,23 +721,23 @@ msgstr "Data utworzenia"
 
 #: pkgdb/templates/filters.html:10
 msgid "Limit results to these collections"
-msgstr ""
+msgstr "Ogranicz wyniki do tych zbiorów"
 
 #: pkgdb/templates/filters.html:15
 msgid "Include EOL Releases"
-msgstr ""
+msgstr "Dołącz wydania EOL"
 
 #: pkgdb/templates/filters.html:18
 msgid "Collection Name:"
-msgstr ""
+msgstr "Nazwa zbioru:"
 
 #: pkgdb/templates/filters.html:21 pkgdb/templates/filters.html:31
 msgid "any"
-msgstr ""
+msgstr "wszystkie"
 
 #: pkgdb/templates/filters.html:28
 msgid "Collection Version:"
-msgstr ""
+msgstr "Wersja zbioru:"
 
 #: pkgdb/templates/filters.html:38 pkgdb/templates/userpkgs.html:29
 msgid "Filter"
@@ -695,35 +753,35 @@ msgstr "Nawigacja"
 
 #: pkgdb/templates/layout.html:56
 msgid "Packages Home"
-msgstr ""
+msgstr "Strona domowa pakietów"
 
 #: pkgdb/templates/layout.html:57
 msgid "View Collections"
-msgstr ""
+msgstr "Wyświetl zbiory"
 
 #: pkgdb/templates/layout.html:58
 msgid "View Packages"
-msgstr ""
+msgstr "Wyświetl pakiety"
 
 #: pkgdb/templates/layout.html:59
 msgid "View Bugs"
-msgstr ""
+msgstr "Wyświetl błędy"
 
 #: pkgdb/templates/layout.html:60
 msgid "My Packages"
-msgstr ""
+msgstr "Moje pakiety"
 
 #: pkgdb/templates/layout.html:61
 msgid "Orphan Packages"
-msgstr ""
+msgstr "Porzucone pakiety"
 
 #: pkgdb/templates/layout.html:62
 msgid "Package Stats"
-msgstr ""
+msgstr "Statystyki pakietu"
 
 #: pkgdb/templates/layout.html:63
 msgid "PackageDB Bugs"
-msgstr ""
+msgstr "Błędy bazy danych o pakietach"
 
 #: pkgdb/templates/layout.html:65
 msgid "Search"
@@ -731,21 +789,23 @@ msgstr "Wyszukaj"
 
 #: pkgdb/templates/layout.html:84
 msgid "PackageDB Version:"
-msgstr ""
+msgstr "Wersja bazy danych o pakietach:"
 
 #: pkgdb/templates/layout.html:84
 msgid "-- Server:"
-msgstr "-- Serwer:"
+msgstr "- Serwer:"
 
 #: pkgdb/templates/layout.html:85
 msgid ""
 "Copyright © 2007-2009 Red Hat, Inc. and others.\n"
 "        Please send any comments or corrections to the"
 msgstr ""
+"Copyright © 2007-2009 Red Hat, Inc. i inni.\n"
+"        Proszę wysyłać wszelkie komentarze i korekty do"
 
 #: pkgdb/templates/layout.html:87
 msgid "websites team"
-msgstr ""
+msgstr "zespołu stron WWW (w języku angielskim)"
 
 #: pkgdb/templates/layout.html:89
 msgid ""
@@ -753,6 +813,9 @@ msgid ""
 "sponsored by Red Hat.  This is a community maintained site.  Red Hat is "
 "not responsible for content."
 msgstr ""
+"Projekt Fedora jest zarządzany i rozwijany przez społeczność, a sponsorowany "
+"przez firmę Red Hat. Ta strona jest zarządzana przez społeczność. Firma "
+"Red Hat nie odpowiada za jej treść."
 
 #: pkgdb/templates/layout.html:93
 msgid "Legal"
@@ -764,23 +827,27 @@ msgstr "Wytyczne używania znaków handlowych"
 
 #: pkgdb/templates/letter_paginator.html:16 pkgdb/templates/paginator.html:33
 msgid "[show all]"
-msgstr ""
+msgstr "[wyświetl wszystko]"
 
 #: pkgdb/templates/pkgbugoverview.html:11
 msgid ""
 "Click on a package to view the bug reports opened against \n"
 "    it. Or go to the"
 msgstr ""
+"Naciśnięcie na pakiecie wyświetli otwarte raporty błędów \n"
+"    dla danego pakietu. Można też przejść do"
 
 #: pkgdb/templates/pkgbugoverview.html:12
 msgid "bugzilla main page"
-msgstr ""
+msgstr "głównej strony Bugzilli"
 
 #: pkgdb/templates/pkgbugoverview.html:12
 msgid ""
 "to construct your \n"
 "    own search."
 msgstr ""
+", aby utworzyć własne \n"
+"    zapytanie."
 
 #: pkgdb/templates/pkgbugs.html:11
 msgid "bugs"
@@ -788,15 +855,15 @@ msgstr "błędy"
 
 #: pkgdb/templates/pkgbugs.html:14
 msgid "bugs found"
-msgstr ""
+msgstr "odnaleziono błędy"
 
 #: pkgdb/templates/pkgbugs.html:15
 msgid "Report"
-msgstr ""
+msgstr "Zgłoś"
 
 #: pkgdb/templates/pkgbugs.html:15
 msgid "a new bug against this package"
-msgstr ""
+msgstr "nowy błąd w tym pakiecie"
 
 #: pkgdb/templates/pkgbugs.html:18
 msgid "Number"
@@ -808,15 +875,15 @@ msgstr "Produkt"
 
 #: pkgdb/templates/pkgheader.html:9
 msgid "Build Status"
-msgstr ""
+msgstr "Stan budowania"
 
 #: pkgdb/templates/pkgheader.html:12
 msgid "Update Status"
-msgstr ""
+msgstr "Stan aktualizacji"
 
 #: pkgdb/templates/pkgheader.html:14
 msgid "Package Source"
-msgstr ""
+msgstr "Źródło pakietu"
 
 #: pkgdb/templates/pkgheader.html:16
 msgid "Bug Reports"
@@ -832,7 +899,7 @@ msgstr "Zawartość:"
 
 #: pkgdb/templates/pkgpage.html:87
 msgid "QA Contact"
-msgstr ""
+msgstr "Kontakt QA"
 
 #: pkgdb/templates/pkgpage.html:97
 msgid "Spec File"
@@ -840,31 +907,31 @@ msgstr "Plik spec"
 
 #: pkgdb/templates/pkgpage.html:202 pkgdb/templates/pkgpage.html:210
 msgid "group members can commit?"
-msgstr ""
+msgstr "członkowie grupy mogą wprowadzać zmiany?"
 
 #: pkgdb/templates/search.html:10
 msgid "Search in a specific collection:"
-msgstr ""
+msgstr "Wyszukaj w podanym zbiorze:"
 
 #: pkgdb/templates/search.html:16
 msgid "Advanced search"
-msgstr ""
+msgstr "Wyszukiwanie zaawansowane"
 
 #: pkgdb/templates/search.html:21
 msgid "matches found in"
-msgstr ""
+msgstr "wyników odnalezionych w"
 
 #: pkgdb/templates/search.html:21
 msgid "for package"
-msgstr ""
+msgstr "dla pakietu"
 
 #: pkgdb/templates/search.html:27
 msgid "We are sorry, but there were no matches to display for:"
-msgstr ""
+msgstr "Brak wyników dla:"
 
 #: pkgdb/templates/search.html:29
 msgid "in collection:"
-msgstr ""
+msgstr "w zbiorze:"
 
 #: pkgdb/templates/stats.html:9
 msgid "Statistics"
@@ -872,27 +939,27 @@ msgstr "Statystyki"
 
 #: pkgdb/templates/stats.html:10
 msgid "Packages with no comaintainers in devel:"
-msgstr ""
+msgstr "Pakiety bez współopiekunów w zbiorze devel:"
 
 #: pkgdb/templates/stats.html:11
 msgid "Packages in all Collections:"
-msgstr ""
+msgstr "Pakietów we wszystkich zbiorach:"
 
 #: pkgdb/templates/stats.html:12
 msgid "Packages belonging to you:"
-msgstr ""
+msgstr "Pakiety należące do użytkownika:"
 
 #: pkgdb/templates/stats.html:13
 msgid "Orphan packages in devel:"
-msgstr ""
+msgstr "Porzucone pakiety w zbiorze devel:"
 
 #: pkgdb/templates/stats.html:14
 msgid "Orphan packages in Fedora 10:"
-msgstr ""
+msgstr "Porzucone pakiety w Fedorze 10:"
 
 #: pkgdb/templates/stats.html:16 pkgdb/templates/stats.html:19
 msgid "Top 20 package owners"
-msgstr ""
+msgstr "Top 20 właścicieli pakietów"
 
 #: pkgdb/templates/stats.html:18 pkgdb/templates/stats.html:34
 msgid "Counter"
@@ -900,7 +967,7 @@ msgstr "Licznik"
 
 #: pkgdb/templates/stats.html:21
 msgid "Number of packages owned"
-msgstr ""
+msgstr "Liczba pakietów, których jest właścicielem"
 
 #: pkgdb/templates/stats.html:21 pkgdb/templates/stats.html:37
 #: pkgdb/templates/useroverview.html:9
@@ -909,19 +976,19 @@ msgstr "Pakiety"
 
 #: pkgdb/templates/stats.html:32
 msgid "Top 20 Maintainers (owners or comaintainers)"
-msgstr ""
+msgstr "Top 20 opiekunów (właścicieli lub współopiekunów)"
 
 #: pkgdb/templates/stats.html:35
 msgid "Top 20 package Owners or comaintainers"
-msgstr ""
+msgstr "Top 20 właścicieli lub współopiekunów"
 
 #: pkgdb/templates/stats.html:35
 msgid "Maintainer"
-msgstr ""
+msgstr "Opiekun"
 
 #: pkgdb/templates/stats.html:37
 msgid "Number of packages maintained"
-msgstr ""
+msgstr "Liczba pakietów, którymi się opiekuje"
 
 #: pkgdb/templates/test.html:6
 msgid "Hello"
@@ -929,7 +996,7 @@ msgstr "Witaj"
 
 #: pkgdb/templates/useroverview.html:8
 msgid "View users:"
-msgstr ""
+msgstr "Wyświetl użytkowników:"
 
 #: pkgdb/templates/useroverview.html:8
 msgid "Info"
@@ -937,33 +1004,35 @@ msgstr "Informacje"
 
 #: pkgdb/templates/useroverview.html:11
 msgid "Nothing else of interest yet!"
-msgstr ""
+msgstr "Nie ma jeszcze nic więcej ciekawego."
 
 #: pkgdb/templates/userpkgs.html:10
 msgid "Only packages with these acls:"
-msgstr ""
+msgstr "Tylko pakiety z tymi ACL:"
 
 #: pkgdb/templates/userpkgs.html:24
 msgid "Include EOL Distributions"
-msgstr ""
+msgstr "Dołącz dystrybucje EOL"
 
 #: pkgdb/templates/userpkgs.html:36 pkgdb/templates/userpkgs.html:52
 msgid "View:"
-msgstr ""
+msgstr "Wyświetl:"
 
 #: pkgdb/templates/userpkgs.html:37
 msgid "My Info"
-msgstr ""
+msgstr "Moje informacje"
 
 #: pkgdb/templates/userpkgs.html:37
 msgid ""
 "|\n"
 "        My Packages ("
 msgstr ""
+"|\n"
+"        Moje pakiety ("
 
 #: pkgdb/templates/userpkgs.html:41
 msgid "View: Orphaned Packages ("
-msgstr ""
+msgstr "Wyświetl: porzucone pakiety ("
 
 #: pkgdb/templates/userpkgs.html:45
 msgid "hide"
@@ -975,14 +1044,16 @@ msgstr "wyświetl"
 
 #: pkgdb/templates/userpkgs.html:50
 msgid "EOL packages"
-msgstr ""
+msgstr "Pakiety EOL"
 
 #: pkgdb/templates/userpkgs.html:53
 msgid ""
 "'s\n"
 "          Info"
 msgstr ""
+"'s\n"
+"          Informacje"
 
 #: pkgdb/templates/userpkgs.html:54
 msgid "'s Packages ("
-msgstr ""
+msgstr " - pakiety ("
