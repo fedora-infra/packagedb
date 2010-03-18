@@ -34,7 +34,7 @@ cert.user_ca='/etc/pki/pkgdb/fedora-server-ca.cert'
 cert.server_ca='/etc/pki/pkgdb/fedora-upload-ca.cert'
 
 email.recipients=('packager-list@localhost',)
-email.sender=('PackageDB', 'pkgdb@localhost')
+email.sender=('Fedora PackageDB', 'pkgdb@localhost')
 
 # TurboMail settings
 mail.on=False
@@ -78,11 +78,12 @@ visit.cookie.secure = True
 # log_debug_info_filter.on = False
 
 # You may want to turn this to development if testing standalone
-# (not under mod_wsgi)
+
 server.environment="production"
-autoreload.package="pkgdb"
-autoreload.on = False
 server.log_to_screen = False
+autoreload.package="pkgdb"
+# Never under mod_wsgi:
+autoreload.on = False
 
 # session_filter.on = True
 

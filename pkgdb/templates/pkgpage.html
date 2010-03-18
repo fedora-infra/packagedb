@@ -17,7 +17,7 @@ import simplejson
         acl_status: ${simplejson.dumps(aclStatus)}};
     </script>
 
-    <h2 py:content="packageListings[0].package.name">Package</h2>
+    <h2 id="pkg">${packageListings[0].package.name}</h2>
     ${pkgheader(packageListings[0].package.name, 'pkgdb')}
 
     <table>
@@ -36,9 +36,8 @@ import simplejson
     <pre py:content="packageListings[0].package.description">Description</pre>
     <p>Contents:
     <ul py:for="pkg in packageListings">
-      <li><a py:attrs="{'href' : ''.join(
-        ('#', pkg.collection.name, pkg.collection.version)).replace(' ','')}"
-        py:content="' '.join((pkg.collection.name, pkg.collection.version))">
+      <li><a py:attrs="{'href' : '#%s' % pkg.collection.branchname}"
+        py:content="'%s %s' % (pkg.collection.name, pkg.collection.version)">
       </a></li>
     </ul>
     </p>
@@ -91,13 +90,13 @@ import simplejson
             </th><th>
             Status
         </th></tr>
-        <tr id="${''.join((pkg.collection.name, pkg.collection.version)).replace(' ','')}">
+        <tr id="${pkg.collection.branchname}">
           <td>
             <a py:if="pkg.status.locale['C'].statusname=='Approved'"  class="cvs"
               href="${'http://cvs.fedoraproject.org/viewcvs/rpms/%s/%s/%s.spec?view=markup'
           % (pkgUrlName, pkg.collection.branchname, pkgUrlName)}">
               <span class="invisible">Spec File</span></a>
-            <a href="${tg.url('/collections/id/' + str(pkg.collection.id))}"
+            <a href="${tg.url('/collections/name/%s' % pkg.collection.branchname)}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
           </td><td>
             <div py:choose="" py:strip="">
@@ -264,8 +263,8 @@ import simplejson
         </tr>
       </div> <!--! here ends the pkgl def declaration -->
         <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
-            <table py:when="pkg.status.locale['C'].statusname=='Orphaned'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
-            <table py:when="pkg.status.locale['C'].statusname!='Orphaned'" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
+            <table py:when="pkg.status.locale['C'].statusname in ('Orphaned','Deprecated')" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
+            <table py:when="pkg.status.locale['C'].statusname not in ('Orphaned', 'Deprecated')" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
         </div>
     </form>
   </body>

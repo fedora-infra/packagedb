@@ -111,7 +111,7 @@ class IsCollectionSimpleNameRegex(Regex):
         the simple name against. Default: r'^[A-Z]+-([0-9]+|devel)$'
     '''
     strip = True
-    regex = re.compile(r'^[A-Z]+-([0-9]+|devel)$')
+    regex = re.compile(r'^([A-Z]+-[0-9]+|devel)$')
 
     messages = {'no_collection': _('%(collection)s does not match the pattern'
         ' for collection names')}
@@ -121,7 +121,7 @@ class IsCollectionSimpleNameRegex(Regex):
         return to_unicode(value)
 
     def validate_python(self, value, state):
-        if not self.simple_name_re.match(value):
+        if not self.regex.match(value):
             raise Invalid(self.message('no_collection', state,
                 collection=value), value, state)
 

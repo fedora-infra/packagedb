@@ -31,6 +31,8 @@ Controller for handling Package ownership information.
 # :C0322: Disable space around operator checking in multiline decorators
 
 from sqlalchemy.orm import eagerload
+from sqlalchemy import case, cast
+from sqlalchemy.types import Integer 
 
 from turbogears import controllers, expose, paginate
 
@@ -126,12 +128,27 @@ class Acls(controllers.Controller):
 
         #pylint:disable-msg=E1101
         # Fetch information about all the packageListings for this package
+        # The order is a bit complex.  We want:
+        # 1) EOL collections last
+        # 2) Within those groups, same named collections together
+        # 3) Within collections, version devel first,
+        # 4) All other collections sorted as numbers in descending order
         pkg_listings = PackageListing.query.options(
                 eagerload('people2.acls2.status.locale'),
                 eagerload('groups2.acls2.status.locale'),
                 eagerload('status.locale'),
-                eagerload('collection.status.locale'),
-                ).filter(PackageListingTable.c.packageid==package.id)
+                eagerload('collection.status.locale'),)\
+                        .filter(PackageListingTable.c.packageid==package.id)\
+                        .join(Collection)\
+                        .order_by(case(value=Collection.statuscode,
+                                whens={STATUS['EOL'].statuscodeid: 999999},
+                                else_=0),
+                            Collection.name,
+                            case(value=Collection.version,
+                                whens={'devel':999999},
+                                else_=cast(Collection.version, Integer))\
+                            .desc()
+                        )
         #pylint:enable-msg=E1101
         if collection:
             # User asked to limit it to specific collections
@@ -154,7 +171,7 @@ class Acls(controllers.Controller):
         # Map of statuscode to statusnames used in this package
         status_map = {}
 
-        pkg_listings = pkg_listings.all()
+        pkg_listings = pkg_listings.order_by().all()
 
         for pkg in pkg_listings:
             pkg.json_props = {'PackageListing': ('package', 'collection',

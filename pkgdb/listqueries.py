@@ -48,17 +48,18 @@ from turbogears.database import get_engine, session
 
 from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
         GroupPackageListingAcl, PackageListing, PersonPackageListing, \
-        PersonPackageListingAcl, Repo, PackageBuild, Tag
+        PersonPackageListingAcl, Repo, PackageBuild, PackageBuildRepo, Tag
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
         CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
-        BinaryPackageTag
+        BinaryPackageTag, BranchTable
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
-from pkgdb.lib.validators import CollectionNameVersion
+from pkgdb.lib.validators import CollectionNameVersion, SetOf, \
+        IsCollectionSimpleNameRegex
 
 from fedora.tg.util import jsonify_validation_errors
 
@@ -212,7 +213,7 @@ class ListQueries(controllers.Controller):
             except KeyError:
                 branch[acl] = AclList(people=[identity])
 
-    @expose(template='genshi-text:pkgdb.templates.plain.vcsacls',
+    @expose(template='mako:/plain/vcsacls.mak',
             as_format='plain', accept_format='text/plain',
             content_type='text/plain; charset=utf-8', #pylint:disable-msg=C0322
             format='text') #pylint:disable-msg=C0322
@@ -364,6 +365,8 @@ class ListQueries(controllers.Controller):
 
         :arg repo: A repository shortname to retrieve tags for (e.g. 'F-11-i386')
 
+        .. versionadded:: 0.5.0
+
         '''
         # initialize/clear database
         fd, dbfile = tempfile.mkstemp()
@@ -385,21 +388,31 @@ class ListQueries(controllers.Controller):
             and_(Tag.id==ApplicationTag.tagid,
                 ApplicationTag.applicationid==PackageBuildApplicationsTable.c.applicationid,
                 PackageBuildApplicationsTable.c.packagebuildid==PackageBuild.id,
-                PackageBuild.repoid==Repo.id,
-                Repo.shortname=='F-11-i386')),
+                PackageBuildRepo.repoid==Repo.id,
+                PackageBuildRepo.packagebuildid==PackageBuild.id,
+                Repo.shortname==repo)),
             select((PackageBuild.name.label('name'),
                 Tag.name.label('tag'),
                 BinaryPackageTag.score.label('score')),
             and_(Tag.id==BinaryPackageTag.tagid,
                 BinaryPackageTag.binarypackagename==PackageBuild.name,
-                PackageBuild.repoid==Repo.id,
-                Repo.shortname=='F-11-i386')))
+                PackageBuildRepo.repoid==Repo.id,
+                PackageBuildRepo.packagebuildid==PackageBuild.id,
+                Repo.shortname==repo)))
 
         pkg_tags = []
+        ### HACK: Should be able to do this in SQL somehow I think but it
+        # requires merging the scores somehow
+        used_tags = set()
         for tag in tags.execute().fetchall():
-            pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
+            if (tag[0], tag[1]) not in used_tags:
+                pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
+                used_tags.add((tag[0], tag[1]))
 
-        lite_session.execute(YumTagsTable.insert(), pkg_tags)
+        if pkg_tags:
+            # If there's no tags, we'll return an empty database
+            lite_session.execute(YumTagsTable.insert(), pkg_tags)
+
         lite_session.commit()
 
         f = open(dbfile, 'r')
@@ -408,7 +421,7 @@ class ListQueries(controllers.Controller):
         os.unlink(dbfile)
         return dump
 
-    @expose(template="genshi-text:pkgdb.templates.plain.bugzillaacls",
+    @expose(template="mako:/plain/bugzillaacls.mak",
             as_format="plain", accept_format="text/plain",
             content_type="text/plain; charset=utf-8", #pylint:disable-msg=C0322
             format='text') #pylint:disable-msg=C0322
@@ -591,7 +604,7 @@ class ListQueries(controllers.Controller):
 
     @validate(validators=NotifyList())
     @error_handler()
-    @expose(template='genshi-text:pkgdb.templates.plain.notify',
+    @expose(template='mako:/plain/notify.mak',
             as_format='plain', accept_format='text/plain',
             content_type='text/plain; charset=utf-8', #pylint:disable-msg=C0322
             format='text') #pylint:disable-msg=C0322
@@ -640,10 +653,10 @@ class ListQueries(controllers.Controller):
         if not eol:
             # Filter out eol distributions
             #pylint:disable-msg=E1101
-            owner_query = owner_query.where(Collection.statuscode.in_(
+            owner_query = owner_query.where(CollectionTable.c.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
-            watcher_query = watcher_query.where(Collection.statuscode.in_(
+            watcher_query = watcher_query.where(CollectionTable.c.statuscode.in_(
                 (STATUS['Active'].statuscodeid,
                     STATUS['Under Development'].statuscodeid)))
             #pylint:enable-msg=E1101
@@ -686,3 +699,44 @@ class ListQueries(controllers.Controller):
         return dict(title=_('%(app)s -- Notification List') % {
             'app': self.app_title}, packages=pkgs, collections=collections,
             name=name, version=version, eol=eol)
+
+    @expose(allow_json=True)
+    @validate(validators = {'collctn_list': SetOf(use_set=True,
+            element_validator=IsCollectionSimpleNameRegex())})
+    @error_handler()
+    def critpath(self, collctn_list=None):
+        '''Retrieve the list of packages that are critpath
+
+        Critical path packages are subject to more testing or stringency of
+        criteria for updating when a release occurs.
+
+        :kwarg collctn_list: List of collection shortnames for which to
+            retrieve the packages from.  The default is all non-EOL
+            collections.
+        :returns: dict keyed by collection shortname.  The values are the list
+            of critpath packages for each collection
+        '''
+        # Check for validation errors requesting this form
+        errors = jsonify_validation_errors()
+        if errors:
+            return errors
+
+        pkg_names = select((BranchTable.c.branchname, PackageTable.c.name))\
+                .where(and_(PackageTable.c.id==PackageListingTable.c.packageid,
+                    PackageListingTable.c.collectionid==CollectionTable.c.id,
+                    CollectionTable.c.id==BranchTable.c.collectionid,
+                    PackageListingTable.c.critpath==True))
+        if collctn_list:
+            pkg_names = pkg_names.where(BranchTable.c.branchname.in_(collctn_list))
+        else:
+            pkg_names = pkg_names.where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+
+        pkgs = {}
+        for pkg in pkg_names.execute():
+            try:
+                pkgs[pkg[0]].add(pkg[1])
+            except KeyError:
+                pkgs[pkg[0]] = set()
+                pkgs[pkg[0]].add(pkg[1])
+
+        return dict(pkgs=pkgs)

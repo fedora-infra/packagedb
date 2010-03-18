@@ -1,4 +1,3 @@
-#!/usr/bin/python -tt
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2010  Red Hat, Inc.
@@ -361,6 +360,9 @@ class PackageBuildImporter(object):
 
             yumbase.conf.cachedir = self.cachedir
             yumbase.doTsSetup()
+            archlist=['x86_64', 'ia32e', 'athlon', 'i686', 'i586', 'i486', 'i386', 'noarch']
+            yumbase.doSackSetup(archlist=archlist)
+
             self._yumbase = yumbase
 
         return self._yumbase
@@ -373,7 +375,7 @@ class PackageBuildImporter(object):
             self.yumbase.add_enable_repo('pkgdb-%s' % self.repo.shortname,
                        ['%s%s' % (self.repo.mirror, self.repo.url)])
             self._yumrepo = self.yumbase.repos.getRepo('pkgdb-%s' % self.repo.shortname)
-           
+
             # populate sack
             try:
                 self.yumbase._getSacks(thisrepo=self._yumrepo.id)
@@ -456,8 +458,8 @@ class PackageBuildImporter(object):
                 .filter_by(
                     name=to_unicode(rpm.name),
                     epoch=to_unicode(rpm.epoch),
-                    version=to_unicode(to_unicode(rpm.version)),
-                    architecture=to_unicode(to_unicode(rpm.arch)),
+                    version=to_unicode(rpm.version),
+                    architecture=to_unicode(rpm.arch),
                     release=to_unicode(rpm.release))\
                 .options(eagerload(PackageBuild.repos))\
                 .one()
@@ -492,11 +494,11 @@ class PackageBuildImporter(object):
             committer = committer.replace('- ', '')
             committer = committer.rsplit(' ', 1)[0]
 
-        pkgbuild.committime = to_unicode(committime.replace(tzinfo=utc))
+        pkgbuild.committime = committime.replace(tzinfo=utc)
         pkgbuild.committer = to_unicode(committer)
         pkgbuild.changelog = to_unicode(changelog)
 
-        pkgbuild.size = to_unicode(rpm.size)
+        pkgbuild.size = rpm.size or 0 
         pkgbuild.license = to_unicode(rpm.license)
 
         return pkgbuild

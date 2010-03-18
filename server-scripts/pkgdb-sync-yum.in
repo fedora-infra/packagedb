@@ -329,23 +329,23 @@ def update(args):
                     sys.exit(0)
                 else:
                     profile_skip -= 1;
-
             try:
-                importer.process(rpm)
-            except PkgImportAlreadyExists, e:
-                log.info("%s: Already imported - skipping" % pkg.name)
-                session.rollback() #pylint:disable-msg=E1101
-                if args.quick:
-                    break
-                else:
+                try:
+                    importer.process(rpm)
+                except PkgImportAlreadyExists, e:
+                    log.info("%s: Already imported - skipping" % pkg.name)
+                    session.rollback() #pylint:disable-msg=E1101
+                    if args.quick:
+                        break
+                    else:
+                        continue
+                except PkgImportError, e:
+                    log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
+                    session.rollback() #pylint:disable-msg=E1101
                     continue
-            except PkgImportError, e:
-                log.warning("%s: Error during import (%s)- skipping" % (pkg.name, e))
-                session.rollback() #pylint:disable-msg=E1101
-                continue
             finally:
                 rpm.close()
-            
+
             session.commit() #pylint:disable-msg=E1101
 
         session.begin() #pylint:disable-msg=E1101

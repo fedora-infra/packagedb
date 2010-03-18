@@ -1,2 +1,2 @@
-'''Genshi templates for text output.
+'''Mako templates for text output.
 '''

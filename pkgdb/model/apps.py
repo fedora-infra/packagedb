@@ -235,7 +235,6 @@ class Application(SABase):
         self.iconname = iconname
         self.summary = summary
         self.icon = icon
-    
 
     # scores is dict {<tag_object>:score}
     # scores[<tag-object>] = <score> create/update app2tag relation with given score

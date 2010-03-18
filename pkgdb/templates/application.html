@@ -139,21 +139,23 @@
   <body>
 
   <div id="info-bar">
-     <!--Screenshot-->
-     <div class="info-box">
-       <h4>Application Info</h4>
-         <div id="tagList" dojoType="dojox.layout.ContentPane">
-           <xi:include href="_tags.html" />
-         </div>
-         <div class="group-header">
-           <span class="title">Packages</span>
-         </div>
-         <div class="group-data">
-            <ul>
-              <li py:for="bn in app.build_names()"><a href="${tg.url('/acls/name/%s' % bn)}" title="Edit package ACls">${bn}</a></li>
-            </ul>
-         </div>
-     </div>
+    <!--Screenshot-->
+    <div class="info-box">
+      <h4>Application Info</h4>
+      <div id="tagList" dojoType="dojox.layout.ContentPane">
+        <xi:include href="_tags.html" />
+      </div>
+      <div class="group-header">
+        <span class="title">Packages</span>
+      </div>
+      <div class="group-data">
+        <ul>
+          <li py:for="pkg_name in set(b.package.name for b in app.builds)">
+          <a href="${tg.url('/acls/name/%s' % pkg_name)}" title="Edit package ACls">${pkg_name}</a>
+          </li>
+        </ul>
+      </div>
+    </div>
 
     <br />
     Related stuff

@@ -178,8 +178,7 @@ setup(
         "TurboGears[future] >= 1.0",
         "TurboMail",
         "python_fedora >= 0.3.12",
-        "SQLAlchemy >= 0.5.6",
-        "argparse"
+        "SQLAlchemy >= 0.5.5",
     ],
     scripts = ["start-pkgdb", "pkgdb.wsgi", "server-scripts/pkgdb-sync-yum",
         "server-scripts/pkgdb-sync-bugzilla", "clients/pkgdb-client",],
@@ -190,9 +189,6 @@ setup(
     packages=find_packages(),
     package_data = find_package_data(where='pkgdb',
                                      package='pkgdb'),
-    data_files = [
-        (os.path.join(NAME, 'yum.repos.d'), glob.glob('yum.repos.d/*'))
-        ],
     keywords = [
         # Use keywords if you'll be adding your package to the
         # Python Cheeseshop

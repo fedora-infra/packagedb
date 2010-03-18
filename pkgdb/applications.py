@@ -33,7 +33,7 @@ from sqlalchemy.sql.expression import and_, literal_column, union
 from sqlalchemy import Text, Integer, func, desc
 
 from turbogears import controllers, expose, identity, redirect, flash
-from turbogears import paginate
+from turbogears import paginate, validate, validators
 from turbogears.database import session
 
 from pkgdb.model import Comment, Application, Icon, IconName, PackageBuild
@@ -73,9 +73,10 @@ class ApplicationsController(controllers.Controller):
         redirect('/apps/name/list/a*')
 
     @expose(template='pkgdb.templates.apps_search')
+    @validate(validators = {'pattern': validators.UnicodeString(not_empty=False, strip=True)})
     @paginate('app_list', limit=50, default_order=('-score','name'), max_limit=None,
             max_pages=13) #pylint:disable-msg=C0322
-    def search(self, pattern=''):
+    def search(self, pattern=u''):
         '''Applications search result
 
         :arg pattern: pattern to be looked for in apps
@@ -88,50 +89,56 @@ class ApplicationsController(controllers.Controller):
 
         app_list = []
 
-        if pattern == '':
-            flash('Insert search pattern...')
+        if pattern == u'':
+            flash(_('Insert search pattern...'))
+        else:
+            # Change glob-style wildcards to the SQL ilike wildcard
+            sql_pattern = pattern.translate({ord(u'*'): ur'%'}).lower()
+            text_pattern = pattern.lower()
+            apps = self._applications_search_query(sql_pattern).execute()
 
-        apps = self._applications_search_query(pattern).execute()
+            # merge all hits 
+            merged_results = {}
+            for app in apps:
+                result = merged_results.get((app['name'], app['apptype']), None)
+                if result is None:
+                    result = {
+                        'name': app['name'],
+                        'apptype': app['apptype'],
+                        'score': 0,
+                        'summary': app['summary'] or '',
+                        'descr': ''.join(excerpt(app['description'], text_pattern, max=120, all=True)) or app['description'][:120],
+                        'comments': [],
+                        'tags': [],
+                        'mimetypes': [],
+                        'usage': []
+                    }
+                if app['summary'] and not result['summary']:
+                    result['summary'] = app['summary']
+                if app['description'] and not result['descr']:
+                    result['descr'] = ''.join(excerpt(app['description'], text_pattern, max=120, all=True)) or app['description'][:120]
+                result['score'] += app['score']
+                if app['foundin'] == 'Tags':
+                    result['tags'].append(app['data'])
+                elif app['foundin'] == 'MimeTypes':
+                    result['mimetypes'].append(app['data'])
+                elif app['foundin'] == 'Usage':
+                    result['usage'].append(app['data'])
+                elif app['foundin'] == 'Comments':
+                    result['comments'].append(''.join(excerpt(app['data'], text_pattern, all=True)))
 
-        # merge all hits 
-        merged_results = {}
-        for app in apps:
-            result = merged_results.get((app['name'], app['apptype']), None)
-            if result is None:
-                result = {
-                    'name': app['name'],
-                    'apptype': app['apptype'],
-                    'score': 0,
-                    'summary': app['summary'] or '',
-                    'descr': ''.join(excerpt(app['description'], pattern, max=120, all=True)),
-                    'comments': [],
-                    'tags': [],
-                    'mimetypes': [],
-                    'usage': [],
-                    'iconname': app['iconname'],
-                    'mstatus': app['mstatus']
-                }
-            result['score'] += app['score']
-            if app['foundin'] == 'Tags':
-                result['tags'].append(app['data'])
-            elif app['foundin'] == 'MimeTypes':
-                result['mimetypes'].append(app['data'])
-            elif app['foundin'] == 'Usage':
-                result['usage'].append(app['data'])
-            elif app['foundin'] == 'Comments':
-                result['comments'].append(''.join(excerpt(app['data'], pattern, all=True)))
+                merged_results[(app['name'], app['apptype'])] = result
 
-            merged_results[(app['name'], app['apptype'])] = result
-
-        app_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
+            app_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
                 
         return dict(title=self.app_title, version=release.VERSION,
             pattern=pattern, app_list=app_list)
 
 
     def _applications_search_query(self, pattern):
-        p = re.compile(r'\W+')
-        s_pattern = p.sub(' ', pattern).split(' ')
+        p = re.compile(ur'\W+')
+        s_pattern = p.sub(u' ', pattern).split(u' ')
+        s_pattern_list = [u'%%%s%%' % p.strip(ur'%') for p in s_pattern if p.strip(ur'%')]
 
         std_columns = (
                 Application.apptype,
@@ -153,7 +160,7 @@ class ApplicationsController(controllers.Controller):
                 and_(
                     Application.desktoptype == 'Application',
                     Application.apptype == 'desktop', 
-                    *(Application.name.ilike('%%%s%%' % p) for p in s_pattern)
+                    *(Application.name.ilike(p) for p in s_pattern_list)
                 )
             )
 
@@ -169,7 +176,7 @@ class ApplicationsController(controllers.Controller):
                 and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
-                    *(Application.summary.ilike('%%%s%%' % p) for p in s_pattern)
+                    *(Application.summary.ilike(p) for p in s_pattern_list)
                 )
             )
 
@@ -185,7 +192,7 @@ class ApplicationsController(controllers.Controller):
                 and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
-                    *(Application.description.ilike('%%%s%%' % p) for p in s_pattern)
+                    *(Application.description.ilike(p) for p in s_pattern_list)
                 )
             )
 
@@ -204,7 +211,7 @@ class ApplicationsController(controllers.Controller):
                 and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
-                    *(Usage.name.ilike('%%%s%%' % p) for p in s_pattern)
+                    *(Usage.name.ilike(p) for p in s_pattern_list)
                 )
             )
 
@@ -223,7 +230,7 @@ class ApplicationsController(controllers.Controller):
                 and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
-                    *(Tag.name.ilike('%%%s%%' % p) for p in s_pattern)
+                    *(Tag.name.ilike(p) for p in s_pattern_list)
                 )
             )
 
@@ -243,7 +250,7 @@ class ApplicationsController(controllers.Controller):
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
                     Comment.published == True,
-                    *(Comment.body.ilike('%%%s%%' % p) for p in s_pattern)
+                    *(Comment.body.ilike(p) for p in s_pattern_list)
                 )
             )
 
@@ -261,7 +268,7 @@ class ApplicationsController(controllers.Controller):
                 and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype == 'Application',
-                    *(MimeType.name.ilike('%%%s%%' % p) for p in s_pattern)
+                    *(MimeType.name.ilike(p) for p in s_pattern_list)
                 )
             )
 
