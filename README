@@ -62,7 +62,7 @@ Install Prerequisites
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
     python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi \
     python-paver httpd mod_ssl babel python-cpio xz python-argparse \
-    python-mako
+    python-mako python-memcached
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,6 +161,16 @@ Run the following scripts to bring it up to date::
   rm repos3.sql
 
 Your postgres server is now all set.
+
+Start memcached
+---------------
+
+Memcached is an optional daemon that can be run to speed up the server.  It
+functions by caching certain data that is read many times so that we don't have
+to access the database as frequently.  To use it you need to install and start it::
+
+  su -c yum install memcached
+  su -c /etc/init.d/memcached start
 
 Setting up the cron jobs
 ------------------------

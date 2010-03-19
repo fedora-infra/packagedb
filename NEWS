@@ -16,6 +16,8 @@ NEWS
 * Change overview page to be more reflective of endusers now
 * Fixes to the yum-import-sync script
 * Fix to the pkgdb-sync-bugzilla script due to new URLS
+* Use memcached for caching of status translations.  This should stop
+  stale Status Objects from causing Internal Errors.
 
 -----
 0.5.1

@@ -25,6 +25,7 @@ Requires: python-argparse
 Requires: koji
 Requires: mod_wsgi
 Requires: python-cpio
+Requires: python-memcached
 
 BuildRequires: python-devel
 BuildRequires: python-genshi
