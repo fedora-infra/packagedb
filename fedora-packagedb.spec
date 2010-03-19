@@ -1,5 +1,5 @@
 Name:           fedora-packagedb
-Version:        0.5.1
+Version:        0.5.1.90
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
