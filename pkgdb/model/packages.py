@@ -38,25 +38,23 @@ Mapping of package related database tables to python classes.
 #   to fill the database tables.
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 #   is not to name them with all uppercase
+import logging
 
-from sqlalchemy import Table, Column, Integer, String, Text, ForeignKey, ForeignKeyConstraint
-from sqlalchemy.orm import relation, backref, eagerload
-from sqlalchemy.orm.collections import mapped_collection, \
-        attribute_mapped_collection
-from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy import Column, ForeignKeyConstraint, Integer, Table, Text
 from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm import backref, eagerload, relation
+from sqlalchemy.orm.collections import attribute_mapped_collection,\
+        mapped_collection
 from sqlalchemy.sql import and_
-
-from turbogears.database import metadata, mapper, get_engine, session
+from turbogears.database import get_engine, metadata, mapper, session
 
 from fedora.tg.json import SABase
+from pkgdb.model.acls import GroupPackageListing, GroupPackageListingAcl,\
+        PersonPackageListing, PersonPackageListingAcl
+from pkgdb.model.prcof import RpmConflicts, RpmFiles, RpmObsoletes,\
+        RpmProvides, RpmRequires
 
-from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
-        GroupPackageListing, GroupPackageListingAcl
-from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
-        RpmObsoletes, RpmFiles
-
-import logging
 error_log = logging.getLogger('pkgdb.model.packages')
 
 get_engine()
