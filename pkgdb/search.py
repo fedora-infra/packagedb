@@ -192,7 +192,7 @@ class Search(controllers.Controller):
             if group:
                 #pylint:disable-msg=E1101
                 for b in group.join(PackageBuild.repos).filter(
-                    Repos.collectionid==collection).all():
+                    Repo.collectionid==collection).all():
                     buildset.add(b)
                 #pylint:enable-msg=E1101
 
