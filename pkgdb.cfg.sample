@@ -25,6 +25,8 @@ bugzilla.enable_modification = False
 # Koji configuration
 koji.huburl='https://koji.fedoraproject.org/kojihub'
 
+memcached.servers=['127.0.0.1:11211']
+
 # Certificates
 cert.user='/etc/pki/pkgdb/pkgdb.pem'
 cert.user_ca='/etc/pki/pkgdb/fedora-server-ca.cert'

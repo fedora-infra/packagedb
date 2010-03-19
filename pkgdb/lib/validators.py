@@ -147,7 +147,7 @@ class IsCollectionSimpleName(UnicodeString):
             raise Invalid(self.message('no_collection', state,
                 collection=value), value, state)
         if not self.eol and (collection.statuscode ==
-                STATUS['EOL'].statuscodeid):
+                STATUS['EOL']):
             raise Invalid(self.message('eol_collection', state,
                 collection=value), value, state)
         return value
@@ -173,7 +173,7 @@ class IsCollection(IsCollectionSimpleName):
             raise Invalid(self.message('no_collection', state,
                 collection=value), value, state)
         if not self.eol and (collection.statuscode ==
-                STATUS['EOL'].statuscodeid):
+                STATUS['EOL']):
             raise Invalid(self.message('eol_collection', state,
                 collection=value), value, state)
         return collection

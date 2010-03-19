@@ -79,7 +79,7 @@ class Acls(controllers.Controller):
         #pylint:disable-msg=E1101
         # Return the information about a package.
         package = Package.query.filter(
-                Package.statuscode!=STATUS['Removed'].statuscodeid
+                Package.statuscode!=STATUS['Removed']
                 ).filter_by(name=packageName).first()
         #pylint:enable-msg=E1101
         if not package:
@@ -141,7 +141,7 @@ class Acls(controllers.Controller):
                         .filter(PackageListingTable.c.packageid==package.id)\
                         .join(Collection)\
                         .order_by(case(value=Collection.statuscode,
-                                whens={STATUS['EOL'].statuscodeid: 999999},
+                                whens={STATUS['EOL']: 999999},
                                 else_=0),
                             Collection.name,
                             case(value=Collection.version,
@@ -232,13 +232,13 @@ class Acls(controllers.Controller):
 
         #pylint:disable-msg=E1101
         query = Package.query.join('listings2').distinct().filter(
-                    PackageListing.statuscode==STATUS['Orphaned'].statuscodeid)
+                    PackageListing.statuscode==STATUS['Orphaned'])
         #pylint:enable-msg=E1101
         if not eol:
             # We don't want EOL releases, filter those out of each clause
             #pylint:disable-msg=E1101
             query = query.join(['listings2', 'collection']).filter(
-                    Collection.statuscode!=STATUS['EOL'].statuscodeid)
+                    Collection.statuscode!=STATUS['EOL'])
         pkg_list = []
         for pkg in query:
             pkg.json_props = {'Package':('listings',)}

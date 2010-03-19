@@ -38,25 +38,23 @@ Mapping of package related database tables to python classes.
 #   to fill the database tables.
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 #   is not to name them with all uppercase
+import logging
 
-from sqlalchemy import Table, Column, Integer, String, Text, ForeignKey, ForeignKeyConstraint
-from sqlalchemy.orm import relation, backref, eagerload
-from sqlalchemy.orm.collections import mapped_collection, \
-        attribute_mapped_collection
-from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy import Column, ForeignKeyConstraint, Integer, Table, Text
 from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm import backref, eagerload, relation
+from sqlalchemy.orm.collections import attribute_mapped_collection,\
+        mapped_collection
 from sqlalchemy.sql import and_
-
-from turbogears.database import metadata, mapper, get_engine, session
+from turbogears.database import get_engine, metadata, mapper, session
 
 from fedora.tg.json import SABase
+from pkgdb.model.acls import GroupPackageListing, GroupPackageListingAcl,\
+        PersonPackageListing, PersonPackageListingAcl
+from pkgdb.model.prcof import RpmConflicts, RpmFiles, RpmObsoletes,\
+        RpmProvides, RpmRequires
 
-from pkgdb.model.acls import PersonPackageListing, PersonPackageListingAcl, \
-        GroupPackageListing, GroupPackageListingAcl
-from pkgdb.model.prcof import RpmProvides, RpmConflicts, RpmRequires, \
-        RpmObsoletes, RpmFiles
-
-import logging
 error_log = logging.getLogger('pkgdb.model.packages')
 
 get_engine()
@@ -77,7 +75,7 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 PackageTable = Table('package', metadata, autoload=True)
 PackageListingTable = Table('packagelisting', metadata, autoload=True)
 
-BinaryPackagesTable = Table('binarypackages', metadata, 
+BinaryPackagesTable = Table('binarypackages', metadata,
     Column('name', Text,  nullable=False, primary_key=True),
     useexisting=True
 )
@@ -125,13 +123,13 @@ class Package(SABase):
                 self.name, self.summary, self.statuscode, self.description,
                 self.upstreamurl, self.reviewurl, self.shouldopen)
 
-    def create_listing(self, collection, owner, status,
+    def create_listing(self, collection, owner, statusname,
             qacontact=None, author_name=None):
         '''Create a new PackageListing branch on this Package.
 
         :arg collection: Collection that the new PackageListing lives on
         :arg owner: The owner of the PackageListing
-        :arg status: Status to set the PackageListing to
+        :arg statusname: Status to set the PackageListing to
         :kwarg qacontact: QAContact for this PackageListing in bugzilla.
         :kwarg author_name: Author of the change.  Note: will remove when
             logging is made generic
@@ -142,7 +140,7 @@ class Package(SABase):
         '''
         from pkgdb.lib.utils import STATUS
         from pkgdb.model.logs import PackageListingLog
-        pkg_listing = PackageListing(owner, status.statuscodeid,
+        pkg_listing = PackageListing(owner, STATUS[statusname],
                 collectionid=collection.id,
                 qacontact=qacontact)
         pkg_listing.packageid = self.id
@@ -153,10 +151,10 @@ class Package(SABase):
             #pylint:enable-msg=E1101
             for acl, status in DEFAULT_GROUPS[group].iteritems():
                 if status:
-                    acl_status = STATUS['Approved'].statuscodeid
+                    acl_statuscode = STATUS['Approved']
                 else:
-                    acl_status = STATUS['Denied'].statuscodeid
-                group_acl = GroupPackageListingAcl(acl, acl_status)
+                    acl_statuscode = STATUS['Denied']
+                group_acl = GroupPackageListingAcl(acl, acl_statuscode)
                 # :W0201: grouppackagelisting is added to the model by
                 #   SQLAlchemy so it doesn't appear in __init__
                 #pylint:disable-msg=W0201
@@ -164,8 +162,7 @@ class Package(SABase):
                 #pylint:enable-msg=W0201
 
         # Create a log message
-        log = PackageListingLog(author_name,
-                STATUS['Added'].statuscodeid,
+        log = PackageListingLog(author_name, STATUS['Added'],
                 '%(user)s added a %(branch)s to %(pkg)s' %
                 {'user': author_name, 'branch': collection,
                     'pkg': self.name})
@@ -222,7 +219,6 @@ class PackageListing(SABase):
         :returns: new branch
         :rtype: PackageListing
         '''
-        from pkgdb.lib.utils import STATUS
         from pkgdb.model.collections import Branch
         from pkgdb.model.logs import GroupPackageListingAclLog, \
                 PersonPackageListingAclLog
@@ -243,7 +239,7 @@ class PackageListing(SABase):
             #pylint:enable-msg=E1101
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
-                    self.owner, STATUS['Approved'], qacontact=self.qacontact,
+                    self.owner, 'Approved', qacontact=self.qacontact,
                     author_name=author_name)
 
         log_params = {'user': author_name,
@@ -386,7 +382,7 @@ class PackageBuild(SABase):
             self.packageid, self.repo.id)
 
     def __str__(self):
-        return "%s-%s-%s.%s" % (self.name, self.version, 
+        return "%s-%s-%s.%s" % (self.name, self.version,
                 self.release, self.architecture)
 
 
@@ -395,7 +391,7 @@ class PackageBuild(SABase):
 
         :args reponame: prefered repo from where the build should be downloaded
         :returns: URI of the build
-        
+
         Find download URI of the build. If build is available in <reponame> repo,
         path to that repo is used. Path to first available repo is returned otherwise.
         """
@@ -409,10 +405,10 @@ class PackageBuild(SABase):
                 break
 
         # format path
-        return "%s%s%s%s.rpm" % (repo.mirror, repo.url, 
+        return "%s%s%s%s.rpm" % (repo.mirror, repo.url,
                 ('','Packages/')[repo.url.endswith('os/')], self)
 
-    
+
     def scores(self):
         '''Return a dictionary of tagname: score for a given packegebuild
         '''

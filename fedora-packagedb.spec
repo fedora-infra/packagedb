@@ -18,7 +18,8 @@ Requires: python-sqlalchemy >= 0.5
 %endif
 Requires: python-psycopg2
 Requires: python-genshi
-Requires: python-fedora >= 0.3.12
+Requires: python-mako
+Requires: python-fedora >= 0.3.17
 Requires: python-bugzilla >= 0.5
 Requires: python-argparse
 Requires: koji
