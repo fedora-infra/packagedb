@@ -83,7 +83,7 @@ class Collections(controllers.Controller):
         #pylint:enable-msg=E1101
         if not eol:
             collections = collections.filter(Collection.statuscode!=
-                    STATUS['EOL'].statuscodeid)
+                    STATUS['EOL'])
 
         status_map = dict(((c[0].statuscode, c[0].status.locale['C'].statusname) for
             c in collections))
@@ -136,7 +136,7 @@ class Collections(controllers.Controller):
         # pylint:disable-msg=E1101
         packages = select((PackageTable,), and_(Package.id==PackageListing.packageid,
                 PackageListing.collectionid==collection.id,
-                Package.statuscode!=STATUS['Removed'].statuscodeid),
+                Package.statuscode!=STATUS['Removed']),
                 order_by=(Package.name,)).execute()
         # pylint:enable-msg=E1101
 
@@ -205,10 +205,9 @@ class Collections(controllers.Controller):
         # Retrieve the packagelist for this collection
         # pylint:disable-msg=E1101
         packages = Package.query.options(lazyload('listings2.people2'),
-                lazyload('listings2.groups2')).join('listings2'
-                        ).filter_by(collectionid = collection_id
-                        ).filter(Package.statuscode !=
-                                STATUS['Removed'].statuscodeid)
+                lazyload('listings2.groups2')).join('listings2')\
+                        .filter_by(collectionid=collection_id)\
+                        .filter(Package.statuscode!=STATUS['Removed'])
         # pylint:enable-msg=E1101
 
         return dict(title='%s -- %s %s' % (self.app_title, collection['name'],
@@ -365,7 +364,7 @@ class Collections(controllers.Controller):
                 'branch': branch})
             return dict(exc='InvalidBranch')
 
-        if to_branch.statuscode == STATUS['EOL'].statuscodeid:
+        if to_branch.statuscode == STATUS['EOL']:
             session.rollback() #pylint:disable-msg=E1101
             flash(_('Will not branch packages in EOL collection %(branch)s') % {
                 'branch': branch})

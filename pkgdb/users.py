@@ -140,21 +140,21 @@ class Users(controllers.Controller):
         if not eol:
             # We don't want EOL releases, filter those out of each clause
             query = query.join(['listings2', 'collection']).filter(
-                        Collection.statuscode != STATUS['EOL'].statuscodeid)
+                        Collection.statuscode != STATUS['EOL'])
 
         queries = []
         if 'owner' in acls:
             # Return any package for which the user is the owner
             queries.append(query.filter(sqlalchemy.and_(
                         Package.statuscode.in_((
-                            STATUS['Approved'].statuscodeid,
-                            STATUS['Awaiting Review'].statuscodeid,
-                            STATUS['Under Review'].statuscodeid)),
+                            STATUS['Approved'],
+                            STATUS['Awaiting Review'],
+                            STATUS['Under Review'])),
                         PackageListing.owner==fasname,
                         PackageListing.statuscode.in_((
-                            STATUS['Approved'].statuscodeid,
-                            STATUS['Awaiting Branch'].statuscodeid,
-                            STATUS['Awaiting Review'].statuscodeid))
+                            STATUS['Approved'],
+                            STATUS['Awaiting Branch'],
+                            STATUS['Awaiting Review']))
                         )))
             del acls[acls.index('owner')]
 
@@ -162,16 +162,12 @@ class Users(controllers.Controller):
             # Return any package on which the user has an Approved acl.
             queries.append(query.join(['listings2', 'people2']).join(
                     ['listings2', 'people2', 'acls2']).filter(sqlalchemy.and_(
-                    Package.statuscode.in_((STATUS['Approved'].statuscodeid,
-                    STATUS['Awaiting Review'].statuscodeid,
-                    STATUS['Under Review'].statuscodeid)),
+                    Package.statuscode.in_((STATUS['Approved'],
+                        STATUS['Awaiting Review'], STATUS['Under Review'])),
                     PersonPackageListing.username == fasname,
-                    PersonPackageListingAcl.statuscode == \
-                            STATUS['Approved'].statuscodeid,
-                    PackageListing.statuscode.in_(
-                        (STATUS['Approved'].statuscodeid,
-                            STATUS['Awaiting Branch'].statuscodeid,
-                            STATUS['Awaiting Review'].statuscodeid))
+                    PersonPackageListingAcl.statuscode == STATUS['Approved'],
+                    PackageListing.statuscode.in_((STATUS['Approved'],
+                        STATUS['Awaiting Branch'], STATUS['Awaiting Review']))
                     )))
             # Return only those acls which the user wants listed
             queries[-1] = queries[-1].filter(

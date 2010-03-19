@@ -241,8 +241,7 @@ class ListQueries(controllers.Controller):
             Branch.branchname,
             GroupPackageListing.groupname), and_(
                 GroupPackageListingAcl.acl == 'commit',
-                GroupPackageListingAcl.statuscode \
-                        == STATUS['Approved'].statuscodeid,
+                GroupPackageListingAcl.statuscode == STATUS['Approved'],
                 GroupPackageListingAcl.grouppackagelistingid \
                         == GroupPackageListing.id,
                 GroupPackageListing.packagelistingid \
@@ -250,8 +249,8 @@ class ListQueries(controllers.Controller):
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
                 Branch.collectionid == Collection.id,
-                PackageListing.statuscode != STATUS['Removed'].statuscodeid,
-                Package.statuscode != STATUS['Removed'].statuscodeid
+                PackageListing.statuscode != STATUS['Removed'],
+                Package.statuscode != STATUS['Removed']
                 )
             )
 
@@ -277,8 +276,8 @@ class ListQueries(controllers.Controller):
                 PackageListing.collectionid==Collection.id,
                 PackageListing.owner!='orphan',
                 Collection.id==Branch.collectionid,
-                PackageListing.statuscode != STATUS['Removed'].statuscodeid,
-                Package.statuscode != STATUS['Removed'].statuscodeid
+                PackageListing.statuscode != STATUS['Removed'],
+                Package.statuscode != STATUS['Removed']
                 ),
             order_by=(PackageListing.owner,)
             )
@@ -298,8 +297,7 @@ class ListQueries(controllers.Controller):
             Branch.branchname, PersonPackageListing.username),
             and_(
                 PersonPackageListingAcl.acl=='commit',
-                PersonPackageListingAcl.statuscode \
-                        == STATUS['Approved'].statuscodeid,
+                PersonPackageListingAcl.statuscode == STATUS['Approved'],
                 PersonPackageListingAcl.personpackagelistingid \
                         == PersonPackageListing.id,
                 PersonPackageListing.packagelistingid \
@@ -307,8 +305,8 @@ class ListQueries(controllers.Controller):
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
                 Branch.collectionid == Collection.id,
-                PackageListing.statuscode != STATUS['Removed'].statuscodeid,
-                Package.statuscode != STATUS['Removed'].statuscodeid
+                PackageListing.statuscode != STATUS['Removed'],
+                Package.statuscode != STATUS['Removed']
                 ),
             order_by=(PersonPackageListing.username,)
             )
@@ -456,10 +454,10 @@ class ListQueries(controllers.Controller):
             and_(
                 Collection.id==PackageListing.collectionid,
                 Package.id==PackageListing.packageid,
-                Package.statuscode!=STATUS['Removed'].statuscodeid,
-                PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
-                Collection.statuscode.in_((STATUS['Active'].statuscodeid,
-                    STATUS['Under Development'].statuscodeid)),
+                Package.statuscode!=STATUS['Removed'],
+                PackageListing.statuscode!=STATUS['Removed'],
+                Collection.statuscode.in_((STATUS['Active'],
+                    STATUS['Under Development'])),
                 ),
             order_by=(Collection.name,), distinct=True)
 
@@ -504,10 +502,10 @@ class ListQueries(controllers.Controller):
                 and_(
                     Collection.id==PackageListing.collectionid,
                     Package.id==PackageListing.packageid,
-                    Package.statuscode!=STATUS['Removed'].statuscodeid,
-                    PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
-                    Collection.statuscode.in_((STATUS['Active'].statuscodeid,
-                        STATUS['Under Development'].statuscodeid)),
+                    Package.statuscode!=STATUS['Removed'],
+                    PackageListing.statuscode!=STATUS['Removed'],
+                    Collection.statuscode.in_((STATUS['Active'],
+                        STATUS['Under Development'])),
                     Package.name.in_(undupe_owners),
                     ),
                 order_by=(Collection.name, Collection.version),
@@ -575,18 +573,17 @@ class ListQueries(controllers.Controller):
             Collection.name, PersonPackageListing.username),
             and_(
                 PersonPackageListingAcl.acl == 'watchbugzilla',
-                PersonPackageListingAcl.statuscode == \
-                        STATUS['Approved'].statuscodeid,
+                PersonPackageListingAcl.statuscode == STATUS['Approved'],
                 PersonPackageListingAcl.personpackagelistingid == \
                         PersonPackageListing.id,
                 PersonPackageListing.packagelistingid == \
                         PackageListing.id,
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
-                Package.statuscode!=STATUS['Removed'].statuscodeid,
-                PackageListing.statuscode!=STATUS['Removed'].statuscodeid,
-                Collection.statuscode.in_((STATUS['Active'].statuscodeid,
-                    STATUS['Under Development'].statuscodeid)),
+                Package.statuscode!=STATUS['Removed'],
+                PackageListing.statuscode!=STATUS['Removed'],
+                Collection.statuscode.in_((STATUS['Active'],
+                    STATUS['Under Development'])),
                 ),
             order_by=(PersonPackageListing.username,), distinct=True
             )
@@ -631,22 +628,19 @@ class ListQueries(controllers.Controller):
         owner_query = select((Package.name, PackageListing.owner),
                 from_obj=(PackageTable.join(PackageListingTable).join(
                     CollectionTable))).where(and_(
-                        Package.statuscode == STATUS['Approved'].statuscodeid,
-                        PackageListing.statuscode == \
-                                STATUS['Approved'].statuscodeid)
+                        Package.statuscode == STATUS['Approved'],
+                        PackageListing.statuscode == STATUS['Approved'])
                         ).distinct().order_by('name')
         watcher_query = select((Package.name, PersonPackageListing.username),
                 from_obj=(PackageTable.join(PackageListingTable).join(
                     CollectionTable).join(PersonPackageListingTable).join(
                         PersonPackageListingAclTable))).where(and_(
-                            Package.statuscode == \
-                                    STATUS['Approved'].statuscodeid,
-                            PackageListing.statuscode == \
-                                    STATUS['Approved'].statuscodeid,
+                            Package.statuscode == STATUS['Approved'],
+                            PackageListing.statuscode == STATUS['Approved'],
                             PersonPackageListingAcl.acl.in_(
                                 ('watchbugzilla', 'watchcommits')),
                             PersonPackageListingAcl.statuscode ==
-                                STATUS['Approved'].statuscodeid
+                                STATUS['Approved']
                         )).distinct().order_by('name')
         #pylint:enable-msg=E1101
 
@@ -654,11 +648,9 @@ class ListQueries(controllers.Controller):
             # Filter out eol distributions
             #pylint:disable-msg=E1101
             owner_query = owner_query.where(CollectionTable.c.statuscode.in_(
-                (STATUS['Active'].statuscodeid,
-                    STATUS['Under Development'].statuscodeid)))
+                (STATUS['Active'], STATUS['Under Development'])))
             watcher_query = watcher_query.where(CollectionTable.c.statuscode.in_(
-                (STATUS['Active'].statuscodeid,
-                    STATUS['Under Development'].statuscodeid)))
+                (STATUS['Active'], STATUS['Under Development'])))
             #pylint:enable-msg=E1101
 
         # Only grab from certain collections
@@ -729,7 +721,7 @@ class ListQueries(controllers.Controller):
         if collctn_list:
             pkg_names = pkg_names.where(BranchTable.c.branchname.in_(collctn_list))
         else:
-            pkg_names = pkg_names.where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+            pkg_names = pkg_names.where(CollectionTable.c.statuscode!=STATUS['EOL'])
 
         pkgs = {}
         for pkg in pkg_names.execute():

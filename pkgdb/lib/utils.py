@@ -34,21 +34,35 @@ import bz2
 import subprocess
 import logging
 
+try:
+    # Note: Ran profile of crc32, md5, sha1, sha256 over our key values
+    # crc32 is almost twice as fast.
+    # md5, sha1, sha256 are comparable to each other
+    # No collisions in our current set
+    from hashlib import sha1 as Hasher
+except ImportError:
+    from sha import new as Hasher
+
 import rpm
 import rpmUtils.transaction
 
 from turbogears import config, view
 from cherrypy import request
+from sqlalchemy import select, and_
+from sqlalchemy.exceptions import DataError
 
 from bugzilla import Bugzilla
+import memcache
 
 # The Fedora Account System Module
 from fedora.client.fas2 import AccountSystem
 
-from pkgdb.model.statuses import StatusTranslation
+from pkgdb.model.statuses import StatusTranslationTable
 from pkgdb import _
 
-STATUS = {}
+MEMCACHE = memcache.Client(config.get('memcached.servers', []))
+
+STATUS = None
 fas = None
 LOG = None
 bugzilla = None
@@ -122,14 +136,71 @@ class UserCache(dict):
             self[username] = person
         return super(UserCache, self).__getitem__(username)
 
-def refresh_status():
-    '''Cache the status types for use in all methods.
-    '''
-    global STATUS
-    statuses = {}
-    for status in StatusTranslation.query.all(): #pylint:disable-msg=E1101
-        statuses[status.statusname] = status
-    STATUS = statuses
+class StatusCache(dict):
+    def __init__(self, timeout=3600):
+        self.timeout = timeout
+
+    def __getitem__(self, status_id):
+        '''Return the other half of status from memcache or the database
+
+        :arg status_id: This can be either a statuscode or a statusname.
+            If it's a statusname, the statuscode will be returned.  If it's
+            a statusname, the statuscode will be returned.
+        '''
+        if isinstance(status_id, basestring):
+            # Have a statusname, looking for an id
+
+            # First ask memcache server for the value
+            mc_id = 'pkgdb:status:%s' % Hasher(status_id).hexdigest()
+            status_value = MEMCACHE.get(mc_id)
+
+            if not status_value:
+                status = select((StatusTranslationTable,), and_(
+                    StatusTranslationTable.c.language=='C',
+                    StatusTranslationTable.c.statusname==status_id))\
+                            .execute().fetchone()
+        else:
+            # Have an id, look for a statusname
+
+            # Ask memcache server for the value
+            mc_id = 'pkgdb:status:%s' % str(status_id)
+            status_value = MEMCACHE.get(mc_id)
+
+            if not status_value:
+                try:
+                    status = select((StatusTranslationTable,), and_(
+                        StatusTranslationTable.c.language=='C',
+                        StatusTranslationTable.c.statuscodeid==status_id))\
+                                .execute().fetchone()
+                except DataError:
+                    # If status_id was not an integer we get a DataError.  In
+                    # that case, we know we won't find the value we want
+                    status = None
+
+        if not status_value:
+            if not status:
+                raise KeyError(_('Unknown status: %(status)s') %
+                    {'status': status_id})
+
+            status_value = status.statuscodeid
+            # Save in memcache for the next status lookup
+            MEMCACHE.set(mc_id, status_value, self.timeout)
+
+        return status_value
+
+    def __setitem__(self, statusname, value):
+        raise TypeError(_('\'StatusCache\' object does not support item assignment'))
+
+    def refresh_status(self):
+        '''Recache all the status types
+        '''
+        status_map = {}
+        for status in select((StatusTranslationTable,),
+                StatusTranslationTable.c.language=='C').execute():
+            status_map[Hasher(status.statusname).hexdigest()] = status.statuscodeid
+            status_map[status.statuscodeid] = status.statusname
+        MEMCACHE.set_multi(status_map, key_prefix='pkgdb:status:',
+            time=self.timeout)
 
 def custom_template_vars(new_vars):
     return new_vars.update({'fas_cache': fas.cache})
@@ -137,12 +208,13 @@ def custom_template_vars(new_vars):
 def init_globals():
     '''Initialize global variables.
 
-    This is mostly connections to services like FAS, bugzilla, and loading
+This is mostly connections to services like FAS, bugzilla, and loading
     constants from the database.
     '''
+    global fas, LOG, bugzilla, STATUS
     # Things to do on startup
-    refresh_status()
-    global fas, LOG, bugzilla
+    STATUS = StatusCache()
+    STATUS.refresh_status()
     LOG = logging.getLogger('pkgdb.controllers')
 
     # Get a connection to the Account System server
@@ -214,5 +286,5 @@ def rpm2cpio(fdno, out=sys.stdout, bufsize=2048):
         raise rpmUtils.RpmUtilsError, \
               'Unsupported payload compressor: "%s"' % compr
 
-__all__ = [LOG, STATUS, admin_grp, bugzilla, fas, init_globals, is_xhr,
-        pkger_grp, refresh_status, rpm2cpio, to_unicode]
+__all__ = [LOG, MEMCACHE, STATUS, admin_grp, bugzilla, fas, init_globals,
+        is_xhr, pkger_grp, rpm2cpio, to_unicode]

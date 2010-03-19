@@ -95,7 +95,7 @@ class Letters(controllers.Controller):
             # minus removed packages
             #pylint:disable-msg=E1101
             packages = packages.filter(
-                    Package.statuscode!=STATUS['Removed'].statuscodeid)
+                    Package.statuscode!=STATUS['Removed'])
             #pylint:enable-msg=E1101
         else:
             mode = 'tag/'
