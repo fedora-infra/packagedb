@@ -1,12 +1,12 @@
 Name:           fedora-packagedb
-Version:        0.4.92
+Version:        0.5.1
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
 Group:          Development/Languages
 License:        GPLv2+
 URL:            http://fedorahosted.org/packagedb
-Source0:        http://toshio.fedorapeople.org/fedora/%{name}-%{version}.tar.bz2
+Source0:        http://fedorahosted.org/releases/p/a/packagedb/%{name}-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
@@ -95,6 +95,13 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Mon Mar 15 2010 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.1-1
+- 0.5.1 release.
+- Fix some cosmetic bugs and one broken link
+
+* Fri Mar 12 2010 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.0-1
+- 0.5.x release.
+
 * Wed Mar 10 2010 Toshio Kuratomi <toshio@fedoraproject.org> - 0.4.92-1
 - Third beta
 
