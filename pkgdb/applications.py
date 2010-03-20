@@ -111,7 +111,9 @@ class ApplicationsController(controllers.Controller):
                         'comments': [],
                         'tags': [],
                         'mimetypes': [],
-                        'usage': []
+                        'usage': [],
+                        'iconname': app['iconname'],
+                        'mstatus': app['mstatus']
                     }
                 if app['summary'] and not result['summary']:
                     result['summary'] = app['summary']
