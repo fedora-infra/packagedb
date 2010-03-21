@@ -180,7 +180,7 @@ class PackageDispatcher(controllers.Controller):
         msg = _('%(msg)s\n\nTo make changes to this package see:\n'
                 '  %(url)s\n') % {'msg': msg,
                         'url': config.get('base_url_filter.base_url') +
-                        tg_url('/packages/name/%s' % listings[0].package.name)}
+                        tg_url('/acls/name/%s' % listings[0].package.name)}
 
         # Send the log
         self.eventLogger.send_msg(msg, subject, recipients.keys())
@@ -1545,16 +1545,17 @@ class PackageDispatcher(controllers.Controller):
     def set_owner(self, pkg_name, owner=None, collectn_list=None):
         '''Change owner of a package.
 
-        This method change the owner of the package.
+        This method changes the owner of the package.
         If owner=None the owner of tha package will be set to the name 
         of the comaintainer that requested approveacls the longest time ago.
-        If owner='orphan' owner will be set to 'orphan'.
+        If owner='orphan' owner will be set to 'orphan' and the package status
+        set to Orphaned
 
         :arg pkg_name: Name of the package to change the owner
         :arg owner: User name to change the owner of package
         :kwarg collectn_list: list of collections like 'F-10', 'devel'.
-          If collectn_list=None, owner changed in all collections associated
-          with the package
+            If collectn_list=None, owner changed in all collections associated
+            with the package
         '''
         # Check that the pkg exists
         try:
@@ -1564,12 +1565,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=
                     _('No such package %(pkg_name)s') %
                         {'pkg_name': pkg_name})
-        approved = self._user_can_set_acls(identity, pkg)
 
-        if not approved or approved not in ('admin', 'owner'):
-            return dict(status=False, message=
-                    _('%(user)s is not allowed to approve Package ACLs') % {
-                        'user': identity.current.user_name})
         if owner and owner != 'orphan':
             try:
                 person = fas.cache[owner]
@@ -1606,6 +1602,15 @@ class PackageDispatcher(controllers.Controller):
                         PackageListing.packageid == pkg.id)).all()
 
         for pkg_listing in package_listings:
+            # The user can set take or release ownership  if the package is
+            # Orphaned or they are the owner or admin
+            if pkg_listing.status.locale['C'].statusname != 'Orphaned':
+                approved = self._user_can_set_acls(identity, pkg_listing)
+
+                if not approved or approved not in ('admin', 'owner'):
+                    return dict(status=False, message= _('%(user)s is not'
+                        ' allowed to change ownership of this package') %
+                        { 'user': identity.current.user_name})
             if not owner:
                 person = self._most_eligible_comaintainer(pkg_listing)
             if person['username'] == pkg_listing.owner:

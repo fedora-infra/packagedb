@@ -33,7 +33,7 @@ from StringIO import StringIO
 import stat
 import rpmUtils
 import ConfigParser
-from cpioarchive import CpioArchive
+from cpioarchive import CpioArchive, CpioError
 from sqlalchemy.sql import and_
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import eagerload
@@ -834,7 +834,7 @@ class PackageBuildImporter(object):
 
         :args rpm: build 
         """
-       
+
         pkgbuild = self.store_package_build(rpm)
         binary_package = self.store_binary_package(rpm.name)
 
@@ -844,16 +844,19 @@ class PackageBuildImporter(object):
         self.store_conflicts(rpm, pkgbuild)
         self.store_requires(rpm, pkgbuild)
         self.store_dependencies(rpm, pkgbuild)
-        
+
         icon_names = set()
 
-        for desktop in rpm.desktops():
-            log.info("  Application found: %s" % desktop.name)
-            self.store_desktop_app(rpm, pkgbuild, desktop)
-            if desktop.icon_name:
-                icon_names.add(desktop.icon_name)
+        try:
+            for desktop in rpm.desktops():
+                log.info("  Application found: %s" % desktop.name)
+                self.store_desktop_app(rpm, pkgbuild, desktop)
+                if desktop.icon_name:
+                    icon_names.add(desktop.icon_name)
+        except CpioError, e:
+            log.error('Unable to extract desktop from %(rpm)s: %(error)s'
+                    % {'rpm': rpm.name, 'error': e})
 
-        
         icons = rpm.icons(icon_names)
         for icon in icons:
             self.store_icon(icon)
