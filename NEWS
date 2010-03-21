@@ -3,8 +3,8 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 11 Nov 2009
-:Version: 0.5.0
+:Date: 20 Mar 2010
+:Version: 0.5.2
 
 -----
 0.5.2
@@ -20,6 +20,7 @@ NEWS
   stale Status Objects from causing Internal Errors.
 * Fix URL in email sent to package maintainers
 * Fix pkgdb-sync-yum script to not fail if a single package is corrupted.
+* Fix package orphaing in the webUI.
 
 -----
 0.5.1
