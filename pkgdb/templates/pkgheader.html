@@ -13,8 +13,8 @@
     <li><a class="cvs" href="${'http://cvs.fedoraproject.org/viewcvs/rpms/'
       + pkgUrlName}">Package Source</a></li>
     <li py:if="action != 'bugz'"><a class="bugz"
-      href="${tg.url('/packages/bugs/' + pkgUrlName)}">Bug Reports</a></li>
+      href="${tg.url('/acls/bugs/' + pkgUrlName)}">Bug Reports</a></li>
     <li py:if="action != 'pkgdb'"><a class="pkgdb"
-      href="${tg.url('/packages/name/' + pkgUrlName)}">Package Info</a></li>
+      href="${tg.url('/acls/name/' + pkgUrlName)}">Package Info</a></li>
   </ul>
 </html>

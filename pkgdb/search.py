@@ -107,9 +107,8 @@ class Search(controllers.Controller):
                     #pylint:disable-msg=E1101
                     descriptions += PackageBuild.query.join(
                         PackageBuild.package).filter(and_(
-                            PackageBuild.statuscode!=
-                                STATUS['Removed'].statuscodeid,
-                            Package.statuscode!=STATUS['Removed'].statuscodeid,
+                            PackageBuild.statuscode!= STATUS['Removed'],
+                            Package.statuscode!=STATUS['Removed'],
                             func.lower(Package.description).like(
                                 '%' + searchword + '%')))
                 #pylint:enable-msg=E1101
@@ -117,10 +116,10 @@ class Search(controllers.Controller):
                     #pylint:disable-msg=E1101
                     exact += PackageBuild.query.filter_by(name=searchword
                             ).filter(PackageBuild.statuscode!= \
-                                    STATUS['Removed'].statuscodeid)
+                                    STATUS['Removed'])
                     names += PackageBuild.query.filter(and_(
                         PackageBuild.statuscode!= \
-                                STATUS['Removed'].statuscodeid,
+                                STATUS['Removed'],
                     func.lower(PackageBuild.name).like('%'+searchwords+'%')))
                     #pylint:enable-msg=E1101
                     if searchon == 'both':
@@ -128,9 +127,9 @@ class Search(controllers.Controller):
                         descriptions += PackageBuild.query.join(
                             PackageBuild.package).filter(and_(
                                     PackageBuild.statuscode!= \
-                                            STATUS['Removed'].statuscodeid,
+                                            STATUS['Removed'],
                                     Package.statuscode!= \
-                                            STATUS['Removed'].statuscodeid,
+                                            STATUS['Removed'],
                                             func.lower(Package.description
                                                 ).like('%'+searchwords+'%')))
                         #pylint:enable-msg=E1101
@@ -138,15 +137,14 @@ class Search(controllers.Controller):
             if searchon in ['name', 'both']:
                 #pylint:disable-msg=E1101
                 exact = PackageBuild.query.filter_by(name=query).filter(
-                        PackageBuild.statuscode!=STATUS['Removed'].statuscodeid)
+                        PackageBuild.statuscode!=STATUS['Removed'])
                 # query the db for every searchword and build a Query object
                 # to filter succesively
                 query = query.split()
                 names = PackageBuild.query.filter(and_(
-                    PackageBuild.statuscode!= \
-                            STATUS['Removed'].statuscodeid,
-                            func.lower(PackageBuild.name).like(
-                                '%' + query[0] + '%')))
+                    PackageBuild.statuscode!=STATUS['Removed'],
+                    func.lower(PackageBuild.name).like(
+                        '%' + query[0] + '%')))
                 #pylint:enable-msg=E1101
                 for searchword in query:
                     #pylint:disable-msg=E1101
@@ -158,9 +156,8 @@ class Search(controllers.Controller):
                     descriptions = PackageBuild.query\
                             .join(PackageBuild.package)\
                             .filter(and_(PackageBuild.statuscode!= \
-                                STATUS['Removed'].statuscodeid,
-                                Package.statuscode!= \
-                                        STATUS['Removed'].statuscodeid,
+                                STATUS['Removed'],
+                                Package.statuscode!= STATUS['Removed'],
                                 func.lower(Package.description)\
                                         .like('%' + query[0] + '%')))
                     #pylint:enable-msg=E1101
@@ -175,10 +172,8 @@ class Search(controllers.Controller):
                 query = query.split()
                 descriptions = PackageBuild.query.join(
                     PackageBuild.package).filter(and_(
-                            PackageBuild.statuscode!= \
-                                    STATUS['Removed'].statuscodeid,
-                            Package.statuscode!= \
-                                    STATUS['Removed'].statuscodeid,
+                            PackageBuild.statuscode!= STATUS['Removed'],
+                            Package.statuscode!= STATUS['Removed'],
                             func.lower(Package.description).like(
                                 '%' + searchwords + '%')))
                 #pylint:enable-msg=E1101
@@ -197,7 +192,7 @@ class Search(controllers.Controller):
             if group:
                 #pylint:disable-msg=E1101
                 for b in group.join(PackageBuild.repos).filter(
-                    Repos.collectionid==collection).all():
+                    Repo.collectionid==collection).all():
                     buildset.add(b)
                 #pylint:enable-msg=E1101
 

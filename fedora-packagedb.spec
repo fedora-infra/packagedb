@@ -1,5 +1,5 @@
 Name:           fedora-packagedb
-Version:        0.5.1
+Version:        0.5.2
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -18,12 +18,14 @@ Requires: python-sqlalchemy >= 0.5
 %endif
 Requires: python-psycopg2
 Requires: python-genshi
-Requires: python-fedora >= 0.3.12
+Requires: python-mako
+Requires: python-fedora >= 0.3.18
 Requires: python-bugzilla >= 0.5
 Requires: python-argparse
 Requires: koji
 Requires: mod_wsgi
 Requires: python-cpio
+Requires: python-memcached
 
 BuildRequires: python-devel
 BuildRequires: python-genshi
@@ -42,7 +44,7 @@ The Fedora Packagedb tracks who owns a package in the Fedora Collection.
 Summary:        Keep track of ownership of packages in Fedora
 Group:          Development/Tools
 License:        GPLv2+
-Requires: python-fedora >= 0.3.7
+Requires: python-fedora >= 0.3.18
 Requires: python-configobj
 
 %description clients
@@ -95,6 +97,10 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Sat Mar 20 2010 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.2-1
+- 0.5.2 release.
+- Bug fixes
+
 * Mon Mar 15 2010 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.1-1
 - 0.5.1 release.
 - Fix some cosmetic bugs and one broken link

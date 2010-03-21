@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2007, 2009  Ionuț Arțăriși
-# Copyright © 2007, 2009  Red Hat, Inc.
+# Copyright © 2007, 2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -104,12 +104,10 @@ class Stats(controllers.Controller):
             PackageListing.id).execute().rowcount
         # orphan packages in DEVEL 
         orphan_devel = PackageListing.query.filter_by(
-            statuscode=STATUS['Orphaned'].statuscodeid, collectionid=DEVEL
-            ).count()
+            statuscode=STATUS['Orphaned'], collectionid=DEVEL).count()
         # orphan packages in fedora 10
         orphan_latest = PackageListing.query.filter_by(
-            statuscode=STATUS['Orphaned'].statuscodeid, collectionid=19
-            ).count()
+            statuscode=STATUS['Orphaned'], collectionid=19).count()
 
         return dict(title=_('%(app)s -- Package Stats') % {
             'app': self.app_title},

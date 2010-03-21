@@ -18,6 +18,8 @@ import cherrypy._cpwsgi
 import turbogears
 import fedora.tg.util
 
+turbogears.config.update({'global': {'mako.directories': [os.path.join(
+    '@DATADIR@', 'fedora-packagedb/pkgdb/templates')]}})
 turbogears.update_config(configfile=os.path.join('@CONFDIR@', 'pkgdb.cfg'),
         modulename="pkgdb.config")
 # This must always be off when used with mod_wsgi

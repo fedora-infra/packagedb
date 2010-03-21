@@ -180,7 +180,7 @@ class PackageDispatcher(controllers.Controller):
         msg = _('%(msg)s\n\nTo make changes to this package see:\n'
                 '  %(url)s\n') % {'msg': msg,
                         'url': config.get('base_url_filter.base_url') +
-                        tg_url('/packages/name/%s' % listings[0].package.name)}
+                        tg_url('/acls/name/%s' % listings[0].package.name)}
 
         # Send the log
         self.eventLogger.send_msg(msg, subject, recipients.keys())
@@ -211,8 +211,8 @@ class PackageDispatcher(controllers.Controller):
             if person.username == identity.current.user_name:
                 # Check each acl that this person has on the package.
                 for acl in person.acls:
-                    if (acl.acl == 'approveacls' and acl.statuscode
-                            == STATUS['Approved'].statuscodeid):
+                    if acl.acl == 'approveacls'\
+                            and acl.statuscode == STATUS['Approved']:
                         return 'comaintainer'
                 break
         return False
@@ -293,7 +293,7 @@ class PackageDispatcher(controllers.Controller):
                 'user': identity.current.user_name,
                 'groups': self.comaintainer_memberships, 'acl': acl})
 
-    def _create_or_modify_acl(self, pkg_listing, person_name, new_acl, status):
+    def _create_or_modify_acl(self, pkg_listing, person_name, new_acl, statusname):
         '''Create or modify an acl.
 
         Set an acl for a user.  This takes a packageListing and makes sure
@@ -303,12 +303,12 @@ class PackageDispatcher(controllers.Controller):
         :arg pkg_listing: PackageListing on which to set the ACL.
         :arg person_name: PersonName to set the ACL for.
         :arg new_acl: ACL name to set.
-        :arg status: Status DB Object we're setting the ACL to.
+        :arg statusname: Status DB Object we're setting the ACL to.
         '''
         # watchbugzilla and watchcommits are autocommit
         if new_acl in ('watchbugzilla', 'watchcommits')\
-                and status == STATUS['Awaiting Review']:
-            status = STATUS['Approved']
+                and statusname == 'Awaiting Review':
+            statusname = 'Approved'
 
         change_person = pkg_listing.people2.get(person_name, None)
         if not change_person:
@@ -317,7 +317,7 @@ class PackageDispatcher(controllers.Controller):
             pkg_listing.people.append(change_person)
             pkg_listing.people2[change_person.username] = change_person
             person_acl = PersonPackageListingAcl(new_acl,
-                    status.statuscodeid)
+                    STATUS[statusname])
             change_person.acls.append(person_acl) #pylint:disable-msg=E1101
         else:
             # Look for an acl for the person
@@ -326,12 +326,12 @@ class PackageDispatcher(controllers.Controller):
                 if acl.acl == new_acl:
                     # Found the acl, change its status
                     person_acl = acl
-                    acl.statuscode = status.statuscodeid
+                    acl.statuscode = STATUS[statusname]
                     break
             if not person_acl:
                 # Acl was not found.  Create one.
                 person_acl = PersonPackageListingAcl(new_acl,
-                        status.statuscodeid)
+                        STATUS[statusname])
                 change_person.acls.append(person_acl)
 
             # For now, we specialcase the build acl to reflect the commit
@@ -340,16 +340,16 @@ class PackageDispatcher(controllers.Controller):
             # used for build and push
             if new_acl == 'commit':
                 self._create_or_modify_acl(pkg_listing, person_name, 'build',
-                        status)
+                        statusname)
         #pylint:disable-msg=E1101
         person_acl.status = session.query(PackageAclStatus).filter(
-                PackageAclStatus.statuscodeid==status.statuscodeid).one()
+                PackageAclStatus.statuscodeid==STATUS[statusname]).one()
         #pylint:enable-msg=E1101
 
         return person_acl
 
     def _create_or_modify_group_acl(self, pkg_listing, group_name, new_acl,
-            status):
+            statusname):
         '''Create or modify a group acl.
 
         Set an acl for a group.  This takes a packageListing and makes sure
@@ -359,7 +359,7 @@ class PackageDispatcher(controllers.Controller):
         :arg pkg_listing: PackageListing on which to set the ACL.
         :arg group_name: GroupName to set the ACL for.
         :arg new_acl: ACL name to set.
-        :arg status: Status DB Objcet we're setting the ACL to.
+        :arg statusname: Status we're setting the ACL to.
         '''
         # Create the ACL
         change_group = None
@@ -374,7 +374,7 @@ class PackageDispatcher(controllers.Controller):
             change_group = GroupPackageListing(group_name)
             pkg_listing.groups.append(change_group)
             group_acl = GroupPackageListingAcl(new_acl,
-                    status.statuscodeid)
+                    STATUS[statusname])
             change_group.acls.append(group_acl) #pylint:disable-msg=E1101
         else:
             # Look for an acl for the group
@@ -383,21 +383,21 @@ class PackageDispatcher(controllers.Controller):
                 if acl.acl == new_acl:
                     # Found the acl, change its status
                     group_acl = acl
-                    acl.statuscode = status.statuscodeid
+                    acl.statuscode = STATUS[statusname]
                     break
             if not group_acl:
                 # Acl was not found.  Create one.
                 group_acl = GroupPackageListingAcl(new_acl,
-                        status.statuscodeid)
+                        STATUS[statusname])
                 change_group.acls.append(group_acl)
 
         # For now, we specialcase the build acl to reflect the commit
         # this is because we need to remove notifications and UI that
-        # depend on any acl being set adn for now, the commit acl is being
+        # depend on any acl being set and for now, the commit acl is being
         # used for build and push
         if new_acl == 'commit':
             self._create_or_modify_group_acl(pkg_listing, group_name, 'build',
-                    status)
+                    statusname)
         return group_acl
 
     def _most_eligible_comaintainer(self, pkg_listing):
@@ -421,8 +421,7 @@ class PackageDispatcher(controllers.Controller):
                    PersonPackageListing.packagelistingid
                        == PackageListing.id,
                    PackageListing.id == pkg_listing.id,
-                   PersonPackageListingAcl.statuscode 
-                       == STATUS['Approved'].statuscodeid,
+                   PersonPackageListingAcl.statuscode == STATUS['Approved'],
                    PersonPackageListingAcl.acl == 'approveacls')
                    ).all()
         #pylint:enable-msg=E1101
@@ -493,30 +492,30 @@ class PackageDispatcher(controllers.Controller):
         if owner['username'] != 'orphan':
             # Take ownership
             pkg_listing.owner = owner['username']
-            pkg_listing.statuscode = STATUS['Approved'].statuscodeid
+            pkg_listing.statuscode = STATUS['Approved']
             log_msg = 'Package %s in %s %s is now owned by %s' % (
                 pkg_listing.package.name, pkg_listing.collection.name,
                 pkg_listing.collection.version, pkg_listing.owner)
-            status = STATUS['Owned']
+            statuscode = STATUS['Owned']
             self._set_bugzilla_owner(owner['bugzilla_email'],
                 pkg_listing.package.name, pkg_listing.collection.name,
                 pkg_listing.collection.version, bzComment)
         else:
             # Release ownership
             pkg_listing.owner = 'orphan'
-            pkg_listing.statuscode = STATUS['Orphaned'].statuscodeid
+            pkg_listing.statuscode = STATUS['Orphaned']
             log_msg = 'Package %s in %s %s was orphaned by %s' % (
                 pkg_listing.package.name, pkg_listing.collection.name,
                 pkg_listing.collection.version,
                 identity.current.user_name)
-            status = STATUS['Orphaned']
+            statuscode = STATUS['Orphaned']
         # Make sure a log is created in the db as well.
         log = PackageListingLog(identity.current.user_name,
-                status.statuscodeid, log_msg, None, pkg_listing.id)
+                statuscode, log_msg, None, pkg_listing.id)
         log.packagelistingid = pkg_listing.id
-    
+
         return log_msg
-  
+
     @expose(allow_json=True)
     def index(self):
         '''
@@ -545,9 +544,9 @@ class PackageDispatcher(controllers.Controller):
                     {'pkg': pkg_listing_id})
         approved = self._user_can_set_acls(identity, pkg)
 
-        if (pkg.statuscode != STATUS['Deprecated'].statuscodeid and (
-            pkg.statuscode == STATUS['Orphaned'].statuscodeid or
-            approved in ('admin', 'owner'))):
+        if pkg.statuscode != STATUS['Deprecated']\
+                and (pkg.statuscode == STATUS['Orphaned']
+                        or approved in ('admin', 'owner')):
             # Retire package
             if pkg.owner != 'orphan':
                 try:
@@ -558,21 +557,21 @@ class PackageDispatcher(controllers.Controller):
                             'owner': 'orphan'})
                 # let set_owner handle bugzilla and other stuff
                 self._set_owner(pkg, person)
-            pkg.statuscode = STATUS['Deprecated'].statuscodeid
+            pkg.statuscode = STATUS['Deprecated']
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
                 pkg.collection.version, identity.current.user_name)
-            status = STATUS['Deprecated']
+            statuscode = STATUS['Deprecated']
             retirement = 'Retired'
-        elif (pkg.statuscode == STATUS['Deprecated'].statuscodeid and
-              approved == 'admin'):
+        elif (pkg.statuscode == STATUS['Deprecated']
+                and approved == 'admin'):
             # Unretire package
-            pkg.statuscode = STATUS['Orphaned'].statuscodeid
+            pkg.statuscode = STATUS['Orphaned']
             log_msg = 'Package %s in %s %s has been unretired by %s and' \
                     ' is now orphan.' % (
                             pkg.package.name, pkg.collection.name,
                             pkg.collection.version, identity.current.user_name)
-            status = STATUS['Orphaned']
+            statuscode = STATUS['Orphaned']
             retirement = 'Unretired'
         else:
             return dict(status=False, message=
@@ -583,7 +582,7 @@ class PackageDispatcher(controllers.Controller):
         pkg.owner = 'orphan'
         # Make a log in the db.
         log = PackageListingLog(identity.current.user_name,
-                status.statuscodeid, log_msg, None, pkg_listing_id)
+                statuscode, log_msg, None, pkg_listing_id)
         log.packagelistingid = pkg.id
 
         try:
@@ -619,10 +618,8 @@ class PackageDispatcher(controllers.Controller):
         if not statusname or not statusname.strip():
             statusname = 'Obsolete'
         try:
-            #pylint:disable-msg=E1101
-            status = StatusTranslation.query.filter_by(
-                    statusname=statusname).one()
-        except InvalidRequestError:
+            statuscode = STATUS[statusname]
+        except KeyError:
             return dict(status=False, message=_('Invalid Status: %(status)s')
                     % {'status': statusname})
 
@@ -667,7 +664,7 @@ class PackageDispatcher(controllers.Controller):
                 return dict(status=False, message=str(e))
 
         person_acl = self._create_or_modify_acl(pkg, person_name,
-                new_acl, status)
+                new_acl, statusname)
 
         # Make sure a log is created in the db as well.
         log_msg = u'%s has set the %s acl on %s (%s %s) to %s for %s' % (
@@ -675,7 +672,7 @@ class PackageDispatcher(controllers.Controller):
                     pkg.collection.name, pkg.collection.version, statusname,
                     user['username'])
         log = PersonPackageListingAclLog(identity.current.user_name,
-                status.statuscodeid, log_msg)
+                statuscode, log_msg)
         log.acl = person_acl #pylint:disable-msg=W0201
 
         try:
@@ -724,7 +721,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Package Listing with id:'
                 ' %(pkg)s does not exist') % {'pkg': pkg_listing_id})
 
-        if pkg.statuscode == STATUS['Deprecated'].statuscodeid:
+        if pkg.statuscode == STATUS['Deprecated']:
             # Retired packages must be brought out of retirement first
             return dict(status=False, message=_('This package is retired.  It'
                 ' must be unretired first'))
@@ -765,10 +762,9 @@ class PackageDispatcher(controllers.Controller):
             if acl.status.locale['C'].statusname == 'Approved':
                 acl_status = 'Denied'
 
-        status = STATUS[acl_status]
         # Change the acl
-        group_acl = self._create_or_modify_group_acl(pkg, group_name, acl_name,
-                status)
+        group_acl = self._create_or_modify_group_acl(pkg, group_name,
+                acl_name, acl_status)
 
         ### WARNING: changeAcl.status is very likely out of sync at this point.
         # See the docstring for an explanation.
@@ -779,7 +775,7 @@ class PackageDispatcher(controllers.Controller):
                     pkg.collection.name, pkg.collection.version, acl_status,
                     group_name)
         log = GroupPackageListingAclLog(identity.current.user_name,
-                status.statuscodeid, log_msg)
+                STATUS[acl_status], log_msg)
         log.acl = group_acl #pylint:disable-msg=W0201
 
         try:
@@ -844,11 +840,10 @@ class PackageDispatcher(controllers.Controller):
                 self._acl_can_be_held_by_user(acl_name)
             except AclNotAllowedError, e:
                 return dict(status=False, message=str(e))
-        status = STATUS[acl_status]
 
         # Assign person to package
         person_acl = self._create_or_modify_acl(pkg_listing,
-                identity.current.user_name, acl_name, status)
+                identity.current.user_name, acl_name, acl_status)
         acl_status = person_acl.status.translations[0].statusname
 
         # Make sure a log is created in the db as well.
@@ -926,7 +921,7 @@ class PackageDispatcher(controllers.Controller):
         #pylint:enable-msg=E1101
 
         # Create the package
-        pkg = Package(package, summary, STATUS['Approved'].statuscodeid)
+        pkg = Package(package, summary, STATUS['Approved'])
         try:
             session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
@@ -935,8 +930,7 @@ class PackageDispatcher(controllers.Controller):
                 ' Approved: Error: %(error)s') % { 'pkg': package,
                     'user': person['username'], 'error': e})
         pkg_listing = pkg.create_listing(devel_collection, person['username'],
-                STATUS['Approved'],
-                author_name = identity.current.user_name)
+                'Approved', author_name = identity.current.user_name)
         try:
             session.flush() #pylint:disable-msg=E1101
         except SQLError, e:
@@ -963,7 +957,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.summary)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user_name, STATUS['Added'].statuscodeid,
+                identity.current.user_name, STATUS['Added'],
                 pkg_log_msg)
         pkg_log.package = pkg #pylint:disable-msg=W0201
         pkg_log_msg = '%s has approved Package %s' % (
@@ -971,7 +965,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user_name, STATUS['Approved'].statuscodeid,
+                identity.current.user_name, STATUS['Approved'],
                 pkg_log_msg)
         pkg_log.package = pkg
 
@@ -996,7 +990,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg.name)
         logs.append(pkg_log_msg)
         pkg_log = PackageLog(
-                identity.current.user_name, STATUS['Approved'].statuscodeid,
+                identity.current.user_name, STATUS['Approved'],
                 pkg_log_msg)
         pkg_log.package = pkg
 
@@ -1026,7 +1020,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Unable to create'
                 ' PackageListing for %(pkg)s(Fedora devel), %(user)s),'
                 ' %(status)s') % { 'pkg': pkg.name, 'user': person['username'],
-                    'status': STATUS['Approved'].statuscodeid})
+                    'status': 'Approved'})
 
         # Send notification of the new package
         self._send_log_msg('\n'.join(logs), _('%(pkg)s was added for %(owner)s')
@@ -1056,7 +1050,7 @@ class PackageDispatcher(controllers.Controller):
                     # Check each acl
                     for acl in acls:
                         if acl.acl == 'approveacls' and acl.statuscode \
-                                == STATUS['Approved'].statuscodeid:
+                                == STATUS['Approved']:
                             return True
             except StopIteration:
                 # Exhausted the list, approveacls was not found
@@ -1096,8 +1090,8 @@ class PackageDispatcher(controllers.Controller):
             pkg.summary = changes['summary'].replace('\n', ' ')
             log_msg = '%s set package %s summary to %s' % (
                     identity.current.user_name, package, changes['summary'])
-            log = PackageLog(identity.current.user_name,
-                    STATUS['Modified'].statuscodeid, log_msg)
+            log = PackageLog(identity.current.user_name, STATUS['Modified'],
+                    log_msg)
             log.package = pkg
             pkg_log_msg = log_msg
 
@@ -1157,13 +1151,12 @@ class PackageDispatcher(controllers.Controller):
                             packageid=pkg.id).one()
                 except InvalidRequestError:
                     if owner_name == 'orphan':
-                        status = STATUS['Orphaned']
+                        statusname = 'Orphaned'
                     else:
-                        status = STATUS['Approved']
-                    pkg_listing = pkg.create_listing(collection,
-                            owner_name,
-                            status,
-                            author_name = identity.current.user_name)
+                        statusname = 'Approved'
+                    pkg_listing = pkg.create_listing(collection, owner_name,
+                            statusname,
+                            author_name=identity.current.user_name)
                     try:
                         session.flush() #pylint:disable-msg=E1101
                     except SQLError, e:
@@ -1171,7 +1164,7 @@ class PackageDispatcher(controllers.Controller):
                             ' PackageListing for %(pkg)s(Fedora devel),'
                             ' %(user)s), %(status)s') % {
                                 'pkg': package, 'user': person['username'],
-                                'status': status})
+                                'status': statusname})
                     changed_acls = []
                     for group in (provenpkger_grp,):
                         #pylint:disable-msg=E1101
@@ -1255,7 +1248,7 @@ class PackageDispatcher(controllers.Controller):
                 for pkg_listing in listings:
                     for acl in ('watchbugzilla', 'watchcommits'):
                         person_acl = self._create_or_modify_acl(pkg_listing,
-                                username, acl, STATUS['Approved'])
+                                username, acl, 'Approved')
                         log_msg = '%s approved %s on %s (%s %s)' \
                                 ' for %s' % (
                                         identity.current.user_name,
@@ -1265,9 +1258,7 @@ class PackageDispatcher(controllers.Controller):
                                         username)
                         pkg_log = PersonPackageListingAclLog(
                                 identity.current.user_name,
-                                STATUS['Approved'].statuscodeid,
-                                log_msg
-                                )
+                                STATUS['Approved'], log_msg)
                         pkg_log.acl = person_acl
                         try:
                             pkg_list_log_msgs[pkg_listing].append(log_msg)
@@ -1299,7 +1290,7 @@ class PackageDispatcher(controllers.Controller):
                     for acl in ('watchbugzilla', 'watchcommits', 'commit',
                             'build', 'approveacls'):
                         person_acl = self._create_or_modify_acl(pkg_listing,
-                                username, acl, STATUS['Approved'])
+                                username, acl, 'Approved')
 
                         # Make sure a log is created in the db as well.
                         log_msg = u'%s approved %s on %s (%s %s)' \
@@ -1311,9 +1302,7 @@ class PackageDispatcher(controllers.Controller):
                                         username)
                         pkg_log = PersonPackageListingAclLog(
                                 identity.current.user_name,
-                                STATUS['Approved'].statuscodeid,
-                                log_msg
-                                )
+                                STATUS['Approved'], log_msg)
                         pkg_log.acl = person_acl
                         try:
                             pkg_list_log_msgs[pkg_listing].append(log_msg)
@@ -1326,15 +1315,15 @@ class PackageDispatcher(controllers.Controller):
             for group in group_list:
                 # True means approve commit, False means deny
                 if group_list[group] == True:
-                    status = STATUS['Approved']
+                    statusname = 'Approved'
                 else:
-                    status = STATUS['Denied']
+                    statusname = 'Denied'
 
                 # We don't let every group commit
                 try:
                     self.groups[group]
                 except KeyError:
-                    if status == STATUS['Denied']:
+                    if statusname == 'Denied':
                         # If we're turning it off we don't have to worry
                         continue
                     return dict(status=False, message=_('Group %(group)s is'
@@ -1342,20 +1331,20 @@ class PackageDispatcher(controllers.Controller):
 
                 for pkg_listing in listings:
                     group_acl = self._create_or_modify_group_acl(pkg_listing,
-                            group, 'commit', status)
+                            group, 'commit', statusname)
 
                     # Make sure a log is created in the db as well.
                     log_msg = u'%s %s %s for commit access on %s' \
                             ' (%s %s)' % (
                                     identity.current.user_name,
-                                    status.statusname,
+                                    statusname,
                                     group,
                                     pkg_listing.package.name,
                                     pkg_listing.collection.name,
                                     pkg_listing.collection.version)
                     pkg_log = GroupPackageListingAclLog(
                             identity.current.user_name,
-                            status.statuscodeid,
+                            STATUS[statusname],
                             log_msg
                             )
                     pkg_log.acl = group_acl
@@ -1521,7 +1510,7 @@ class PackageDispatcher(controllers.Controller):
 
             for acl in acls:
                 person_acl = self._create_or_modify_acl(pkg_listing, username,
-                        acl.acl, STATUS['Obsolete'])
+                        acl.acl, 'Obsolete')
 
                 log_msg = u'%s has set the %s acl on %s (%s %s) to Obsolete' \
                         ' for %s' % (
@@ -1529,7 +1518,7 @@ class PackageDispatcher(controllers.Controller):
                                 pkg_listing.collection.name,
                                 pkg_listing.collection.version, username)
                 log = PersonPackageListingAclLog(identity.current.user.id,
-                        STATUS['Obsolete'].statuscodeid, log_msg)
+                        STATUS['Obsolete'], log_msg)
                 log.acl = person_acl #pylint:disable-msg=W0201
                 log_msgs.append(log_msg)
 
@@ -1556,16 +1545,17 @@ class PackageDispatcher(controllers.Controller):
     def set_owner(self, pkg_name, owner=None, collectn_list=None):
         '''Change owner of a package.
 
-        This method change the owner of the package.
+        This method changes the owner of the package.
         If owner=None the owner of tha package will be set to the name 
         of the comaintainer that requested approveacls the longest time ago.
-        If owner='orphan' owner will be set to 'orphan'.
+        If owner='orphan' owner will be set to 'orphan' and the package status
+        set to Orphaned
 
         :arg pkg_name: Name of the package to change the owner
         :arg owner: User name to change the owner of package
         :kwarg collectn_list: list of collections like 'F-10', 'devel'.
-          If collectn_list=None, owner changed in all collections associated
-          with the package
+            If collectn_list=None, owner changed in all collections associated
+            with the package
         '''
         # Check that the pkg exists
         try:
@@ -1575,12 +1565,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=
                     _('No such package %(pkg_name)s') %
                         {'pkg_name': pkg_name})
-        approved = self._user_can_set_acls(identity, pkg)
 
-        if not approved or approved not in ('admin', 'owner'):
-            return dict(status=False, message=
-                    _('%(user)s is not allowed to approve Package ACLs') % {
-                        'user': identity.current.user_name})
         if owner and owner != 'orphan':
             try:
                 person = fas.cache[owner]
@@ -1613,10 +1598,19 @@ class PackageDispatcher(controllers.Controller):
             #pylint:disable-msg=E1101
             package_listings = PackageListing.query\
                     .filter(and_(PackageListing.collectionid==Collection.id,
-                        Collection.statuscode!=STATUS['EOL'].statuscodeid,
+                        Collection.statuscode!=STATUS['EOL'],
                         PackageListing.packageid == pkg.id)).all()
 
         for pkg_listing in package_listings:
+            # The user can set take or release ownership  if the package is
+            # Orphaned or they are the owner or admin
+            if pkg_listing.status.locale['C'].statusname != 'Orphaned':
+                approved = self._user_can_set_acls(identity, pkg_listing)
+
+                if not approved or approved not in ('admin', 'owner'):
+                    return dict(status=False, message= _('%(user)s is not'
+                        ' allowed to change ownership of this package') %
+                        { 'user': identity.current.user_name})
             if not owner:
                 person = self._most_eligible_comaintainer(pkg_listing)
             if person['username'] == pkg_listing.owner:
@@ -1692,7 +1686,7 @@ class PackageDispatcher(controllers.Controller):
                 pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
             else:
                 pkg_listing_ids = pkg_listing_ids\
-                        .where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+                        .where(CollectionTable.c.statuscode!=STATUS['EOL'])
 
             try:
                 PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
@@ -1716,15 +1710,15 @@ class PackageDispatcher(controllers.Controller):
                         PackageListingTable.c.critpath!=critpath))
         else:
             pkg_listing_ids = select((PackageListingTable.c.id,)).where(and_(
-                    not_(PackageListingTable.c.statuscode.in_((STATUS['EOL'].statuscodeid,
-                        STATUS['Removed'].statuscodeid))),
+                    not_(PackageListingTable.c.statuscode.in_((STATUS['EOL'],
+                        STATUS['Removed']))),
                     PackageListingTable.c.critpath!=critpath))
 
         if collctn_list:
             pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
         else:
             pkg_listing_ids = pkg_listing_ids\
-                    .where(CollectionTable.c.statuscode!=STATUS['EOL'].statuscodeid)
+                    .where(CollectionTable.c.statuscode!=STATUS['EOL'])
 
         try:
             PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\

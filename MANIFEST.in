@@ -12,7 +12,9 @@ recursive-include update-schema *
 include AUTHORS README COPYING ChangeLog NEWS
 include *.cfg.sample
 include pkgdb/templates/*.html
+include pkgdb/templates/*.mak
 include pkgdb/templates/plain/*.txt
+include pkgdb/templates/plain/*.mak
 include pkgdb/config/*.cfg
 recursive-include pkgdb/static/ *
 include fedora-packagedb.spec

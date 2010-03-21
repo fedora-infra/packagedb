@@ -1,4 +1,3 @@
-#!/usr/bin/python -tt
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2010  Red Hat, Inc.
@@ -34,7 +33,7 @@ from StringIO import StringIO
 import stat
 import rpmUtils
 import ConfigParser
-from cpioarchive import CpioArchive
+from cpioarchive import CpioArchive, CpioError
 from sqlalchemy.sql import and_
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import eagerload
@@ -357,6 +356,9 @@ class PackageBuildImporter(object):
 
             yumbase.conf.cachedir = self.cachedir
             yumbase.doTsSetup()
+            archlist=['x86_64', 'ia32e', 'athlon', 'i686', 'i586', 'i486', 'i386', 'noarch']
+            yumbase.doSackSetup(archlist=archlist)
+
             self._yumbase = yumbase
 
         return self._yumbase
@@ -369,7 +371,7 @@ class PackageBuildImporter(object):
             self.yumbase.add_enable_repo('pkgdb-%s' % self.repo.shortname,
                        ['%s%s' % (self.repo.mirror, self.repo.url)])
             self._yumrepo = self.yumbase.repos.getRepo('pkgdb-%s' % self.repo.shortname)
-           
+
             # populate sack
             try:
                 self.yumbase._getSacks(thisrepo=self._yumrepo.id)
@@ -452,8 +454,8 @@ class PackageBuildImporter(object):
                 .filter_by(
                     name=to_unicode(rpm.name),
                     epoch=to_unicode(rpm.epoch),
-                    version=to_unicode(to_unicode(rpm.version)),
-                    architecture=to_unicode(to_unicode(rpm.arch)),
+                    version=to_unicode(rpm.version),
+                    architecture=to_unicode(rpm.arch),
                     release=to_unicode(rpm.release))\
                 .options(eagerload(PackageBuild.repos))\
                 .one()
@@ -488,11 +490,11 @@ class PackageBuildImporter(object):
             committer = committer.replace('- ', '')
             committer = committer.rsplit(' ', 1)[0]
 
-        pkgbuild.committime = to_unicode(committime.replace(tzinfo=utc))
+        pkgbuild.committime = committime.replace(tzinfo=utc)
         pkgbuild.committer = to_unicode(committer)
         pkgbuild.changelog = to_unicode(changelog)
 
-        pkgbuild.size = to_unicode(rpm.size)
+        pkgbuild.size = rpm.size or 0 
         pkgbuild.license = to_unicode(rpm.license)
 
         return pkgbuild
@@ -832,7 +834,7 @@ class PackageBuildImporter(object):
 
         :args rpm: build 
         """
-       
+
         pkgbuild = self.store_package_build(rpm)
         binary_package = self.store_binary_package(rpm.name)
 
@@ -842,16 +844,19 @@ class PackageBuildImporter(object):
         self.store_conflicts(rpm, pkgbuild)
         self.store_requires(rpm, pkgbuild)
         self.store_dependencies(rpm, pkgbuild)
-        
+
         icon_names = set()
 
-        for desktop in rpm.desktops():
-            log.info("  Application found: %s" % desktop.name)
-            self.store_desktop_app(rpm, pkgbuild, desktop)
-            if desktop.icon_name:
-                icon_names.add(desktop.icon_name)
+        try:
+            for desktop in rpm.desktops():
+                log.info("  Application found: %s" % desktop.name)
+                self.store_desktop_app(rpm, pkgbuild, desktop)
+                if desktop.icon_name:
+                    icon_names.add(desktop.icon_name)
+        except CpioError, e:
+            log.error('Unable to extract desktop from %(rpm)s: %(error)s'
+                    % {'rpm': rpm.name, 'error': e})
 
-        
         icons = rpm.icons(icon_names)
         for icon in icons:
             self.store_icon(icon)

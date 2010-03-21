@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -95,7 +95,7 @@ class Letters(controllers.Controller):
             # minus removed packages
             #pylint:disable-msg=E1101
             packages = packages.filter(
-                    Package.statuscode!=STATUS['Removed'].statuscodeid)
+                    Package.statuscode!=STATUS['Removed'])
             #pylint:enable-msg=E1101
         else:
             mode = 'tag/'
