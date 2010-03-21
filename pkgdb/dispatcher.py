@@ -180,7 +180,7 @@ class PackageDispatcher(controllers.Controller):
         msg = _('%(msg)s\n\nTo make changes to this package see:\n'
                 '  %(url)s\n') % {'msg': msg,
                         'url': config.get('base_url_filter.base_url') +
-                        tg_url('/packages/name/%s' % listings[0].package.name)}
+                        tg_url('/acls/name/%s' % listings[0].package.name)}
 
         # Send the log
         self.eventLogger.send_msg(msg, subject, recipients.keys())
