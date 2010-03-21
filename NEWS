@@ -18,6 +18,8 @@ NEWS
 * Fix to the pkgdb-sync-bugzilla script due to new URLS
 * Use memcached for caching of status translations.  This should stop
   stale Status Objects from causing Internal Errors.
+* Fix URL in email sent to package maintainers
+* Fix pkgdb-sync-yum script to not fail if a single package is corrupted.
 
 -----
 0.5.1
