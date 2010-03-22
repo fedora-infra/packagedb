@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <?python from pkgdb.lib.url import absolute_url, remove_csrf_token?>
 <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
-                        xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+                        xmlns:moz="http://www.mozilla.org/2006/browser/search/"
+                        xmlns:py="http://genshi.edgewall.org/">
     <ShortName>Fedora PkgDB: ${shortname}</ShortName>
     <Description>Search Fedora Package Database</Description>
     <InputEncoding>UTF-8</InputEncoding>
@@ -9,7 +10,8 @@
     <Contact>maxamillion@gmail.com</Contact>
     <Url type="text/html" 
         template="${remove_csrf_token(absolute_url(url))+'?'}">
-        <Param name="${param}" value="{searchTerms}"/>
+        <Param py:if="stars" name="${param}" value="*{searchTerms}*"/>
+        <Param py:if="not stars" name="${param}" value="{searchTerms}"/>
     </Url>
     <Url type="applications/x-suggestions+json" 
         template="${remove_csrf_token(absolute_url('%s?%s=%s' % (url, param, example)))}"/>

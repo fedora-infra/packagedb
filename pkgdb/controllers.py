@@ -135,10 +135,16 @@ class Root(controllers.RootController):
     def opensearch(self, xmlfile):
 
         if xmlfile == 'pkgdb_packages.xml':
-            return dict(shortname='Packages', url='/acls/list/', param='searchwords', example='kernel')
+            return dict(shortname='Packages', url='/acls/list/', 
+                param='searchwords', example='kernel',
+                stars=True)
         elif xmlfile == 'pkgdb_apps.xml':
-            return dict(shortname='Apps', url='/apps/search', param='pattern', example='nethack')
+            return dict(shortname='Apps', url='/apps/search', 
+                param='pattern', example='nethack',
+                stars=False)
         elif xmlfile == 'pkgdb_builds.xml':
-            return dict(shortname='Builds', url='/builds/search', param='pattern', example='kernel')
+            return dict(shortname='Builds', url='/builds/search', 
+                param='pattern', example='kernel',
+                stars=False)
 
         redirect('/')
