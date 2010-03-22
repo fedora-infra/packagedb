@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?python from pkgdb.lib.url import absolute_url, remove_csrf_token?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                        xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+    <ShortName>Fedora PkgDB: ${shortname}</ShortName>
+    <Description>Search Fedora Package Database</Description>
+    <InputEncoding>UTF-8</InputEncoding>
+    <Image height="16" width="16" type="image/png">${remove_csrf_token(absolute_url('/static/images/16-fedora-pkgdb.png'))}</Image>
+    <Contact>maxamillion@gmail.com</Contact>
+    <Url type="text/html" 
+        template="${remove_csrf_token(absolute_url(url))+'?'}">
+        <Param name="${param}" value="{searchTerms}"/>
+    </Url>
+    <Url type="applications/x-suggestions+json" 
+        template="${remove_csrf_token(absolute_url('%s?%s=%s' % (url, param, example)))}"/>
+    <Url type="application/opensearchdescription+xml"
+        rel="self"
+        template="${remove_csrf_token(absolute_url('/opensearch/pkgdb_%s.xml' % shortname.lower()))}" />
+    <SearchForm>${remove_csrf_token(absolute_url('/'))}</SearchForm>
+    <LongName>Fedora-pkgdb Web Search</LongName>
+    <Query role="example" searchTerms="${example}" />
+    <Developer>Adam Miller</Developer>
+</OpenSearchDescription>

@@ -128,3 +128,17 @@ class Root(controllers.RootController):
             redirect('/acls/list/*%s*' % pattern)
 
         redirect('/')
+
+
+    
+    @expose(content_type='application/xml', template='pkgdb.templates.opensearch')
+    def opensearch(self, xmlfile):
+
+        if xmlfile == 'pkgdb_packages.xml':
+            return dict(shortname='Packages', url='/acls/list/', param='searchwords', example='kernel')
+        elif xmlfile == 'pkgdb_apps.xml':
+            return dict(shortname='Apps', url='/apps/search', param='pattern', example='nethack')
+        elif xmlfile == 'pkgdb_builds.xml':
+            return dict(shortname='Builds', url='/builds/search', param='pattern', example='kernel')
+
+        redirect('/')

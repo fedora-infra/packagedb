@@ -8,11 +8,22 @@
     import socket
     import pkgdb.release
     from pkgdb.model.apps import icon_url 
+    from pkgdb.lib.url import absolute_url, remove_csrf_token
     _hostname = socket.gethostname()
     _version = pkgdb.release.VERSION
     ?>
   <py:match path="head" once="true">
   <head py:attrs="select('@*')">
+    <link title="Fedora PkgDB: Packages" 
+        rel="search" type="application/opensearchdescription+xml" 
+        href="${remove_csrf_token(absolute_url('/opensearch/pkgdb_packages.xml'))}" />
+    <link title="Fedora PkgDB: Apps" 
+        rel="search" type="application/opensearchdescription+xml" 
+        href="${remove_csrf_token(absolute_url('/opensearch/pkgdb_apps.xml'))}" />
+    <link title="Fedora PkgDB: Builds" 
+        rel="search" type="application/opensearchdescription+xml" 
+        href="${remove_csrf_token(absolute_url('/opensearch/pkgdb_builds.xml'))}" />
+
     <meta content="text/html; charset=UTF-8" http-equiv="content-type"
       py:replace="''" />
     <title>${title}</title>
