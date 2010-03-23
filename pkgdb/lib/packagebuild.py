@@ -307,6 +307,7 @@ class RPM(object):
 class PackageBuildImporter(object):
 
     def __init__(self, repo, cachedir='/var/tmp', force=False):
+        self.archlist=['x86_64', 'ia32e', 'athlon', 'i686', 'i586', 'i486', 'i386', 'noarch']
         self.repo = repo
         self.force = force
         self.collection = repo.collection
@@ -356,8 +357,6 @@ class PackageBuildImporter(object):
 
             yumbase.conf.cachedir = self.cachedir
             yumbase.doTsSetup()
-            archlist=['x86_64', 'ia32e', 'athlon', 'i686', 'i586', 'i486', 'i386', 'noarch']
-            yumbase.doSackSetup(archlist=archlist)
 
             self._yumbase = yumbase
 
@@ -374,7 +373,7 @@ class PackageBuildImporter(object):
 
             # populate sack
             try:
-                self.yumbase._getSacks(thisrepo=self._yumrepo.id)
+                self.yumbase._getSacks(thisrepo=self._yumrepo.id, archlist=self.archlist)
             except:
                 exc_class, exc, tb = sys.exc_info()
                 e = PkgImportError('Repo %s failed to read! (%s)' % (self._yumrepo, exc))
