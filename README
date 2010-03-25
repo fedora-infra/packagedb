@@ -74,6 +74,9 @@ Get and Build the Source
 
 Setup the Database
 ~~~~~~~~~~~~~~~~~~
+
+.. note:: postgresql 8.3 or higher is needed
+
 Make sure postgres is set to allow connections over tcp/ip using password
 authentication.
 
