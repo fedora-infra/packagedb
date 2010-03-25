@@ -38,7 +38,7 @@ from turbogears.database import session
 
 from pkgdb.model import Comment, Application, Icon, IconName, PackageBuild
 from pkgdb.model import Tag, Usage, ApplicationUsage, ApplicationTag
-from pkgdb.model import MimeType
+from pkgdb.model import MimeType, Theme
 from pkgdb.lib.utils import mod_grp
 from pkgdb import release, _
 from pkgdb.lib.text_utils import excerpt
@@ -531,15 +531,18 @@ class AppIconController(controllers.Controller):
     def show(self, *app_name):
         app_name = '/'.join(app_name)
 
-        # TODO: themes 
-        icon_data = session.query(Icon.icon)\
-                .join(Icon.name, IconName.applications)\
+        icon_data = session.query(Theme.name, Icon.icon)\
+                .join(Icon.name, IconName.applications, Icon.theme)\
                 .filter(Application.name==app_name)\
-                .first()
+                .all()
+
         if not icon_data:
             redirect('/static/images/noicon.png')
 
-        return str(icon_data[0])
+        icons = dict(icon_data)
+        
+        # icon theme priority: default > hicolor > whatever
+        return str(icons.get('default', None) or icons.get('hicolor', None) or icons[icons.keys()[0]])
 
                     
 
