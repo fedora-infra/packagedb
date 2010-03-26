@@ -7,11 +7,25 @@
   <?python
     import socket
     import pkgdb.release
+    try:
+        from fedora.tg.util import tg_absolute_url
+    except:
+        from pkgdb.lib.url import tg_absolute_url
     _hostname = socket.gethostname()
     _version = pkgdb.release.VERSION
     ?>
   <py:match path="head" once="true">
   <head py:attrs="select('@*')">
+    <link title="Fedora PkgDB: Packages" 
+        rel="search" type="application/opensearchdescription+xml" 
+        href="${tg_absolute_url('/opensearch/pkgdb_packages.xml')}" />
+    <link title="Fedora PkgDB: Apps" 
+        rel="search" type="application/opensearchdescription+xml" 
+        href="${tg_absolute_url('/opensearch/pkgdb_apps.xml')}" />
+    <link title="Fedora PkgDB: Builds" 
+        rel="search" type="application/opensearchdescription+xml" 
+        href="${tg_absolute_url('/opensearch/pkgdb_builds.xml')}" />
+
     <meta content="text/html; charset=UTF-8" http-equiv="content-type"
       py:replace="''" />
     <title>${title}</title>

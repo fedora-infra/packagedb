@@ -68,10 +68,11 @@ class BuildsController(controllers.Controller):
     @expose(template='pkgdb.templates.builds_search')
     @paginate('build_list', limit=90, default_order=('-score','name'), max_limit=None,
             max_pages=13) #pylint:disable-msg=C0322
-    def search(self, *pattern):
+    def search(self, *pattern, **kvargs):
         '''Builds search result
 
-        :arg pattern: pattern to be looked for in apps.
+        :arg pattern: pattern to be looked for in apps. Pattern can be in both forms,
+        <path>/<pattern>/ or <path>/?pattern=<pattern>.
 
         Search is performed on name, license, architecture, version, release,
         provides, requires, obsoletes, depends and files. Results are sorted according 
@@ -79,7 +80,10 @@ class BuildsController(controllers.Controller):
         in listing.
         '''
 
-        pattern = '/'.join(pattern)
+        if 'pattern' in kvargs:
+            pattern = kvargs['pattern']
+        else:
+            pattern = '/'.join(pattern)
 
         build_base = {}
 
