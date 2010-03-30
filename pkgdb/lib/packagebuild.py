@@ -336,10 +336,14 @@ class PackageBuildImporter(object):
         #pylint:enable-msg=E1101
         try:
             package = pkg_query.one()
-        except:
+        except NoResultFound:
             exc_class, exc, tb = sys.exc_info()
             e = PkgImportError('The corresponding package (%s) does not '
                     'exist in the pkgdb!' % package_name)
+            raise e.__class__, e, tb
+        except:
+            exc_class, exc, tb = sys.exc_info()
+            e = PkgImportError('Unable to reading package data from db (%s)!' % str(exc))
             raise e.__class__, e, tb
         return package
 

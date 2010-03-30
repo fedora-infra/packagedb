@@ -42,6 +42,8 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
+from turbogears import url
+from fedora.tg.util import tg_url
 
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
 from pkgdb.lib.dt_utils import fancy_delta
@@ -65,11 +67,14 @@ ApplicationsTable = Table('applications', metadata,
     Column('desktoptype', Text),
     Column('iconid', nullable=True),
     Column('iconnameid', nullable=True),
+    Column('icon_status_id', nullable=False),
     ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE",
         ondelete="CASCADE"),
     ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
     ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+    ForeignKeyConstraint(['icon_status_id'],['media_status.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
 
@@ -166,7 +171,7 @@ TagsTable = Table('tags', metadata,
 
 IconNamesTable = Table('iconnames', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
-    Column('name', Text, nullable=False, unique=True),
+    Column('name', Text, nullable=False, unique=True)
 )
                         
 ThemesTable = Table('themes', metadata,
@@ -178,7 +183,8 @@ IconsTable = Table('icons', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('nameid', nullable=False),
     Column('collectionid', nullable=False),                   
-    Column('themeid', nullable=False),                   
+    Column('themeid', nullable=False),
+    Column('m_status_id', nullable=False, default=0),
     Column('icon', Binary, nullable=False),
     Column('orig_size', Integer, nullable=False),
     ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE",
@@ -187,8 +193,19 @@ IconsTable = Table('icons', metadata,
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['themeid'], ['themes.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
+    ForeignKeyConstraint(['m_status_id'], ['media_status.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
 )
 
+
+MediaStatusTable = Table('media_status', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('name', Text, nullable=False)
+)
+
+MS_NEW = 0
+MS_EXPORTED = 1
+MS_SYNCED = 2
 
 def _create_apptag(tag, score):
     """Creator function for apptags association proxy """
@@ -210,7 +227,7 @@ class Application(SABase):
     '''
 
     def __init__(self, name, description, url, apptype, summary,
-            desktoptype=None, iconname=None, icon=None ):
+            desktoptype=None, iconname=None, icon=None, icon_status_id=None ):
         super(Application, self).__init__()
         self.name = name
         self.description = description
@@ -220,6 +237,7 @@ class Application(SABase):
         self.iconname = iconname
         self.summary = summary
         self.icon = icon
+        self.icon_status_id = icon_status_id
 
     # scores is dict {<tag_object>:score}
     # scores[<tag-object>] = <score> create/update app2tag relation with given score
@@ -446,13 +464,18 @@ class Application(SABase):
                     Application.name, 
                     Application.summary, 
                     Application.description,
+                    Application.icon_status_id.label('icon_status'),
                     func.sum(ApplicationUsage.rating).label('total'),
                     func.count(ApplicationUsage.rating).label('count'))\
                 .join('usages')\
                 .filter(and_(
                     Application.apptype == 'desktop',
                     Application.desktoptype == 'Application'))\
-                .group_by(Application.name, Application.summary, Application.description)\
+                .group_by(
+                    Application.name, 
+                    Application.summary, 
+                    Application.description,
+                    Application.icon_status_id)\
                 .order_by(desc('count'))
         #pylint:enable-msg=E1101
         if limit > 0:
@@ -471,6 +494,7 @@ class Application(SABase):
         fresh = session.query(
                     Application.name, 
                     Application.summary, 
+                    Application.icon_status_id.label('icon_status'),
                     PackageBuild.changelog,
                     PackageBuild.committime,
                     PackageBuild.committer)\
@@ -497,7 +521,8 @@ class Application(SABase):
         #pylint:disable-msg=E1101
         comments = session.query(
                     Application.name, 
-                    Application.summary, 
+                    Application.summary,
+                    Application.icon_status_id.label('icon_status'),
                     Comment.body,
                     Comment.time,
                     Comment.author)\
@@ -523,6 +548,7 @@ class Application(SABase):
         comments = session.query(
                     Application.name, 
                     Application.summary, 
+                    Application.icon_status_id.label('icon_status'),
                     func.count().label('count'))\
                 .join(Comment)\
                 .filter(and_(
@@ -530,12 +556,17 @@ class Application(SABase):
                     Application.desktoptype == 'Application'))\
                 .group_by(
                     Application.name, 
-                    Application.summary)\
+                    Application.summary,
+                    Application.icon_status_id)\
                 .order_by(desc('count'))
         #pylint:enable-msg=E1101
         if limit > 0:
             comments = comments.limit(limit)
         return comments
+
+
+    def icon_url(self):
+        return icon_url(self.name, self.icon_status_id)
         
 
 #class Blacklist(SABase):
@@ -688,6 +719,18 @@ class IconName(SABase):
         return 'IconName(%r)' % (self.name)
        
 
+def icon_url(app_name, status=0):
+    if app_name:
+        if status == MS_SYNCED:
+            app_name = app_name.replace('/', '_')
+            return tg_url('/static/appicon/%s/%s.png' % \
+                (app_name, app_name))
+        else:
+            return url('/appicon/show/%s' % app_name)
+    else:
+        return tg_url('/static/appicon/noicon.png')
+        
+
 class Theme(SABase):
 
     def __init__(self, name):
@@ -699,18 +742,20 @@ class Theme(SABase):
         
 class Icon(SABase):
 
-    def __init__(self, icon=None, name=None, collection=None, theme=None, orig_size=0):
+    def __init__(self, icon=None, name=None, collection=None, 
+            theme=None, orig_size=0, m_status_id=0):
         super(Icon, self).__init__()
         self.icon = icon
         self.name = name
         self.collection = collection
         self.theme = theme
         self.orig_size = orig_size
+        self.m_status_id = m_status_id
 
     def __repr__(self):
         return 'Icon(%r, collection=%r, theme=%r, orig_size=%r)' % (
             self.name, self.collection.name, self.theme.name, self.orig_size)
-        
+
 #
 # Mappers
 #
@@ -763,7 +808,7 @@ mapper(IconName, IconNamesTable)
 mapper(Theme, ThemesTable)
 
 mapper(Icon, IconsTable, properties = {
-    'name': relation(IconName),
+    'name': relation(IconName, backref=backref('icons')),
     'collection': relation(Collection),
     'theme': relation(Theme),
     })

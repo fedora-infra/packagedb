@@ -39,6 +39,15 @@ CONFDIR = '@CONFDIR@'
 PKGDBDIR = os.path.join('@DATADIR@', 'fedora-packagedb')
 sys.path.append(PKGDBDIR)
 
+THEME_PRIORITY = {
+    'default': 5,
+    'hicolor': 4,
+    'Fedora': 3,
+    'gnome': 2,
+    'Bluecurve': 2,
+    'oxygen': 1
+}
+
 import pkg_resources
 import logging
 import argparse
@@ -64,6 +73,10 @@ def setup_parser():
         description='Import packagebuilds and applications into Fedora PkgDB.')
 
     parser.add_argument('--config', '-c', help='Fedora PkgDB config file')
+    parser.add_argument('--verbose', action='store_true',
+            help="set verbose output")
+    parser.add_argument('--quiet', action='store_true',
+            help="print just error messages")
     subparsers = parser.add_subparsers(title='Import commands', 
             help='for more help run "%(prog)s <command> --help"')
 
@@ -83,10 +96,6 @@ def setup_parser():
             help='go just through this repo. For list of valid repos run with showrepos command')
     parser_update.add_argument('--cachedir',
             help='directory where the yum cache will be created during the import. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
-    parser_update.add_argument('--verbose', action='store_true',
-            help="set verbose output")
-    parser_update.add_argument('--quiet', action='store_true',
-            help="print just error messages")
     parser_update.add_argument('--force', action='store_true',
             help="reimport existing builds. When this option is selected we DON'T skip to next repo on hitting already imported build")
     parser_update.add_argument('--quick', default=False, action='store_true',
@@ -110,6 +119,31 @@ def setup_parser():
     parser_clean.add_argument('--cachedir',
             help='directory where the yum cache will be created. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
     parser_clean.set_defaults(func='clean')
+
+    # media2static command
+    parser_media2static = subparsers.add_parser('media2static', 
+        help='export new media (icons, screenshots) as static content.'
+            ' Exported media are marked. The you can distribute'
+            ' the exported content to proxies. When done run markmadiasynced command'
+            ' to mark them available to webserver.')
+    parser_media2static.add_argument('--staticdir',
+            help='directory where the media will be stored. If not set, we are looking for server.static_media_dir option in config file. If not found use "/var/pkgdb/static" as default. Make sure cachedir is writeable.')
+    parser_media2static.add_argument('--all', action='store_true',
+            help="reexport all the media in DB")
+    parser_media2static.set_defaults(func='media2static')
+
+    # markmediasynced command
+    parser_markmediasynced = subparsers.add_parser('markmediasynced', 
+        help='mark exported media avilable for webserver(s).'
+            ' Use this command when you are sure all generated static content'
+            ' is available on all pkgdb webservers')
+    parser_markmediasynced.set_defaults(func='markmediasynced')
+
+    # servemediafromdb command
+    parser_servemediafromdb = subparsers.add_parser('servemediafromdb', 
+        help='mark all media (app icons) unavailable for webserver(s) as static content.'
+            ' Use this command to serve application\'s icons as dynamic content')
+    parser_servemediafromdb.set_defaults(func='servemediafromdb')
 
     return parser
 
@@ -363,9 +397,173 @@ def clean(args):
         importer.close(prune=False)
         session.commit() #pylint:disable-msg=E1101
 
+    log.info('Done.')
+
+
+def _get_staticdir(staticdir):
+    if not staticdir:
+        staticdir = config.get('server.static_media_dir', '/var/pkgdb/static')
+
+    log.info('Static Media Dir: %s' % staticdir)
+
+    return staticdir
+
+
+def media2static(args):
+    """Export all icons from DB to filesystem.
+
+    Exported media are marked as exported. The you can distribute
+    the exported content to proxies. When done run madiasynced command
+    to mark them available to webserver.
+    """
+    from pkgdb.model import Icon, IconName, MS_NEW, MS_EXPORTED
+    from pkgdb.model import Application
+    from sqlalchemy.orm import eagerload
+    from sqlalchemy.sql.expression import and_, or_
+    from pkgdb.lib.icon import noicon_png
+
+    staticdir = _get_staticdir(args.staticdir)
+
+    log.info('Exporting Icons')
+
+    # create noicon.png is there is no such thing in appicons
+    noicon_path = os.path.join(staticdir, 'appicons', 'noicon.png')
+    if not os.path.exists(noicon_path):
+        noicon = open(noicon_path, 'w')
+        noicon.write(noicon_png())
+        noicon.close()
+
+    apps_query = session.query(Application)\
+        .outerjoin(Application.iconname, IconName.icons)\
+        .options(eagerload(Application.iconname, Icon.theme, 
+            Icon.collection, IconName.icons))
+    if not args.all:
+        apps_query = apps_query.filter(
+            or_(
+                Icon.m_status_id==MS_NEW, 
+                Application.icon_status_id==MS_NEW))
+    apps = apps_query.all()
+    
+    counter = 0
+    total = len(apps)
+    for app in apps:
+        counter += 1
+        log.info(" (%s/%s)%s" % (counter, total, app.name))
+        app_name = app.name.replace('/','_')
+
+        adir = os.path.join(staticdir, 'appicons', app_name)
+        # cerate directory
+        if not os.path.exists(adir):
+            os.makedirs(adir)
+
+        if app.iconname:
+            for i in app.iconname.icons:
+                # guess filenames
+                idir = os.path.join(adir, i.theme.name)
+                try:
+                    iname = '%s%s.png' % (app_name, i.collection.disttag)
+                except:
+                    iname = '%s.%s.png' % (app_name, i.collection.simple_name)
+
+                # cerate directory
+                if not os.path.exists(idir):
+                    os.makedirs(idir)
+
+                # store file
+                icon = open(os.path.join(idir, iname), 'w')
+                icon.write(str(i.icon))
+                icon.close()
+
+                # mark icon as exported
+                i.m_status_id = MS_EXPORTED
+
+
+        if app.icon_status_id == MS_NEW:
+            app.icon_status_id = MS_EXPORTED
+
+    session.flush()
+
+    # Update icon links
+    icon_root = os.path.join(staticdir, 'appicons')
+
+    iroot_dir, names, files = os.walk(icon_root).next()
+    for n in names:
+        iname_dir, themes, files = os.walk(os.path.join(icon_root,n)).next()
+        icon_file_name = os.path.join(icon_root, n, '%s.png' % n)
+        if os.path.exists(icon_file_name):
+            os.remove(icon_file_name)
+        if len(themes) == 0:
+            # no icons
+            os.link(
+                noicon_path,
+                icon_file_name)
+            continue
+        themes.sort(lambda x,y: cmp(THEME_PRIORITY.get(x, 0),THEME_PRIORITY.get(y, 0)))
+        theme = themes[-1]
+        theme_dir, dirs, icons = os.walk(os.path.join(iname_dir, theme)).next()
+        if len(icons) == 0:
+            # no icons
+            os.link(
+                noicon_path,
+                icon_file_name)
+            continue
+        icons.sort()
+        log.info('Updating link for %s' % n)
+        os.link(
+            os.path.join(theme_dir, icons[-1]),
+            icon_file_name)
 
     log.info('Done.')
 
+
+def markmediasynced(args):
+    """Mark all exported media available for webserver(s)
+    """
+    from pkgdb.model import Icon, Application, MS_SYNCED, MS_EXPORTED
+
+    session.begin()
+    log.info('Marking icons...')
+    icons = session.query(Icon)\
+        .filter(Icon.m_status_id==MS_EXPORTED)\
+        .all()
+    for icon in icons:
+        icon.m_status_id = MS_SYNCED
+
+    log.info('Marking applications...')
+    apps = session.query(Application)\
+        .filter(Application.icon_status_id==MS_EXPORTED)\
+        .all()
+    for app in apps:
+        app.icon_status_id = MS_SYNCED
+
+    session.commit()
+    log.info('Done.')
+
+
+def servemediafromdb(args):
+    """Mark all (generated) static media unavailable for webserver(s)
+    """
+    from pkgdb.model import Icon, Application, MS_EXPORTED, MS_SYNCED
+
+    session.begin()
+    log.info('Marking icons...')
+    icons = session.query(Icon)\
+        .filter(Icon.m_status_id==MS_SYNCED)\
+        .all()
+    for icon in icons:
+        icon.m_status_id = MS_EXPORTED
+
+    log.info('Marking apps...')
+    apps = session.query(Application)\
+        .filter(Application.icon_status_id==MS_SYNCED)\
+        .all()
+    for app in apps:
+        app.icon_status_id = MS_EXPORTED
+
+    session.commit()
+    log.info('Done.')
+
+    
 
 if __name__ == "__main__":
 
