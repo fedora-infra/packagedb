@@ -34,6 +34,7 @@ Application related part of the model.
 
 from sqlalchemy import Table, Column, ForeignKeyConstraint, func, desc
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
+from sqlalchemy import PassiveDefault
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.sql.expression import and_
 from sqlalchemy.orm.exc import NoResultFound
@@ -96,6 +97,8 @@ ApplicationsUsagesTable = Table('applicationsusages', metadata,
     Column('usageid', Integer, primary_key=True, nullable=False),
     Column('rating', Integer, default=1, nullable=False),
     Column('author', Text, primary_key=True, nullable=False),
+    Column('time', DateTime(timezone=True), PassiveDefault(func.now()),
+        nullable=False),
     ForeignKeyConstraint(['applicationid'], ['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['usageid'], ['usages.id'], onupdate="CASCADE",
@@ -106,6 +109,8 @@ ApplicationsTagsTable = Table('applicationstags', metadata,
     Column('applicationid', Integer, primary_key=True, nullable=False),
     Column('tagid', Integer, primary_key=True, nullable=False),
     Column('score', Integer, default=1, nullable=False),
+    Column('time', DateTime(timezone=True), PassiveDefault(func.now()),
+        nullable=False),
     ForeignKeyConstraint(['applicationid'], ['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['tagid'], ['tags.id'], onupdate="CASCADE",
@@ -601,8 +606,8 @@ class ApplicationTag(SABase):
         self.score = score
 
     def __repr__(self):
-        return 'ApplicationTag(applicationid=%r, tagid=%r, score=%r)' % (
-            self.applicationid, self.tagid, self.score)#pylint:disable-msg=E1101
+        return 'ApplicationTag(applicationid=%r, tagid=%r, score=%r, time=%r)' % (
+            self.applicationid, self.tagid, self.score, self.time)#pylint:disable-msg=E1101
 
 
 class ApplicationUsage(SABase):
@@ -621,8 +626,8 @@ class ApplicationUsage(SABase):
         self.author = author
 
     def __repr__(self):
-        return 'ApplicationUsage(applicationid=%r, usageid=%r, rating=%r, author=%r)' % (
-            self.applicationid, self.usageid, self.rating, self.author)#pylint:disable-msg=E1101
+        return 'ApplicationUsage(applicationid=%r, usageid=%r, rating=%r, author=%r, time=%r)' % (
+            self.applicationid, self.usageid, self.rating, self.author, self.time)#pylint:disable-msg=E1101
 
 
 class BinaryPackageTag(SABase):

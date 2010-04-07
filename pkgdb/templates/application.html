@@ -7,6 +7,13 @@
   <xi:include href="_ajax_loader.html" />
 
   <head>
+    <link rel="alternate" type="application/atom+xml" 
+        href="${tg_url('/appfeed/atom1.0?content=all&amp;apps=%s' % app.name)}" 
+        title="Atom 1.0 feed of ${app.name} related content" />
+    <link rel="alternate" type="application/atom+xml"
+          href="${tg_url('/appfeed/atom1.0?content=comments&amp;apps=%s' % app.name)}"
+          title="Atom 1.0 feed of Latest Comments on ${app.name}" />
+
     <style type="text/css">
 
         #user_ratings .dojoxRatingStar {
@@ -155,10 +162,58 @@
           </li>
         </ul>
       </div>
+      <div class="group-header">
+        <span class="title">Feeds</span>
+      </div>
+      <div class="group-data">
+        <ul>
+          <li>
+            <img src="${tg_url('/static/images/feed_small.png')}" style="vertical-align: bottom;" title="Atom 1.0" />
+            <a href="${tg_url('/appfeed/atom1.0?content=all&amp;apps=%s' % app.name)}" 
+                title="Everything">Everything</a>
+          </li>
+          <li>
+            <img src="${tg_url('/static/images/feed_small.png')}" style="vertical-align: bottom;" title="Atom 1.0" />
+            <a href="${tg_url('/appfeed/atom1.0?content=comments&amp;apps=%s' % app.name)}" 
+                title="Comments">Comments</a>
+          </li>
+          <li>
+            <img src="${tg_url('/static/images/feed_small.png')}" style="vertical-align: bottom;" title="Atom 1.0" />
+            <a href="${tg_url('/appfeed/atom1.0?content=usages&amp;apps=%s' % app.name)}" 
+                title="Usages">Usages</a>
+          </li>
+          <li>
+            <img src="${tg_url('/static/images/feed_small.png')}" style="vertical-align: bottom;" title="Atom 1.0" />
+            <a href="${tg_url('/appfeed/atom1.0?content=tags&amp;apps=%s' % app.name)}" 
+                title="Tags">Tags</a>
+          </li>
+          <li id="feed-help">
+            <img src="${tg_absolute_url('/static/images/info.png')}" style="vertical-align: bottom;"/>
+            Customize your feeds
+          </li>
+          <div dojoType="dijit.Tooltip" connectId="feed-help" possition="below">
+            <h3>Cusomize your feeds</h3>
+            The feed url can by altered according to following schema:<br/>
+            <pre style="margin: 0.5em;">
+    ${tg_url('/appfeed')}/&lt;format&gt;?content=&lt;content&gt;&amp;apps=&lt;apps&gt;</pre>
+            As <b>format</b> pick one of 'atom0.3', 'atom1.0', 'rss2.0', 'mrss1.1.1'.
+            <b>content</b> is one or more of 'usages', 'tags', 'comments', 'builds' or 'all'. 
+            If more options are used separate them with '+'.
+            <b>apps</b> is comma separeted list of app names.
+            <h3>Examples</h3>
+            <pre>
+    ${tg_url('/appfeed')}/atom1.0?content=all&amp;apps=Firefox Web Browser
+    ${tg_url('/appfeed')}/rss2.0?content=tags+comments+usages&amp;apps=Agave
+    ${tg_url('/appfeed')}/atom1.0?content=comments+usages&amp;apps=Amarok,Vlc
+            </pre>
+
+
+          </div>
+        </ul>
+      </div>
     </div>
 
     <br />
-    Related stuff
   </div>
   <div id="main-pannel" style="margin-right: 235px;">
     <img style="float:left;padding-right:10px;" src="${app.icon_url()}" />
