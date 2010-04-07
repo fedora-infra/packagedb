@@ -27,11 +27,11 @@
         <h4>5 latest comments</h4>
         <table>
         <tr py:for="app in comments">
-          <td class="col-icon"><a href="${tg.url('/applications/%s' % app[0])}">
-                <img src="${tg.url('/appicon/show/%s' % app[0])}" />
+          <td class="col-icon"><a href="${tg.url('/applications/%s' % app.name)}">
+                <img src="${icon_url(app.name, app.icon_status)}" />
               </a>
           </td>
-          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app[0])}">${app[0]}</a></div>${app[1]}</td>
+          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app.name)}">${app.name}</a></div>${app.summary}</td>
         </tr>
         </table>
     </div>
@@ -40,11 +40,11 @@
         <h4>Five freshest apps</h4>
         <table>
         <tr py:for="app in fresh">
-          <td class="col-icon"><a href="${tg.url('/applications/%s' % app[0])}">
-                <img src="${tg.url('/appicon/show/%s' % app[0])}" />
+          <td class="col-icon"><a href="${tg.url('/applications/%s' % app.name)}">
+                <img src="${icon_url(app.name, app.icon_status)}" />
               </a>
           </td>
-          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app[0])}">${app[0]}</a></div>${app[1]}</td>
+          <td><div class="app-name"><a href="${tg.url('/applications/%s' % app.name)}">${app.name}</a></div>${app.summary}</td>
         </tr>
         </table>
     </div>

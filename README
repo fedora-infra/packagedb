@@ -131,6 +131,15 @@ recent dump from http://fedorahosted.org/releases/p/a/packagedb like this
 
 This is a rather large dump and can take a while to load.
 
+Update the Database Schema
+--------------------------
+
+Currently the database dump is not up to date with the latest changes in the
+devel branch. These steps won't be required after we get a healthy 0.5.x dbdump.
+Run the following scripts to bring it up to date::
+
+  sudo -u postgres psql pkgdb < update-schema/01_static_icons.sql
+
 Start memcached
 ---------------
 

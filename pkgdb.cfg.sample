@@ -26,6 +26,7 @@ bugzilla.enable_modification = False
 koji.huburl='https://koji.fedoraproject.org/kojihub'
 
 memcached.servers=['127.0.0.1:11211']
+sync-yum.cachedir="/misc/tmp"
 
 # Certificates
 cert.user='/etc/pki/pkgdb/pkgdb.pem'
@@ -59,6 +60,7 @@ sqlalchemy.max_overflow=1
 server.socket_port=8086
 server.socket_host="localhost"
 server.webpath="/pkgdb"
+server.static_media_dir="/var/pkgdb/static"
 
 # WSGI Takes care of scaling these via httpd daemons.  Up these if you're
 # deploying as a standalone daemon

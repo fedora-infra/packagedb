@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?python 
+    try:
+        from fedora.tg.util import tg_absolute_url
+    except:
+        from pkgdb.lib.url import tg_absolute_url
+    from fedora.tg.util import tg_url
+?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                        xmlns:moz="http://www.mozilla.org/2006/browser/search/"
+                        xmlns:py="http://genshi.edgewall.org/">
+    <ShortName>Fedora PkgDB: ${shortname}</ShortName>
+    <Description>Search Fedora Package Database</Description>
+    <InputEncoding>UTF-8</InputEncoding>
+    <Image height="16" width="16" type="image/png">${tg_absolute_url('/static/images/16-fedora-pkgdb.png')}</Image>
+    <Contact>maxamillion@gmail.com</Contact>
+    <Url type="text/html" 
+        template="${tg_absolute_url(url)+'?'}">
+        <Param py:if="stars" name="${param}" value="*{searchTerms}*"/>
+        <Param py:if="not stars" name="${param}" value="{searchTerms}"/>
+    </Url>
+    <Url type="applications/x-suggestions+json" 
+        template="${tg_absolute_url('%s?%s=%s' % (url, param, example))}"/>
+    <Url type="application/opensearchdescription+xml"
+        rel="self"
+        template="${tg_absolute_url('/opensearch/pkgdb_%s.xml' % shortname.lower())}" />
+    <SearchForm>${tg_absolute_url('/')}</SearchForm>
+    <LongName>Fedora-pkgdb Web Search</LongName>
+    <Query role="example" searchTerms="${example}" />
+    <Developer>Adam Miller</Developer>
+</OpenSearchDescription>
