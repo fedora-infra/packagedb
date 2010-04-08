@@ -32,6 +32,10 @@ Application related part of the model.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 
+MS_NEW = 0
+MS_EXPORTED = 1
+MS_SYNCED = 2
+
 from sqlalchemy import Table, Column, ForeignKeyConstraint, func, desc
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
 from sqlalchemy import PassiveDefault
@@ -68,7 +72,7 @@ ApplicationsTable = Table('applications', metadata,
     Column('desktoptype', Text),
     Column('iconid', nullable=True),
     Column('iconnameid', nullable=True),
-    Column('icon_status_id', nullable=False),
+    Column('icon_status_id', nullable=False, default=MS_NEW),
     ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE",
         ondelete="CASCADE"),
     ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE",
@@ -189,7 +193,7 @@ IconsTable = Table('icons', metadata,
     Column('nameid', nullable=False),
     Column('collectionid', nullable=False),                   
     Column('themeid', nullable=False),
-    Column('m_status_id', nullable=False, default=0),
+    Column('m_status_id', nullable=False, default=MS_NEW),
     Column('icon', Binary, nullable=False),
     Column('orig_size', Integer, nullable=False),
     ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE",
@@ -207,10 +211,6 @@ MediaStatusTable = Table('media_status', metadata,
     Column('id', Integer, primary_key=True),
     Column('name', Text, nullable=False)
 )
-
-MS_NEW = 0
-MS_EXPORTED = 1
-MS_SYNCED = 2
 
 def _create_apptag(tag, score):
     """Creator function for apptags association proxy """
