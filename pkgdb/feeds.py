@@ -32,21 +32,31 @@ atom1.0, atom0.3, rss2.0.
 
 
 from turbogears import config
+from sqlalchemy import Text
 from sqlalchemy.orm import eagerload
+from sqlalchemy.sql.expression import and_, literal_column
+from operator import attrgetter
 
 from turbogears.feed import FeedController
 from turbogears.database import session
 
 from fedora.tg.util import tg_url
 
-from pkgdb.model import Comment, PackageBuildTable, PackageBuildReposTable,\
-        Application
+try:
+    from fedora.tg.util import tg_absolute_url
+except:
+    from pkgdb.lib.url import tg_absolute_url
+
+from pkgdb.model import Comment, PackageBuildTable, PackageBuildReposTable
+from pkgdb.model import Application, ApplicationUsage, Usage, ApplicationTag
+from pkgdb.model import Tag, PackageBuild, Repo
+
+import logging
+log = logging.getLogger(__name__)
+
 
 class ApplicationFeed(FeedController):
-    '''A feed of all the latest PackageBuilds.
-
-    These PackageBuilds are considered applications of general interest
-    because they have a .desktop file
+    '''Application feed factory.
     '''
     def __init__(self):
         baseurl = config.get('base_url_filter.base_url')
@@ -57,56 +67,141 @@ class ApplicationFeed(FeedController):
             baseurl = baseurl[:-1]
         self.baseurl = baseurl
 
-    def get_feed_data(self, **kwargs):
+    def get_feed_data(self, content, apps, **kwargs):
+
+        content = content.split(' ')
+        apps = apps.split(',')
+
         entries = []
         
-        # look for repoid
-        try:
-            repoid = int(kwargs.get('repoid', 1))
-        except:
-            repoid = 1
-            
         # how many items to output
         try:
             items = int(kwargs.get('items', 20))
         except:
             items = 20
-        
-        # TODO apps
+       
+        data = []
 
-        #pylint:disable-msg=E1101
-        apps = Application.query.options(eagerload('builds')).join('builds')\
-                .filter(PackageBuildTable.c.id==PackageBuildReposTable.c.packagebuildid)\
-                .filter(PackageBuildReposTable.c.repoid==repoid)\
-                .order_by(Application.id.desc())[:items]
-        #pylint:enable-msg=E1101
-        for app in apps:
+        # comments
+        if u'comments' in content or u'all' in content:
+            comments = session.query(
+                    Comment.id,
+                    Comment.time,
+                    literal_column("'comment'", Text).label('type'),
+                    Application.name.label('app'),
+                    Comment.author,
+                    Comment.body)\
+                .join(Comment.application)\
+                .filter(and_(
+                    Comment.published==True,
+                    Application.name.in_(apps)))\
+                .order_by(Comment.time.desc())\
+                .limit(items)
+            data.extend(comments)
+
+        # usages
+        if u'usages' in content or u'all' in content:
+            usages = session.query(
+                    ApplicationUsage.rating,
+                    ApplicationUsage.time,
+                    ApplicationUsage.author,
+                    literal_column("'usage'", Text).label('type'),
+                    Application.name.label('app'),
+                    Usage.name.label('usage'))\
+                .join(
+                    ApplicationUsage.application,
+                    ApplicationUsage.usage)\
+                .filter(Application.name.in_(apps))\
+                .order_by(ApplicationUsage.time.desc())\
+                .limit(items)
+            data.extend(usages)
+
+        # tags
+        if u'tags' in content or u'all' in content:
+            tags = session.query(
+                    ApplicationTag.time,
+                    literal_column("'tag'", Text).label('type'),
+                    Application.name.label('app'),
+                    Tag.name.label('tag'))\
+                .join(
+                    ApplicationTag.application,
+                    ApplicationTag.tag)\
+                .filter(Application.name.in_(apps))\
+                .order_by(ApplicationTag.time.desc())\
+                .limit(items)
+            data.extend(tags)
+
+        # builds
+        if u'builds' in content or u'all' in content:
+            builds = session.query(
+                    PackageBuild.imported.label('time'),
+                    PackageBuild.name,
+                    PackageBuild.version,
+                    PackageBuild.release,
+                    PackageBuild.architecture,
+                    PackageBuild.epoch,
+                    Repo.shortname,
+                    Application.name.label('app'),
+                    literal_column("'build'", Text).label('type'))\
+                .join(
+                    PackageBuild.applications,
+                    PackageBuild.repos)\
+                .filter(Application.name.in_(apps))\
+                .order_by(PackageBuild.imported.desc())\
+                .limit(items)
+            data.extend(builds)
+                    
+
+        # sort entries
+        data.sort(key=attrgetter('time'), reverse=True) 
+
+        # format entries
+        for item in data[:items]:
             entry = {}
-            entry["title"] = '%s-%s-%s' % (
-                app.name, app.builds[0].version, apps.builds[0].release)
+            title = u'N/A'
+            author = {'name': '', 'email': ''}
+            summary = u'N/A'
+            link = '/'
 
-            # 'John Doe <john@doe.com>' is being split for the TG atom template
-            entry["author"] = {}
-            entry["author"]["name"], discard, entry["author"]["email"] = \
-                    app.builds[0].committer.partition(' <')
-            entry["author"]["email"] = "<%s" % entry["author"]["email"]
+            if item.type == u'comment':
+                title = u'%s: commented by %s' % (item.app, item.author)
+                author['name'] = item.author
+                summary = item.body
+                link = u'/applications/%s/#Comment%i' % (item.app, item.id)
+            elif item.type == u'usage':
+                title = u'%s: usage \'%s\' rated %i by %s' % (item.app, item.usage, 
+                    item.rating, item.author)
+                author['name'] = item.author
+                summary = title
+                link = '/applications/%s/#user_ratings' % item.app
+            elif item.type == u'tag':
+                title = u'%s: tagged \'%s\'' % (item.app, item.tag) 
+                summary = title
+                link = '/applications/%s/' % item.app
+            elif item.type == u'build':
+                title = u'%s: %s-%s-%s.%s imported in Fedora PkgDB' % (item.app, item.name,
+                    item.version, item.release, item.architecture) 
+                summary = title
+                link = '/builds/show/%s/%s/%s/%s/%s/%s' % (item.shortname, item.name, item.epoch,
+                    item.version, item.release, item.architecture)
 
-            entry["summary"] = app.builds[0].changelog
+            entry['published'] = item.time
+            entry['title'] = title
+            entry['author'] = author
+            entry['summary'] = summary
+            entry['link'] = tg_absolute_url(link)
 
-            
-            entry["link"] = '%s/packages/%s/%s' % (self.baseurl,
-                                           apps.build.name,
-                                           apps.build.repo.shortname
-                                           )
             entries.append(entry)
+
         
         return dict(
-            title = "Fedora Package Database - latest applications",
+            title = "Fedora Package Database",
             link = self.baseurl,
             author = {"name":"Fedora Websites",
                       "email":"webmaster@fedoraproject.org"},
             id = self.baseurl,
             entries = entries)
+
 
 class CommentsFeed(FeedController):
     '''Provides a feed of the latest comments.
