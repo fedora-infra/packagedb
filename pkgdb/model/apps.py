@@ -386,13 +386,19 @@ class Application(SABase):
 
 
     def builds_by_collection(self):
+        '''Get builds grouped by collection
+
+        :returns: {<collection>: {<build>: [<repo>,]}}
+        '''
         builds = {}
 
         for build in self.builds:
             for repo in build.repos:
-                blds = builds.get(repo.collection,[])
-                blds.append(build)
-                builds[repo.collection] = blds
+                coll = builds.get(repo.collection, {})
+                b = coll.get(build, [])
+                b.append(repo)
+                coll[build] = b
+                builds[repo.collection] = coll
 
         return builds
 

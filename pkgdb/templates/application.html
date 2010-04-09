@@ -254,8 +254,8 @@
         <div py:for="(col, builds) in app.builds_by_collection().iteritems()">
           <h4>${col.simple_name}</h4>
             <ul>
-                <li py:for="b in builds">
-                    <a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b.repo.shortname, b.name, b.epoch, b.version, b.release, b.architecture))}">${str(b)}</a>
+                <li py:for="(b, repos) in builds.iteritems()">
+                    <a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (repos[0].shortname, b.name, b.epoch, b.version, b.release, b.architecture))}">${str(b)}</a>
                     ${b.size/1024}kB</li>
             </ul>
         </div>
