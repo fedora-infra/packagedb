@@ -93,7 +93,7 @@ import simplejson
         <tr id="${pkg.collection.branchname}">
           <td>
             <a py:if="pkg.status.locale['C'].statusname=='Approved'"  class="cvs"
-              href="${'http://cvs.fedoraproject.org/viewcvs/rpms/%s/%s/%s.spec?view=markup'
+              href="${'http://cvs.fedoraproject.org/viewvc/rpms/%s/%s/%s.spec?view=markup'
           % (pkgUrlName, pkg.collection.branchname, pkgUrlName)}">
               <span class="invisible">Spec File</span></a>
             <a href="${tg.url('/collections/name/%s' % pkg.collection.branchname)}"

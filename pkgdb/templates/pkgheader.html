@@ -10,7 +10,7 @@
     <li><a class="bodhi" href="${tg.url(
       'https://admin.fedoraproject.org/updates/%s' % (pkgUrlName,))}"
       >Update Status</a></li>
-    <li><a class="cvs" href="${'http://cvs.fedoraproject.org/viewcvs/rpms/'
+    <li><a class="cvs" href="${'http://cvs.fedoraproject.org/viewvc/rpms/'
       + pkgUrlName}">Package Source</a></li>
     <li py:if="action != 'bugz'"><a class="bugz"
       href="${tg.url('/acls/bugs/' + pkgUrlName)}">Bug Reports</a></li>
