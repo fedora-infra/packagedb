@@ -100,6 +100,8 @@ def setup_parser():
             help="reimport existing builds. When this option is selected we DON'T skip to next repo on hitting already imported build")
     parser_update.add_argument('--quick', default=False, action='store_true',
             help='with this option the script skips to next repo on first already imported build occurence')
+    parser_update.add_argument('--staticdir',
+            help='directory where the icons will be stored. If not set, we are looking for server.static_icons_dir option in config file. If not found use "/var/pkgdb/static" as default. Make sure cachedir is writeable.')
     parser_update.add_argument('--profile', metavar='dir',
             help='directory where data collected from profiler should be stored. Output is in kcachegrind format.')
     parser_update.add_argument('--profile-skip', type=int, default=0,
@@ -120,30 +122,21 @@ def setup_parser():
             help='directory where the yum cache will be created. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
     parser_clean.set_defaults(func='clean')
 
-    # media2static command
-    parser_media2static = subparsers.add_parser('media2static', 
-        help='export new media (icons, screenshots) as static content.'
-            ' Exported media are marked. The you can distribute'
-            ' the exported content to proxies. When done run markmadiasynced command'
-            ' to mark them available to webserver.')
-    parser_media2static.add_argument('--staticdir',
-            help='directory where the media will be stored. If not set, we are looking for server.static_media_dir option in config file. If not found use "/var/pkgdb/static" as default. Make sure cachedir is writeable.')
-    parser_media2static.add_argument('--all', action='store_true',
-            help="reexport all the media in DB")
-    parser_media2static.set_defaults(func='media2static')
-
-    # markmediasynced command
-    parser_markmediasynced = subparsers.add_parser('markmediasynced', 
-        help='mark exported media avilable for webserver(s).'
-            ' Use this command when you are sure all generated static content'
-            ' is available on all pkgdb webservers')
-    parser_markmediasynced.set_defaults(func='markmediasynced')
+    # icons2static command
+    parser_icons2static = subparsers.add_parser('icons2static', 
+        help='export app icons as static content. server.allow_static_icons=True must be set in configurtion to use this'
+            'Since the icons were exported webserver serves them as static content.')
+    parser_icons2static.add_argument('--staticdir',
+            help='directory where the icons will be stored. If not set, we are looking for server.static_icons_dir option in config file. If not found use "/var/pkgdb/static" as default. Make sure cachedir is writeable.')
+    parser_icons2static.add_argument('--all', action='store_true',
+            help="reexport all the icons in DB")
+    parser_icons2static.set_defaults(func='icons2static')
 
     # servemediafromdb command
-    parser_servemediafromdb = subparsers.add_parser('servemediafromdb', 
-        help='mark all media (app icons) unavailable for webserver(s) as static content.'
-            ' Use this command to serve application\'s icons as dynamic content')
-    parser_servemediafromdb.set_defaults(func='servemediafromdb')
+    parser_servemediafromdb = subparsers.add_parser('iconsfromdb', 
+        help='mark all app icons unavailable for webserver(s) as static content.'
+            ' Use this command to serve app icons as dynamic content')
+    parser_servemediafromdb.set_defaults(func='iconsfromdb')
 
     return parser
 
@@ -167,6 +160,8 @@ def setup_framework(args):
         log.setLevel(logging.INFO)
     if args.quiet:
         log.setLevel(logging.ERROR)
+        pkgdb_log = logging.getLogger('pkgdb')
+        pkgdb_log.setLevel(logging.ERROR)
 
 
 def show_repos(args):
@@ -354,6 +349,10 @@ def update(args):
         session.commit() #pylint:disable-msg=E1101
         total_packages += counter-1
 
+    # Export icons
+    if config.get('server.allow_static_icons', False):
+        _export_icons(args.staticdir, False)
+
     finished = datetime.now()
     run_delta = finished - started
     run_sec = run_delta.days*24*3600 + run_delta.seconds + run_delta.microseconds/1000000
@@ -409,25 +408,34 @@ def _get_staticdir(staticdir):
     return staticdir
 
 
-def media2static(args):
+def icons2static(args):
+    if not config.get('server.allow_static_icons', False):
+        log.warn('Set server.allow_static_icons=True in confg to use static app icons')
+    _export_icons(args.staticdir, args.all)
+    log.info('Done.')
+
+
+def _export_icons(staticdir, all):
     """Export all icons from DB to filesystem.
 
     Exported media are marked as exported. The you can distribute
     the exported content to proxies. When done run madiasynced command
     to mark them available to webserver.
     """
-    from pkgdb.model import Icon, IconName, MS_NEW, MS_EXPORTED
+    from pkgdb.model import Icon, IconName, MS_NEW, MS_EXPORTED, MS_SYNCED
     from pkgdb.model import Application
     from sqlalchemy.orm import eagerload
     from sqlalchemy.sql.expression import and_, or_
     from pkgdb.lib.icon import noicon_png
 
-    staticdir = _get_staticdir(args.staticdir)
+    static_dir = _get_staticdir(staticdir)
 
     log.info('Exporting Icons')
 
+    modified_apps = set()
+
     # create noicon.png is there is no such thing in appicons
-    noicon_path = os.path.join(staticdir, 'appicons', 'noicon.png')
+    noicon_path = os.path.join(static_dir, 'appicons', 'noicon.png')
     if not os.path.exists(noicon_path):
         noicon = open(noicon_path, 'w')
         noicon.write(noicon_png())
@@ -437,7 +445,7 @@ def media2static(args):
         .outerjoin(Application.iconname, IconName.icons)\
         .options(eagerload(Application.iconname, Icon.theme, 
             Icon.collection, IconName.icons))
-    if not args.all:
+    if not all:
         apps_query = apps_query.filter(
             or_(
                 Icon.m_status_id==MS_NEW, 
@@ -450,8 +458,9 @@ def media2static(args):
         counter += 1
         log.info(" (%s/%s)%s" % (counter, total, app.name))
         app_name = app.name.replace('/','_')
+        modified_apps.add(app_name)
 
-        adir = os.path.join(staticdir, 'appicons', app_name)
+        adir = os.path.join(static_dir, 'appicons', app_name)
         # cerate directory
         if not os.path.exists(adir):
             os.makedirs(adir)
@@ -484,10 +493,11 @@ def media2static(args):
     session.flush()
 
     # Update icon links
-    icon_root = os.path.join(staticdir, 'appicons')
+    icon_root = os.path.join(static_dir, 'appicons')
 
     iroot_dir, names, files = os.walk(icon_root).next()
     for n in names:
+        if n not in modified_apps: continue # skip untouched apps
         iname_dir, themes, files = os.walk(os.path.join(icon_root,n)).next()
         icon_file_name = os.path.join(icon_root, n, '%s.png' % n)
         if os.path.exists(icon_file_name):
@@ -513,14 +523,7 @@ def media2static(args):
             os.path.join(theme_dir, icons[-1]),
             icon_file_name)
 
-    log.info('Done.')
-
-
-def markmediasynced(args):
-    """Mark all exported media available for webserver(s)
-    """
-    from pkgdb.model import Icon, Application, MS_SYNCED, MS_EXPORTED
-
+    # mark icons synced
     session.begin()
     log.info('Marking icons...')
     icons = session.query(Icon)\
@@ -537,10 +540,9 @@ def markmediasynced(args):
         app.icon_status_id = MS_SYNCED
 
     session.commit()
-    log.info('Done.')
 
 
-def servemediafromdb(args):
+def iconsfromdb(args):
     """Mark all (generated) static media unavailable for webserver(s)
     """
     from pkgdb.model import Icon, Application, MS_EXPORTED, MS_SYNCED

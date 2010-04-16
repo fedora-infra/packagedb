@@ -61,6 +61,7 @@ server.socket_port=8086
 server.socket_host="localhost"
 server.webpath="/pkgdb"
 server.static_media_dir="/var/pkgdb/static"
+server.allow_static_icons=True
 
 # WSGI Takes care of scaling these via httpd daemons.  Up these if you're
 # deploying as a standalone daemon
