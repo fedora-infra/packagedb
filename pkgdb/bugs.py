@@ -31,9 +31,12 @@ Controller for displaying Package Bug Information.
 #   about the monkey patches.
 
 from urllib import quote
+import xmlrpclib
+
 from turbogears import controllers, expose, config, redirect
 from sqlalchemy.exceptions import InvalidRequestError
 from cherrypy import request
+from fedora.tg.tg1utils import request_format
 
 try:
     # python-bugzilla 0.4 >= rc5
@@ -54,7 +57,7 @@ except ImportError:
 
 from pkgdb.model import Package
 from pkgdb.letter_paginator import Letters
-from pkgdb.lib.utils import LOG, bugzilla
+from pkgdb.lib.utils import LOG, get_bz
 from pkgdb import _
 
 class BugList(list):
@@ -150,6 +153,18 @@ class Bugs(controllers.Controller):
                     'ON_DEV', 'ON_QA', 'VERIFIED', 'FAILS_QA',
                     'RELEASE_PENDING', 'POST') }
         # :E1101: python-bugzilla monkey patches this in
+        try:
+            bugzilla = get_bz()
+        except xmlrpclib.ProtocolError:
+            error = dict(status=False,
+                    title=_('%(app)s -- Unable to contact bugzilla') %
+                        {'app': self.app_title},
+                    message=_('Bugzilla is unavailable.  Unable to determine'
+                        ' bugs for %(pkg)s') % {'pkg': package_name})
+            if request_format() != 'json':
+                error['tg_template'] = 'pkgdb.templates.errors'
+            return error
+ 
         raw_bugs = bugzilla.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
         for bug in raw_bugs:
@@ -166,7 +181,7 @@ class Bugs(controllers.Controller):
                             {'app': self.app_title},
                         message=_('No such package %(pkg)s') %
                             {'pkg': package_name})
-                if request.params.get('tg_format', 'html') != 'json':
+                if request_format() != 'json':
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
