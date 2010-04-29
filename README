@@ -178,6 +178,29 @@ http://trac.turbogears.org/ticket/2348
 
 Note: this has been applied to the Fedora and EPEL packages.
 
+App icons as static content
+-------------------------------------------
+Set server.allow_static_icons to enable static icons. This option influences 
+the icon path generation as well as icon import part. This should make setup 
+of already running server easier.
+
+Set server.static_media_dir to directory which content is accessible from all 
+pkgdb webservers. This path is used by import script as the target location 
+of app icon tree. If server.static_media_dir is set to e.g. '/var/pkgdb/static'
+'/var/pkgdb/static/appicon/' should be served as /pkgdb/static/appicon by apache.
+This can be done by putting following line in webserver configuration:
+    Alias /pkgdb/static/appicon /var/pkgdb/static/appicons
+
+App icons tree is updated during regular build db update. Icons are collected in
+DB first, when the import is finished the icon tree is updated with the new data.
+During import the new icons are served from DB so that we can avoid 404s.
+
+pkgdb-sync-yum has two new commands to admin static app icons:
+ - icons2static (-all) will update (regenerate) the app icon tree
+ - iconsfromdb will set all icons as unavailable on filesystem so that icons
+   will be served from db
+
+
 Start the Server (The new way)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

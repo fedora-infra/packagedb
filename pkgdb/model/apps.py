@@ -47,7 +47,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
-from turbogears import url
+from turbogears import url, config
 from fedora.tg.util import tg_url
 
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
@@ -732,7 +732,7 @@ class IconName(SABase):
 
 def icon_url(app_name, status=0):
     if app_name:
-        if status == MS_SYNCED:
+        if config.get('server.allow_static_icons', False) and status == MS_SYNCED:
             app_name = app_name.replace('/', '_')
             return tg_url('/static/appicon/%s/%s.png' % \
                 (app_name, app_name))
