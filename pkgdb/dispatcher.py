@@ -55,7 +55,7 @@ from fedora.tg.util import tg_url, jsonify_validation_errors
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.lib.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, \
+from pkgdb.lib.utils import fas, get_bz, admin_grp, pkger_grp, provenpkger_grp, \
         newpkger_grp, LOG, STATUS
 from pkgdb.lib.validators import SetOf, IsCollectionSimpleNameRegex
 
@@ -233,7 +233,7 @@ class PackageDispatcher(controllers.Controller):
                 # cache
                 user.bugzilla_email = fas.cache[user.username]['bugzilla_email']
             try:
-                bugzilla.getuser(user.bugzilla_email) #pylint:disable-msg=E1101
+                get_bz().getuser(user.bugzilla_email) #pylint:disable-msg=E1101
             except xmlrpclib.Fault, e:
                 if e.faultCode == 51:
                     # No such user
@@ -247,6 +247,10 @@ class PackageDispatcher(controllers.Controller):
                             ' valid bugzilla email address and try again.')
                             % user)
                 raise
+            except xmlrpclib.ProtocolError, e:
+                raise AclNotAllowedError(_('Unable to change ownership of bugs'
+                    ' for this package at this time.  Please try again'
+                    ' later.'))
 
         # Anyone can hold watchcommits and watchbugzilla
         if acl in ('watchbugzilla', 'watchcommits'):
@@ -464,7 +468,8 @@ class PackageDispatcher(controllers.Controller):
         bzQuery['version'] = collectn_version
         if bzQuery['version'] == 'devel':
             bzQuery['version'] = 'rawhide'
-        queryResults = bugzilla.query(bzQuery) #pylint:disable-msg=E1101
+        queryResults = get_bz().query(bzQuery) #pylint:disable-msg=E1101
+            
         for bug in queryResults:
             if config.get('bugzilla.enable_modification', False):
                 bug.setassignee(assigned_to=bzMail, comment=bzComment)
@@ -556,7 +561,12 @@ class PackageDispatcher(controllers.Controller):
                         ' does not have a fedora account') % {
                             'owner': 'orphan'})
                 # let set_owner handle bugzilla and other stuff
-                self._set_owner(pkg, person)
+                try:
+                    self._set_owner(pkg, person)
+                except (InvalidRequestError, xmlrpclib.ProtocolError), e:
+                    return dict(status=False, 
+                        message=_('Unable to retire/unretire package: %(err)s') % {'err': e})
+
             pkg.statuscode = STATUS['Deprecated']
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
@@ -1226,7 +1236,7 @@ class PackageDispatcher(controllers.Controller):
             for pkg_listing in listings:
                 try:
                     log_msg = self._set_owner(pkg_listing, person)
-                except InvalidRequestError, e:
+                except (InvalidRequestError, xmlrpclib.ProtocolError), e:
                     return dict(status=False, 
                         message=_('Acls error: %(err)s') % {'err': e})
                 try:
@@ -1619,7 +1629,7 @@ class PackageDispatcher(controllers.Controller):
                 try:
                     log_msg = self._set_owner(pkg_listing, person)
                     log_msgs.append(log_msg)
-                except InvalidRequestError, e:
+                except (InvalidRequestError, xmlrpclib.ProtocolError), e:
                     return dict(status=False, 
                         message=_('Acls error: %(err)s') % {'err': e})
         if len(log_msgs) < 1:
