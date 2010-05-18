@@ -101,7 +101,7 @@ class Users(controllers.Controller):
                 params['eol'] = True
             if request_format() == 'json':
                 params['tg_format'] = 'json'
-            url = '/packages/orphans'
+            url = '/acls/orphans'
             if params:
                 url = url + '?' + urllib.urlencode(params, True)
 
