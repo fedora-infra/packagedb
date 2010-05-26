@@ -82,6 +82,10 @@ provenpkger_grp = config.get('pkgdb.provenpkger_grp', 'provenpackager')
 # Get the newpackager group if one is specified.
 newpkger_grp = config.get('pkgdb.newpkger_grp', 'newpackager')
 
+# Get the critpath groups if specfied
+critpath_grps = config.get('pkgdb.critpath_grps', (admin_grp,))
+
+
 def to_unicode(obj, encoding='utf-8', errors='replace'):
     '''return a unicode representation of the object.
 
@@ -286,5 +290,6 @@ def rpm2cpio(fdno, out=sys.stdout, bufsize=2048):
         raise rpmUtils.RpmUtilsError, \
               'Unsupported payload compressor: "%s"' % compr
 
-__all__ = [LOG, MEMCACHE, STATUS, admin_grp, bugzilla, fas, init_globals,
-        is_xhr, pkger_grp, rpm2cpio, to_unicode]
+# Substitute get_bz for bugzilla when we merge to the latest tree
+__all__ = [LOG, MEMCACHE, STATUS, admin_grp, critpath_grps, bugzilla, fas,
+        init_globals, is_xhr, pkger_grp, rpm2cpio, to_unicode]

@@ -55,8 +55,9 @@ from fedora.tg.util import tg_url, jsonify_validation_errors
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger
-from pkgdb.lib.utils import fas, bugzilla, admin_grp, pkger_grp, provenpkger_grp, \
-        newpkger_grp, LOG, STATUS
+# Change bugzilla to get_bz when we merge the latest changes
+from pkgdb.lib.utils import fas, bugzilla, admin_grp, critpath_grps, \
+        pkger_grp, provenpkger_grp, newpkger_grp, LOG, STATUS
 from pkgdb.lib.validators import SetOf, IsCollectionSimpleNameRegex
 
 MAXSYSTEMUID = 9999
@@ -1644,7 +1645,7 @@ class PackageDispatcher(controllers.Controller):
 
     # Check that the requestor is in a group that could potentially set owner.
     @expose(allow_json=True)
-    @identity.require(identity.not_anonymous())
+    @identity.require(identity.in_any_group(*critpath_grps))
     @validate(validators = {'pkg_list': SetOf(use_set=True,
             element_validator=validators.UnicodeString(not_empty=False)),
         'critpath': validators.StringBool(),

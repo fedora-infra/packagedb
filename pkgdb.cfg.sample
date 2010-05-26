@@ -4,6 +4,7 @@ pkgdb.pkger_grp = 'packager'
 pkgdb.mod_grp = 'sysadmin'
 pkgdb.provenpkger_grp = 'provenpacakger'
 pkgdb.newpkger_grp = 'newpackager'
+pkgdb.critpath_grps = ['cvsadmin', 'critpathadmin']
 
 fas.url = 'https://admin.fedoraproject.org/accounts/'
 fas.username = 'user'
