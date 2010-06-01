@@ -62,7 +62,7 @@ Install Prerequisites
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
     python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi \
     python-paver httpd mod_ssl babel python-cpio xz python-argparse \
-    python-mako python-memcached
+    python-mako python-memcached python-migrate
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -131,6 +131,19 @@ recent dump from http://fedorahosted.org/releases/p/a/packagedb like this
 
 This is a rather large dump and can take a while to load.
 
+Create the database from scratch
+--------------------------------
+
+TODO: fix the permiossion issue
+
+If you need fresh database for testing/development and are not interested in real life data
+you can use::
+
+  tg-admin sql create
+
+instead of creating db from dump.
+
+
 Update the Database Schema
 --------------------------
 
@@ -140,6 +153,18 @@ Run the following scripts to bring it up to date::
 
   sudo -u postgres psql pkgdb < update-schema/01_static_icons.sql
   sudo -u postgres psql pkgdb < update-schema/02_timestamps_for_tags_and_usages.sql
+  sudo -u postgres psql pkgdb < update-schema/03_updates_to_make_db_match_the_model.sql
+  sudo -u postgres psql pkgdb < update-schema/04_migrate_version.sql
+
+TODO: remove the lines above in favour of
+
+If your database is not up to date with the latest changes in your branch 
+(DB created from dump, merged in db updates),run the following scripts 
+to bring it up to date::
+
+  manage_db upgrade
+
+
 
 Start memcached
 ---------------
@@ -292,6 +317,155 @@ Then start the server::
 
 In your favorite web browser, navigate to::
   http://localhost:8086/pkgdb/
+
+
+----------------------
+Development guidelines
+----------------------
+
+Database model
+==============
+The handling of db model definition described here should allow us to:
+ * test pkgdb
+ * create full db structure with 'tg-admin sql create'
+ * refactor db model more safely
+ * better manage db model updates
+
+Whole model definition if kept in pkgdb.model.* modules. Every information needed to create 
+db structure same as the production db is included in the model (triggers, stored procedures, 
+views, indexes, constraints,...). 
+
+We are using sqlalchemy-migrate to manage database model updates.
+
+In this section you can find a few simple recipies for situations that need extra attention
+during the development of database related features.
+
+For more detailed sa-migrate tutorial check the official `sa-migrate docs`_
+
+.. _`sa-migrate docs`: http://packages.python.org/sqlalchemy-migrate/versioning.html#version-control-a-database
+
+
+New model update
+~~~~~~~~~~~~~~~~
+Check db version
+  % ./manage_db version
+  10
+  % ./manage_db db_version
+  10
+
+Create new update script for your feature/fix
+  % ./manage_db script "Add wiki to application"
+
+Edit your update.
+  % vim db_repo/versions/011_Add_wiki_to_application.py
+
+    from sqlalchemy import *
+    from migrate import *
+    import migrate.changeset
+
+    meta = MetaData(migrate_engine)
+    app = Table('application', meta,
+                Column('id', Integer, primary_key=True),
+                Column('wiki', Text()),
+                )
+
+    def upgrade():
+        app.c.wiki.create()
+
+    def downgrade():
+        app.c.wiki.drop()
+
+Update the related stuff in pkgdb.model
+  % vim pkgdb/model/apps.py
+
+Test your update
+  % ./manage_db test
+  Upgrading... done
+  Downgrading... done
+  Success
+
+Check db version
+  % ./manage_db version
+  11
+  % ./manage_db db_version
+  10
+
+Upgrade DB
+  % ./manage_db upgrade
+  10 -> 11... 
+  done
+
+
+Merging updates
+~~~~~~~~~~~~~~~
+Consider reverting your changes in your local database before merging, it can make 
+testing of following merge easier. 
+
+  % ./manage_db downgrade 10
+  11 -> 10... 
+  done
+
+  % ./manage_db version
+  11
+  % ./manage_db db_version
+  10
+
+Merge your branch and check if there are conflicting 
+db updates - look for same update version numbers in db_repo/version/. 
+
+  % ls db_repo/versions/
+  ...
+  011_Add_wiki_to_application.py
+  011_Some_other_cool_feature.py
+
+Don't merge conflicting updates into one file! We want to keep the update scripts as simple as possible.
+Append YOUR conflicting updates with higher version number and revise them - updates 
+that are now applying before those of yours may have done unexpected changes.
+
+  % mv db_repo/versions/011_Add_wiki_to_application.py db_repo/versions/012_Add_wiki_to_application.py
+
+Test
+  % ./manage_db test
+  Upgrading... done
+  Downgrading... done
+  Success
+
+  % ./manage_db version
+  12
+  % ./manage_db db_version
+  10
+
+Upgrade DB
+  % ./manage_db upgrade
+  10 -> 11... 
+  done
+  11 -> 12... 
+  done
+
+
+DB merge is done
+  
+
+Testing
+=======
+this section is collection of ideas that needs yet some more work and experience
+to get into right shape.
+
+ * before adding new feature, fixing bug, refactoring write test
+
+
+Acceptance tests
+~~~~~~~~~~~~~~~~
+Needs more investigation and testing framework preparation. Untouched land so far.
+
+
+Unit tests
+~~~~~~~~~~
+ * The tests are in pkgdb/tests/
+ * nose and TestCase is used
+ * check helpers for DB related stuff in pkgdb.lib.test (its tests are in pkgdb/tests/lib/test_test.py)
+ * see Makefile for nose usage
+
 
 ------------
 Translations

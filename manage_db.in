@@ -1,0 +1,36 @@
+#!/usr/bin/python
+__requires__ = 'fedora_packagedb'
+
+import os.path
+import sys
+
+CONFDIR='@CONFDIR@'
+PKGDBDIR=os.path.join('@DATADIR@', 'fedora-packagedb')
+sys.path.append(PKGDBDIR)
+
+import pkg_resources
+
+from turbogears import config, update_config
+from migrate.versioning.shell import main
+
+# first look on the command line for a desired config file,
+# if it's not on the command line, then
+# look for setup.py in this directory. If it's not there, this script is
+# probably installed
+cfg_file = None
+if len(sys.argv) > 1:
+    for idx, arg in enumerate(sys.argv):
+        if arg=='-c':
+            # remove -c <cfgfile> from args
+            cfg_file = sys.argv[idx+1]
+            del sys.argv[idx+1]
+            del sys.argv[idx]
+            break
+if not cfg_file and os.path.exists(os.path.join(os.path.dirname(__file__), "setup.py")):
+    cfg_file = "pkgdb.cfg"
+elif not cfg_file:
+    cfg_file = os.path.join(CONFDIR,'pkgdb.cfg')
+
+update_config(configfile=cfg_file, modulename="pkgdb.config")
+
+main(url=config.get('sqlalchemy.dburi'),repository='db_repo')

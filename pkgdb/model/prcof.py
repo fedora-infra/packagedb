@@ -2,7 +2,8 @@
 Mapping of PRCO (provides, requires, conflicts, obsoletes) and files
 '''
 
-from sqlalchemy import Table
+from sqlalchemy import Table, Column, ForeignKeyConstraint, UniqueConstraint
+from sqlalchemy import Integer, Boolean, Text, ForeignKey, text
 
 from turbogears.database import metadata, mapper
 
@@ -19,11 +20,57 @@ FLAGS = {
 # Mapped Tables
 #
 
-RpmProvidesTable = Table('rpmprovides', metadata, autoload=True)
-RpmRequiresTable = Table('rpmrequires', metadata, autoload=True)
-RpmConflictsTable = Table('rpmconflicts', metadata, autoload=True)
-RpmObsoletesTable = Table('rpmobsoletes', metadata, autoload=True)
-RpmFilesTable = Table('rpmfiles', metadata, autoload=True)
+RpmProvidesTable = Table('rpmprovides', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('flags', Text()),
+    Column('epoch', Text()),
+    Column('version', Text()),
+    Column('release', Text()),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'),
+        nullable=False),
+)
+
+RpmRequiresTable = Table('rpmrequires', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('flags', Text()),
+    Column('epoch', Text()),
+    Column('version', Text()),
+    Column('release', Text()),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'),
+        nullable=False),
+    Column('prereq', Boolean(), server_default=text('false'), nullable=False),
+)
+
+RpmConflictsTable = Table('rpmconflicts', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('flags', Text()),
+    Column('epoch', Text()),
+    Column('version', Text()),
+    Column('release', Text()),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'),
+        nullable=False),
+)
+
+RpmObsoletesTable = Table('rpmobsoletes', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('flags', Text()),
+    Column('epoch', Text()),
+    Column('version', Text()),
+    Column('release', Text()),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'), 
+        nullable=False),
+)
+
+RpmFilesTable = Table('rpmfiles', metadata,
+    Column('name', Text(),  primary_key=True, nullable=False),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'),
+        primary_key=True, nullable=False),
+)
+
 
 #
 # Mapped Classes

@@ -17,20 +17,27 @@
 #
 # Red Hat Author(s): Martin Bacovsky <mbacovsk@redhat.com>
 #
-from sqlalchemy.ext import compiler
-from sqlalchemy import DDL, Table, ForeignKeyConstraint
-import sqlalchemy.sql.util
-from sqlalchemy import topological
-from sqlalchemy.sql import visitors
-
-_dependencies = None
-_sort_tables_bak = None
+from sqlalchemy import DDL, Table, Column
+from sqlalchemy.sql.expression import ColumnClause
 
 def View(name, metadata, selectable):
+    """Create DB view definition in SA model
+
+    DB view workaround for SA. It is able to create and drop 
+    the view properly during metadata.create_all/drop_all.
+
+    :arg name: name of the view in the datatabase
+    :arg metadata: metadata where the definition should land
+    :arg selectable: SA select representing the view
+    :returns: Table instance representing the view
+    """
 
     t = Table(name, metadata)
 
     for c in selectable.c:
+        # make aggregate columns behave like normal columns
+        if not isinstance(c, Column) and isinstance(c, ColumnClause):
+            c = Column(c.name, c.type)
         c._make_proxy(t)
 
     create_ddl_1 = "DROP TABLE %s" % (name)
@@ -39,58 +46,29 @@ def View(name, metadata, selectable):
     drop_ddl_1 = "DROP VIEW %s" % (name)
     drop_ddl_2 = "CREATE TABLE %s(id integer)" % (name)
 
-    DDL(create_ddl_1).execute_at('after-create', t)
-    DDL(create_ddl_2).execute_at('after-create', t)
-    DDL(drop_ddl_1).execute_at('before-drop', t)
-    DDL(drop_ddl_2).execute_at('before-drop', t)
+    DDL(create_ddl_1).execute_at('after-create', metadata)
+    DDL(create_ddl_2).execute_at('after-create', metadata)
+    DDL(drop_ddl_1).execute_at('before-drop', metadata)
+    DDL(drop_ddl_2).execute_at('before-drop', metadata)
 
     return t
-    
-
-def _sort_tables(tables):
-    """sort a collection of Table objects in order of their foreign-key dependency."""
-    
-    tables = list(tables)
-    tuples = []
-
-    def visit_foreign_key(fkey):
-        if fkey.use_alter:
-            return
-        parent_table = fkey.column.table
-        if parent_table in tables:
-            child_table = fkey.parent.table
-            tuples.append( ( parent_table, child_table ) )
-
-    for table in tables:
-        visitors.traverse(table, {'schema_visitor':True}, {'foreign_key':visit_foreign_key})    
-    my_deps = []
-    if tables:
-        my_deps = _dependencies.get(str(tables[0].metadata), []) or []
-    return topological.sort(tuples + my_deps, tables)
 
 
-def add_dependency(metadata, child, parent):
-    global _sort_tables_bak
-    global _dependencies
-    if not _sort_tables_bak:
-        _dependencies = {}
-        _sort_tables_bak = sqlalchemy.sql.util.sort_tables
-        sqlalchemy.sql.util.sort_tables = _sort_tables
-    meta_key = str(metadata)
-    deps_list = _dependencies.get(meta_key, [])
-    deps_list.append((parent, child))
-    _dependencies[meta_key] = deps_list
+def initial_data(table, column_names, *rows):
+    """Insert data into table after creation
+
+    :arg table: Table instance the data have to be inserted in
+    :arg column_names: list of column names
+    :arg rows: one or more rows (list of values)
+    """
+
+    def onload(event, schema_item, connection):
+        insert = table.insert()
+        connection.execute(
+            insert,
+            [dict(zip(column_names, column_values))
+             for column_values in rows])
+
+    table.append_ddl_listener('after-create', onload)
 
 
-def reset_dependencies(metadata):
-    global _sort_tables_bak
-    global _dependencies
-    if str(metadata) in _dependencies:
-        del _dependencies[str(metadata)]
-    if len(_dependencies.keys())==0:
-        if _sort_tables_bak:
-            sqlalchemy.sql.util.sort_tables = _sort_tables_bak 
-        _sort_tables_bak = None
-
-
-    

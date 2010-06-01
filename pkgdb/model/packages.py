@@ -16,6 +16,7 @@
 # may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+#                    Martin Bacovsky <mbacovsk@redhat.com>
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
 #
 '''
@@ -41,7 +42,8 @@ Mapping of package related database tables to python classes.
 import logging
 
 from sqlalchemy import Column, ForeignKeyConstraint, Integer, Table, Text
-from sqlalchemy import PassiveDefault
+from sqlalchemy import PassiveDefault, Boolean, DateTime, func, UniqueConstraint
+from sqlalchemy import text, DDL, Index
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import backref, eagerload, relation
@@ -73,16 +75,158 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
 #pylint:disable-msg=C0103
-PackageTable = Table('package', metadata, autoload=True)
-PackageListingTable = Table('packagelisting', metadata, autoload=True)
+PackageTable = Table('package', metadata,
+    Column('id', Integer(), primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(), nullable=False),
+    Column('summary', Text(), nullable=False),
+    Column('description', Text()),
+    Column('reviewurl', Text()),
+    Column('statuscode', Integer(), nullable=False),
+    Column('shouldopen', Boolean(), nullable=False, server_default=text('true')),
+    Column('upstreamurl', Text()),
+    UniqueConstraint('name', name='package_name_key'),
+    ForeignKeyConstraint(['statuscode'],['packagestatuscode.statuscodeid'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+)
+DDL('ALTER TABLE package CLUSTER ON package_name_key', on='postgres')\
+    .execute_at('after-create', PackageTable)
+
+
+PackageListingTable = Table('packagelisting', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('packageid', Integer(), nullable=False),
+    Column('collectionid', Integer(),  nullable=False),
+    Column('owner', Text(),  nullable=False),
+    Column('qacontact', Text()),
+    Column('statuscode', Integer(),  nullable=False),
+    Column('statuschange', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('specfile', Text()),
+    Column('critpath', Boolean(), nullable=False, server_default=text('false')),
+    ForeignKeyConstraint(['statuscode'],['packagelistingstatuscode.statuscodeid'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+    ForeignKeyConstraint(['packageid'],['package.id'], 
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['collectionid'],['collection.id'], 
+        onupdate="CASCADE", ondelete="CASCADE"),
+    UniqueConstraint('packageid', 'collectionid',
+        name='packagelisting_packageid_key')
+)
+Index('packagelisting_collectionid_idx', PackageListingTable.c.collectionid)
+Index('packagelisting_packageid_idx', PackageListingTable.c.packageid)
+Index('packagelisting_statuscode_idx', PackageListingTable.c.statuscode)
+DDL('ALTER TABLE packagelisting CLUSTER ON packagelisting_packageid_idx', on='postgres')\
+    .execute_at('after-create', PackageListingTable)
+package_build_agreement_pgfunc = """
+    CREATE OR REPLACE FUNCTION package_build_agreement() RETURNS trigger
+        AS $$
+    DECLARE
+      pkgList_pid integer;
+      pkgBuild_pid integer;
+    BEGIN
+      -- if (TG_TABLE_NAME = 'PackageBuildListing') then
+      if (TG_RELNAME = 'packagebuildlisting') then
+        -- Upon entering a new relationship between a Build and Listing, make sure
+        -- they reference the same package.
+        pkgList_pid := packageId from packageListing where id = NEW.packageListingId;
+        pkgBuild_pid := packageId from packageBuild where id = NEW.packageBuildId;
+        if (pkgList_pid != pkgBuild_pid) then
+          raise exception 'PackageBuild %% and PackageListing %% have to reference the same package', NEW.packageBuildId, NEW.packageListingId;
+        end if;
+      -- elsif (TG_TABLE_NAME = 'PackageBuild') then
+      elsif (TG_RELNAME = 'packagebuild') then
+        -- Disallow updating the packageId field of PackageBuild if it is
+        -- associated with a PackageListing
+        if (NEW.packageId != OLD.packageId) then
+          select * from PackageBuildListing where PackageBuildId = NEW.id;
+          if (FOUND) then
+            raise exception 'Cannot update packageId when PackageBuild is referenced by a PackageListing';
+          end if;
+        end if;
+      -- elsif (TG_TABLE_NAME = 'PackageListing') then
+      elsif (TG_RELNAME = 'packagelisting') then
+        -- Disallow updating the packageId field of PackageListing if it is
+        -- associated with a PackageBuild
+        if (NEW.packageId != OLD.packageId) then
+          select * from PackageBuildListing where PackageListingId = NEW.id;
+          if (FOUND) then
+            raise exception 'Cannot update packageId when PackageListing is referenced by a PackageBuild';
+          end if;
+        end if;
+      else
+        -- raise exception 'Triggering table %% is not one of PackageBuild, PackageListing, or PackageBuildListing', TG_TABLE_NAME;
+        raise exception 'Triggering table %% is not one of PackageBuild, PackageListing, or PackageBuildListing', TG_RELNAME;
+      end if;
+      return NEW;
+    END;
+    $$
+        LANGUAGE plpgsql;
+    """
+DDL(package_build_agreement_pgfunc, on='postgres')\
+    .execute_at('before-create', PackageListingTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+DDL('CREATE TRIGGER package_build_agreement_trigger BEFORE UPDATE ON packagelisting'\
+        ' FOR EACH ROW EXECUTE PROCEDURE package_build_agreement()', on='postgres')\
+    .execute_at('after-create', PackageListingTable)
+
+packgelisting_statuschange_pgfunc = """
+    CREATE OR REPLACE FUNCTION packagelisting_statuschange() RETURNS trigger
+        AS $$
+        BEGIN
+            -- Check that the status changed --
+            IF NEW.statuscode IS DISTINCT FROM OLD.statuscode THEN
+                NEW.statuschange := current_timestamp;
+            END IF;
+
+            RETURN NEW;
+        END;
+    $$
+        LANGUAGE plpgsql;
+    """
+DDL(packgelisting_statuschange_pgfunc, on='postgres')\
+    .execute_at('before-create', PackageListingTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+DDL('CREATE TRIGGER packagelisting_statuschange BEFORE UPDATE ON packagelisting'\
+        ' FOR EACH ROW EXECUTE PROCEDURE packagelisting_statuschange()', on='postgres')\
+    .execute_at('after-create', PackageListingTable)
+
+
 
 BinaryPackagesTable = Table('binarypackages', metadata,
     Column('name', Text,  nullable=False, primary_key=True),
     useexisting=True
 )
 
-PackageBuildTable = Table('packagebuild', metadata, autoload=True)
-PackageBuildDependsTable = Table('packagebuilddepends', metadata, autoload=True)
+PackageBuildTable = Table('packagebuild', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('packageid', Integer(), nullable=False),
+    Column('epoch', Text()),
+    Column('version', Text(),  nullable=False),
+    Column('release', Text(),  nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('license', Text(),  nullable=False),
+    Column('architecture', Text(),  nullable=False),
+    Column('size', Integer(),  nullable=False),
+    Column('changelog', Text(),  nullable=False),
+    Column('committime', DateTime(timezone=True),  nullable=False),
+    Column('committer', Text(),  nullable=False),
+    Column('imported', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    ForeignKeyConstraint(['name'],['binarypackages.name']),
+    ForeignKeyConstraint(['packageid'],['package.id'], 
+        onupdate='CASCADE', ondelete='RESTRICT'),
+)
+DDL(package_build_agreement_pgfunc, on='postgres')\
+    .execute_at('before-create', PackageBuildTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+DDL('CREATE TRIGGER package_build_agreement_trigger BEFORE UPDATE ON packagebuild'\
+        ' FOR EACH ROW EXECUTE PROCEDURE package_build_agreement()', on='postgres')\
+    .execute_at('after-create', PackageBuildTable)
+
+
+PackageBuildDependsTable = Table('packagebuilddepends', metadata,
+    Column('packagebuildid', Integer(),  primary_key=True, nullable=False),
+    Column('packagebuildname', Text(),  primary_key=True, nullable=False),
+    ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'], ondelete="CASCADE"),
+)
 
 PackageBuildReposTable = Table('packagebuildrepos', metadata,
     Column('repoid', Integer, primary_key=True, nullable=False),
@@ -92,6 +236,32 @@ PackageBuildReposTable = Table('packagebuildrepos', metadata,
     ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+remove_orphaned_builds_pgfunc = """
+    CREATE OR REPLACE FUNCTION remove_orphaned_builds() RETURNS trigger
+        AS $$
+        BEGIN
+            DELETE FROM packagebuild USING (
+                SELECT OLD.packagebuildid as id, count(*) as count
+                FROM packagebuildrepos p
+                WHERE p.packagebuildid = OLD.packagebuildid
+            ) pbr
+            WHERE pbr.id = packagebuild.id AND pbr.count = 0;
+
+            RETURN OLD;
+        END;
+    $$
+        LANGUAGE plpgsql;
+
+    """
+DDL(remove_orphaned_builds_pgfunc, on='postgres')\
+    .execute_at('before-create', PackageBuildReposTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+# FIXME: This trigger is created just in postgres. If it is needed in other DB
+# (in sqlite for testing) it has to be added manually
+DDL('CREATE TRIGGER remove_orphaned_builds AFTER DELETE ON packagebuildrepos '\
+        ' FOR EACH ROW EXECUTE PROCEDURE remove_orphaned_builds()', on='postgres')\
+    .execute_at('after-create', PackageBuildReposTable)
+
 
 #pylint:enable-msg=C0103
 #
