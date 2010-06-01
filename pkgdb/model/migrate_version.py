@@ -24,6 +24,7 @@ Mapping sqlalchemy-migrate versioning table
 from sqlalchemy import Table, Column, ForeignKey, Integer, Text, String
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, text
 from turbogears.database import metadata, mapper, get_engine
+from turbogears import config
 from pkgdb.model import DeclarativeBase
 from pkgdb.lib.db import initial_data
 
@@ -36,9 +37,11 @@ class MigrateVersion(DeclarativeBase):
     repository_path = Column(Text)
     version = Column(Integer)
 
+db_repo = config.get('migrate.db_repo')
+
 initial_data(MigrateVersion.__table__,
     ('repository_id', 'repository_path', 'version'),
-    ('Fedora Package DB', 'db_repo', int(version('db_repo'))))
+    ('Fedora Package DB', db_repo, int(version(db_repo))))
 
 
 

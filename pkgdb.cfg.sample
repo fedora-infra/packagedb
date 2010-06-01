@@ -46,6 +46,9 @@ mail.debug=True
 sqlalchemy.dburi="postgres://pkgdbadmin:bunbunbun@localhost/pkgdb"
 # sqlalchemy.dburi="sqlite://%(current_dir_uri)s/devdata.sqlite"
 
+# path to db_repo
+migrate.db_repo="db_repo"
+
 # set to 1 to make SQLAlchemy echo SQL commands on the console
 sqlalchemy.echo = 0
 
