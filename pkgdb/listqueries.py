@@ -320,9 +320,13 @@ class ListQueries(controllers.Controller):
         return dict(title=_('%(app)s -- VCS ACLs') % {'app': self.app_title},
                 packageAcls=package_acls)
 
-    @expose(template='pkgdb.templates.buildtags', as_format='xml',
-            accept_format='application/xml', #pylint:disable-msg=C0322
-            allow_json=True) #pylint:disable-msg=E1101
+    @expose(template='mako:plain.buildtags',
+            as_format="plain", accept_format="text/plain",
+            content_type="text/plain; charset=utf-8",
+            format='text')
+    @expose(template='pkgdb.templates.xml.buildtags', as_format='xml',
+            accept_format='application/xml')
+    @expose(template="pkgdb.templates.buildtags", allow_json=True)
     def buildtags(self, repos):
         '''Return an XML object with all the PackageBuild tags and their scores.
         The PackageBuild tags are tags binded to applications belonging to 
@@ -352,7 +356,9 @@ class ListQueries(controllers.Controller):
 
             for build in builds:
                 buildtags[repo][build.name] = build.scores()
-        return dict(buildtags=buildtags, repos=repos)
+
+        return dict(title=_('%(app)s -- Build Tags') % {'app': self.app_title},
+                    buildtags=buildtags, repos=repos)
 
     @expose(content_type='application/sqlite')
     def sqlitebuildtags(self, repo):
