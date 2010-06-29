@@ -41,7 +41,7 @@ db_repo = config.get('migrate.db_repo')
 
 initial_data(MigrateVersion.__table__,
     ('repository_id', 'repository_path', 'version'),
-    ('Fedora Package DB', db_repo, int(version(db_repo))))
+    ('Fedora Package DB', db_repo, lambda: int(version(db_repo))))
 
 
 

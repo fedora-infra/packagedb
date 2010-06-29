@@ -62,12 +62,20 @@ def initial_data(table, column_names, *rows):
     :arg rows: one or more rows (list of values)
     """
 
+    def unify_value(value):
+        if callable(value):
+            return value()
+        else:
+            return value
+
     def onload(event, schema_item, connection):
         insert = table.insert()
         connection.execute(
             insert,
-            [dict(zip(column_names, column_values))
-             for column_values in rows])
+            [dict(zip(
+                    column_names, 
+                    (unify_value(value) for value in column_values)))
+                for column_values in rows])
 
     table.append_ddl_listener('after-create', onload)
 

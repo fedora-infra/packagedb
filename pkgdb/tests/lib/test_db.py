@@ -75,14 +75,15 @@ class TestLibDB(TestCase):
         stuff = create_stuff_table(metadata)
         initial_data(stuff, 
             ('id', 'data'),
-            (1, 'test'),
+            (1, lambda: 'test'),
             (2, 'another_test'))
 
         metadata.create_all()
 
         # check if the table was intialized with the data
-        result = metadata.bind.execute(select([stuff.c.data]).order_by(stuff.c.id)).fetchall()[1]
-        assert_equals(result[0], 'another_test')
+        results = metadata.bind.execute(select([stuff.c.data]).order_by(stuff.c.id)).fetchall()
+        assert_equals(results[0][0], 'test')
+        assert_equals(results[1][0], 'another_test')
 
         metadata.drop_all()
 
