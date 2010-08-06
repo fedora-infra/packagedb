@@ -496,6 +496,11 @@ Needs more investigation and testing framework preparation. Untouched land so fa
 
 Unit tests
 ~~~~~~~~~~
+WARNING: don't run the tests on DB you use for development. Create empty DB and set it up in test.cfg.
+For more info how to do that consult DB setup section.
+Theoretically the tests should be able to run just on sqlite and postgres related stuff be skipped. 
+This is no longer supported as incomplete tests makes little sense.
+
  * the tests are located in pkgdb/tests/
  * nose and TestCase is used
  * check helpers for DB related stuff in pkgdb.lib.test (its tests are in pkgdb/tests/lib/test_test.py)
@@ -504,6 +509,7 @@ Unit tests
  * for performance reason testsuite creates one fresh instance of DB in postgres which can be used by tests. Every single test is responsible for cleaning after itself
  * some tools to make testing easier are in ppkgdb.lib.test
  * framework configuration is looked up in test.cfg
+
 
 
 ------------
