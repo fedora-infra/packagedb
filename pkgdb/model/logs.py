@@ -31,6 +31,7 @@ from fedora.tg.json import SABase
 
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.model.acls import PersonPackageListingAcl, GroupPackageListingAcl
+from pkgdb.lib.db import Grant_RW
 
 get_engine()
 
@@ -154,15 +155,20 @@ LogTable = Table('log', metadata,
 Index('log_changetime_idx', LogTable.c.changetime)
 DDL('ALTER TABLE log CLUSTER ON log_changetime_idx', on='postgres')\
     .execute_at('after-create', LogTable)
+Grant_RW(LogTable)
+
+
 
 PackageLogStatusCodeTable = Table('packagelogstatuscode', metadata,
     Column('statuscodeid', Integer(), autoincrement=False, primary_key=True, nullable=False),
 )
+Grant_RW(PackageLogStatusCodeTable)
+
 
 PackageLogTable = Table('packagelog', metadata,
-    Column('logid', Integer(),  primary_key=True, nullable=False),
-    Column('packageid', Integer(),  nullable=False),
-    Column('action', Integer(),  nullable=False),
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('packageid', Integer(), nullable=False),
+    Column('action', Integer(), nullable=False),
     ForeignKeyConstraint(['action'],['packagelogstatuscode.statuscodeid'], 
         onupdate="CASCADE", ondelete="RESTRICT"),
     ForeignKeyConstraint(['logid'],['log.id'], 
@@ -173,15 +179,17 @@ PackageLogTable = Table('packagelog', metadata,
 Index('packagelog_packageid_idx', PackageLogTable.c.packageid)
 DDL('ALTER TABLE packagelog CLUSTER ON packagelog_packageid_idx', on='postgres')\
     .execute_at('after-create', PackageLogTable)
+Grant_RW(PackageLogTable)
 
 
 CollectionLogStatusCodeTable = Table('collectionlogstatuscode', metadata,
     Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
 )
+Grant_RW(CollectionLogStatusCodeTable)
 
 
 CollectionLogTable = Table('collectionlog', metadata,
-    Column('logid', Integer(),  primary_key=True, nullable=False),
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('collectionid', Integer(), nullable=False),
     Column('action', Integer(),  nullable=False),
     ForeignKeyConstraint(['action'],['collectionlogstatuscode.statuscodeid'], 
@@ -194,14 +202,17 @@ CollectionLogTable = Table('collectionlog', metadata,
 Index('collectionlog_collectionid_idx', CollectionLogTable.c.collectionid)
 DDL('ALTER TABLE collectionlog CLUSTER ON collectionlog_collectionid_idx', on='postgres')\
     .execute_at('after-create', CollectionLogTable)
+Grant_RW(CollectionLogTable)
 
 
 PackageBuildLogStatusCodeTable = Table('packagebuildlogstatuscode', metadata,
     Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
 )
+Grant_RW(PackageBuildLogStatusCodeTable)
+
 
 PackageBuildLogTable = Table('packagebuildlog', metadata,
-    Column('logid', Integer(),  primary_key=True, nullable=False),
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('packagebuildid', Integer(),  nullable=False),
     Column('action', Integer(),  nullable=False),
     ForeignKeyConstraint(['action'],['packagebuildlogstatuscode.statuscodeid'], 
@@ -211,10 +222,11 @@ PackageBuildLogTable = Table('packagebuildlog', metadata,
     ForeignKeyConstraint(['packagebuildid'],['packagebuild.id'], 
         onupdate="CASCADE", ondelete="RESTRICT"),
 )
+Grant_RW(PackageBuildLogTable)
 
 
 PackageListingLogTable = Table('packagelistinglog', metadata,
-    Column('logid', Integer(),  primary_key=True, nullable=False),
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('packagelistingid', Integer(),  nullable=False),
     Column('action', Integer(),  nullable=False),
     ForeignKeyConstraint(['action'],['packagelistinglogstatuscode.statuscodeid'], 
@@ -227,19 +239,23 @@ PackageListingLogTable = Table('packagelistinglog', metadata,
 Index('packagelistinglog_packagelistingid_idx', PackageListingLogTable.c.packagelistingid)
 DDL('ALTER TABLE packagelistinglog CLUSTER ON packagelistinglog_packagelistingid_idx', on='postgres')\
     .execute_at('after-create', PackageListingLogTable)
+Grant_RW(PackageListingLogTable)
 
 
 PackageAclLogStatusCodeTable = Table('packageacllogstatuscode', metadata,
     Column('statuscodeid', Integer(), autoincrement=False, primary_key=True, nullable=False),
 )
+Grant_RW(PackageAclLogStatusCodeTable)
+
 
 PackageListingLogStatusCodeTable = Table('packagelistinglogstatuscode', metadata,
     Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
 )
+Grant_RW(PackageListingLogStatusCodeTable)
 
 
 PersonPackageListingAclLogTable = Table('personpackagelistingacllog', metadata,
-    Column('logid', Integer(),  primary_key=True, nullable=False),
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('personpackagelistingaclid', Integer(), nullable=False),
     Column('action', Integer(),  nullable=False),
     ForeignKeyConstraint(['action'],['packageacllogstatuscode.statuscodeid'], 
@@ -252,10 +268,11 @@ PersonPackageListingAclLogTable = Table('personpackagelistingacllog', metadata,
 Index('personpackagelistingacllog_personpackagelistingaclid_idx', PersonPackageListingAclLogTable.c.personpackagelistingaclid)
 DDL('ALTER TABLE personpackagelistingacllog CLUSTER ON personpackagelistingacllog_personpackagelistingaclid_idx', on='postgres')\
     .execute_at('after-create', PersonPackageListingAclLogTable)
+Grant_RW(PersonPackageListingAclLogTable)
 
 
 GroupPackageListingAclLogTable = Table('grouppackagelistingacllog', metadata,
-    Column('logid', Integer(),  primary_key=True, nullable=False),
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('grouppackagelistingaclid', Integer(), nullable=False),
     Column('action', Integer(),  nullable=False),
     ForeignKeyConstraint(['action'],['packageacllogstatuscode.statuscodeid'], 
@@ -268,6 +285,7 @@ GroupPackageListingAclLogTable = Table('grouppackagelistingacllog', metadata,
 Index('grouppackagelistingacllog_grouppackagelistingaclid_idx', GroupPackageListingAclLogTable.c.grouppackagelistingaclid)
 DDL('ALTER TABLE grouppackagelistingacllog CLUSTER ON grouppackagelistingacllog_grouppackagelistingaclid_idx', on='postgres')\
     .execute_at('after-create', GroupPackageListingAclLogTable)
+Grant_RW(GroupPackageListingAclLogTable)
 
 
 logJoin = polymorphic_union (

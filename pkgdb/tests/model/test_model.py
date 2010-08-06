@@ -11,8 +11,8 @@ class TestModel(DBTest):
         # test if migrate_version was initialized
         migrate = self.session.query(MigrateVersion).one()
         assert_equals(migrate.repository_id, 'Fedora Package DB')
-        assert_equals(migrate.repository_path, config.get('migrate.db_repo'))
-        assert_equals(migrate.version, int(version(config.get('migrate.db_repo'))))
+        assert_equals(migrate.repository_path, config.get('database.repo'))
+        assert_equals(migrate.version, int(version(config.get('database.repo'))))
 
-
+    
 

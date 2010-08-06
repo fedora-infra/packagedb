@@ -30,8 +30,6 @@ import os
 from unittest import TestCase
 import atexit
 
-testing_database_created = False
-
 # try to load test.cfg to setup testing database
 # in memory sqlite is set by default
 if os.path.exists('test.cfg'):
@@ -56,16 +54,18 @@ class DBTest(TestCase):
     """
     
     def __init__(self, methodName='runTest'):
-        global testing_database_created
         super(DBTest, self).__init__(methodName)
         from turbogears.database import set_db_uri, session, metadata
         self.session = session
         self.metadata = metadata
-        if not testing_database_created:
-            self.model = get_model()
-            metadata.create_all()
-            atexit.register(metadata.drop_all)
-            testing_database_created = True
+        self.model = get_model()
+
+    def setUp(self):
+        self.metadata.create_all()
+
+
+    def tearDown(self):
+        self.metadata.drop_all()
 
 
 def slow(func):
@@ -89,7 +89,7 @@ def create_stuff_table(metadata):
     :returns table: Table instance
     """
     return Table('stuff', metadata, 
-        Column('id', Integer, primary_key=True),
+        Column('id', Integer, autoincrement=True, primary_key=True),
         Column('data', String(50)),
     )
 
@@ -120,7 +120,8 @@ def bound_metadata(echo=False):
     :arg echo: set engine to spit out SQL commands
     :return metadata: metadata
     """
-    engine = create_engine('sqlite:///:memory:', echo=echo)
+    engine = create_engine(config.get('sqlalchemy.dburi'), pool_size=1, echo=echo)
+    conn = engine.connect()
     return MetaData(engine)
 
 

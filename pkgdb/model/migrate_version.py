@@ -26,7 +26,7 @@ from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, text
 from turbogears.database import metadata, mapper, get_engine
 from turbogears import config
 from pkgdb.model import DeclarativeBase
-from pkgdb.lib.db import initial_data
+from pkgdb.lib.db import initial_data, Grant_RW
 
 from migrate.versioning.api import version
 
@@ -36,8 +36,9 @@ class MigrateVersion(DeclarativeBase):
     repository_id = Column(String(255), primary_key=True)
     repository_path = Column(Text)
     version = Column(Integer)
+Grant_RW(MigrateVersion.__table__)
 
-db_repo = config.get('migrate.db_repo')
+db_repo = config.get('database.repo')
 
 initial_data(MigrateVersion.__table__,
     ('repository_id', 'repository_path', 'version'),

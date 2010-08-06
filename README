@@ -134,14 +134,50 @@ This is a rather large dump and can take a while to load.
 Create the database from scratch
 --------------------------------
 
-TODO: fix the permiossion issue
-
 If you need fresh database for testing/development and are not interested in real life data
 you can use::
 
   tg-admin sql create
 
-instead of creating db from dump.
+This will try to create DB as user set in 'sqlalchemy.dburi', set rw permission to user in 'database.common_user'
+and set read only permission to user in 'database.readonly_user'. 
+Also note that the database has to be created first with
+
+    sudo -u postgres createdb pkgdb
+
+or equivalent.    
+
+To get same setup as in production db you should have::
+
+    cat db_setup.cfg
+      ...
+      # DATABASE
+      sqlalchemy.dburi="postgres://postgres@/pkgdb"
+      database.common_user='pkgdbadmin'
+      database.readonly_user='pkgdbreadonly'
+      ...
+
+    sudo -u postgres tg-admin -c db_setup.cfg sql create
+
+If you prefer not to create your database as postgres user you can do something like::
+
+    sudo -u postgres createuser -SDRPE test
+      Enter password for new role: <password>
+      Enter it again: <password>
+
+    sudo -u postgres createdb -O test test
+
+    cat db_setup.cfg
+      ...
+      # DATABASE
+      sqlalchemy.dburi="postgres://test:test@127.0.0.1/test"
+      database.common_user='pkgdbadmin'
+      database.readonly_user='pkgdbreadonly'
+      ...
+
+    tg-admin -c db_setup.cfg sql create
+
+I prefer to use the later setup for automated testing. 
 
 
 Update the Database Schema
@@ -163,8 +199,7 @@ If your database is not up to date with the latest changes in your branch
 (DB created from dump, merged in db updates),run the following scripts 
 to bring it up to date::
 
-  manage_db upgrade
-
+  sudo -u postgres ./manage_db -c db_setup.cfg upgrade
 
 
 Start memcached
@@ -334,7 +369,7 @@ The handling of db model definition described here should allow us to:
 
 Whole model definition if kept in pkgdb.model.* modules. Every information needed to create 
 db structure same as the production db is included in the model (triggers, stored procedures, 
-views, indexes, constraints,...). 
+views, indexes, constraints, permission, necessary initial data...). 
 
 We are using sqlalchemy-migrate to manage database model updates.
 
@@ -454,7 +489,6 @@ to get into right shape.
 
  * before adding new feature, fixing bug, refactoring write test
 
-
 Acceptance tests
 ~~~~~~~~~~~~~~~~
 Needs more investigation and testing framework preparation. Untouched land so far.
@@ -462,10 +496,14 @@ Needs more investigation and testing framework preparation. Untouched land so fa
 
 Unit tests
 ~~~~~~~~~~
- * The tests are in pkgdb/tests/
+ * the tests are located in pkgdb/tests/
  * nose and TestCase is used
  * check helpers for DB related stuff in pkgdb.lib.test (its tests are in pkgdb/tests/lib/test_test.py)
  * see Makefile for nose usage
+ * test as much as possible on in memory sqlite
+ * for performance reason testsuite creates one fresh instance of DB in postgres which can be used by tests. Every single test is responsible for cleaning after itself
+ * some tools to make testing easier are in ppkgdb.lib.test
+ * framework configuration is looked up in test.cfg
 
 
 ------------

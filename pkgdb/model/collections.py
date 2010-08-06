@@ -35,7 +35,7 @@ from fedora.tg.json import SABase
 from pkgdb.model.packages import PackageBuild, PackageBuildReposTable
 from pkgdb.model.packages import PackageListing, PackageListingTable
 from pkgdb.model import CollectionStatus
-from pkgdb.lib.db import View
+from pkgdb.lib.db import View, Grant_RW
 
 get_engine()
 
@@ -68,19 +68,23 @@ CollectionTable = Table('collection', metadata,
 Index('collection_status_idx', CollectionTable.c.statuscode)
 DDL('ALTER TABLE collection CLUSTER ON collection_name_key', on='postgres')\
     .execute_at('after-create', CollectionTable)
+Grant_RW(CollectionTable)
+
 
 CollectionSetTable = Table('collectionset', metadata,
-    Column('overlay', Integer(),  primary_key=True, nullable=False),
-    Column('base', Integer(),  primary_key=True, nullable=False),
+    Column('overlay', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('base', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('priority', Integer(), PassiveDefault(text('0'))),
     ForeignKeyConstraint(['overlay'],['collection.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['base'],['collection.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(CollectionSetTable)
+
 
 BranchTable = Table('branch', metadata,
-    Column('collectionid', Integer(), nullable=False),
+    Column('collectionid', Integer(), autoincrement=False, nullable=False),
     Column('branchname', String(32), unique=True, nullable=False),
     Column('disttag', String(32),  nullable=False),
     Column('parentid', Integer()),
@@ -92,6 +96,7 @@ BranchTable = Table('branch', metadata,
 )
 DDL('ALTER TABLE branch CLUSTER ON branch_pkey', on='postgres')\
     .execute_at('after-create', BranchTable)
+Grant_RW(BranchTable)    
 
 
 ReposTable = Table('repos', metadata,
@@ -108,6 +113,8 @@ ReposTable = Table('repos', metadata,
     ForeignKeyConstraint(['collectionid'],['collection.id'],
         ondelete="CASCADE"),
 )
+Grant_RW(ReposTable)
+
 
 CollectionJoin = polymorphic_union (
         {'b' : select((CollectionTable.join(
@@ -120,6 +127,8 @@ CollectionJoin = polymorphic_union (
          },
         'kind', 'CollectionJoin'
         )
+
+
 #
 # CollectionTable that shows number of packages in a collection
 # This is view
@@ -130,7 +139,6 @@ CollectionJoin = polymorphic_union (
 #  GROUP BY c.name, c.version, c.id, c.statuscode
 #  ORDER BY c.name, c.version;
 #
-
 CollectionPackageTable = View('collectionpackage', metadata,
         select([
             CollectionTable.c.id.label('id'),
@@ -148,6 +156,7 @@ CollectionPackageTable = View('collectionpackage', metadata,
         order_by(
             CollectionTable.c.name,
             CollectionTable.c.version))
+Grant_RW(CollectionPackageTable)
         
 
 #

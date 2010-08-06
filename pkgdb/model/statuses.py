@@ -32,6 +32,7 @@ from fedora.tg.json import SABase
 
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.model.acls import PersonPackageListingAcl, GroupPackageListingAcl
+from pkgdb.lib.db import Grant_RW, initial_data
 
 get_engine()
 
@@ -46,25 +47,58 @@ get_engine()
 # code as # these variables are special.  They chould be treated more like
 # class definitions than constants.  Oh well.
 # pylint: disable-msg=C0103
+
+# statuscode
 statuscode = Table('statuscode', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
 )
+initial_data(statuscode,
+    ('id'),
+    *[[id] for id in range(1, 21)])
+Grant_RW(statuscode)
 
+
+# statuscodetranslation
 StatusTranslationTable = Table('statuscodetranslation', metadata,
-    Column('statuscodeid', Integer(), primary_key=True, nullable=False),
+    Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
     Column('language', String(32), server_default=text("'C'"), primary_key=True, nullable=False),
     Column('statusname', Text(), nullable=False),
     Column('description', Text()),
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+initial_data(StatusTranslationTable, 
+    ('statuscodeid', 'language', 'statusname', 'description'), 
+	(1, 'C', 'Active', ''),
+	(2, 'C', 'Added', ''),
+	(3, 'C', 'Approved', ''),
+	(4, 'C', 'Awaiting Branch', ''),
+	(5, 'C', 'Awaiting Development', ''),
+	(6, 'C', 'Awaiting QA', ''),
+	(7, 'C', 'Awaiting Publish', ''),
+	(8, 'C', 'Awaiting Review', ''),
+	(9, 'C', 'EOL', ''),
+	(10, 'C', 'Denied', ''),
+	(11, 'C', 'Maintenence', ''),
+	(12, 'C', 'Modified', ''),
+	(13, 'C', 'Obsolete', ''),
+	(14, 'C', 'Orphaned', ''),
+	(15, 'C', 'Owned', ''),
+	(16, 'C', 'Rejected', ''),
+	(17, 'C', 'Removed', ''),
+	(18, 'C', 'Under Development', ''),
+	(19, 'C', 'Under Review', ''),
+	(20, 'C', 'Deprecated', ''))
 Index('statuscodetranslation_statusname_idx', StatusTranslationTable.c.statusname)
+Grant_RW(StatusTranslationTable)
+
 
 CollectionStatusTable = Table('collectionstatuscode', metadata,
-    Column('statuscodeid', Integer(), primary_key=True, nullable=False),
+    Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(CollectionStatusTable)
 
 add_status_to_log_pgfunc = """
     CREATE OR REPLACE FUNCTION add_status_to_log() RETURNS trigger
@@ -110,7 +144,7 @@ DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON col
 # make it somewhat more convoluted but all the status tables follow the same
 # pattern.
 PackageListingStatusTable = Table('packagelistingstatuscode', metadata,
-    Column('statuscodeid', Integer(), primary_key=True, nullable=False),
+    Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
@@ -122,11 +156,12 @@ DDL(add_status_to_log_pgfunc, on='postgres')\
 DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON packagelistingstatuscode '
         'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
     .execute_at('after-create', PackageListingStatusTable)
+Grant_RW(PackageListingStatusTable)
 
 
 # Package Status Table.
 PackageStatusTable = Table('packagestatuscode', metadata,
-    Column('statuscodeid', Integer(), primary_key=True, nullable=False),
+    Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
@@ -139,13 +174,13 @@ DDL(add_status_to_log_pgfunc, on='postgres')\
 DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON packagestatuscode '
         'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
     .execute_at('after-create', PackageStatusTable)
-
+Grant_RW(PackageStatusTable)
 
 
 
 # Package Acl Status Table
 PackageAclStatusTable = Table('packageaclstatuscode', metadata,
-    Column('statuscodeid', Integer(),  primary_key=True, nullable=False),
+    Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
@@ -157,6 +192,7 @@ DDL(add_status_to_log_pgfunc, on='postgres')\
 DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON packageaclstatuscode '
         'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
     .execute_at('after-create', PackageAclStatusTable)
+Grant_RW(PackageAclStatusTable)
 
 
 PackageBuildStatusCodeTable = Table('packagebuildstatuscode', metadata,
@@ -172,7 +208,7 @@ DDL(add_status_to_log_pgfunc, on='postgres')\
 DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON packagebuildstatuscode '
         'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
     .execute_at('after-create', PackageBuildStatusCodeTable)
-
+Grant_RW(PackageBuildStatusCodeTable)
 
 #
 # Mapped Classes

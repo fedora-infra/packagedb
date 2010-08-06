@@ -35,6 +35,7 @@ from sqlalchemy import CheckConstraint
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
+from pkgdb.lib.db import Grant_RW
 
 from fedora.tg.json import SABase
 
@@ -60,6 +61,9 @@ Index('personpackagelisting_userid_idx', PersonPackageListingTable.c.username)
 Index('personpackagelisting_packagelistingid_idx', PersonPackageListingTable.c.packagelistingid)
 DDL('ALTER TABLE personpackagelisting CLUSTER ON personpackagelisting_packagelistingid_idx', on='postgres')\
     .execute_at('after-create', PersonPackageListingTable)
+Grant_RW(PersonPackageListingTable)
+
+
 
 GroupPackageListingTable = Table('grouppackagelisting', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
@@ -73,6 +77,7 @@ GroupPackageListingTable = Table('grouppackagelisting', metadata,
 Index('grouppackagelisting_packagelistingid_idx', GroupPackageListingTable.c.packagelistingid)
 DDL('ALTER TABLE grouppackagelisting CLUSTER ON grouppackagelisting_packagelistingid_idx', on='postgres')\
     .execute_at('after-create', GroupPackageListingTable)
+Grant_RW(GroupPackageListingTable)
 
 
 PersonPackageListingAclTable = Table('personpackagelistingacl', metadata,
@@ -88,8 +93,6 @@ PersonPackageListingAclTable = Table('personpackagelistingacl', metadata,
         ondelete="RESTRICT"),
     CheckConstraint("acl = 'commit' OR acl = 'build' OR acl = 'watchbugzilla' OR acl = 'watchcommits'"
         " OR acl = 'approveacls' OR acl = 'checkout'", name='personpackagelistingacl_acl_check')
-
-    # TODO: Indexes, Trigger, Check
 )
 # FIXME: This trigger is created just in postgres. If it is needed in other DB
 # (in sqlite for testing) it has to be added manually
@@ -115,6 +118,8 @@ DDL('CREATE TRIGGER no_person_acl_update_trigger BEFORE UPDATE ON personpackagel
 Index('personpackagelistingacl_personpackagelistingid_idx', PersonPackageListingAclTable.c.personpackagelistingid)
 DDL('ALTER TABLE personpackagelistingacl CLUSTER ON personpackagelistingacl_personpackagelistingid_idx', on='postgres')\
     .execute_at('after-create', PersonPackageListingAclTable)
+Grant_RW(PersonPackageListingAclTable)
+
 
 
 GroupPackageListingAclTable = Table('grouppackagelistingacl', metadata,
@@ -140,7 +145,7 @@ DDL(no_acl_update_pgfunc, on='postgres').execute_at('before-create', GroupPackag
 DDL('CREATE TRIGGER no_group_acl_update_trigger BEFORE UPDATE ON grouppackagelistingacl'
         ' FOR EACH ROW EXECUTE PROCEDURE no_acl_update()', on='postgres')\
     .execute_at('after-create', GroupPackageListingAclTable)
-
+Grant_RW(GroupPackageListingAclTable)
 # pylint: enable-msg=C0103
 
 #

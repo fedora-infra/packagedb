@@ -34,6 +34,7 @@ from sqlalchemy.sql import or_
 from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
+from pkgdb.lib.db import Grant_RW
 
 #
 # Tables
@@ -43,6 +44,8 @@ LanguagesTable = Table('languages', metadata,
     Column('shortname', Text, nullable=False, primary_key=True),
     Column('name', Text, nullable=False, unique=True),
 )
+Grant_RW(LanguagesTable)
+
 
 #
 # Mapped Classes

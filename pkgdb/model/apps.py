@@ -52,6 +52,7 @@ from fedora.tg.util import tg_url
 
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
 from pkgdb.lib.dt_utils import fancy_delta
+from pkgdb.lib.db import Grant_RW
 
 from datetime import datetime
 
@@ -79,6 +80,8 @@ ApplicationsTable = Table('applications', metadata,
     ForeignKeyConstraint(['icon_status_id'],['media_status.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+Grant_RW(ApplicationsTable)
+
 #TODO:review ondelete in FKs - take set null set default into account
 
 #BlacklistTable = Table('blacklist', metadata,
@@ -95,8 +98,8 @@ ApplicationsTable = Table('applications', metadata,
 #)
 
 ApplicationsUsagesTable = Table('applicationsusages', metadata,
-    Column('applicationid', Integer, primary_key=True, nullable=False),
-    Column('usageid', Integer, primary_key=True, nullable=False),
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('usageid', Integer, primary_key=True, autoincrement=False, nullable=False),
     Column('rating', Integer, default=1, nullable=False),
     Column('author', Text, primary_key=True, nullable=False),
     Column('time', DateTime(timezone=True), PassiveDefault(func.now()),
@@ -106,10 +109,12 @@ ApplicationsUsagesTable = Table('applicationsusages', metadata,
     ForeignKeyConstraint(['usageid'], ['usages.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+Grant_RW(ApplicationsUsagesTable)
+
 
 ApplicationsTagsTable = Table('applicationstags', metadata,
-    Column('applicationid', Integer, primary_key=True, nullable=False),
-    Column('tagid', Integer, primary_key=True, nullable=False),
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('tagid', Integer, primary_key=True, autoincrement=False, nullable=False),
     Column('score', Integer, PassiveDefault(text('1')), nullable=False),
     Column('time', DateTime(timezone=True), PassiveDefault(func.now()),
         nullable=False),
@@ -118,27 +123,35 @@ ApplicationsTagsTable = Table('applicationstags', metadata,
     ForeignKeyConstraint(['tagid'], ['tags.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+Grant_RW(ApplicationsTagsTable)
+
 
 BinaryPackageTagsTable = Table('binarypackagetags', metadata,
     Column('binarypackagename', Text, primary_key=True, nullable=False),
-    Column('tagid', Integer, primary_key=True, nullable=False),
+    Column('tagid', Integer, primary_key=True, autoincrement=False, nullable=False),
     Column('score', Integer, PassiveDefault(text('1')), nullable=False),
     ForeignKeyConstraint(['binarypackagename'],['binarypackages.name'], onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['tagid'],['tags.id'], onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(BinaryPackageTagsTable)
+
 
 PackageBuildApplicationsTable = Table('packagebuildapplications', metadata,
-    Column('applicationid', Integer, primary_key=True, nullable=False),
-    Column('packagebuildid', Integer, primary_key=True, nullable=False),
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('packagebuildid', Integer, primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['applicationid'], ['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(PackageBuildApplicationsTable)
+
 
 AppTypesTable = Table('apptypes', metadata,
     Column('apptype', String(32), primary_key=True, nullable=False),
 )
+Grant_RW(AppTypesTable)
+
 
 CommentsTable = Table('comments', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
@@ -151,41 +164,55 @@ CommentsTable = Table('comments', metadata,
     ForeignKeyConstraint(['applicationid'],['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(CommentsTable)
+
 
 UsagesTable = Table('usages', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False, unique=True),
 )
+Grant_RW(UsagesTable)
+
 
 MimeTypesTable = Table('mimetypes', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False, unique=True),
 )
+Grant_RW(MimeTypesTable)
+
 
 AppsMimeTypesTable = Table('appsmimetypes', metadata,
-    Column('applicationid', Integer, primary_key=True, nullable=False),
-    Column('mimetypeid', Integer, primary_key=True, nullable=False),
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('mimetypeid', Integer, primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['applicationid'], ['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['mimetypeid'], ['mimetypes.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(AppsMimeTypesTable)
+
 
 TagsTable = Table('tags', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False, unique=True),
 )
+Grant_RW(TagsTable)
+
 
 IconNamesTable = Table('iconnames', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('name', Text, nullable=False, unique=True)
 )
-                        
+Grant_RW(IconNamesTable)                        
+
+
 ThemesTable = Table('themes', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('name', Text, nullable=False, unique=True),
 )
-                        
+Grant_RW(ThemesTable)
+
+
 IconsTable = Table('icons', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('nameid', nullable=False),
@@ -203,12 +230,15 @@ IconsTable = Table('icons', metadata,
     ForeignKeyConstraint(['m_status_id'], ['media_status.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+Grant_RW(IconsTable)
 
 
 MediaStatusTable = Table('media_status', metadata,
     Column('id', Integer, autoincrement=False, primary_key=True),
     Column('name', Text, nullable=False)
 )
+Grant_RW(MediaStatusTable)
+
 
 def _create_apptag(tag, score):
     """Creator function for apptags association proxy """

@@ -17,8 +17,10 @@
 #
 # Red Hat Author(s): Martin Bacovsky <mbacovsk@redhat.com>
 #
+import sqlalchemy
 from sqlalchemy import DDL, Table, Column
 from sqlalchemy.sql.expression import ColumnClause
+from turbogears import config
 
 def View(name, metadata, selectable):
     """Create DB view definition in SA model
@@ -79,4 +81,42 @@ def initial_data(table, column_names, *rows):
 
     table.append_ddl_listener('after-create', onload)
 
+
+def Grant_RW(table):
+
+    common_user = config.get('database.common_user')
+    readonly_user = config.get('database.readonly_user')
+
+    # table permissions
+    DDL('REVOKE ALL ON TABLE %s FROM PUBLIC' % table.name, on='postgres')\
+        .execute_at('after-create', table)
+    DDL('REVOKE ALL ON TABLE %s FROM postgres' % table.name, on='postgres')\
+        .execute_at('after-create', table)
+    DDL('GRANT ALL ON TABLE %s to postgres' % table.name, on='postgres')\
+        .execute_at('after-create', table)
+    DDL('GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE %s to %s' % (table.name, common_user), on='postgres')\
+        .execute_at('after-create', table)
+    DDL('GRANT SELECT ON TABLE %s to %s' % (table.name, readonly_user), on='postgres')\
+        .execute_at('after-create', table)
+
+    # permissions on sequences
+    # run through columns and find autoincrement, check if there is sequence
+    for c in table.c:
+        if c.autoincrement and c.primary_key and isinstance(c.type, sqlalchemy.types.Integer):
+            seq_name = "%s_%s_seq" % (table.name, c.name)
+            #"select relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname=current_schema() and lower(relname)=%(name)s"
+            DDL('REVOKE ALL ON SEQUENCE %s FROM PUBLIC' % seq_name, on='postgres')\
+                .execute_at('after-create', table)
+            DDL('REVOKE ALL ON SEQUENCE %s FROM postgres' % seq_name, on='postgres')\
+                .execute_at('after-create', table)
+            DDL('GRANT ALL ON SEQUENCE %s to postgres' % seq_name, on='postgres')\
+                .execute_at('after-create', table)
+            DDL('GRANT SELECT,UPDATE ON SEQUENCE %s to %s' % (seq_name, common_user), on='postgres')\
+                .execute_at('after-create', table)
+            DDL('GRANT SELECT ON SEQUENCE %s to %s' % (seq_name, readonly_user), on='postgres')\
+                .execute_at('after-create', table)
+
+    # FIXME: this commit is necessary to pass the tests, why?
+    DDL('COMMIT', on='postgres')\
+        .execute_at('after-create', table)
 

@@ -33,4 +33,4 @@ elif not cfg_file:
 
 update_config(configfile=cfg_file, modulename="pkgdb.config")
 
-main(url=config.get('sqlalchemy.dburi'),repository=config.get('migrate.db_repo'))
+main(url=config.get('sqlalchemy.dburi'),repository=config.get('database.repo'))

@@ -57,6 +57,7 @@ from pkgdb.model.acls import GroupPackageListing, GroupPackageListingAcl,\
         PersonPackageListing, PersonPackageListingAcl
 from pkgdb.model.prcof import RpmConflicts, RpmFiles, RpmObsoletes,\
         RpmProvides, RpmRequires
+from pkgdb.lib.db import Grant_RW
 
 error_log = logging.getLogger('pkgdb.model.packages')
 
@@ -90,6 +91,7 @@ PackageTable = Table('package', metadata,
 )
 DDL('ALTER TABLE package CLUSTER ON package_name_key', on='postgres')\
     .execute_at('after-create', PackageTable)
+Grant_RW(PackageTable)
 
 
 PackageListingTable = Table('packagelisting', metadata,
@@ -111,6 +113,7 @@ PackageListingTable = Table('packagelisting', metadata,
     UniqueConstraint('packageid', 'collectionid',
         name='packagelisting_packageid_key')
 )
+Grant_RW(PackageListingTable)
 Index('packagelisting_collectionid_idx', PackageListingTable.c.collectionid)
 Index('packagelisting_packageid_idx', PackageListingTable.c.packageid)
 Index('packagelisting_statuscode_idx', PackageListingTable.c.statuscode)
@@ -195,6 +198,8 @@ BinaryPackagesTable = Table('binarypackages', metadata,
     Column('name', Text,  nullable=False, primary_key=True),
     useexisting=True
 )
+Grant_RW(BinaryPackagesTable)
+
 
 PackageBuildTable = Table('packagebuild', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
@@ -214,6 +219,7 @@ PackageBuildTable = Table('packagebuild', metadata,
     ForeignKeyConstraint(['packageid'],['package.id'], 
         onupdate='CASCADE', ondelete='RESTRICT'),
 )
+Grant_RW(PackageBuildTable)
 DDL(package_build_agreement_pgfunc, on='postgres')\
     .execute_at('before-create', PackageBuildTable)
 # DROP is not necessary as we drop plpgsql with CASCADE
@@ -223,19 +229,22 @@ DDL('CREATE TRIGGER package_build_agreement_trigger BEFORE UPDATE ON packagebuil
 
 
 PackageBuildDependsTable = Table('packagebuilddepends', metadata,
-    Column('packagebuildid', Integer(),  primary_key=True, nullable=False),
+    Column('packagebuildid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('packagebuildname', Text(),  primary_key=True, nullable=False),
     ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'], ondelete="CASCADE"),
 )
+Grant_RW(PackageBuildDependsTable)
+
 
 PackageBuildReposTable = Table('packagebuildrepos', metadata,
-    Column('repoid', Integer, primary_key=True, nullable=False),
-    Column('packagebuildid', Integer, primary_key=True, nullable=False),
+    Column('repoid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('packagebuildid', Integer, primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['repoid'], ['repos.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(PackageBuildReposTable)
 remove_orphaned_builds_pgfunc = """
     CREATE OR REPLACE FUNCTION remove_orphaned_builds() RETURNS trigger
         AS $$

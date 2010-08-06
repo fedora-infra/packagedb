@@ -4,9 +4,9 @@ from configobj import ConfigObj
 
 config = ConfigObj(sys.argv[1], unrepr=True)
 try:
-    repo_path = config['global']['migrate.db_repo']
+    repo_path = config['global']['database.repo']
 except KeyError:
-    print "'migrate.db_repo' was not defined in config file."
+    print "'database.repo' was not defined in config file."
     sys.exit(1)
 
 sql = """
