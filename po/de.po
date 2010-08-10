@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fedora-packagedb 0.4.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2009-11-11 16:32-0800\n"
-"PO-Revision-Date: 2010-03-13 14:39+0100\n"
+"PO-Revision-Date: 2010-08-10 15:46+0100\n"
 "Last-Translator: Fabian Affolter <fab@fedoraproject.org>\n"
 "Language-Team: German <fedora-trans-de@lists.fedoraproject.org>\n"
 "MIME-Version: 1.0\n"
@@ -293,7 +293,7 @@ msgstr ""
 
 #: pkgdb/dispatcher.py:1075
 msgid "Permission denied"
-msgstr ""
+msgstr "Berechtigung verweigert"
 
 #: pkgdb/dispatcher.py:1082
 #, python-format
@@ -613,7 +613,7 @@ msgstr ""
 
 #: pkgdb/templates/collectionoverview.html:14
 msgid "Number of Packages"
-msgstr ""
+msgstr "Anzahl von Paketen"
 
 #: pkgdb/templates/collectionoverview.html:16
 msgid "Actions that may be carried out against all the packages in this collection.  Usually need to be in the cvsadmin group to operate on these"
@@ -654,7 +654,7 @@ msgstr "Kollektionsname:"
 #: pkgdb/templates/filters.html:21
 #: pkgdb/templates/filters.html:31
 msgid "any"
-msgstr ""
+msgstr "alle"
 
 #: pkgdb/templates/filters.html:28
 msgid "Collection Version:"
@@ -877,7 +877,7 @@ msgstr ""
 #: pkgdb/templates/stats.html:18
 #: pkgdb/templates/stats.html:34
 msgid "Counter"
-msgstr ""
+msgstr "Zähler"
 
 #: pkgdb/templates/stats.html:21
 msgid "Number of packages owned"
@@ -899,7 +899,7 @@ msgstr ""
 
 #: pkgdb/templates/stats.html:35
 msgid "Maintainer"
-msgstr ""
+msgstr "Betreuer"
 
 #: pkgdb/templates/stats.html:37
 msgid "Number of packages maintained"
@@ -936,13 +936,15 @@ msgstr "Ansicht:"
 
 #: pkgdb/templates/userpkgs.html:37
 msgid "My Info"
-msgstr ""
+msgstr "Meine Daten"
 
 #: pkgdb/templates/userpkgs.html:37
 msgid ""
 "|\n"
 "        My Packages ("
 msgstr ""
+"|\n"
+"        Meine Pakete ("
 
 #: pkgdb/templates/userpkgs.html:41
 msgid "View: Orphaned Packages ("
@@ -957,14 +959,17 @@ msgid "show"
 msgstr "zeigen"
 
 #: pkgdb/templates/userpkgs.html:50
+#, fuzzy
 msgid "EOL packages"
-msgstr ""
+msgstr "EOL-Pakete"
 
 #: pkgdb/templates/userpkgs.html:53
 msgid ""
 "'s\n"
 "          Info"
 msgstr ""
+"'s\n"
+"          Info"
 
 #: pkgdb/templates/userpkgs.html:54
 msgid "'s Packages ("
