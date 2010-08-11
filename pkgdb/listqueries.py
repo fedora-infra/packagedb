@@ -328,7 +328,7 @@ class ListQueries(controllers.Controller):
             accept_format='application/xml')
     @expose(template="pkgdb.templates.buildtags", allow_json=True)
     def buildtags(self, repos):
-        '''Return an XML object with all the PackageBuild tags and their scores.
+        '''Return a dictionary with all the PackageBuild tags and their scores.
         The PackageBuild tags are tags binded to applications belonging to 
         the packagebuild. When there are more apps with same tag within one 
         packaebuild, the maximum score is taken.
@@ -348,14 +348,31 @@ class ListQueries(controllers.Controller):
             buildtags[repo] = {}
 
             #pylint:disable-msg=E1101
-            repoid = session.query(Repo).filter_by(shortname=repo).one().id
-            builds = session.query(PackageBuild)\
-                    .join(PackageBuild.repos)\
-                    .filter(Repo.id==repoid)
+            repo_query = select((Repo.id,))
+            repo_query = repo_query.where(Repo.shortname == repo)
+            for result in repo_query.execute():
+                repoid = result[0]
             #pylint:enable-msg=E1101
 
-            for build in builds:
-                buildtags[repo][build.name] = build.scores()
+            pkgbld_query = select((PackageBuild.name,
+                                   Tag.name,
+                                   ApplicationTag.score),
+                               and_(Tag.id == ApplicationTag.tagid,
+                                    ApplicationTag.applicationid == PackageBuildApplicationsTable.c.applicationid,
+                                    PackageBuildApplicationsTable.c.packagebuildid == PackageBuild.id,
+                                    PackageBuildRepo.repoid == Repo.id,
+                                    PackageBuildRepo.packagebuildid==PackageBuild.id,
+                                    Repo.shortname==repo))
+            pkgblds = pkgbld_query.execute()
+            #pylint:enable-msg=E1101
+
+            for pkgbld in pkgblds:
+                pkgname = pkgbld[0]
+                tag = pkgbld[1]
+                score = pkgbld[2]
+                if (not buildtags[repo].has_key(pkgname)):
+                    buildtags[repo][pkgname] = {}
+                buildtags[repo][pkgname][tag] = score
 
         return dict(title=_('%(app)s -- Build Tags') % {'app': self.app_title},
                     buildtags=buildtags, repos=repos)
