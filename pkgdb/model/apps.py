@@ -52,7 +52,7 @@ from fedora.tg.util import tg_url
 
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
 from pkgdb.lib.dt_utils import fancy_delta
-from pkgdb.lib.db import Grant_RW
+from pkgdb.lib.db import Grant_RW, initial_data
 
 from datetime import datetime
 
@@ -150,6 +150,11 @@ Grant_RW(PackageBuildApplicationsTable)
 AppTypesTable = Table('apptypes', metadata,
     Column('apptype', String(32), primary_key=True, nullable=False),
 )
+initial_data(AppTypesTable, 
+    ('apptype',),
+    ('desktop',),
+    ('commandline',),
+    ('unknown',))
 Grant_RW(AppTypesTable)
 
 
@@ -237,6 +242,12 @@ MediaStatusTable = Table('media_status', metadata,
     Column('id', Integer, autoincrement=False, primary_key=True),
     Column('name', Text, nullable=False)
 )
+initial_data(MediaStatusTable,
+    ('id', 'name'),   
+    #----+---------
+    (0, 'NEW'),
+    (1, 'EXPORTED'),
+    (2, 'SYNCED'))
 Grant_RW(MediaStatusTable)
 
 
@@ -271,11 +282,14 @@ class Application(SABase):
         self.summary = summary
         self.icon = icon
         self.icon_status_id = icon_status_id
+        self.scores.__json__ = lambda: dict(((tag.name, score) for tag, score in self.scores.iteritems()))
 
     # scores is dict {<tag_object>:score}
     # scores[<tag-object>] = <score> create/update app2tag relation with given score
     scores = association_proxy('by_tag', 'score', 
             creator=_create_apptag)
+    json_props = {'Application': ['scores']}
+
 
     _rating = None
 

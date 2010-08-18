@@ -131,6 +131,29 @@ recent dump from http://fedorahosted.org/releases/p/a/packagedb like this
 
 This is a rather large dump and can take a while to load.
 
+
+Update the Database Schema
+--------------------------
+
+Currently the database dump is not up to date with the latest changes in the
+devel branch. These steps won't be required after we get a healthy 0.5.x dbdump.
+Run the following scripts to bring it up to date::
+
+  sudo -u postgres psql pkgdb < update-schema/01_static_icons.sql
+  sudo -u postgres psql pkgdb < update-schema/02_timestamps_for_tags_and_usages.sql
+  sudo -u postgres psql pkgdb < update-schema/03_updates_to_make_db_match_the_model.sql
+  python update-schema/04_migrate_version.py pkgdb.cfg > update-schema/04_migrate_version.sql
+  sudo -u postgres psql pkgdb < update-schema/04_migrate_version.sql
+
+TODO: remove the lines above in favour of
+
+If your database is not up to date with the latest changes in your branch 
+(DB created from dump, merged in db updates),run the following scripts 
+to bring it up to date::
+
+  sudo -u postgres ./manage_db -c db_setup.cfg upgrade
+
+
 Create the database from scratch
 --------------------------------
 
@@ -178,28 +201,6 @@ If you prefer not to create your database as postgres user you can do something 
     tg-admin -c db_setup.cfg sql create
 
 I prefer to use the later setup for automated testing. 
-
-
-Update the Database Schema
---------------------------
-
-Currently the database dump is not up to date with the latest changes in the
-devel branch. These steps won't be required after we get a healthy 0.5.x dbdump.
-Run the following scripts to bring it up to date::
-
-  sudo -u postgres psql pkgdb < update-schema/01_static_icons.sql
-  sudo -u postgres psql pkgdb < update-schema/02_timestamps_for_tags_and_usages.sql
-  sudo -u postgres psql pkgdb < update-schema/03_updates_to_make_db_match_the_model.sql
-  python update-schema/04_migrate_version.py pkgdb.cfg > update-schema/04_migrate_version.sql
-  sudo -u postgres psql pkgdb < update-schema/04_migrate_version.sql
-
-TODO: remove the lines above in favour of
-
-If your database is not up to date with the latest changes in your branch 
-(DB created from dump, merged in db updates),run the following scripts 
-to bring it up to date::
-
-  sudo -u postgres ./manage_db -c db_setup.cfg upgrade
 
 
 Start memcached
@@ -487,30 +488,46 @@ Testing
 this section is collection of ideas that needs yet some more work and experience
 to get into right shape.
 
- * before adding new feature, fixing bug, refactoring write test
-
-Acceptance tests
-~~~~~~~~~~~~~~~~
-Needs more investigation and testing framework preparation. Untouched land so far.
-
-
-Unit tests
-~~~~~~~~~~
 WARNING: don't run the tests on DB you use for development. Create empty DB and set it up in test.cfg.
 For more info how to do that consult DB setup section.
 Theoretically the tests should be able to run just on sqlite and postgres related stuff be skipped. 
 This is no longer supported as incomplete tests makes little sense.
 
- * the tests are located in pkgdb/tests/
- * nose and TestCase is used
- * check helpers for DB related stuff in pkgdb.lib.test (its tests are in pkgdb/tests/lib/test_test.py)
+ * before adding new feature, fixing bug, refactoring write test
  * see Makefile for nose usage
+ * nose and TestCase is used
+
+Acceptance tests
+~~~~~~~~~~~~~~~~
+These tests test PkgDB as a blackbox and should be *always* independent on the internals. 
+The only exception may be initial DB setup that is difficult to get using webapp.
+For more details see http://www.extremeprogramming.org/rules/functionaltests.html
+
+ * run these tests before every commit. 
+ * every provided feature should have test. The user story describing the feature should be in comment
+ * User story template: As a [user role] I want to [goal] so I can [reason].
+ * the tests are locatad in pkgdb/tests/functional
+ * % make testfunc
+ * check pkgdb.lib.test.WebAppTest and existing tests to start
+ * ignored TypeError may arise after tests. Probably bug in python-bugzilla. Reported as bz#625019 (patch included)
+
+
+Unit tests
+~~~~~~~~~~
+Unit tests should provide documentation, use cases and guarantee that public API of class or module will not be accidentally
+changed or start to behave differently. It is not effective to provide tests for private internal functions
+as it make later refactoring difficult.
+
+Writing test first (Test Driven Development) lead by experience to better structured, loosly coupled code 
+that is easier to maintain.
+
+ * the tests are located in pkgdb/tests/unit
+ * % make test
+ * check helpers for DB related stuff in pkgdb.lib.test (its tests are in pkgdb/tests/lib/test_test.py)
  * test as much as possible on in memory sqlite
- * for performance reason testsuite creates one fresh instance of DB in postgres which can be used by tests. Every single test is responsible for cleaning after itself
- * some tools to make testing easier are in ppkgdb.lib.test
+ * for performance reasons testsuite creates one fresh instance of DB in postgres which can be used by tests. Every single test is responsible for cleaning after itself
+ * some tools to make testing easier are in pkgdb.lib.test
  * framework configuration is looked up in test.cfg
-
-
 
 ------------
 Translations

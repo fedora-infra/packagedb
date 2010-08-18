@@ -24,11 +24,22 @@ Library with helpers making tests more readable
 from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy import ForeignKey, MetaData, create_engine
 
-from turbogears import config, update_config
+from turbogears import config, update_config, startup
+import turbogears
 from turbogears.util import get_model
 import os
 from unittest import TestCase
 import atexit
+import cherrypy
+import cherrypy._cpwsgi
+import fedora.tg.tg1utils
+from webtest import TestApp
+
+cherrypy_major_ver = int(cherrypy.__version__.split('.')[0])
+#if cherrypy_major_ver < 3:
+#    from cherrypy._cphttptools import Request, Response
+#else:
+#    from cherrypy import Request, Response
 
 # try to load test.cfg to setup testing database
 # in memory sqlite is set by default
@@ -42,6 +53,85 @@ if os.path.exists('test.cfg'):
     update_config(configfile="test.cfg", modulename=modulename)
 else:
     database.set_db_uri("sqlite:///:memory:")
+
+config.update({'global':
+        {'autoreload.on': False, 'tg.new_style_logging': True}})
+
+# a few methods borrowed from testutils of TG1.1
+
+def make_wsgiapp():
+    """Return a WSGI application from cherrypy's root object."""
+    if cherrypy_major_ver < 3:
+        wsgiapp = cherrypy._cpwsgi.wsgiApp
+    else:
+        #This is untested but should work.. if not, one of the others will
+        wsgiapp = cherrpy.root
+        #wsgiapp = cherrypy.tree.mount(cherrypy.root, '/')
+        #wsgiapp = cherrypy.wsgi.CPWSGIServer
+    return wsgiapp
+
+
+def make_app(controller=None):
+    """Return a WebTest.TestApp instance from Cherrypy.
+    If a Controller object is provided, it will be mounted at the root level.
+    If not, it'll look for an already mounted root.
+    """
+    if controller:
+        wsgiapp = mount(controller(), '/')
+    else:
+        wsgiapp = make_wsgiapp()
+    testapp = TestApp(wsgiapp)
+
+    return testapp
+
+
+def unmount():
+    """Remove an application from the object traversal tree."""
+    # There's no clean way to remove a subtree under CP2, so the only use case
+    #  handled here is to remove the entire application.
+    # Supposedly, you can do a partial unmount with CP3 using:
+    #  del cherrypy.tree.apps[path]
+    cherrypy.root = None
+    cherrypy.tree.mount_points = {}
+
+
+def start_server():
+    """Start the server if it's not already."""
+    if not config.get("cp_started"):
+        if cherrypy_major_ver < 3:
+            cherrypy.server.start(serverClass=None, initOnly=True)
+        else:
+            cherrypy.server.quickstart()
+            cherrypy.engine.start()
+        config.update({"cp_started" : True})
+
+    if not config.get("server_started"):
+        startup.startTurboGears()
+        config.update({"server_started" : True})
+
+
+def stop_server(tg_only = False):
+    """Stop the server and unmount the application.  \
+    Use tg_only = True to leave CherryPy running (for faster tests).
+    """
+    unmount()
+    if config.get("cp_started") and not tg_only:
+       cherrypy.server.stop()
+       config.update({"cp_started" : False})
+   
+    if config.get("server_started"):
+        startup.stopTurboGears()
+        config.update({"server_started" : False})
+
+
+def mount(controller, path="/"):
+    """Mount a controller at a path.  Returns a wsgi application."""
+    if path == '/':
+        cherrypy.root = controller
+    else:
+        cherrypy.tree.mount(controller, path)
+    return make_wsgiapp()
+
 
 
 class DBTest(TestCase):
@@ -66,6 +156,66 @@ class DBTest(TestCase):
 
     def tearDown(self):
         self.metadata.drop_all()
+
+
+class WebAppTest(DBTest):
+
+    def __init__(self, methodName='runTest'):
+        super(WebAppTest, self).__init__(methodName)
+
+    def _init_env(self):
+        import pkgdb.lib.utils
+        pkgdb.lib.utils.init_globals()
+        turbogears.startup.call_on_startup.append(fedora.tg.tg1utils.enable_csrf)
+
+    def _init_app(self, controller, path):
+        mount(controller, path)
+        self.app = make_app()
+        start_server()
+
+
+    def setUp(self):
+        super(WebAppTest, self).setUp()
+        self._init_env()
+        from pkgdb.controllers import Root
+        self._init_app(Root(), '/')
+
+
+    def tearDown(self):
+        stop_server(tg_only = True)
+        del self.app
+        super(WebAppTest, self).tearDown()
+
+
+    def login_user(self, user):
+        #TODO: test me!
+        """ Log a specified user object into the system """
+        self.app.post(config.get('identity.failure_url'), {
+                'user_name' : user.user_name,
+                'password'  : user.password,
+                'login'     : 'Login',
+        })
+
+
+class BrowsingSession(object):
+    #TODO: test me!
+
+    def __init__(self):
+        self.visit = None
+        self.response, self.status = None, None
+        self.cookie = Cookie.SimpleCookie()
+        self.app = make_app()
+
+    def goto(self, *args, **kwargs):
+        if self.cookie:
+            headers = kwargs.setdefault('headers', {})
+            headers['Cookie'] = self.cookie_encoded
+        response = self.app.get(*args, **kwargs)
+        self.response = response.body
+        self.status = response.status
+        self.cookie = response.cookies_set
+        self.cookie_encoded = response.headers.get('Set-Cookie', '')
+
 
 
 def slow(func):
@@ -139,4 +289,5 @@ def table_names(metadata):
     """
     names = [t.name for t in metadata.tables.values()]
     return set(names)
+
 
