@@ -140,6 +140,7 @@ Run the following scripts to bring it up to date::
 
   sudo -u postgres psql pkgdb < update-schema/01_static_icons.sql
   sudo -u postgres psql pkgdb < update-schema/02_timestamps_for_tags_and_usages.sql
+  sudo -u postgres psql pkgdb < update-schema/03_add_gitbranchname.sql
 
 Start memcached
 ---------------
