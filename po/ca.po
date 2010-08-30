@@ -1,0 +1,984 @@
+# Translations template for fedora-packagedb.
+# Copyright (C) 2009 ORGANIZATION
+# This file is distributed under the same license as the fedora-packagedb
+# project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2009.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: fedora-packagedb 0.4.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2009-11-11 16:32-0800\n"
+"PO-Revision-Date: 2010-08-30 06:14+0100\n"
+"Last-Translator: Robert Antoni Buj Gelonch <robert.buj@gmail.com>\n"
+"Language-Team: Catalan <fedora@softcatala.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 0.9.4\n"
+"X-Poedit-Language: Catalan\n"
+
+#: pkgdb/bugs.py:80
+msgid "Can only store bugzilla.Bug type"
+msgstr "Únicament pot emmagatzemar el tipus bugzilla.Bug"
+
+#: pkgdb/bugs.py:138
+#, python-format
+msgid "Invalid URL: redirecting: %(url)s"
+msgstr "URL no permesa: redirigint: %(url)s"
+
+#: pkgdb/bugs.py:160
+#, python-format
+msgid "%(app)s -- Not a Valid Package Name"
+msgstr "%(app)s -- No és un nom de paquet vàlid"
+
+#: pkgdb/bugs.py:162
+#: pkgdb/dispatcher.py:571
+#, python-format
+msgid "No such package %(pkg)s"
+msgstr "Ni hi ha el paquet %(pkg)s"
+
+#: pkgdb/bugs.py:168
+#, python-format
+msgid "%(app)s -- Open Bugs for %(pkg)s"
+msgstr "%(app)s -- Obre els errors per a %(pkg)s"
+
+#: pkgdb/collections.py:77
+#, python-format
+msgid "%(app)s -- Collection Overview"
+msgstr "%(app)s -- Vista general de la col·lecció"
+
+#: pkgdb/collections.py:94
+#: pkgdb/collections.py:116
+#, python-format
+msgid "%(app)s -- Invalid Collection Id"
+msgstr "%(app)s -- Identificador de col·lecció no permès"
+
+#: pkgdb/collections.py:96
+msgid "The collection_id you were linked to is not a valid id.  If you received this error from a link on the fedoraproject.org website, please report it."
+msgstr ""
+
+#: pkgdb/collections.py:117
+#, python-format
+msgid "The collection_id you were linked to, %(id)s, does not exist.  If you received this error from a link on the fedoraproject.org website, please report it."
+msgstr ""
+
+#: pkgdb/collections.py:242
+#, python-format
+msgid "%(count)s/%(num)s packages were unbranched for %(branch)s\n"
+msgstr ""
+
+#: pkgdb/collections.py:248
+#, python-format
+msgid "Succesfully branched all %(num)s packages"
+msgstr ""
+
+#: pkgdb/collections.py:253
+#, python-format
+msgid "Mass branching status for %(branch)s"
+msgstr ""
+
+#: pkgdb/collections.py:294
+#, python-format
+msgid "Unable to locate a branch for %(branch)s"
+msgstr ""
+
+#: pkgdb/collections.py:300
+#, python-format
+msgid "Will not branch packages in EOL collection %(branch)s"
+msgstr ""
+
+#: pkgdb/collections.py:308
+#, python-format
+msgid "Unable to mass branch for %(branch)s because it is not managed by koji"
+msgstr ""
+
+#: pkgdb/collections.py:316
+msgid "Unable to log into koji"
+msgstr "No es pot registrar a koji"
+
+#: pkgdb/collections.py:341
+msgid "Mass branch started.  You will be emailed the results."
+msgstr ""
+
+#: pkgdb/controllers.py:49
+msgid "Fedora Package Database"
+msgstr "Base de dades de paquets de Fedora"
+
+#: pkgdb/controllers.py:63
+#: pkgdb/templates/login.html:11
+msgid "Login to the PackageDB"
+msgstr "Inicia la sessió a PackageDB"
+
+#: pkgdb/dispatcher.py:170
+#, python-format
+msgid ""
+"%(msg)s\n"
+"\n"
+"To make changes to this package see:\n"
+"  %(url)s\n"
+msgstr ""
+"%(msg)s\n"
+"\n"
+"Per a fer canvis als paquets vegeu:\n"
+"  %(url)s\n"
+
+#: pkgdb/dispatcher.py:230
+#, python-format
+msgid "Email address %(bugzilla_email)s is not a valid bugzilla email address.  Either make a bugzilla account with that email address or change your email address in the Fedora Account System https://admin.fedoraproject.org/accounts/ to a valid bugzilla email address and try again."
+msgstr ""
+
+#: pkgdb/dispatcher.py:254
+#: pkgdb/dispatcher.py:261
+#, python-format
+msgid "%(user)s must be in one of these groups: %(groups)s to own a package"
+msgstr ""
+
+#: pkgdb/dispatcher.py:272
+#: pkgdb/dispatcher.py:278
+#, python-format
+msgid "%(user)s must be in one of these groups: %(groups)s to hold the %(acl)s acl"
+msgstr ""
+
+#: pkgdb/dispatcher.py:448
+#, python-format
+msgid "Would have reassigned bug #%(bug_num)s from %(former)s to %(current)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:472
+#, python-format
+msgid "No such package %(pkg_id)s"
+msgstr "No hi ha el paquet %(pkg_id)s"
+
+#: pkgdb/dispatcher.py:478
+#: pkgdb/dispatcher.py:750
+msgid "This package is retired.  It must be unretired first"
+msgstr ""
+
+#: pkgdb/dispatcher.py:507
+#, python-format
+msgid "Acls error: %(err)s"
+msgstr "Error acls: %(err)s"
+
+#: pkgdb/dispatcher.py:531
+#, python-format
+msgid "Package %(pkg)s not available for taking"
+msgstr ""
+
+#: pkgdb/dispatcher.py:543
+#, python-format
+msgid "Not able to change owner information for %(pkg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:547
+#, python-format
+msgid "%(pkg)s ownership updated"
+msgstr ""
+
+#: pkgdb/dispatcher.py:600
+#, python-format
+msgid "The (un)retiring of package %(pkg)s could not be completed. Check your permissions."
+msgstr ""
+
+#: pkgdb/dispatcher.py:615
+#, python-format
+msgid "Unable to (un)retire package %(pkg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:618
+#, python-format
+msgid "%(pkg)s (un)retirement"
+msgstr ""
+
+#: pkgdb/dispatcher.py:648
+#, python-format
+msgid "Invalid Status: %(status)s"
+msgstr "Estat no permès: %(status)s"
+
+#: pkgdb/dispatcher.py:660
+#, python-format
+msgid "PackageListing %(pkg)s does not exist"
+msgstr "El llistat de paquets de %(pkg)s no existeix"
+
+#: pkgdb/dispatcher.py:667
+#, python-format
+msgid "No such user %(username), for package %(pkg)s in %(collection)s %(version)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:677
+#, python-format
+msgid "%(user)s is not allowed to approve Package ACLs"
+msgstr ""
+
+#: pkgdb/dispatcher.py:706
+#, python-format
+msgid "Not able to create acl %(acl)s on %(pkg)s with status %(status)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:710
+#: pkgdb/dispatcher.py:1595
+#, python-format
+msgid "%(pkg)s had acl change status"
+msgstr ""
+
+#: pkgdb/dispatcher.py:745
+#, python-format
+msgid "Package Listing with id: %(pkg)s does not exist"
+msgstr ""
+
+#: pkgdb/dispatcher.py:756
+#, python-format
+msgid "%(user)s is not allowed to approve Package ACLs for %(pkg)s (%(collctn)s %(ver)s)"
+msgstr ""
+
+#: pkgdb/dispatcher.py:764
+#, python-format
+msgid "%(group)s is not a group that can commit to packages"
+msgstr ""
+
+#: pkgdb/dispatcher.py:810
+#, python-format
+msgid "Not able to create acl %(acl)s on %(pkg)s (%(collctn)s %(ver)s) with status %(status)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:818
+#, python-format
+msgid "%(pkg)s had group_acl changed"
+msgstr ""
+
+#: pkgdb/dispatcher.py:839
+#, python-format
+msgid "No such package listing %(pkg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:891
+#, python-format
+msgid "Not able to create acl %(acl)s for %(user)s on %(pkg)s"
+msgstr "Incapaç de crear l'acl %(acl)s per %(user)s en %(pkg)s"
+
+#: pkgdb/dispatcher.py:897
+#, python-format
+msgid "%(pkg)s: %(user)s has %(action)s %(acl)s"
+msgstr "%(pkg)s: %(user)s té %(action)s %(acl)s"
+
+#: pkgdb/dispatcher.py:921
+#: pkgdb/dispatcher.py:1124
+msgid "User must be in admin_grp"
+msgstr "L'usuari ha d'estar en admin_grp"
+
+#: pkgdb/dispatcher.py:928
+#, python-format
+msgid "Package %(pkg)s already exists"
+msgstr "El paquet %(pkg)s ja existeix"
+
+#: pkgdb/dispatcher.py:934
+#, python-format
+msgid "Specified owner ID %(owner)s does not have a Fedora Account"
+msgstr "L'identificador %(owner)s de propietari especificat no té un compte a Fedora"
+
+#: pkgdb/dispatcher.py:956
+#: pkgdb/dispatcher.py:1039
+#: pkgdb/dispatcher.py:1217
+#, python-format
+msgid "Unable to create PackageListing for %(pkg)s(Fedora devel), %(user)s), %(status)s"
+msgstr "No es pot crear el PackageListing per a %(pkg)s(Fedora devel), %(user)s), %(status)s"
+
+#: pkgdb/dispatcher.py:1045
+#, python-format
+msgid "%(pkg)s was added for %(owner)s"
+msgstr "%(pkg)s va afegir-se per %(owner)s"
+
+#: pkgdb/dispatcher.py:1066
+#: pkgdb/dispatcher.py:1136
+#: pkgdb/dispatcher.py:1533
+#, python-format
+msgid "Package %(pkg)s does not exist"
+msgstr "El paquet %(pkg)s no existeix"
+
+#: pkgdb/dispatcher.py:1075
+msgid "Permission denied"
+msgstr "Permís denegat"
+
+#: pkgdb/dispatcher.py:1082
+#, python-format
+msgid "Unable to set shouldopen on Package %(pkg)s"
+msgstr "No es pot establir shouldopen al paquet %(pkg)s"
+
+#: pkgdb/dispatcher.py:1159
+#, python-format
+msgid "Specified owner %(owner)s does not have a Fedora Account"
+msgstr "El propietari especificat %(owner)s no té un compte a Fedora"
+
+#: pkgdb/dispatcher.py:1196
+#, python-format
+msgid "No collection %(collctn)s"
+msgstr "Sense cap col·lecció %(collctn)s"
+
+#: pkgdb/dispatcher.py:1307
+#, python-format
+msgid "New cclist member %(user)s is not in FAS"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1342
+#, python-format
+msgid "New comaintainer%(user)s does not have a Fedora Account"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1395
+#, python-format
+msgid "Group %(group)s is not allowed to commit"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1428
+#, python-format
+msgid "Unable to modify PackageListing %(pkg)s(%(collctn)s-%(ver)s)"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1436
+#, python-format
+msgid "%(pkg)s summary updated by %(user)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1442
+#, python-format
+msgid "%(pkg)s (%(collctn)s, %(ver)s) updated by %(user)s"
+msgstr "%(pkg)s (%(collctn)s, %(ver)s) actualitzar per %(user)s"
+
+#: pkgdb/dispatcher.py:1477
+#, python-format
+msgid "\"%(package)s\" does not exist on branch \"%(master)s\""
+msgstr ""
+
+#: pkgdb/dispatcher.py:1486
+#, python-format
+msgid "\"%(branch)s\" is not a valid branch name"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1492
+#, python-format
+msgid "Unable to clone \"%(package)s %(master)s\" to \"%(package)s %(branch)s\": %(msg)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1501
+#, python-format
+msgid "Unable to save clone of %(package)s %(master)s for %(branch)s to the database: %(error)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1508
+#, python-format
+msgid "%(user)s cloned %(pkg)s %(branch)s from %(master)s"
+msgstr ""
+
+#: pkgdb/dispatcher.py:1510
+#, python-format
+msgid "%(pkg)s %(branch)s cloned from %(master)s"
+msgstr "%(pkg)s %(branch)s clonat des de %(master)s"
+
+#: pkgdb/dispatcher.py:1538
+#, python-format
+msgid "%(user)s is not in admin_grp"
+msgstr "%(user)s no està en admin_grp"
+
+#: pkgdb/dispatcher.py:1552
+#, python-format
+msgid "Collection %(collctn)s does not exist"
+msgstr "La col·lecció %(collctn)s no existeix"
+
+#: pkgdb/dispatcher.py:1588
+#, python-format
+msgid "Unable to save changes to the database: %(err)s"
+msgstr "No es poden desar els canvis a la base de dades: %(err)s"
+
+#: pkgdb/letter_paginator.py:89
+#, python-format
+msgid "%(app)s -- Packages Overview %(mode)s"
+msgstr "%(app)s -- Visió general des paquets %(mode)s"
+
+#: pkgdb/listqueries.py:295
+#, python-format
+msgid "%(app)s -- VCS ACLs"
+msgstr "%(app)s -- ACLs de VCS"
+
+#: pkgdb/listqueries.py:476
+#, python-format
+msgid "%(app)s -- Bugzilla ACLs"
+msgstr "%(app)s -- ACLs de Bugzilla"
+
+#: pkgdb/listqueries.py:572
+#, python-format
+msgid "%(app)s -- Notification List"
+msgstr "%(app)s -- Llista de notificació"
+
+#: pkgdb/notifier.py:60
+#, python-format
+msgid "Would have sent: %(subject)s"
+msgstr "Podria haver-se enviat: %(subject)s"
+
+#: pkgdb/packages.py:85
+#, python-format
+msgid "%(app)s -- Invalid Package Name"
+msgstr "%(app)s -- Nom de paquet no permès"
+
+#: pkgdb/packages.py:87
+#, python-format
+msgid "The packagename you were linked to (%(pkg)s) does not appear in the Package Database. If you received this error from a link on the fedoraproject.org website, please report it."
+msgstr ""
+
+#: pkgdb/packages.py:105
+#, python-format
+msgid "%(app)s -- Not a Collection"
+msgstr "%(app)s -- No és una col·lecció"
+
+#: pkgdb/packages.py:107
+#, python-format
+msgid "%(name)s %(ver)s is not a Collection."
+msgstr "%(name)s %(ver)s mo és una col·lecció."
+
+#: pkgdb/packages.py:145
+#, python-format
+msgid "%(app)s -- Not in Collection"
+msgstr "%(app)s -- No està en la col·lecció"
+
+#: pkgdb/packages.py:147
+#, python-format
+msgid "The package %(pkg)s is not in Collection %(collctn_name)s %(collctn_ver)s."
+msgstr ""
+
+#: pkgdb/packages.py:235
+#, python-format
+msgid "%(title)s -- %(pkg)s"
+msgstr "%(title)s -- %(pkg)s"
+
+#: pkgdb/packages.py:252
+#, python-format
+msgid "%(app)s -- Invalid Package Id"
+msgstr "%(app)s -- Identificador de paquet no permès"
+
+#: pkgdb/packages.py:254
+msgid "The packageId you were linked to is not a valid id.  If you received this error from a link on the fedoraproject.org website, please report it."
+msgstr ""
+
+#: pkgdb/packages.py:263
+#, python-format
+msgid "%(app)s -- Unknown Package"
+msgstr ""
+
+#: pkgdb/packages.py:265
+#, python-format
+msgid "The packageId you were linked to, %(pkg)s, does not exist. If you received this error from a link on the fedoraproject.org website, please report it."
+msgstr ""
+
+#: pkgdb/packages.py:286
+#, python-format
+msgid "%(app)s -- Orphaned Packages"
+msgstr ""
+
+#: pkgdb/release.py:8
+msgid "The Fedora Package Database"
+msgstr "La base de dades de paquets de Fedora"
+
+#: pkgdb/release.py:9
+msgid ""
+"\n"
+"Keep track of owner, maintainer, and parties interested in the development of\n"
+"a particular software package within Fedora.  This database is a central store\n"
+"for important package information and allows querying of the package\n"
+"information from other tools.\n"
+msgstr ""
+
+#: pkgdb/search.py:69
+#, python-format
+msgid "%(app)s -- Advanced Search"
+msgstr "%(app)s -- Cerca avançada"
+
+#: pkgdb/search.py:242
+#, python-format
+msgid "%(app)s -- Search packages for: %(words)s"
+msgstr "%(app)s -- Cercar paquets amb: %(words)s"
+
+#: pkgdb/stats.py:58
+msgid "need to be logged in"
+msgstr "cal iniciar una sessió a"
+
+#: pkgdb/stats.py:113
+#, python-format
+msgid "%(app)s -- Package Stats"
+msgstr "%(app)s -- Estadístiques dels paquets"
+
+#: pkgdb/users.py:126
+#: pkgdb/users.py:219
+msgid "You must be logged in to view your information"
+msgstr ""
+
+#: pkgdb/users.py:130
+#, python-format
+msgid "%(app)s -- %(name)s -- Packages"
+msgstr "%(app)s -- %(name)s -- Paquets"
+
+#: pkgdb/users.py:223
+#, python-format
+msgid "%(app)s -- %(name)s -- Info"
+msgstr "%(app)s -- %(name)s -- Informació"
+
+#: pkgdb/utils.py:93
+#, python-format
+msgid "refresh forced for %(user)s"
+msgstr "refesc forçat per l'usuari %(user)s"
+
+#: pkgdb/validators.py:72
+#, python-format
+msgid "A collection named %(collection)s does not exist."
+msgstr "No exeisteix una col·lecció anomenada %(collection)s."
+
+#: pkgdb/validators.py:104
+msgid "Version specified without a collection name"
+msgstr "Versió especificada sense un no de col·lecció"
+
+#: pkgdb/validators.py:106
+#, python-format
+msgid "There is no collection for %(name)s-%(version)s"
+msgstr "No hi ha cap col·lecció per a %(name)s-%(version)s"
+
+#: pkgdb/validators.py:107
+#, python-format
+msgid "Collection named %(name)s does not exist"
+msgstr "No existeix cap col·lecció anomenada %(name)s"
+
+#: pkgdb/yumrepo.py:198
+#, python-format
+msgid "Expected Repo format 9 or 10, got %(ver)s"
+msgstr ""
+
+#: pkgdb/yumrepo.py:316
+#, python-format
+msgid "Packages without descriptions: %(num)s"
+msgstr ""
+
+#: pkgdb/controllers.bak/root.py:30
+msgid "The credentials you supplied were not correct or did not grant access to this resource."
+msgstr ""
+
+#: pkgdb/controllers.bak/root.py:33
+msgid "You must provide your credentials before accessing this resource."
+msgstr ""
+
+#: pkgdb/controllers.bak/root.py:36
+msgid "Please log in."
+msgstr "Inicieu una sessió."
+
+#: pkgdb/templates/bugzillaacls.html:9
+msgid "Package"
+msgstr "Paquet"
+
+#: pkgdb/templates/bugzillaacls.html:9
+#: pkgdb/templates/pkgbugs.html:21
+msgid "Description"
+msgstr "Descripció"
+
+#: pkgdb/templates/bugzillaacls.html:9
+#: pkgdb/templates/collectionpage.html:22
+#: pkgdb/templates/pkgpage.html:85
+#: pkgdb/templates/stats.html:19
+msgid "Owner"
+msgstr "Propietari"
+
+#: pkgdb/templates/bugzillaacls.html:9
+msgid "Initial QA"
+msgstr "Preguntes i respostes inicials"
+
+#: pkgdb/templates/bugzillaacls.html:9
+msgid "Initial CCList"
+msgstr ""
+
+#: pkgdb/templates/collectionoverview.html:8
+msgid "Collections"
+msgstr "Col·leccions"
+
+#: pkgdb/templates/collectionoverview.html:10
+msgid "Collection - Set of Linux packages created and hosted by the Fedora Project"
+msgstr ""
+
+#: pkgdb/templates/collectionoverview.html:10
+#: pkgdb/templates/pkgpage.html:83
+msgid "Collection"
+msgstr "Col·lecció"
+
+#: pkgdb/templates/collectionoverview.html:12
+msgid "Collection Version - Version of the Collection"
+msgstr "Versió col·lecció - Cersió de la col·lecció"
+
+#: pkgdb/templates/collectionoverview.html:12
+msgid "Version"
+msgstr "Versió"
+
+#: pkgdb/templates/collectionoverview.html:14
+msgid "Number of Packages - How many packages are in the cvs repository for this colleciton version.  May not have been built for this distribution"
+msgstr ""
+
+#: pkgdb/templates/collectionoverview.html:14
+msgid "Number of Packages"
+msgstr "Número de paquets"
+
+#: pkgdb/templates/collectionoverview.html:16
+msgid "Actions that may be carried out against all the packages in this collection.  Usually need to be in the cvsadmin group to operate on these"
+msgstr ""
+
+#: pkgdb/templates/collectionoverview.html:16
+msgid "Actions"
+msgstr "Accions"
+
+#: pkgdb/templates/collectionoverview.html:36
+msgid "Branch every package in 'Fedora devel' to this branch.  This copies the permissions and makes it possible to create a branch on the cvs server."
+msgstr ""
+
+#: pkgdb/templates/collectionpage.html:16
+#: pkgdb/templates/pkgbugs.html:20
+#: pkgdb/templates/pkgpage.html:24
+#: pkgdb/templates/pkgpage.html:89
+msgid "Status"
+msgstr "Estat"
+
+#: pkgdb/templates/collectionpage.html:28
+#: pkgdb/templates/pkgpage.html:29
+msgid "Creation Date"
+msgstr "Data de creació"
+
+#: pkgdb/templates/filters.html:10
+msgid "Limit results to these collections"
+msgstr "Limita els resultats d'aquestes col·leccions"
+
+#: pkgdb/templates/filters.html:15
+msgid "Include EOL Releases"
+msgstr "Incloure llançaments amb cicle de vida exhaurit"
+
+#: pkgdb/templates/filters.html:18
+msgid "Collection Name:"
+msgstr "Nom de la col·lecció:"
+
+#: pkgdb/templates/filters.html:21
+#: pkgdb/templates/filters.html:31
+msgid "any"
+msgstr ""
+
+#: pkgdb/templates/filters.html:28
+msgid "Collection Version:"
+msgstr "Versió de la col·lecció:"
+
+#: pkgdb/templates/filters.html:38
+#: pkgdb/templates/userpkgs.html:29
+msgid "Filter"
+msgstr "Filtre"
+
+#: pkgdb/templates/layout.html:47
+msgid "Fedora"
+msgstr "Fedora"
+
+#: pkgdb/templates/layout.html:54
+msgid "Navigation"
+msgstr "Navegació"
+
+#: pkgdb/templates/layout.html:56
+msgid "Packages Home"
+msgstr "Inici dels paquets"
+
+#: pkgdb/templates/layout.html:57
+msgid "View Collections"
+msgstr "Visualitza les col·leccions"
+
+#: pkgdb/templates/layout.html:58
+msgid "View Packages"
+msgstr "Visualitza els paquets"
+
+#: pkgdb/templates/layout.html:59
+msgid "View Bugs"
+msgstr "Visualitza els errors"
+
+#: pkgdb/templates/layout.html:60
+msgid "My Packages"
+msgstr "Els meus paquets"
+
+#: pkgdb/templates/layout.html:61
+msgid "Orphan Packages"
+msgstr "Paquets orfes"
+
+#: pkgdb/templates/layout.html:62
+msgid "Package Stats"
+msgstr "Estadístiques del paquet"
+
+#: pkgdb/templates/layout.html:63
+msgid "PackageDB Bugs"
+msgstr "Errors de PackageDB"
+
+#: pkgdb/templates/layout.html:65
+msgid "Search"
+msgstr "Cerca"
+
+#: pkgdb/templates/layout.html:84
+msgid "PackageDB Version:"
+msgstr "Versió de PackageDB:"
+
+#: pkgdb/templates/layout.html:84
+msgid "-- Server:"
+msgstr "-- Servidor:"
+
+#: pkgdb/templates/layout.html:85
+msgid ""
+"Copyright © 2007-2009 Red Hat, Inc. and others.\n"
+"        Please send any comments or corrections to the"
+msgstr ""
+"Copyright © 2007-2009 Red Hat, Inc. i d'altres.\n"
+"        Envieu els vostres comentaris i les vostres correccions al"
+
+#: pkgdb/templates/layout.html:87
+msgid "websites team"
+msgstr "Lloc web de l'equip"
+
+#: pkgdb/templates/layout.html:89
+msgid "The Fedora Project is maintained and driven by the community and sponsored by Red Hat.  This is a community maintained site.  Red Hat is not responsible for content."
+msgstr "El Projecte Fedora és mantingut i dirigit per la comunitat, i està patrocinat per Red Hat. Aquest és un lloc mantingut per la comunitat. Red Hat no n'és responsable del contingut."
+
+#: pkgdb/templates/layout.html:93
+msgid "Legal"
+msgstr "Legal"
+
+#: pkgdb/templates/layout.html:94
+msgid "Trademark Guidelines"
+msgstr "Guia de les marques comercials rgistrades"
+
+#: pkgdb/templates/letter_paginator.html:16
+#: pkgdb/templates/paginator.html:33
+msgid "[show all]"
+msgstr "[mostra-ho tot]"
+
+#: pkgdb/templates/pkgbugoverview.html:11
+msgid ""
+"Click on a package to view the bug reports opened against \n"
+"    it. Or go to the"
+msgstr ""
+
+#: pkgdb/templates/pkgbugoverview.html:12
+msgid "bugzilla main page"
+msgstr "Pàgina principal de bugzilla"
+
+#: pkgdb/templates/pkgbugoverview.html:12
+msgid ""
+"to construct your \n"
+"    own search."
+msgstr ""
+"per a construir la vostra\n"
+"    pròpia cerca."
+
+#: pkgdb/templates/pkgbugs.html:11
+msgid "bugs"
+msgstr "errors"
+
+#: pkgdb/templates/pkgbugs.html:14
+msgid "bugs found"
+msgstr "errors trobats"
+
+#: pkgdb/templates/pkgbugs.html:15
+msgid "Report"
+msgstr "Informe"
+
+#: pkgdb/templates/pkgbugs.html:15
+msgid "a new bug against this package"
+msgstr ""
+
+#: pkgdb/templates/pkgbugs.html:18
+msgid "Number"
+msgstr "Número"
+
+#: pkgdb/templates/pkgbugs.html:19
+msgid "Product"
+msgstr "Producte"
+
+#: pkgdb/templates/pkgheader.html:9
+msgid "Build Status"
+msgstr "Estat de construcció"
+
+#: pkgdb/templates/pkgheader.html:12
+msgid "Update Status"
+msgstr "Estat d'actualització"
+
+#: pkgdb/templates/pkgheader.html:14
+msgid "Package Source"
+msgstr "Paquet de fonts"
+
+#: pkgdb/templates/pkgheader.html:16
+msgid "Bug Reports"
+msgstr "Informes d'errors"
+
+#: pkgdb/templates/pkgheader.html:18
+msgid "Package Info"
+msgstr "Informació del paquet"
+
+#: pkgdb/templates/pkgpage.html:37
+msgid "Contents:"
+msgstr "Contingut:"
+
+#: pkgdb/templates/pkgpage.html:87
+msgid "QA Contact"
+msgstr "Contacte de preguntes i respostes"
+
+#: pkgdb/templates/pkgpage.html:97
+msgid "Spec File"
+msgstr "Fitxer Spec"
+
+#: pkgdb/templates/pkgpage.html:202
+#: pkgdb/templates/pkgpage.html:210
+msgid "group members can commit?"
+msgstr "Els membres del grup poder realitzar enviaments?"
+
+#: pkgdb/templates/search.html:10
+msgid "Search in a specific collection:"
+msgstr "Cerca en una col·lecció concreta:"
+
+#: pkgdb/templates/search.html:16
+msgid "Advanced search"
+msgstr "Cerca avançada"
+
+#: pkgdb/templates/search.html:21
+msgid "matches found in"
+msgstr "coincidències trobades en"
+
+#: pkgdb/templates/search.html:21
+msgid "for package"
+msgstr "per al paquet"
+
+#: pkgdb/templates/search.html:27
+msgid "We are sorry, but there were no matches to display for:"
+msgstr "No hi han coincidències per a mostrar:"
+
+#: pkgdb/templates/search.html:29
+msgid "in collection:"
+msgstr "en la col·lecció:"
+
+#: pkgdb/templates/stats.html:9
+msgid "Statistics"
+msgstr "Estadístiques"
+
+#: pkgdb/templates/stats.html:10
+msgid "Packages with no comaintainers in devel:"
+msgstr "Paquets en desenvolupament sense cap mantenidor:"
+
+#: pkgdb/templates/stats.html:11
+msgid "Packages in all Collections:"
+msgstr "Paquets en totes les categories:"
+
+#: pkgdb/templates/stats.html:12
+msgid "Packages belonging to you:"
+msgstr "Paquets que us pertanyen:"
+
+#: pkgdb/templates/stats.html:13
+msgid "Orphan packages in devel:"
+msgstr "Paquets orfes en desenvolupament:"
+
+#: pkgdb/templates/stats.html:14
+msgid "Orphan packages in Fedora 10:"
+msgstr "Paquets orfes a Fedora 10:"
+
+#: pkgdb/templates/stats.html:16
+#: pkgdb/templates/stats.html:19
+msgid "Top 20 package owners"
+msgstr "Els pimers 20 propietaris de paquets"
+
+#: pkgdb/templates/stats.html:18
+#: pkgdb/templates/stats.html:34
+msgid "Counter"
+msgstr "Quantitat"
+
+#: pkgdb/templates/stats.html:21
+msgid "Number of packages owned"
+msgstr "Número de paquets en propietat"
+
+#: pkgdb/templates/stats.html:21
+#: pkgdb/templates/stats.html:37
+#: pkgdb/templates/useroverview.html:9
+msgid "Packages"
+msgstr "Paquets"
+
+#: pkgdb/templates/stats.html:32
+msgid "Top 20 Maintainers (owners or comaintainers)"
+msgstr ""
+
+#: pkgdb/templates/stats.html:35
+msgid "Top 20 package Owners or comaintainers"
+msgstr ""
+
+#: pkgdb/templates/stats.html:35
+msgid "Maintainer"
+msgstr "Mantenidor"
+
+#: pkgdb/templates/stats.html:37
+msgid "Number of packages maintained"
+msgstr "Número de paquets mantinguts"
+
+#: pkgdb/templates/test.html:6
+msgid "Hello"
+msgstr "Hola"
+
+#: pkgdb/templates/useroverview.html:8
+msgid "View users:"
+msgstr "Visualitza els usuaris:"
+
+#: pkgdb/templates/useroverview.html:8
+msgid "Info"
+msgstr "Informació"
+
+#: pkgdb/templates/useroverview.html:11
+msgid "Nothing else of interest yet!"
+msgstr "Encara sense res interessant!"
+
+#: pkgdb/templates/userpkgs.html:10
+msgid "Only packages with these acls:"
+msgstr "Únicament els paquets amb aquests acls:"
+
+#: pkgdb/templates/userpkgs.html:24
+msgid "Include EOL Distributions"
+msgstr "Inclou distribucions amb el cicle de vida exhaurit"
+
+#: pkgdb/templates/userpkgs.html:36
+#: pkgdb/templates/userpkgs.html:52
+msgid "View:"
+msgstr "Visualitza:"
+
+#: pkgdb/templates/userpkgs.html:37
+msgid "My Info"
+msgstr "La meva informació"
+
+#: pkgdb/templates/userpkgs.html:37
+msgid ""
+"|\n"
+"        My Packages ("
+msgstr ""
+"|\n"
+"        Els meus paquets ("
+
+#: pkgdb/templates/userpkgs.html:41
+msgid "View: Orphaned Packages ("
+msgstr "Visualitza: Paquets orfes ("
+
+#: pkgdb/templates/userpkgs.html:45
+msgid "hide"
+msgstr "oculta"
+
+#: pkgdb/templates/userpkgs.html:48
+msgid "show"
+msgstr "mostra"
+
+#: pkgdb/templates/userpkgs.html:50
+msgid "EOL packages"
+msgstr "Paquets amb el cicle de vida exhaurit"
+
+#: pkgdb/templates/userpkgs.html:53
+msgid ""
+"'s\n"
+"          Info"
+msgstr ""
+"'s\n"
+"          Informació"
+
+#: pkgdb/templates/userpkgs.html:54
+msgid "'s Packages ("
+msgstr "'s Paquets ("
+
