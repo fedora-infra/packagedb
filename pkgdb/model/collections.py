@@ -146,22 +146,32 @@ class Branch(Collection):
     Table -- Branch
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, collectionid, branchname, disttag, parentid, *args):
+    def __init__(self, collectionid, branchname, disttag, parentid,
+                 gitbranchname=None, *args):
         # pylint: disable-msg=R0913
+        branch_mapping = {'F-13': 'f13', 'F-12': 'f12', 'F-11': 'f11',
+                          'F-10': 'f10', 'F-9': 'f9', 'F-8': 'f8',
+                          'F-7': 'f7', 'FC-6': 'fc6', 'EL-6': 'el6',
+                          'EL-5': 'el5', 'EL-4':'el4', 'OLPC-3': 'olpc3'}
+
         super(Branch, self).__init__(args)
         self.collectionid = collectionid
         self.branchname = branchname
         self.disttag = disttag
         self.parentid = parentid
 
+        if (not gitbranchname):
+            if (branchname in branch_mapping):
+                self.gitbranchname = branch_mapping[branchname]
+
     def __repr__(self):
         return 'Branch(%r, %r, %r, %r, %r, %r, %r, %r,' \
                 ' publishurltemplate=%r, pendingurltemplate=%r,' \
-                ' summary=%r, description=%r)' % (self.collectionid,
-                self.branchname, self.disttag, self.parentid,
-                self.name, self.version, self.statuscode, self.owner,
-                self.publishurltemplate, self.pendingurltemplate,
-                self.summary, self.description)
+                ' summary=%r, description=%r, gitbranchname=%r)' % \
+                (self.collectionid, self.branchname, self.disttag,
+                 self.parentid, self.name, self.version, self.statuscode,
+                 self.owner, self.publishurltemplate, self.pendingurltemplate,
+                 self.summary, self.description, self.gitbranchname)
 
 class Repo(SABase):
     '''Repos are actual yum repositories.
