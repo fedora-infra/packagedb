@@ -3,6 +3,10 @@ ALTER TABLE branch ADD gitbranchname character varying(32) default NULL;
 SELECT * FROM branch ORDER BY collectionid;
 
 UPDATE branch
+   SET gitbranchname = 'master'
+   WHERE branchname = 'devel';
+
+UPDATE branch
    SET gitbranchname = 'f13'
    WHERE branchname = 'F-13';
 
