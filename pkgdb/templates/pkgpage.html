@@ -92,10 +92,23 @@ import simplejson
         </th></tr>
         <tr id="${pkg.collection.branchname}">
           <td>
-            <a py:if="pkg.status.locale['C'].statusname=='Approved'"  class="cvs"
-              href="${'http://cvs.fedoraproject.org/viewvc/rpms/%s/%s/%s.spec?view=markup'
-          % (pkgUrlName, pkg.collection.branchname, pkgUrlName)}">
-              <span class="invisible">Spec File</span></a>
+            <py:choose>
+              <py:when test="pkg.collection.gitbranchname=='master' and pkg.status.locale['C'].statusname=='Approved'">
+                <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s;hb=%s'
+                  % (pkgUrlName, pkg.collection.gitbranchname, pkg.collection.gitbranchname)}">
+                  <span class="invisible">Spec File</span></a>
+              </py:when>
+              <py:when test="pkg.collection.gitbranchname and pkg.status.locale['C'].statusname=='Approved'">
+                <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s/master;hb=%s/master'
+                  % (pkgUrlName, pkg.collection.gitbranchname, pkg.collection.gitbranchname)}">
+                  <span class="invisible">Spec File</span></a>
+              </py:when>
+              <py:when test="pkg.status.locale['C'].statusname=='Approved'">
+                <a class="cvs" href="${'http://cvs.fedoraproject.org/viewvc/rpms/%s/%s/%s.spec?view=markup'
+                  % (pkgUrlName, pkg.collection.branchname, pkgUrlName)}">
+                  <span class="invisible">Spec File</span></a>
+              </py:when>
+            </py:choose>
             <a href="${tg.url('/collections/name/%s' % pkg.collection.branchname)}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
           </td><td>
