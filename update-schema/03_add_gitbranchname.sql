@@ -1,4 +1,4 @@
-ALTER TABLE branch ADD gitbranchname character varying(32) default NULL;
+ALTER TABLE branch ADD gitbranchname text default NULL;
 
 SELECT * FROM branch ORDER BY collectionid;
 
