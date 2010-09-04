@@ -3,8 +3,13 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 3 Sep 2010
-:Version: 0.5.3
+:Date: 4 Sep 2010
+:Version: 0.5.3.1
+
+-------
+0.5.3.1
+-------
+- Minor fix to sources link for things that only have a branch in git.
 
 -----
 0.5.3
