@@ -1,12 +1,28 @@
-<?xml version="1.0" ?>
-<buildtags xmlns:py="http://genshi.edgewall.org/">
-  <repo py:for="repo in buildtags" name="repo">
-    <py:for each="build in buildtags[repo]">
-      <build name="$build">
-        <py:for each="tag in buildtags[repo][build].keys()">
-          <tag score="${buildtags[repo][build][tag]}">$tag</tag>
-        </py:for>
-      </build>
-    </py:for>
-  </repo>
-</buildtags>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <head />
+  <body>
+    <table py:for="repo in sorted(buildtags.keys())">
+      <caption>${repo}</caption>
+      <thead>
+        <tr>
+          <th class="ColumnHead" title="Build">Build</th>
+          <th class="ColumnHead" title="Score">Score</th>
+          <th class="ColumnHead" title="Tag">Tag</th>
+        </tr>
+      </thead>
+      <span py:for="build in sorted(buildtags[repo].keys())">
+        <span py:for="tag in sorted(buildtags[repo][build].keys())">
+          <tr>
+            <td>${build}</td>
+            <td>${buildtags[repo][build][tag]}</td>
+            <td>${tag}</td>
+          </tr>
+        </span>
+      </span>
+    </table>
+  </body>
+</html>
