@@ -47,7 +47,7 @@ class Stats(controllers.Controller):
         '''
         self.app_title = app_title
 
-    @expose(template='pkgdb.templates.stats')
+    @expose(template='pkgdb.templates.stats', allow_json=True)
     def index(self):
         '''Return a  set of statistics about package ownership.
         '''
@@ -118,4 +118,5 @@ class Stats(controllers.Controller):
             top_owners_names=top_owners_names,
             top_owners_list=top_owners_select.execute(),
             maintain_names=maintain_names,
-            maintain_list=maintain_select.execute())
+            maintain_list=maintain_select.execute(),
+            message='Warning: Do not depend on the json data from this function remaining the same.  It could change, be moved to other functions, or go away at any time.  There is no guaranteed API stability for this function!')

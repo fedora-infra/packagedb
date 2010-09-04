@@ -65,7 +65,7 @@ MEMCACHE = memcache.Client(config.get('memcached.servers', []))
 STATUS = None
 fas = None
 LOG = None
-bugzilla = None
+_bugzilla = None
 
 # Get the admin group if one is specified.
 admin_grp = config.get('pkgdb.admin_grp', 'cvsadmin')
@@ -206,6 +206,24 @@ class StatusCache(dict):
         MEMCACHE.set_multi(status_map, key_prefix='pkgdb:status:',
             time=self.timeout)
 
+def get_bz():
+    '''Retrieve a connection to bugzilla
+
+    :raises xmlrpclib.ProtocolError: If we're unable to contact bugzilla
+    '''
+    global _bugzilla
+    if _bugzilla:
+        return _bugzilla
+    # Get a connection to bugzilla
+    bz_server = config.get('bugzilla.queryurl', config.get('bugzilla.url',
+        'https://bugzilla.redhat.com'))
+    bz_url = bz_server + '/xmlrpc.cgi'
+    bz_user = config.get('bugzilla.user')
+    bz_pass = config.get('bugzilla.password')
+    _bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass,
+            cookiefile=None)
+    return _bugzilla
+    
 def custom_template_vars(new_vars):
     return new_vars.update({'fas_cache': fas.cache})
 
@@ -215,7 +233,7 @@ def init_globals():
 This is mostly connections to services like FAS, bugzilla, and loading
     constants from the database.
     '''
-    global fas, LOG, bugzilla, STATUS
+    global fas, LOG, STATUS
     # Things to do on startup
     STATUS = StatusCache()
     STATUS.refresh_status()
@@ -230,14 +248,6 @@ This is mostly connections to services like FAS, bugzilla, and loading
             cache_session=False)
     fas.cache = UserCache(fas)
 
-    # Get a connection to bugzilla
-    bz_server = config.get('bugzilla.queryurl', config.get('bugzilla.url',
-        'https://bugzilla.redhat.com'))
-    bz_url = bz_server + '/xmlrpc.cgi'
-    bz_user = config.get('bugzilla.user')
-    bz_pass = config.get('bugzilla.password')
-    bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass,
-            cookiefile=None)
     view.variable_providers.append(custom_template_vars)
 
 def is_xhr():
@@ -290,6 +300,5 @@ def rpm2cpio(fdno, out=sys.stdout, bufsize=2048):
         raise rpmUtils.RpmUtilsError, \
               'Unsupported payload compressor: "%s"' % compr
 
-# Substitute get_bz for bugzilla when we merge to the latest tree
-__all__ = [LOG, MEMCACHE, STATUS, admin_grp, critpath_grps, bugzilla, fas,
+__all__ = [LOG, MEMCACHE, STATUS, admin_grp, critpath_grps, fas, get_bz,
         init_globals, is_xhr, pkger_grp, rpm2cpio, to_unicode]

@@ -41,6 +41,7 @@ Mapping of package related database tables to python classes.
 import logging
 
 from sqlalchemy import Column, ForeignKeyConstraint, Integer, Table, Text
+from sqlalchemy import PassiveDefault
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import backref, eagerload, relation
@@ -375,11 +376,12 @@ class PackageBuild(SABase):
     def __repr__(self):
         return 'PackageBuild(%r, epoch=%r, version=%r,' \
                ' release=%r, architecture=%r, size=%r, license=%r,' \
-               ' changelog=%r, committime=%r, committer=%r, packageid=%r, repoid=%r)' % (
+               ' changelog=%r, committime=%r, committer=%r, packageid=%r,' \
+               ' repoid=%r, imported=%r)' % (
             self.name, self.epoch, self.version,
             self.release, self.architecture, self.size,
             self.license, self.changelog, self.committime, self.committer,
-            self.packageid, self.repo.id)
+            self.packageid, self.repo.id, self.imported)
 
     def __str__(self):
         return "%s-%s-%s.%s" % (self.name, self.version,
