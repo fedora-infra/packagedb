@@ -56,7 +56,7 @@ Command line script to communicate with the Fedora PackageDB
 
 %build
 %if 0%{?fedora} >= 14
-export PYTHONPATH=/usr/lib/python2.7/site-packages/CherryPy-2.3.0-py2.6.egg
+export PYTHONPATH=/usr/lib/python2.7/site-packages/CherryPy-2.3.0-py2.7.egg
 %endif
 paver build --install-conf=%{_sysconfdir} --install-data=%{_datadir} \
     --install-sbin=%{_sbindir}
