@@ -3,8 +3,14 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 20 Mar 2010
-:Version: 0.5.2
+:Date: 3 Sep 2010
+:Version: 0.5.3
+
+-----
+0.5.3
+-----
+- Many template fixes (tyll, fchiulli)
+- Added static icons to save many calls to the database (mbacovsk)
 
 -----
 0.5.2
