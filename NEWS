@@ -3,8 +3,13 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi
-:Date: 4 Sep 2010
-:Version: 0.5.3.1
+:Date: 5 Sep 2010
+:Version: 0.5.4
+
+-----
+0.5.4
+-----
+- fchiulli change to package acls so EOL releases aren't shown by default
 
 -------
 0.5.3.1
