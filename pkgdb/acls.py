@@ -62,7 +62,7 @@ class Acls(controllers.Controller):
         self.dispatcher = PackageDispatcher()
         
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
-    def name(self, packageName, collectionName=None, collectionVersion=None):
+    def name(self, packageName, collectionName=None, collectionVersion=None, eol=False):
         '''Retrieve Packages by their name.
 
         This method returns ownership and acl information about a package.
@@ -75,6 +75,8 @@ class Acls(controllers.Controller):
         :kwarg collectionVersion: If given, limit information to this
             particular version of a distribution.  Has no effect if
             collectionName is not also specified.
+        :kwarg eol: end-of-life flag.  If True, do not limit information.
+            If False, limit information to non-eol collections.
         '''
         #pylint:disable-msg=E1101
         # Return the information about a package.
@@ -102,6 +104,8 @@ class Acls(controllers.Controller):
             #pylint:enable-msg=E1101
             if collectionVersion:
                 collection = collection.filter_by(version=collectionVersion)
+            if (not eol):
+                collection = collection.filter(statuscode!=STATUS['EOL'])
             if not collection.count():
                 error = dict(status=False,
                         title=_('%(app)s -- Not a Collection') % {
@@ -170,6 +174,9 @@ class Acls(controllers.Controller):
 
         # Map of statuscode to statusnames used in this package
         status_map = {}
+
+        if (not eol):
+            pkg_listings = pkg_listings.filter(Collection.statuscode!=STATUS['EOL'])
 
         pkg_listings = pkg_listings.order_by().all()
 
