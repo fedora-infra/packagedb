@@ -18,7 +18,6 @@ class TestLibDB(TestCase):
         self.matadata = None
 
     def tearDown(self):
-        print "kill them all"
         if self.metadata:
             self.metadata.drop_all()
 
