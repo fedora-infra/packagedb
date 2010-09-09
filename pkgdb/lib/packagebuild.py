@@ -57,6 +57,7 @@ from pkgdb.model import RpmFiles, RpmProvides, RpmObsoletes, RpmConflicts
 from pkgdb.model import RpmRequires, PackageBuildDepends, PackageBuildRepo
 from pkgdb.model import Icon, IconName, Theme, Repo
 from pkgdb.model import Application
+from pkgdb.model import SC_UNDER_DEVELOPMENT
 
 from pkgdb.lib.desktop import Desktop, DesktopParseError
 from pkgdb.lib.icon import Icon as IconImage
@@ -300,6 +301,8 @@ class RPM(object):
     url = property(lambda self: self.build.url)
     size = property(lambda self: self.build.size)
     license = property(lambda self: self.build.license)
+    summary = property(lambda self: self.build.summary)
+    description = property(lambda self: self.build.description)
 
     requires_with_pre = property(lambda self: self.build._requires_with_pre)
 
@@ -343,7 +346,7 @@ class PackageBuildImporter(object):
             raise e.__class__, e, tb
         except:
             exc_class, exc, tb = sys.exc_info()
-            e = PkgImportError('Unable to reading package data from db (%s)!' % str(exc))
+            e = PkgImportError('Unable to read package data from db (%s)!' % str(exc))
             raise e.__class__, e, tb
         return package
 
@@ -371,8 +374,9 @@ class PackageBuildImporter(object):
     def yumrepo(self):
         if not self._yumrepo:
             self.yumbase.repos.disableRepo('*')
-            self.yumbase.add_enable_repo('pkgdb-%s' % self.repo.shortname,
-                       ['%s%s' % (self.repo.mirror, self.repo.url)])
+            repopath = '%s%s' % (self.repo.mirror, self.repo.url)
+            log.debug('Enabling repo: pkgdb-%s (%s)' % (self.repo.shortname, repopath))
+            self.yumbase.add_enable_repo('pkgdb-%s' % self.repo.shortname, [str(repopath)])
             self._yumrepo = self.yumbase.repos.getRepo('pkgdb-%s' % self.repo.shortname)
 
             # populate sack
@@ -402,6 +406,11 @@ class PackageBuildImporter(object):
 
         return self._builds
 
+
+    def _update_package_description(self, package, summary, description):
+        package.summary = summary
+        package.description = description
+        session.add(package)
 
 
     def check_package_listing(self, package):
@@ -436,7 +445,7 @@ class PackageBuildImporter(object):
         :returns: PackageBuild instance
 
         Checks whether packagebuild was already imported. 
-        Import is interupted if it was and we are also not in 'force' mode.
+        Import is interupted if it was (unless we are in 'force' mode).
         The record is created/updated otherwise.
         """
 
@@ -465,6 +474,8 @@ class PackageBuildImporter(object):
             #pylint:enable-msg=E1101
         except NoResultFound:
             package = self.get_package(rpm)
+            if self.collection.statuscode == SC_UNDER_DEVELOPMENT:
+                self._update_package_description(package, rpm.summary, rpm.description)
             self.check_package_listing(package)
             # insert the new packagebuild and get its id
             pkgbuild = PackageBuild(
