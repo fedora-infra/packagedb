@@ -36,6 +36,28 @@ from pkgdb.lib.db import Grant_RW, initial_data
 
 get_engine()
 
+# status codes constants
+SC_ACTIVE = 1
+SC_ADDED = 2
+SC_APPROVED = 3
+SC_AWAITING_BRANCH = 4
+SC_AWAITING_DEVELOPMENT = 5
+SC_AWAITING_QA = 6
+SC_AWAITING_PUBLISH = 7
+SC_AWAITING_REVIEW = 8
+SC_EOL = 9
+SC_DENIED = 10
+SC_MAINTENENCE = 11
+SC_MODIFIED = 12
+SC_OBSOLETE = 13
+SC_ORPHANED = 14
+SC_OWNED = 15
+SC_REJECTED = 16
+SC_REMOVED = 17
+SC_UNDER_DEVELOPMENT = 18
+SC_UNDER_REVIEW = 19
+SC_DEPRECATED = 20
+
 #
 # Mapped Tables
 #
@@ -53,7 +75,7 @@ statuscode = Table('statuscode', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
 )
 initial_data(statuscode,
-    ('id'),
+    ['id'],
     *[[id] for id in range(1, 21)])
 Grant_RW(statuscode)
 
@@ -69,26 +91,26 @@ StatusTranslationTable = Table('statuscodetranslation', metadata,
 )
 initial_data(StatusTranslationTable, 
     ('statuscodeid', 'language', 'statusname', 'description'), 
-	(1, 'C', 'Active', ''),
-	(2, 'C', 'Added', ''),
-	(3, 'C', 'Approved', ''),
-	(4, 'C', 'Awaiting Branch', ''),
-	(5, 'C', 'Awaiting Development', ''),
-	(6, 'C', 'Awaiting QA', ''),
-	(7, 'C', 'Awaiting Publish', ''),
-	(8, 'C', 'Awaiting Review', ''),
-	(9, 'C', 'EOL', ''),
-	(10, 'C', 'Denied', ''),
-	(11, 'C', 'Maintenence', ''),
-	(12, 'C', 'Modified', ''),
-	(13, 'C', 'Obsolete', ''),
-	(14, 'C', 'Orphaned', ''),
-	(15, 'C', 'Owned', ''),
-	(16, 'C', 'Rejected', ''),
-	(17, 'C', 'Removed', ''),
-	(18, 'C', 'Under Development', ''),
-	(19, 'C', 'Under Review', ''),
-	(20, 'C', 'Deprecated', ''))
+	(SC_ACTIVE, 'C', 'Active', ''),
+	(SC_ADDED, 'C', 'Added', ''),
+	(SC_APPROVED, 'C', 'Approved', ''),
+	(SC_AWAITING_BRANCH, 'C', 'Awaiting Branch', ''),
+	(SC_AWAITING_DEVELOPMENT, 'C', 'Awaiting Development', ''),
+	(SC_AWAITING_QA, 'C', 'Awaiting QA', ''),
+	(SC_AWAITING_PUBLISH, 'C', 'Awaiting Publish', ''),
+	(SC_AWAITING_REVIEW, 'C', 'Awaiting Review', ''),
+	(SC_EOL, 'C', 'EOL', ''),
+	(SC_DENIED, 'C', 'Denied', ''),
+	(SC_MAINTENENCE, 'C', 'Maintenence', ''),
+	(SC_MODIFIED, 'C', 'Modified', ''),
+	(SC_OBSOLETE, 'C', 'Obsolete', ''),
+	(SC_ORPHANED, 'C', 'Orphaned', ''),
+	(SC_OWNED, 'C', 'Owned', ''),
+	(SC_REJECTED, 'C', 'Rejected', ''),
+	(SC_REMOVED, 'C', 'Removed', ''),
+	(SC_UNDER_DEVELOPMENT, 'C', 'Under Development', ''),
+	(SC_UNDER_REVIEW, 'C', 'Under Review', ''),
+	(SC_DEPRECATED, 'C', 'Deprecated', ''))
 Index('statuscodetranslation_statusname_idx', StatusTranslationTable.c.statusname)
 Grant_RW(StatusTranslationTable)
 
@@ -98,6 +120,9 @@ CollectionStatusTable = Table('collectionstatuscode', metadata,
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+initial_data(CollectionStatusTable,
+    ['statuscodeid'],
+    [SC_ACTIVE], [SC_EOL], [SC_REJECTED], [SC_UNDER_DEVELOPMENT])
 Grant_RW(CollectionStatusTable)
 
 add_status_to_log_pgfunc = """
@@ -148,6 +173,10 @@ PackageListingStatusTable = Table('packagelistingstatuscode', metadata,
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+initial_data(PackageListingStatusTable,
+    ['statuscodeid'],
+    [SC_APPROVED], [SC_AWAITING_BRANCH], [SC_AWAITING_REVIEW], [SC_DENIED], 
+    [SC_OBSOLETE], [SC_ORPHANED], [SC_REMOVED], [SC_DEPRECATED])
 # FIXME: This trigger is created just in postgres. If it is needed in other DB
 # (in sqlite for testing) it has to be added manually
 DDL(add_status_to_log_pgfunc, on='postgres')\
@@ -165,6 +194,9 @@ PackageStatusTable = Table('packagestatuscode', metadata,
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+initial_data(PackageStatusTable,
+    ['statuscodeid'],
+    [SC_APPROVED], [SC_AWAITING_REVIEW], [SC_DENIED], [SC_REMOVED], [SC_UNDER_REVIEW])
 # FIXME: This trigger is created just in postgres. If it is needed in other DB
 # (in sqlite for testing) it has to be added manually
 DDL(add_status_to_log_pgfunc, on='postgres')\
@@ -184,6 +216,9 @@ PackageAclStatusTable = Table('packageaclstatuscode', metadata,
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+initial_data(PackageAclStatusTable,
+    ['statuscodeid'],
+    [SC_APPROVED], [SC_AWAITING_REVIEW], [SC_DENIED], [SC_OBSOLETE])
 DDL(add_status_to_log_pgfunc, on='postgres')\
     .execute_at('before-create', PackageAclStatusTable)
 # DROP is not necessary as we drop plpgsql with CASCADE
@@ -200,6 +235,10 @@ PackageBuildStatusCodeTable = Table('packagebuildstatuscode', metadata,
     ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+initial_data(PackageBuildStatusCodeTable,
+    ['statuscodeid'],
+    [SC_APPROVED], [SC_AWAITING_DEVELOPMENT], [SC_AWAITING_QA], [SC_AWAITING_PUBLISH], 
+    [SC_AWAITING_REVIEW], [SC_DENIED], [SC_OBSOLETE])
 DDL(add_status_to_log_pgfunc, on='postgres')\
     .execute_at('before-create', PackageBuildStatusCodeTable)
 # DROP is not necessary as we drop plpgsql with CASCADE
