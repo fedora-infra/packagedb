@@ -26,7 +26,7 @@ from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, text
 from sqlalchemy import select, not_, Boolean, PassiveDefault, func
 from sqlalchemy import PrimaryKeyConstraint, DDL, Index
 from sqlalchemy.exceptions import InvalidRequestError
-from sqlalchemy.orm import polymorphic_union, relation, backref
+from sqlalchemy.orm import polymorphic_union, relation, backref, synonym
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
 
@@ -236,10 +236,9 @@ class Branch(Collection):
     Table -- Branch
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, collectionid, branchname, disttag, parentid, *args):
+    def __init__(self, branchname, disttag, parentid, *args):
         # pylint: disable-msg=R0913
-        super(Branch, self).__init__(args)
-        self.collectionid = collectionid
+        super(Branch, self).__init__(*args)
         self.branchname = branchname
         self.disttag = disttag
         self.parentid = parentid
@@ -288,10 +287,10 @@ class CollectionPackage(SABase):
 # Mappers
 #
 
-mapper(Collection, CollectionJoin,
+mapper(Collection, CollectionTable,
         polymorphic_on=CollectionJoin.c.kind,
         polymorphic_identity='c',
-        with_polymorphic='*',
+        with_polymorphic=('*', CollectionJoin),
         properties={
             # listings is deprecated.  It will go away in 0.4.x
             'listings': relation(PackageListing),
@@ -306,9 +305,13 @@ mapper(Collection, CollectionJoin,
             'repos': relation(Repo, backref=backref('collection')),
             'status': relation(CollectionStatus, backref=backref('collections')),
         })
+
 mapper(Branch, BranchTable, inherits=Collection,
         inherit_condition=CollectionJoin.c.id==BranchTable.c.collectionid,
-        polymorphic_identity='b')
+        inherit_foreign_keys=ForeignKeyConstraint(['collectionid'], ['collection.id']),
+        polymorphic_identity='b',
+        )
+
 mapper(CollectionPackage, CollectionPackageTable,
         properties={
             'status': relation(CollectionStatus, backref=backref('collectionPackages')),
