@@ -24,7 +24,7 @@ Library with helpers making tests more readable
 from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy import ForeignKey, MetaData, create_engine
 
-from turbogears import config, update_config, startup
+from turbogears import config, update_config, startup, database
 import turbogears
 from turbogears.util import get_model
 import os
@@ -51,6 +51,9 @@ if os.path.exists('test.cfg'):
     else:
         modulename = None
     update_config(configfile="test.cfg", modulename=modulename)
+    # use database.admin_dburi as primary dburi during tests
+    if config.get('database.admin_dburi', False):
+        database.set_db_uri(config.get('database.admin_dburi'), 'sqlalchemy')
 else:
     database.set_db_uri("sqlite:///:memory:")
 
@@ -145,7 +148,7 @@ class DBTest(TestCase):
     
     def __init__(self, methodName='runTest'):
         super(DBTest, self).__init__(methodName)
-        from turbogears.database import set_db_uri, session, metadata
+        from turbogears.database import session, metadata
         self.session = session
         self.metadata = metadata
         self.model = get_model()
@@ -155,6 +158,11 @@ class DBTest(TestCase):
 
 
     def tearDown(self):
+        # finish unfinished transaction to prevent locak during drop table
+        try:
+            self.session.rollback()
+        except:
+            pass
         self.metadata.drop_all()
 
 
