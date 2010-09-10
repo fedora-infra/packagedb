@@ -2,22 +2,22 @@ dblist:
 	tg-admin -c pkgdb.cfg sql list
 
 test:
-	nosetests -w . pkgdb/tests/unit -a \!slow
+	nosetests -w . tests/unit -a \!slow
 
 testall:
-	nosetests -w . pkgdb/tests/
+	nosetests -w . tests/
 
 testfunc:
-	nosetests -w . pkgdb/tests/functional -a \!slow
+	nosetests -w . tests/functional -a \!slow
 
 testfuncd:
-	nosetests -v -w . pkgdb/tests/functional -a \!slow --pdb
+	nosetests -v -w . tests/functional -a \!slow --pdb
 
 testv:
-	nosetests -v -s -w . pkgdb/tests/unit
+	nosetests -v -s -w . tests/unit
 
 testd:
-	nosetests -v -w . pkgdb/tests/unit --pdb
+	nosetests -v -w . tests/unit --pdb
 
 shell:	
 	tg-admin --config=test.cfg shell

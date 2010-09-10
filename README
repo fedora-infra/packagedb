@@ -506,7 +506,7 @@ For more details see http://www.extremeprogramming.org/rules/functionaltests.htm
  * run these tests before every commit. 
  * every provided feature should have test. The user story describing the feature should be in comment
  * User story template: As a [user role] I want to [goal] so I can [reason].
- * the tests are locatad in pkgdb/tests/functional
+ * the tests are locatad in tests/functional
  * % make testfunc
  * check pkgdb.lib.test.WebAppTest and existing tests to start
  * ignored TypeError may arise after tests. Probably bug in python-bugzilla. Reported as bz#625019 (patch included)
@@ -521,9 +521,9 @@ as it make later refactoring difficult.
 Writing test first (Test Driven Development) lead by experience to better structured, loosly coupled code 
 that is easier to maintain.
 
- * the tests are located in pkgdb/tests/unit
+ * the tests are located in tests/unit
  * % make test
- * check helpers for DB related stuff in pkgdb.lib.test (its tests are in pkgdb/tests/lib/test_test.py)
+ * check helpers for DB related stuff in pkgdb.lib.test (its tests are in tests/lib/test_test.py)
  * test as much as possible on in memory sqlite
  * for performance reasons testsuite creates one fresh instance of DB in postgres which can be used by tests. Every single test is responsible for cleaning after itself
  * some tools to make testing easier are in pkgdb.lib.test
