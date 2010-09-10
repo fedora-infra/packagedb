@@ -34,7 +34,8 @@ from sqlalchemy.orm import eagerload
 from sqlalchemy import case, cast
 from sqlalchemy.types import Integer 
 
-from turbogears import controllers, expose, paginate
+from turbogears import controllers, error_handler, expose, paginate, validate
+from turbogears import validators
 
 from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
         PackageListingTable
@@ -47,6 +48,20 @@ from pkgdb import _
 from fedora.tg.util import request_format
 
 COLLECTION = 21
+
+#
+# Validators
+#
+
+class AclName(validators.Schema):
+    '''Validator for the acls.name method'''
+    # validator schemas don't have methods (R0903, W0232)
+    #pylint:disable-msg=R0903,W0232
+    packageName = validators.UnicodeString(not_empty=True, strip=True)
+    collectionName = validators.UnicodeString(not_empty=False, strip=True)
+    collectionVersion = validators.UnicodeString(not_empty=False, strip=True)
+    eol = validators.StringBool()
+
 class Acls(controllers.Controller):
     '''Display ownership information related to individual packages.
     '''
@@ -60,7 +75,9 @@ class Acls(controllers.Controller):
         self.bugs = Bugs(app_title)
         self.list = Letters(app_title)
         self.dispatcher = PackageDispatcher()
-        
+
+    @validate(validators=AclName())
+    @error_handler()
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
     def name(self, packageName, collectionName=None, collectionVersion=None, eol=False):
         '''Retrieve Packages by their name.
@@ -78,6 +95,7 @@ class Acls(controllers.Controller):
         :kwarg eol: end-of-life flag.  If True, do not limit information.
             If False, limit information to non-eol collections.
         '''
+        
         #pylint:disable-msg=E1101
         # Return the information about a package.
         package = Package.query.filter(
