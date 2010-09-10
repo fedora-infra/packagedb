@@ -123,7 +123,7 @@ class Acls(controllers.Controller):
             if collectionVersion:
                 collection = collection.filter_by(version=collectionVersion)
             if (not eol):
-                collection = collection.filter(statuscode!=STATUS['EOL'])
+                collection = collection.filter(Collection.statuscode!=STATUS['EOL'])
             if not collection.count():
                 error = dict(status=False,
                         title=_('%(app)s -- Not a Collection') % {
