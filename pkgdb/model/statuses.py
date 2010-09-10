@@ -22,7 +22,7 @@ Mapping of database tables related to Statuses to python classes
 '''
 
 from sqlalchemy import Table, Column, Integer, String, Text
-from sqlalchemy import PassiveDefault, ForeignKeyConstraint, DDL
+from sqlalchemy import ForeignKeyConstraint, DDL
 from sqlalchemy import text, Index
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection

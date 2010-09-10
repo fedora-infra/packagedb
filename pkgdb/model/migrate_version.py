@@ -21,9 +21,11 @@
 Mapping sqlalchemy-migrate versioning table
 '''
 
-from sqlalchemy import Table, Column, ForeignKey, Integer, Text, String
-from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, text
-from turbogears.database import metadata, mapper, get_engine
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
+
+from sqlalchemy import Column, Integer, Text, String
 from turbogears import config
 from pkgdb.model import DeclarativeBase
 from pkgdb.lib.db import initial_data, Grant_RW
@@ -32,15 +34,19 @@ from migrate.versioning.api import version
 
 
 class MigrateVersion(DeclarativeBase):
+    """
+    Database versioning setup. Here sqlalchemy-migrate stores
+    its status.
+    """
     __tablename__ = 'migrate_version'
     repository_id = Column(String(255), primary_key=True)
     repository_path = Column(Text)
     version = Column(Integer)
-Grant_RW(MigrateVersion.__table__)
+Grant_RW(MigrateVersion.__table__)      #pylint: disable-msg=E1101
 
 db_repo = config.get('database.repo')
 
-initial_data(MigrateVersion.__table__,
+initial_data(MigrateVersion.__table__,  #pylint: disable-msg=E1101
     ('repository_id', 'repository_path', 'version'),
     ('Fedora Package DB', db_repo, lambda: int(version(db_repo))))
 

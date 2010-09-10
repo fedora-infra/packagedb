@@ -32,6 +32,10 @@ Application related part of the model.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
+
 MS_NEW = 0
 MS_EXPORTED = 1
 MS_SYNCED = 2
@@ -53,8 +57,6 @@ from fedora.tg.util import tg_url
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
 from pkgdb.lib.dt_utils import fancy_delta
 from pkgdb.lib.db import Grant_RW, initial_data
-
-from datetime import datetime
 
 import logging
 log = logging.getLogger('pkgdb.model.apps')

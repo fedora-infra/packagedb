@@ -21,7 +21,12 @@
 Mapping of tables needed in the sqlite database that goes to yum
 '''
 
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
+
 from sqlalchemy import Table, Column, Integer, MetaData, Text
+
 
 yummeta = MetaData()
 

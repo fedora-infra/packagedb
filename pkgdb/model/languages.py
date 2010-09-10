@@ -27,6 +27,9 @@ Mapping of language related database tables to python classes.
 
 # :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
 #   we have to disable this when accessing an attribute of a mapped class.
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
 
 from sqlalchemy import Table, Column, Text
 from sqlalchemy.sql import or_

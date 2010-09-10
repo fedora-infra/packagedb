@@ -21,11 +21,15 @@
 '''
 Mapping of python classes to Database Tables.
 '''
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
+
 #from sqlalchemy import MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import DDL
 from fedora.tg.json import SABase
-from turbogears.database import metadata, mapper, session
+from turbogears.database import metadata
 
 # Base class for all of our model classes: By default, the data model is
 # defined with SQLAlchemy's declarative extension, but if you need more

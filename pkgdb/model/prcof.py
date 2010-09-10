@@ -2,7 +2,7 @@
 Mapping of PRCO (provides, requires, conflicts, obsoletes) and files
 '''
 
-from sqlalchemy import Table, Column, ForeignKeyConstraint, UniqueConstraint
+from sqlalchemy import Table, Column
 from sqlalchemy import Integer, Boolean, Text, ForeignKey, text
 
 from turbogears.database import metadata, mapper
@@ -20,6 +20,10 @@ FLAGS = {
 #
 # Mapped Tables
 #
+
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
 
 RpmProvidesTable = Table('rpmprovides', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),

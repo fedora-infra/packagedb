@@ -21,12 +21,12 @@
 Mapping of collection and repo related database tables to python classes
 '''
 
-from sqlalchemy import Table, Column, ForeignKey, Integer, Text, String
+from sqlalchemy import Table, Column, Integer, Text, String
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, text
 from sqlalchemy import select, not_, Boolean, PassiveDefault, func
 from sqlalchemy import PrimaryKeyConstraint, DDL, Index
 from sqlalchemy.exceptions import InvalidRequestError
-from sqlalchemy.orm import polymorphic_union, relation, backref, synonym
+from sqlalchemy.orm import polymorphic_union, relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
 
@@ -244,6 +244,7 @@ class Branch(Collection):
         self.parentid = parentid
 
     def __repr__(self):
+        # pylint: disable-msg=E1101
         return 'Branch(%r, %r, %r, %r, %r, %r, %r, %r,' \
                 ' publishurltemplate=%r, pendingurltemplate=%r,' \
                 ' summary=%r, description=%r)' % (self.collectionid,

@@ -42,7 +42,7 @@ Mapping of package related database tables to python classes.
 import logging
 
 from sqlalchemy import Column, ForeignKeyConstraint, Integer, Table, Text
-from sqlalchemy import PassiveDefault, Boolean, DateTime, func, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, func, UniqueConstraint
 from sqlalchemy import text, DDL, Index
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.ext.associationproxy import association_proxy

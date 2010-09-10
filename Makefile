@@ -28,3 +28,7 @@ build:
 resetdb:
 	sudo -u postgres dropdb test
 	sudo -u postgres createdb -O test test
+
+pylint-model:
+	pylint -e -i y -f colorized pkgdb/model/
+

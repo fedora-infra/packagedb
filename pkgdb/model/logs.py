@@ -22,7 +22,7 @@ Mapping of database tables for logs to python classes.
 '''
 
 from sqlalchemy import Table, Column, Integer, Text, DateTime
-from sqlalchemy import select, literal_column, not_, PassiveDefault
+from sqlalchemy import select, literal_column, not_
 from sqlalchemy import ForeignKeyConstraint, func, DDL, Index
 from sqlalchemy.orm import polymorphic_union, relation
 from turbogears.database import metadata, mapper, get_engine
