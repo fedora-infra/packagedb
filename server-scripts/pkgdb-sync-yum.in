@@ -249,12 +249,11 @@ def _get_cachedir(cachedir):
 
 
 def update(args):
-    """Import local rpm files into pkgdb
+    """Import rpm files from active repos into pkgdb
 
-    Turns local rpms into YumLocalPackage and imports
-    them the usual way. This is usefull for testing
-    or initial import. WARNING: be carefull to associate
-    the builds with the right repo.
+    Import builds from all active repos. 
+    Script goes through the builds backwards. 
+    It skips already imported builds.
 
     :arg args: set of commandline arguments 
     """
@@ -356,10 +355,13 @@ def update(args):
     finished = datetime.now()
     run_delta = finished - started
     run_sec = run_delta.days*24*3600 + run_delta.seconds + run_delta.microseconds/1000000
+    pps = total_packages
+    if run_sec:
+        pps = 1.0*total_packages/run_sec
     log.info('Processed %i packages in %s. That make avg %.1f packages per second.' %
         (total_packages, 
             fancy_delta(started, now=finished, precision=None, verbose=False, short=True, gran='millisecond'),
-            1.0*total_packages/run_sec))
+            pps))
     log.info('Done.')
 
 

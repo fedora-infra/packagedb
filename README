@@ -1,4 +1,4 @@
-================
+man ================
 Fedora PackageDB
 ================
 
@@ -62,7 +62,7 @@ Install Prerequisites
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
     python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi \
     python-paver httpd mod_ssl babel python-cpio xz python-argparse \
-    python-mako python-memcached
+    python-mako python-memcached python-migrate pytz
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -131,6 +131,7 @@ recent dump from http://fedorahosted.org/releases/p/a/packagedb like this
 
 This is a rather large dump and can take a while to load.
 
+
 Update the Database Schema
 --------------------------
 
@@ -141,6 +142,67 @@ Run the following scripts to bring it up to date::
   sudo -u postgres psql pkgdb < update-schema/01_static_icons.sql
   sudo -u postgres psql pkgdb < update-schema/02_timestamps_for_tags_and_usages.sql
   sudo -u postgres psql pkgdb < update-schema/03_add_gitbranchname.sql
+  sudo -u postgres psql pkgdb < update-schema/04_updates_to_make_db_match_the_model.sql
+  python update-schema/05_migrate_version.py pkgdb.cfg > update-schema/05_migrate_version.sql
+  sudo -u postgres psql pkgdb < update-schema/05_migrate_version.sql
+
+TODO: remove the lines above in favour of
+
+If your database is not up to date with the latest changes in your branch 
+(DB created from dump, merged in db updates),run the following scripts 
+to bring it up to date::
+
+  sudo -u postgres ./manage_db -c db_setup.cfg upgrade
+
+
+Create the database from scratch
+--------------------------------
+
+If you need fresh database for testing/development and are not interested in real life data
+you can use::
+
+  tg-admin sql create
+
+This will try to create DB as user set in 'sqlalchemy.dburi', set rw permission to user in 'database.common_user'
+and set read only permission to user in 'database.readonly_user'. 
+Also note that the database has to be created first with
+
+    sudo -u postgres createdb pkgdb
+
+or equivalent.    
+
+To get same setup as in production db you should have::
+
+    cat db_setup.cfg
+      ...
+      # DATABASE
+      sqlalchemy.dburi="postgres://postgres@/pkgdb"
+      database.common_user='pkgdbadmin'
+      database.readonly_user='pkgdbreadonly'
+      ...
+
+    sudo -u postgres tg-admin -c db_setup.cfg sql create
+
+If you prefer not to create your database as postgres user you can do something like::
+
+    sudo -u postgres createuser -SDRPE test
+      Enter password for new role: <password>
+      Enter it again: <password>
+
+    sudo -u postgres createdb -O test test
+
+    cat db_setup.cfg
+      ...
+      # DATABASE
+      sqlalchemy.dburi="postgres://test:test@127.0.0.1/test"
+      database.common_user='pkgdbadmin'
+      database.readonly_user='pkgdbreadonly'
+      ...
+
+    tg-admin -c db_setup.cfg sql create
+
+I prefer to use the later setup for automated testing. 
+
 
 Start memcached
 ---------------
@@ -293,6 +355,180 @@ Then start the server::
 
 In your favorite web browser, navigate to::
   http://localhost:8086/pkgdb/
+
+
+----------------------
+Development guidelines
+----------------------
+
+Database model
+==============
+The handling of db model definition described here should allow us to:
+ * test pkgdb
+ * create full db structure with 'tg-admin sql create'
+ * refactor db model more safely
+ * better manage db model updates
+
+Whole model definition if kept in pkgdb.model.* modules. Every information needed to create 
+db structure same as the production db is included in the model (triggers, stored procedures, 
+views, indexes, constraints, permission, necessary initial data...). 
+
+We are using sqlalchemy-migrate to manage database model updates.
+
+In this section you can find a few simple recipies for situations that need extra attention
+during the development of database related features.
+
+For more detailed sa-migrate tutorial check the official `sa-migrate docs`_
+
+.. _`sa-migrate docs`: http://packages.python.org/sqlalchemy-migrate/versioning.html#version-control-a-database
+
+
+New model update
+~~~~~~~~~~~~~~~~
+Check db version
+  % ./manage_db version
+  10
+  % ./manage_db db_version
+  10
+
+Create new update script for your feature/fix
+  % ./manage_db script "Add wiki to application"
+
+Edit your update.
+  % vim db_repo/versions/011_Add_wiki_to_application.py
+
+    from sqlalchemy import *
+    from migrate import *
+    import migrate.changeset
+
+    meta = MetaData(migrate_engine)
+    app = Table('application', meta,
+                Column('id', Integer, primary_key=True),
+                Column('wiki', Text()),
+                )
+
+    def upgrade():
+        app.c.wiki.create()
+
+    def downgrade():
+        app.c.wiki.drop()
+
+Update the related stuff in pkgdb.model
+  % vim pkgdb/model/apps.py
+
+Test your update
+  % ./manage_db test
+  Upgrading... done
+  Downgrading... done
+  Success
+
+Check db version
+  % ./manage_db version
+  11
+  % ./manage_db db_version
+  10
+
+Upgrade DB
+  % ./manage_db upgrade
+  10 -> 11... 
+  done
+
+
+Merging updates
+~~~~~~~~~~~~~~~
+Consider reverting your changes in your local database before merging, it can make 
+testing of following merge easier. 
+
+  % ./manage_db downgrade 10
+  11 -> 10... 
+  done
+
+  % ./manage_db version
+  11
+  % ./manage_db db_version
+  10
+
+Merge your branch and check if there are conflicting 
+db updates - look for same update version numbers in db_repo/version/. 
+
+  % ls db_repo/versions/
+  ...
+  011_Add_wiki_to_application.py
+  011_Some_other_cool_feature.py
+
+Don't merge conflicting updates into one file! We want to keep the update scripts as simple as possible.
+Append YOUR conflicting updates with higher version number and revise them - updates 
+that are now applying before those of yours may have done unexpected changes.
+
+  % mv db_repo/versions/011_Add_wiki_to_application.py db_repo/versions/012_Add_wiki_to_application.py
+
+Test
+  % ./manage_db test
+  Upgrading... done
+  Downgrading... done
+  Success
+
+  % ./manage_db version
+  12
+  % ./manage_db db_version
+  10
+
+Upgrade DB
+  % ./manage_db upgrade
+  10 -> 11... 
+  done
+  11 -> 12... 
+  done
+
+
+DB merge is done
+  
+
+Testing
+=======
+this section is collection of ideas that needs yet some more work and experience
+to get into right shape.
+
+WARNING: don't run the tests on DB you use for development. Create empty DB and set it up in test.cfg.
+For more info how to do that consult DB setup section.
+Theoretically the tests should be able to run just on sqlite and postgres related stuff be skipped. 
+This is no longer supported as incomplete tests makes little sense.
+
+ * before adding new feature, fixing bug, refactoring write test
+ * see Makefile for nose usage
+ * nose and TestCase is used
+
+Acceptance tests
+~~~~~~~~~~~~~~~~
+These tests test PkgDB as a blackbox and should be *always* independent on the internals. 
+The only exception may be initial DB setup that is difficult to get using webapp.
+For more details see http://www.extremeprogramming.org/rules/functionaltests.html
+
+ * run these tests before every commit. 
+ * every provided feature should have test. The user story describing the feature should be in comment
+ * User story template: As a [user role] I want to [goal] so I can [reason].
+ * the tests are locatad in tests/functional
+ * % make testfunc
+ * check pkgdb.lib.test.WebAppTest and existing tests to start
+ * ignored TypeError may arise after tests. Probably bug in python-bugzilla. Reported as bz#625019 (patch included)
+
+
+Unit tests
+~~~~~~~~~~
+Unit tests should provide documentation, use cases and guarantee that public API of class or module will not be accidentally
+changed or start to behave differently. It is not effective to provide tests for private internal functions
+as it make later refactoring difficult.
+
+Writing test first (Test Driven Development) lead by experience to better structured, loosly coupled code 
+that is easier to maintain.
+
+ * the tests are located in tests/unit
+ * % make test
+ * check helpers for DB related stuff in pkgdb.lib.test (its tests are in tests/lib/test_test.py)
+ * test as much as possible on in memory sqlite
+ * for performance reasons testsuite creates one fresh instance of DB in postgres which can be used by tests. Every single test is responsible for cleaning after itself
+ * some tools to make testing easier are in pkgdb.lib.test
+ * framework configuration is looked up in test.cfg
 
 ------------
 Translations

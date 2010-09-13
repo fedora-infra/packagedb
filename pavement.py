@@ -37,7 +37,8 @@ options(
             # Doesn't use setuptools so not on RHEL5
             #'python_bugzilla >= 0.5',
         ],
-        scripts = ['start-pkgdb', 'pkgdb.wsgi', 'clients/pkgdb-client',
+        scripts = ['start-pkgdb', 'pkgdb.wsgi', 'manage_db',
+            'clients/pkgdb-client',
             'server-scripts/pkgdb-sync-yum',
             'server-scripts/pkgdb-sync-bugzilla'],
         zip_safe=False,
@@ -120,7 +121,7 @@ options(
     # finds file location instead.
     substitute = Bunch(
         # Files to substitute on
-        onfiles=['start-pkgdb', 'pkgdb.wsgi', 'server-scripts/pkgdb-sync-yum',
+        onfiles=['start-pkgdb', 'pkgdb.wsgi', 'manage_db', 'server-scripts/pkgdb-sync-yum',
             'server-scripts/pkgdb-sync-bugzilla',
             'update-schema/pkgdb-0.3.10-0.3.11.py', 'httpd-pkgdb.conf'],
         # Strings to substitute inside the files

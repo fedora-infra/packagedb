@@ -32,13 +32,17 @@ Application related part of the model.
 # :R0913: The __init__ methods of the mapped classes may need many arguments
 #   to fill the database tables.
 
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
+
 MS_NEW = 0
 MS_EXPORTED = 1
 MS_SYNCED = 2
 
 from sqlalchemy import Table, Column, ForeignKeyConstraint, func, desc
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
-from sqlalchemy import PassiveDefault
+from sqlalchemy import PassiveDefault, text
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.sql.expression import and_
 from sqlalchemy.orm.exc import NoResultFound
@@ -52,8 +56,7 @@ from fedora.tg.util import tg_url
 
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
 from pkgdb.lib.dt_utils import fancy_delta
-
-from datetime import datetime
+from pkgdb.lib.db import Grant_RW, initial_data
 
 import logging
 log = logging.getLogger('pkgdb.model.apps')
@@ -66,22 +69,22 @@ ApplicationsTable = Table('applications', metadata,
         nullable=False),    
     Column('name', Text, nullable=False),
     Column('description', Text, nullable=False),
-    Column('summary', Text, nullable=False),
     Column('url', Text),
     Column('apptype', String(32), nullable=False),
     Column('desktoptype', Text),
-    Column('iconid', nullable=True),
     Column('iconnameid', nullable=True),
-    Column('icon_status_id', nullable=False, default=MS_NEW),
-    ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE",
-        ondelete="CASCADE"),
-    ForeignKeyConstraint(['iconid'],['icons.id'], onupdate="CASCADE",
-        ondelete="CASCADE"),
-    ForeignKeyConstraint(['iconnameid'],['iconnames.id'], onupdate="CASCADE",
-        ondelete="CASCADE"),
+    Column('iconid', nullable=True),
+    Column('summary', Text, nullable=True),
+    Column('icon_status_id', PassiveDefault(text(str(MS_NEW))), nullable=False),
+    ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE"),
+    ForeignKeyConstraint(['iconid'],['icons.id']),
+    ForeignKeyConstraint(['iconnameid'],['iconnames.id']),
     ForeignKeyConstraint(['icon_status_id'],['media_status.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+Grant_RW(ApplicationsTable)
+
+#TODO:review ondelete in FKs - take set null set default into account
 
 #BlacklistTable = Table('blacklist', metadata,
 #    Column('id', Integer, primary_key=True, autoincrement=True,
@@ -97,8 +100,8 @@ ApplicationsTable = Table('applications', metadata,
 #)
 
 ApplicationsUsagesTable = Table('applicationsusages', metadata,
-    Column('applicationid', Integer, primary_key=True, nullable=False),
-    Column('usageid', Integer, primary_key=True, nullable=False),
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('usageid', Integer, primary_key=True, autoincrement=False, nullable=False),
     Column('rating', Integer, default=1, nullable=False),
     Column('author', Text, primary_key=True, nullable=False),
     Column('time', DateTime(timezone=True), PassiveDefault(func.now()),
@@ -108,11 +111,13 @@ ApplicationsUsagesTable = Table('applicationsusages', metadata,
     ForeignKeyConstraint(['usageid'], ['usages.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+Grant_RW(ApplicationsUsagesTable)
+
 
 ApplicationsTagsTable = Table('applicationstags', metadata,
-    Column('applicationid', Integer, primary_key=True, nullable=False),
-    Column('tagid', Integer, primary_key=True, nullable=False),
-    Column('score', Integer, default=1, nullable=False),
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('tagid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('score', Integer, PassiveDefault(text('1')), nullable=False),
     Column('time', DateTime(timezone=True), PassiveDefault(func.now()),
         nullable=False),
     ForeignKeyConstraint(['applicationid'], ['applications.id'],
@@ -120,82 +125,109 @@ ApplicationsTagsTable = Table('applicationstags', metadata,
     ForeignKeyConstraint(['tagid'], ['tags.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+Grant_RW(ApplicationsTagsTable)
+
 
 BinaryPackageTagsTable = Table('binarypackagetags', metadata,
     Column('binarypackagename', Text, primary_key=True, nullable=False),
-    Column('tagid', Integer, primary_key=True, nullable=False),
-    Column('score', Integer, default=1, nullable=False),
+    Column('tagid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('score', Integer, PassiveDefault(text('1')), nullable=False),
     ForeignKeyConstraint(['binarypackagename'],['binarypackages.name'], onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['tagid'],['tags.id'], onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(BinaryPackageTagsTable)
+
 
 PackageBuildApplicationsTable = Table('packagebuildapplications', metadata,
-    Column('applicationid', Integer, primary_key=True, nullable=False),
-    Column('packagebuildid', Integer, primary_key=True, nullable=False),
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('packagebuildid', Integer, primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['applicationid'], ['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(PackageBuildApplicationsTable)
+
 
 AppTypesTable = Table('apptypes', metadata,
     Column('apptype', String(32), primary_key=True, nullable=False),
 )
+initial_data(AppTypesTable, 
+    ('apptype',),
+    ('desktop',),
+    ('commandline',),
+    ('unknown',))
+Grant_RW(AppTypesTable)
+
 
 CommentsTable = Table('comments', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('author', Text, nullable=False),
     Column('body', Text, nullable=False),
-    Column('published', Boolean, default=True, nullable=False),
-    Column('time', DateTime(timezone=True), default=datetime.now,
+    Column('published', Boolean, server_default=text('true'), nullable=False),
+    Column('time', DateTime(timezone=True), server_default=func.now(),
         nullable=False),
     Column('applicationid', Integer, nullable=False),
     ForeignKeyConstraint(['applicationid'],['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(CommentsTable)
+
 
 UsagesTable = Table('usages', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False, unique=True),
 )
+Grant_RW(UsagesTable)
+
 
 MimeTypesTable = Table('mimetypes', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False, unique=True),
 )
+Grant_RW(MimeTypesTable)
+
 
 AppsMimeTypesTable = Table('appsmimetypes', metadata,
-    Column('applicationid', Integer, primary_key=True, nullable=False),
-    Column('mimetypeid', Integer, primary_key=True, nullable=False),
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('mimetypeid', Integer, primary_key=True, autoincrement=False, nullable=False),
     ForeignKeyConstraint(['applicationid'], ['applications.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['mimetypeid'], ['mimetypes.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
+Grant_RW(AppsMimeTypesTable)
+
 
 TagsTable = Table('tags', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text, nullable=False, unique=True),
 )
+Grant_RW(TagsTable)
+
 
 IconNamesTable = Table('iconnames', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('name', Text, nullable=False, unique=True)
 )
-                        
+Grant_RW(IconNamesTable)                        
+
+
 ThemesTable = Table('themes', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('name', Text, nullable=False, unique=True),
 )
-                        
+Grant_RW(ThemesTable)
+
+
 IconsTable = Table('icons', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('nameid', nullable=False),
     Column('collectionid', nullable=False),                   
     Column('themeid', nullable=False),
-    Column('m_status_id', nullable=False, default=MS_NEW),
     Column('icon', Binary, nullable=False),
-    Column('orig_size', Integer, nullable=False),
+    Column('orig_size', Integer, nullable=False, server_default=text('48')),
+    Column('m_status_id', nullable=False, server_default=text(str(MS_NEW))),
     ForeignKeyConstraint(['nameid'], ['iconnames.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
     ForeignKeyConstraint(['collectionid'], ['collection.id'],
@@ -205,12 +237,21 @@ IconsTable = Table('icons', metadata,
     ForeignKeyConstraint(['m_status_id'], ['media_status.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
 )
+Grant_RW(IconsTable)
 
 
 MediaStatusTable = Table('media_status', metadata,
-    Column('id', Integer, primary_key=True),
+    Column('id', Integer, autoincrement=False, primary_key=True),
     Column('name', Text, nullable=False)
 )
+initial_data(MediaStatusTable,
+    ('id', 'name'),   
+    #----+---------
+    (0, 'NEW'),
+    (1, 'EXPORTED'),
+    (2, 'SYNCED'))
+Grant_RW(MediaStatusTable)
+
 
 def _create_apptag(tag, score):
     """Creator function for apptags association proxy """
@@ -243,11 +284,14 @@ class Application(SABase):
         self.summary = summary
         self.icon = icon
         self.icon_status_id = icon_status_id
+        self.scores.__json__ = lambda: dict(((tag.name, score) for tag, score in self.scores.iteritems()))
 
     # scores is dict {<tag_object>:score}
     # scores[<tag-object>] = <score> create/update app2tag relation with given score
     scores = association_proxy('by_tag', 'score', 
             creator=_create_apptag)
+    json_props = {'Application': ['scores']}
+
 
     _rating = None
 

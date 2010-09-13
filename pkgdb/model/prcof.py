@@ -2,11 +2,13 @@
 Mapping of PRCO (provides, requires, conflicts, obsoletes) and files
 '''
 
-from sqlalchemy import Table
+from sqlalchemy import Table, Column
+from sqlalchemy import Integer, Boolean, Text, ForeignKey, text
 
 from turbogears.database import metadata, mapper
 
 from fedora.tg.json import SABase
+from pkgdb.lib.db import Grant_RW
 
 FLAGS = {
     'EQ': '=',
@@ -19,11 +21,69 @@ FLAGS = {
 # Mapped Tables
 #
 
-RpmProvidesTable = Table('rpmprovides', metadata, autoload=True)
-RpmRequiresTable = Table('rpmrequires', metadata, autoload=True)
-RpmConflictsTable = Table('rpmconflicts', metadata, autoload=True)
-RpmObsoletesTable = Table('rpmobsoletes', metadata, autoload=True)
-RpmFilesTable = Table('rpmfiles', metadata, autoload=True)
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
+
+RpmProvidesTable = Table('rpmprovides', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('flags', Text()),
+    Column('epoch', Text()),
+    Column('version', Text()),
+    Column('release', Text()),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'),
+        nullable=False),
+)
+Grant_RW(RpmProvidesTable)
+
+
+RpmRequiresTable = Table('rpmrequires', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('flags', Text()),
+    Column('epoch', Text()),
+    Column('version', Text()),
+    Column('release', Text()),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'),
+        nullable=False),
+    Column('prereq', Boolean(), server_default=text('false'), nullable=False),
+)
+Grant_RW(RpmRequiresTable)
+
+
+RpmConflictsTable = Table('rpmconflicts', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('flags', Text()),
+    Column('epoch', Text()),
+    Column('version', Text()),
+    Column('release', Text()),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'),
+        nullable=False),
+)
+Grant_RW(RpmConflictsTable)
+
+
+RpmObsoletesTable = Table('rpmobsoletes', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('flags', Text()),
+    Column('epoch', Text()),
+    Column('version', Text()),
+    Column('release', Text()),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'), 
+        nullable=False),
+)
+Grant_RW(RpmObsoletesTable)
+
+
+RpmFilesTable = Table('rpmfiles', metadata,
+    Column('name', Text(),  primary_key=True, nullable=False),
+    Column('packagebuildid', ForeignKey('packagebuild.id', ondelete='CASCADE'),
+        primary_key=True, nullable=False),
+)
+Grant_RW(RpmFilesTable)
 
 #
 # Mapped Classes

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -15,23 +15,40 @@
 # code or documentation are not subject to the GNU General Public License and
 # may only be used or replicated with the express permission of Red Hat, Inc.
 #
-# Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+# Red Hat Author(s): Martin Bacovsky <mbacovsk@redhat.com>
 #
 '''
-Mapping of tables needed in the sqlite database that goes to yum
+Mapping sqlalchemy-migrate versioning table
 '''
 
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
 # pylint: disable-msg=C0103
 
-from sqlalchemy import Table, Column, Integer, MetaData, Text
+from sqlalchemy import Column, Integer, Text, String
+from turbogears import config
+from pkgdb.model import DeclarativeBase
+from pkgdb.lib.db import initial_data, Grant_RW
+
+from migrate.versioning.api import version
 
 
-yummeta = MetaData()
+class MigrateVersion(DeclarativeBase):
+    """
+    Database versioning setup. Here sqlalchemy-migrate stores
+    its status.
+    """
+    __tablename__ = 'migrate_version'
+    repository_id = Column(String(255), primary_key=True)
+    repository_path = Column(Text)
+    version = Column(Integer)
+Grant_RW(MigrateVersion.__table__)      #pylint: disable-msg=E1101
 
-YumTagsTable = Table('packagetags', yummeta,
-        Column('name', Text, nullable=False, primary_key=True),
-        Column('tag', Text, nullable=False, primary_key=True),
-        Column('score', Integer),
-        )
+db_repo = config.get('database.repo')
+
+initial_data(MigrateVersion.__table__,  #pylint: disable-msg=E1101
+    ('repository_id', 'repository_path', 'version'),
+    ('Fedora Package DB', db_repo, lambda: int(version(db_repo))))
+
+
+

@@ -21,8 +21,10 @@
 Mapping of collection and repo related database tables to python classes
 '''
 
-from sqlalchemy import Table, Column, ForeignKey, Integer
-from sqlalchemy import select, not_
+from sqlalchemy import Table, Column, Integer, Text, String
+from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, text
+from sqlalchemy import select, not_, Boolean, PassiveDefault, func
+from sqlalchemy import PrimaryKeyConstraint, DDL, Index
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import polymorphic_union, relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
@@ -30,7 +32,10 @@ from turbogears.database import metadata, mapper, get_engine
 
 from fedora.tg.json import SABase
 
-from pkgdb.model.packages import PackageListing, PackageBuild, PackageBuildReposTable
+from pkgdb.model.packages import PackageBuild, PackageBuildReposTable
+from pkgdb.model.packages import PackageListing, PackageListingTable
+from pkgdb.model import CollectionStatus
+from pkgdb.lib.db import View, Grant_RW
 
 get_engine()
 
@@ -44,9 +49,72 @@ get_engine()
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
 # pylint: disable-msg=C0103
-CollectionTable = Table('collection', metadata, autoload=True)
-BranchTable = Table('branch', metadata, autoload=True)
-ReposTable = Table('repos', metadata, autoload=True)
+CollectionTable = Table('collection', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('version', Text(),  nullable=False),
+    Column('statuscode', Integer(), nullable=False),
+    Column('owner', Text(),  nullable=False),
+    Column('publishurltemplate', Text()),
+    Column('pendingurltemplate', Text()),
+    Column('summary', Text()),
+    Column('description', Text()),
+    Column('koji_name', Text(), unique=True),
+    UniqueConstraint('name', 'version', name='collection_name_key'),
+    ForeignKeyConstraint(['statuscode'],['collectionstatuscode.statuscodeid'], 
+        use_alter=True, name='collection_statuscode_fkey', 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+)
+Index('collection_status_idx', CollectionTable.c.statuscode)
+DDL('ALTER TABLE collection CLUSTER ON collection_name_key', on='postgres')\
+    .execute_at('after-create', CollectionTable)
+Grant_RW(CollectionTable)
+
+
+CollectionSetTable = Table('collectionset', metadata,
+    Column('overlay', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('base', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('priority', Integer(), PassiveDefault(text('0'))),
+    ForeignKeyConstraint(['overlay'],['collection.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['base'],['collection.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+Grant_RW(CollectionSetTable)
+
+
+BranchTable = Table('branch', metadata,
+    Column('collectionid', Integer(), autoincrement=False, nullable=False),
+    Column('branchname', String(32), unique=True, nullable=False),
+    Column('gitbranchname', Text(), nullable=False),
+    Column('disttag', String(32),  nullable=False),
+    Column('parentid', Integer()),
+    PrimaryKeyConstraint('collectionid', name='branch_pkey'),
+    ForeignKeyConstraint(['collectionid'],['collection.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['parentid'],['collection.id'],
+        onupdate="CASCADE", ondelete="SET NULL"),
+)
+DDL('ALTER TABLE branch CLUSTER ON branch_pkey', on='postgres')\
+    .execute_at('after-create', BranchTable)
+Grant_RW(BranchTable)    
+
+
+ReposTable = Table('repos', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('shortname', Text(),  nullable=False),
+    Column('name', Text(),  nullable=False),
+    Column('url', Text(),  nullable=False),
+    Column('mirror', Text(),  nullable=False),
+    Column('active', Boolean(), PassiveDefault('True'), nullable=False),
+    Column('collectionid', Integer()),
+    UniqueConstraint('url', name='repos_url'),
+    UniqueConstraint('name', name='repos_name'),
+    UniqueConstraint('shortname', name='repos_shortname'),
+    ForeignKeyConstraint(['collectionid'],['collection.id'],
+        ondelete="CASCADE"),
+)
+Grant_RW(ReposTable)
 
 
 CollectionJoin = polymorphic_union (
@@ -60,14 +128,37 @@ CollectionJoin = polymorphic_union (
          },
         'kind', 'CollectionJoin'
         )
+
+
 #
 # CollectionTable that shows number of packages in a collection
+# This is view
 #
-CollectionPackageTable = Table('collectionpackage', metadata,
-        Column('id', Integer, primary_key=True),
-        Column('statuscode', Integer,
-            ForeignKey('collectionstatuscode.statuscodeid')),
-        autoload=True)
+#  SELECT c.id, c.name, c.version, c.statuscode, count(*) AS numpkgs
+#  FROM packagelisting pl, collection c
+#  WHERE pl.collectionid = c.id AND pl.statuscode = 3
+#  GROUP BY c.name, c.version, c.id, c.statuscode
+#  ORDER BY c.name, c.version;
+#
+CollectionPackageTable = View('collectionpackage', metadata,
+        select([
+            CollectionTable.c.id.label('id'),
+            CollectionTable.c.name.label('name'),
+            CollectionTable.c.version.label('version'),
+            CollectionTable.c.statuscode.label('statuscode'),
+            func.count().label('numpkgs')]).\
+        select_from(PackageListingTable.join(CollectionTable)).\
+        where(PackageListingTable.c.statuscode==text('3')).\
+        group_by(
+            CollectionTable.c.name,
+            CollectionTable.c.version,
+            CollectionTable.c.id,
+            CollectionTable.c.statuscode).
+        order_by(
+            CollectionTable.c.name,
+            CollectionTable.c.version))
+Grant_RW(CollectionPackageTable)
+        
 
 #
 # Mapped Classes
@@ -146,7 +237,7 @@ class Branch(Collection):
     Table -- Branch
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, collectionid, branchname, disttag, parentid,
+    def __init__(self, branchname, disttag, parentid,
                  gitbranchname=None, *args):
         # pylint: disable-msg=R0913
         branch_mapping = {'F-13': 'f13', 'F-12': 'f12', 'F-11': 'f11',
@@ -154,8 +245,7 @@ class Branch(Collection):
                           'F-7': 'f7', 'FC-6': 'fc6', 'EL-6': 'el6',
                           'EL-5': 'el5', 'EL-4':'el4', 'OLPC-3': 'olpc3'}
 
-        super(Branch, self).__init__(args)
-        self.collectionid = collectionid
+        super(Branch, self).__init__(*args)
         self.branchname = branchname
         self.disttag = disttag
         self.parentid = parentid
@@ -165,6 +255,7 @@ class Branch(Collection):
                 self.gitbranchname = branch_mapping[branchname]
 
     def __repr__(self):
+        # pylint: disable-msg=E1101
         return 'Branch(%r, %r, %r, %r, %r, %r, %r, %r,' \
                 ' publishurltemplate=%r, pendingurltemplate=%r,' \
                 ' summary=%r, description=%r, gitbranchname=%r)' % \
@@ -208,10 +299,10 @@ class CollectionPackage(SABase):
 # Mappers
 #
 
-mapper(Collection, CollectionJoin,
+mapper(Collection, CollectionTable,
         polymorphic_on=CollectionJoin.c.kind,
         polymorphic_identity='c',
-        with_polymorphic='*',
+        with_polymorphic=('*', CollectionJoin),
         properties={
             # listings is deprecated.  It will go away in 0.4.x
             'listings': relation(PackageListing),
@@ -223,12 +314,20 @@ mapper(Collection, CollectionJoin,
             'listings2': relation(PackageListing,
                 backref=backref('collection'),
                 collection_class=attribute_mapped_collection('packagename')),
-            'repos': relation(Repo, backref=backref('collection'))
+            'repos': relation(Repo, backref=backref('collection')),
+            'status': relation(CollectionStatus, backref=backref('collections')),
         })
+
 mapper(Branch, BranchTable, inherits=Collection,
         inherit_condition=CollectionJoin.c.id==BranchTable.c.collectionid,
-        polymorphic_identity='b')
-mapper(CollectionPackage, CollectionPackageTable)
+        inherit_foreign_keys=ForeignKeyConstraint(['collectionid'], ['collection.id']),
+        polymorphic_identity='b',
+        )
+
+mapper(CollectionPackage, CollectionPackageTable,
+        properties={
+            'status': relation(CollectionStatus, backref=backref('collectionPackages')),
+        })
 mapper(Repo, ReposTable, properties={
     'builds': relation(PackageBuild, backref=backref('repos'),
         secondary=PackageBuildReposTable, cascade='all'),
