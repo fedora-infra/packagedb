@@ -126,8 +126,8 @@ Note:: If you don't have sudo, you can use su - instead::
 Get some test data and import it into the database.  You want to grab the most
 recent dump from http://fedorahosted.org/releases/p/a/packagedb like this
 (look for a .dump.xz that looks recent in that directory)::
-  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20100318.dump.xz
-  xzcat pkgdb-20100318.dump.xz | sudo -u postgres psql
+  wget https://fedorahosted.org/releases/p/a/packagedb/pkgdb-20100910.dump.xz
+  xzcat pkgdb-20100910.dump.xz | sudo -u postgres psql
 
 This is a rather large dump and can take a while to load.
 
@@ -139,9 +139,6 @@ Currently the database dump is not up to date with the latest changes in the
 devel branch. These steps won't be required after we get a healthy 0.5.x dbdump.
 Run the following scripts to bring it up to date::
 
-  sudo -u postgres psql pkgdb < update-schema/01_static_icons.sql
-  sudo -u postgres psql pkgdb < update-schema/02_timestamps_for_tags_and_usages.sql
-  sudo -u postgres psql pkgdb < update-schema/03_add_gitbranchname.sql
   sudo -u postgres psql pkgdb < update-schema/04_updates_to_make_db_match_the_model.sql
   python update-schema/05_migrate_version.py pkgdb.cfg > update-schema/05_migrate_version.sql
   sudo -u postgres psql pkgdb < update-schema/05_migrate_version.sql
