@@ -1,8 +1,12 @@
 import sys
 from configobj import ConfigObj
+from turbogears.config import config_defaults
 
-
+defaults = config_defaults()
 config = ConfigObj(sys.argv[1], unrepr=True)
+config.merge(dict(DEFAULT=defaults))
+
+
 try:
     repo_path = config['global']['database.repo']
 except KeyError:

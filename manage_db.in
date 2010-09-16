@@ -27,9 +27,9 @@ if len(sys.argv) > 1:
             del sys.argv[idx]
             break
 if not cfg_file and os.path.exists(os.path.join(os.path.dirname(__file__), "setup.py")):
-    cfg_file = "pkgdb.cfg"
+    cfg_file = "db_setup.cfg"
 elif not cfg_file:
-    cfg_file = os.path.join(CONFDIR,'pkgdb.cfg')
+    cfg_file = os.path.join(CONFDIR,'db_setup.cfg')
 
 update_config(configfile=cfg_file, modulename="pkgdb.config")
 

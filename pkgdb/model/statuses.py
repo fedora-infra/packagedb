@@ -71,6 +71,11 @@ SC_DEPRECATED = 20
 # pylint: disable-msg=C0103
 
 # statuscode
+# Status of the various components.
+#
+# Fields:
+# :id: The id of a statusCode.  Can be used to reference a status from another
+#   table.
 statuscode = Table('statuscode', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
 )
@@ -81,6 +86,14 @@ Grant_RW(statuscode)
 
 
 # statuscodetranslation
+# Contains translations of the status codes into natural languages.
+#
+# Fields:
+# :statusCodeId: The id of the status that is referenced from other tables.
+# :language: The language code for the natural language used.
+# :statusName: The translated status code.
+# :description: A longer description of what the status means.  May be used
+#    in tooltips or help pages.
 StatusTranslationTable = Table('statuscodetranslation', metadata,
     Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
     Column('language', String(32), server_default=text("'C'"), primary_key=True, nullable=False),
@@ -125,6 +138,13 @@ initial_data(CollectionStatusTable,
     [SC_ACTIVE], [SC_EOL], [SC_REJECTED], [SC_UNDER_DEVELOPMENT])
 Grant_RW(CollectionStatusTable)
 
+# Create a trigger to update the available log actions depending on the
+# available status codes for that table.
+# Jan 20 2007 Tested:
+# pgsql 8.1
+# insert into packagestatuscode also added to packagelogstatuscode
+# delete from packagestatuscode also deleted from packagelogstatuscode
+# update packagestatuscode propagated to packagelogstatuscode
 add_status_to_log_pgfunc = """
     CREATE OR REPLACE FUNCTION add_status_to_log() RETURNS trigger
         AS $_$
@@ -162,6 +182,13 @@ DDL(add_status_to_log_pgfunc, on='postgres')\
 DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON collectionstatuscode '
         'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
     .execute_at('after-create', CollectionStatusTable)
+
+
+# <something>statuscode tables hold status codes specific to a particular table.
+# Insert the status codes that a particular table can have into each of these
+# tables.  This allows us to use foreign key constraints to limit what the
+# db sees and also allows an easy query to return the human readable
+# statusNames for the table.
 
 
 # Package Listing Status Table.  Like the other status tables, this one has to
