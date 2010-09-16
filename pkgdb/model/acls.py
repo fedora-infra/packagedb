@@ -48,6 +48,12 @@ get_engine()
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
 # pylint: disable-msg=C0103
+# Who is interested in this package.
+#
+# Fields:
+# :id: Primary key
+# :packageListingId: What package in what collection has this value.
+# :username: User id from the account system.
 PersonPackageListingTable = Table('personpackagelisting', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
     Column('username', Text(),  nullable=False),
@@ -65,6 +71,13 @@ Grant_RW(PersonPackageListingTable)
 
 
 
+#
+# Group that's interested in the package.
+#
+# Fields:
+# :id: Primary key
+# :packageListingId: What package in what collection has this value.
+# :groupname: User id from the account system.
 GroupPackageListingTable = Table('grouppackagelisting', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
     Column('groupname', Text(),  nullable=False),
@@ -80,6 +93,14 @@ DDL('ALTER TABLE grouppackagelisting CLUSTER ON grouppackagelisting_packagelisti
 Grant_RW(GroupPackageListingTable)
 
 
+# List the Acls that belong to a personPkgListing
+#
+# Fields:
+# :id: Primary key
+# :personPackageListingId: The person-packagelisting combination that this
+#   acl was made for.
+# :acl: Permission being granted to this person.
+# :statuscode: Status of the acl.  Whether approved or not.
 PersonPackageListingAclTable = Table('personpackagelistingacl', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
     Column('personpackagelistingid', Integer(),  nullable=False),
@@ -96,6 +117,12 @@ PersonPackageListingAclTable = Table('personpackagelistingacl', metadata,
 )
 # FIXME: This trigger is created just in postgres. If it is needed in other DB
 # (in sqlite for testing) it has to be added manually
+
+# Make the acl field non-updatable.  This prevents people from getting a
+# permission and then changing the type of permission to a different one.
+# 20 January 2007 Tested:
+# [x] Was unable to update an acl field
+# [x] Was able to update packagelistingid
 no_acl_update_pgfunc = """
     CREATE OR REPLACE FUNCTION no_acl_update() RETURNS trigger
         AS $$
@@ -122,6 +149,13 @@ Grant_RW(PersonPackageListingAclTable)
 
 
 
+# List the Acls that belong to a groupPkgListing.
+# Fields:
+# :id: Primary key
+# :groupPackageListingId: The person-packagelisting combination that this
+#   acl was made for.
+# :acl: Permission being granted to this person.
+# :statuscode: Status of the acl.  Whether approved or not.
 GroupPackageListingAclTable = Table('grouppackagelistingacl', metadata,
     Column('id', Integer(),  primary_key=True, nullable=False),
     Column('grouppackagelistingid', Integer(),  nullable=False),

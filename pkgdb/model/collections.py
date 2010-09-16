@@ -42,6 +42,31 @@ get_engine()
 #
 # Mapped Tables
 #
+# Collection of packages.
+# 
+# Collections are a set of packages.  They can represent the packages in a
+# distro, in a SIG, or on a CD.
+#
+# Fields:
+# :name: "Fedora Core", "Fedora Extras", "Python", "GNOME" or whatever
+#   names-for-groupings you want.  If this is for a grouping that a SIG is
+#   interested in, the name should make this apparent.  If it is for one
+#   of the distributions it should be the name for the Product that will
+#   be used in Bugzilla as well.
+# :version: The release of the `Collection`.  If the `Collection` doesn't
+#   have releases (for instance, SIGs), version should be 0.
+# :statuscode: Is the collection being worked on or is it inactive.
+# :owner: Creator, QA Contact, or other account that is in charge of the
+#   collection.  This is a foreign key to an account id number.  (Since the
+#   accounts live in a separate db we can't have the db enforce validity.)
+# :publishURLTemplate: URL to packages built for this collection with
+#   [ARCH] and [PACKAGE] as special symbols that can be substituted from the
+#   specific package built.
+# :pendingURLTemplate: URL to packages built but not yet in the repository
+#   with [ARCH] and [PACKAGE] as special symbols that can be substituted from
+#   the specific package built.
+# :summary: Brief description of the collection.
+# :description: Longer description of the collection.
 
 # Collections and Branches have an inheritance relationship.  ie: Branches are
 # just Collections that have additional data.
@@ -71,6 +96,54 @@ DDL('ALTER TABLE collection CLUSTER ON collection_name_key', on='postgres')\
 Grant_RW(CollectionTable)
 
 
+# Associate the packages in one collection with another collection.
+#
+# This table is used to allow one `Collection` to be based on another with
+# certain packages that are overridden or not available in the `base`
+# `Collection`.  For instance, a `Collection` may be used to experiment with
+# a major version upgrade of python and all the dependent packages that need
+# to be rebuilt against it.  In this scenario, the base might be
+# "Fedora Core - devel".  The overlay "FC devel python3".  The overlay will
+# contain python packages that override what is present in the base.  Any
+# package that is not present in the overlay will also be searched for in
+# the base collection.
+# Once we're ready to commit to using the upgraded set of packages, we want
+# to merge them into devel.  To do this, we will actually move the packages
+# from the overlay into the base collection.  Probably, at this time, we
+# will also mark the overlay as obsolete.
+#
+# Keeping things consistent is a bit problematic because we have to search for
+# for packages in the collection plus all the bases (an overlay can have
+# multiple bases) and any bases that they're overlays for.  SQL doesn't do
+# recursion -- in and of itself so we have to work around it in one of these
+# ways:
+# 1) Do the searching for packages in code; either a trigger on the server or
+#    in any application code which looks at the database.
+# 2) Use a check constraint to only have one level of super/subset.  So if
+#    devel contains python-2.5, devel cannot be a subset and python-2.5 cannot
+#    be a superset to any other collection.  Have an insert trigger that
+#    checks for this.
+# 3) Copy the packages.  When we make one collection a subset of another, add
+#    all its packages including subset's packages to the superset.  Have an
+#    insert trigger on packageList and packageListVer that check whether this
+#    collection is a subset and copies the package to other collections.
+# Option 1, in application code may be the simplest to implement.  However,
+# option 3 has the benefit of running during insert rather than select.  As
+# always, doing something within the database rather than application logic
+# allows us to keep better control over the information.
+#
+# * Note: Do not have an ondelete trigger as there may be overlap between the
+# packages in the parent and child collection.
+#
+# Fields:
+# :overlay: The `Collection` which overrides packages in the base.
+# :base: The `Collection` which provides packages not explicitly listed in
+#    `overlay`.
+# :priority: When searching for a package within a collection, first check the
+#    `overlay`.  If not found check the lowest priority `base` collection and
+#    any `base` Collections that belong to it.  Then check the next lowest
+#    priority `base` until we find the package or run out. `base`s of the same
+#    `overlay` with the same `priority` are searched in an undefined order.
 CollectionSetTable = Table('collectionset', metadata,
     Column('overlay', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('base', Integer(),  primary_key=True, autoincrement=False, nullable=False),
@@ -83,6 +156,14 @@ CollectionSetTable = Table('collectionset', metadata,
 Grant_RW(CollectionSetTable)
 
 
+# `Collection`s with their own branch in the VCS have extra information.
+#
+# Fields:
+# :collectionId: `Collection` this branch provides information for.
+# :branchName: Name of the branch in the VCS ("FC-3", "devel")
+# :distTag: DistTag used in the buildsystem (".fc3", ".fc6")
+# :parent: Many collections are branches of other collections.  This field
+#    records the parent collection to branch from.
 BranchTable = Table('branch', metadata,
     Column('collectionid', Integer(), autoincrement=False, nullable=False),
     Column('branchname', String(32), unique=True, nullable=False),
@@ -130,9 +211,16 @@ CollectionJoin = polymorphic_union (
         )
 
 
-#
-# CollectionTable that shows number of packages in a collection
+
 # This is view
+# Show how many active `Packages` are present in each `Collection`
+#
+# Fields:
+# :id: Id of the `Collection`.
+# :name: Name of the `Collection`.
+# :version: Version of the `Collection`.
+# :statuscode: Code telling whether the `Collection` is active.
+# :numpkgs: Number of Approved `Package`s in the `Collection`.
 #
 #  SELECT c.id, c.name, c.version, c.statuscode, count(*) AS numpkgs
 #  FROM packagelisting pl, collection c

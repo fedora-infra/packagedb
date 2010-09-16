@@ -145,6 +145,14 @@ class GroupPackageListingAclLog(Log):
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
 # pylint: disable-msg=C0103
+
+# Log a change to the packageDB.
+#
+# Fields:
+# :id: Primary key
+# :userId: Who made the change.
+# :changeTime: Time that the change occurred.
+# :description: Additional information about the change.
 LogTable = Table('log', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
     Column('username', Text(),  nullable=False),
@@ -165,6 +173,12 @@ PackageLogStatusCodeTable = Table('packagelogstatuscode', metadata,
 Grant_RW(PackageLogStatusCodeTable)
 
 
+# Log a change made to the Package table.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :packageId: The package that changed.
+# :action: What happened to the package.
 PackageLogTable = Table('packagelog', metadata,
     Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('packageid', Integer(), nullable=False),
@@ -188,6 +202,12 @@ CollectionLogStatusCodeTable = Table('collectionlogstatuscode', metadata,
 Grant_RW(CollectionLogStatusCodeTable)
 
 
+# Log a change made to the Collection table.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :collectionId: The collection that changed.
+# :action: What happened to the collection.
 CollectionLogTable = Table('collectionlog', metadata,
     Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('collectionid', Integer(), nullable=False),
@@ -211,6 +231,12 @@ PackageBuildLogStatusCodeTable = Table('packagebuildlogstatuscode', metadata,
 Grant_RW(PackageBuildLogStatusCodeTable)
 
 
+# Log changes to built packages.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :packageBuildId: The `PackageBuild` that changed.
+# :action: What happened to the `PackageBuild`.
 PackageBuildLogTable = Table('packagebuildlog', metadata,
     Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('packagebuildid', Integer(),  nullable=False),
@@ -225,6 +251,12 @@ PackageBuildLogTable = Table('packagebuildlog', metadata,
 Grant_RW(PackageBuildLogTable)
 
 
+# Log changes to packages in collections.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :packageListingId: The packageListing that changed.
+# :action: What happened to the package in the collection.
 PackageListingLogTable = Table('packagelistinglog', metadata,
     Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('packagelistingid', Integer(),  nullable=False),
@@ -254,6 +286,12 @@ PackageListingLogStatusCodeTable = Table('packagelistinglogstatuscode', metadata
 Grant_RW(PackageListingLogStatusCodeTable)
 
 
+# Log changes to the acls someone holds on a package.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :personPackageListingAclId: The Person-PackageListing ACL that's changed.
+# :action: What happened to the ACLs for the package.
 PersonPackageListingAclLogTable = Table('personpackagelistingacllog', metadata,
     Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('personpackagelistingaclid', Integer(), nullable=False),
@@ -271,6 +309,12 @@ DDL('ALTER TABLE personpackagelistingacllog CLUSTER ON personpackagelistingacllo
 Grant_RW(PersonPackageListingAclLogTable)
 
 
+# Log changes to the acls a group holds on the package.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :groupPackageListingAclId: The group-package acl that's changed.
+# :action: What happened to the ACLs for the package.
 GroupPackageListingAclLogTable = Table('grouppackagelistingacllog', metadata,
     Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
     Column('grouppackagelistingaclid', Integer(), nullable=False),

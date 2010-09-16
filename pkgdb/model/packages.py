@@ -70,12 +70,22 @@ DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
 # Tables
 #
 
-# Package and PackageListing are straightforward translations.  Look at these
-# if you're looking for a straightforward example.
-
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
 #pylint:disable-msg=C0103
+
+# data associated with an individual package.
+# 
+# fields:
+# :id: unique primary key
+# :name: name of the package
+# :summary: brief summary of what the package is
+# :description: longer description of the package
+# :reviewurl: url for the review ticket for this package
+# :statuscode: is the package ready to be built, in review, or other?
+# Package and PackageListing are straightforward translations.  Look at these
+# if you're looking for a straightforward example.
+
 PackageTable = Table('package', metadata,
     Column('id', Integer(), primary_key=True, autoincrement=True, nullable=False),
     Column('name', Text(), nullable=False),
@@ -94,6 +104,17 @@ DDL('ALTER TABLE package CLUSTER ON package_name_key', on='postgres')\
 Grant_RW(PackageTable)
 
 
+# Associates a `Package` with a `Collection`.
+# A package residing in a specific branch.
+# 
+# Fields:
+# :packageId: `Package` id that is in this `Collection`.
+# :collection: A `Collection` that holds this `Package`.
+# :owner: id from the accountsDB for the owner of the `Package` in this
+#    `Collection`.  There is a special orphaned account to use if you want
+#    to orphan the package.
+# :qacontact: Initial bugzilla QA Contact for this package.
+# :statuscode: Whether the `Package` was entered in the `Collection`.
 PackageListingTable = Table('packagelisting', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
     Column('packageid', Integer(), nullable=False),
@@ -119,6 +140,12 @@ Index('packagelisting_packageid_idx', PackageListingTable.c.packageid)
 Index('packagelisting_statuscode_idx', PackageListingTable.c.statuscode)
 DDL('ALTER TABLE packagelisting CLUSTER ON packagelisting_packageid_idx', on='postgres')\
     .execute_at('after-create', PackageListingTable)
+
+# Make sure that the changes we're about to make don't associate a
+# PackageBuild and PackageListing that reference different packages.  This
+# really feels like I'm defining the PackageBuild or PackageListing tables
+# wrong but I haven't been able to find my error so this trigger will have to
+# do the trick.
 package_build_agreement_pgfunc = """
     CREATE OR REPLACE FUNCTION package_build_agreement() RETURNS trigger
         AS $$
@@ -171,6 +198,7 @@ DDL('CREATE TRIGGER package_build_agreement_trigger BEFORE UPDATE ON packagelist
         ' FOR EACH ROW EXECUTE PROCEDURE package_build_agreement()', on='postgres')\
     .execute_at('after-create', PackageListingTable)
 
+# Create a trigger function to update statuschange on any statuscode update
 packgelisting_statuschange_pgfunc = """
     CREATE OR REPLACE FUNCTION packagelisting_statuschange() RETURNS trigger
         AS $$
@@ -201,6 +229,15 @@ BinaryPackagesTable = Table('binarypackages', metadata,
 Grant_RW(BinaryPackagesTable)
 
 
+# Specific version of a package to be built. 
+#
+# Fields:
+# :id: Easily referenced primary key
+# :packageId: The package this is a specific build of.
+# :epoch: RPM Epoch for this release of the `Package`.
+# :version: RPM Version string.
+# :release: RPM Release string including any disttag value.
+# :statuscode: What is happening with this particular version.
 PackageBuildTable = Table('packagebuild', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
     Column('packageid', Integer(), nullable=False),
@@ -271,6 +308,49 @@ DDL('CREATE TRIGGER remove_orphaned_builds AFTER DELETE ON packagebuildrepos '\
         ' FOR EACH ROW EXECUTE PROCEDURE remove_orphaned_builds()', on='postgres')\
     .execute_at('after-create', PackageBuildReposTable)
 
+
+# FIXME: Implement groups/categories/comps
+# Need to implement subpackages.
+#
+# create table SubPackage (
+#   id integer primary key,
+#   name text,
+#   packageBuildId integer
+# );
+#
+# create table Category (
+#   id primary key
+# );
+#
+# create table CategoryTranslation (
+# );
+#
+# create table SubPackageCategory (
+#   category text references Category(category),
+#   builtPackageListingId references BuiltPackageListing(id),
+# );
+#
+# create table GroupTranslation (
+# );
+# create table Group (
+#   id integer primary key
+# );
+#
+# Group (
+#   groupid
+#   collectionid
+# );
+# GroupCategory (
+#   groupId
+#   categoryId
+#   exclude
+# );
+# GroupTranslation(
+#   groupId
+#   language
+#   name
+#   description
+# );
 
 #pylint:enable-msg=C0103
 #
