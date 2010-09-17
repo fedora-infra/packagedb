@@ -16,10 +16,32 @@
 # may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+#                    Martin Bacovsky <mbacovsk@redhat.com>
 #
 '''
 Mapping of python classes to Database Tables.
 '''
+# :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
+# is not to name them with all uppercase
+# pylint: disable-msg=C0103
+
+#from sqlalchemy import MetaData
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import DDL
+from fedora.tg.json import SABase
+from turbogears.database import metadata
+
+# Base class for all of our model classes: By default, the data model is
+# defined with SQLAlchemy's declarative extension, but if you need more
+# control, you can switch to the traditional method.
+DeclarativeBase = declarative_base(cls=SABase, metadata=metadata)
+
+DDL('CREATE PROCEDURAL LANGUAGE plpgsql', on='postgres')\
+    .execute_at('before-create', metadata)
+DDL('DROP PROCEDURAL LANGUAGE plpgsql CASCADE', on='postgres')\
+    .execute_at('after-drop', metadata)
+
+
 ### FIXME:  We've broken up the one model file into several different files
 # for each piece of data in the model.  We need to update the code that
 # references this to get the classes from the separate files.  Then we can get
@@ -30,26 +52,13 @@ Mapping of python classes to Database Tables.
 #  pkgdb.model.
 # pylint: disable-msg=W0401,W0614
 from pkgdb.model.acls import *
+from pkgdb.model.statuses import *
 from pkgdb.model.collections import *
-from pkgdb.model.languages import *
+#from pkgdb.model.languages import *
 from pkgdb.model.logs import *
 from pkgdb.model.packages import *
 from pkgdb.model.prcof import *
-from pkgdb.model.statuses import *
 from pkgdb.model.apps import *
 from pkgdb.model.yumdb import *
+from pkgdb.model.migrate_version import *
 
-### FIXME: Create sqlalchemy schema.
-# By and large we'll follow steps similar to the Collection/Branch example
-# above.
-# List of tables not yet mapped::
-# StatusCode
-# CollectionLogStatusCode
-# PackageLogStatusCode
-# PackageBuildStatusCode
-# PackageBuildLogStatusCode
-# PackageListingLogStatusCode
-# PackageACLLogStatusCode
-# CollectionSet
-# CollectionLog
-# PackageBuildLog

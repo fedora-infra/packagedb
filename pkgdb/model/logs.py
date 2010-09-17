@@ -21,8 +21,9 @@
 Mapping of database tables for logs to python classes.
 '''
 
-from sqlalchemy import Table
+from sqlalchemy import Table, Column, Integer, Text, DateTime
 from sqlalchemy import select, literal_column, not_
+from sqlalchemy import ForeignKeyConstraint, func, DDL, Index
 from sqlalchemy.orm import polymorphic_union, relation
 from turbogears.database import metadata, mapper, get_engine
 
@@ -30,6 +31,7 @@ from fedora.tg.json import SABase
 
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.model.acls import PersonPackageListingAcl, GroupPackageListingAcl
+from pkgdb.lib.db import Grant_RW
 
 get_engine()
 
@@ -143,14 +145,192 @@ class GroupPackageListingAclLog(Log):
 # :C0103: Tables and mappers are constants but SQLAlchemy/TurboGears convention
 # is not to name them with all uppercase
 # pylint: disable-msg=C0103
-LogTable = Table('log', metadata, autoload = True)
 
-PackageLogTable = Table('packagelog', metadata, autoload = True)
-PackageListingLogTable = Table('packagelistinglog', metadata, autoload = True)
+# Log a change to the packageDB.
+#
+# Fields:
+# :id: Primary key
+# :userId: Who made the change.
+# :changeTime: Time that the change occurred.
+# :description: Additional information about the change.
+LogTable = Table('log', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+    Column('username', Text(),  nullable=False),
+    Column('changetime', DateTime(timezone=False), 
+        server_default=func.now(), nullable=False),
+    Column('description', Text()),
+)
+Index('log_changetime_idx', LogTable.c.changetime)
+DDL('ALTER TABLE log CLUSTER ON log_changetime_idx', on='postgres')\
+    .execute_at('after-create', LogTable)
+Grant_RW(LogTable)
+
+
+
+PackageLogStatusCodeTable = Table('packagelogstatuscode', metadata,
+    Column('statuscodeid', Integer(), autoincrement=False, primary_key=True, nullable=False),
+)
+Grant_RW(PackageLogStatusCodeTable)
+
+
+# Log a change made to the Package table.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :packageId: The package that changed.
+# :action: What happened to the package.
+PackageLogTable = Table('packagelog', metadata,
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('packageid', Integer(), nullable=False),
+    Column('action', Integer(), nullable=False),
+    ForeignKeyConstraint(['action'],['packagelogstatuscode.statuscodeid'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+    ForeignKeyConstraint(['logid'],['log.id'], 
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['packageid'],['package.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+)
+Index('packagelog_packageid_idx', PackageLogTable.c.packageid)
+DDL('ALTER TABLE packagelog CLUSTER ON packagelog_packageid_idx', on='postgres')\
+    .execute_at('after-create', PackageLogTable)
+Grant_RW(PackageLogTable)
+
+
+CollectionLogStatusCodeTable = Table('collectionlogstatuscode', metadata,
+    Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+)
+Grant_RW(CollectionLogStatusCodeTable)
+
+
+# Log a change made to the Collection table.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :collectionId: The collection that changed.
+# :action: What happened to the collection.
+CollectionLogTable = Table('collectionlog', metadata,
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('collectionid', Integer(), nullable=False),
+    Column('action', Integer(),  nullable=False),
+    ForeignKeyConstraint(['action'],['collectionlogstatuscode.statuscodeid'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+    ForeignKeyConstraint(['logid'],['log.id'], 
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['collectionid'],['collection.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+)
+Index('collectionlog_collectionid_idx', CollectionLogTable.c.collectionid)
+DDL('ALTER TABLE collectionlog CLUSTER ON collectionlog_collectionid_idx', on='postgres')\
+    .execute_at('after-create', CollectionLogTable)
+Grant_RW(CollectionLogTable)
+
+
+PackageBuildLogStatusCodeTable = Table('packagebuildlogstatuscode', metadata,
+    Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+)
+Grant_RW(PackageBuildLogStatusCodeTable)
+
+
+# Log changes to built packages.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :packageBuildId: The `PackageBuild` that changed.
+# :action: What happened to the `PackageBuild`.
+PackageBuildLogTable = Table('packagebuildlog', metadata,
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('packagebuildid', Integer(),  nullable=False),
+    Column('action', Integer(),  nullable=False),
+    ForeignKeyConstraint(['action'],['packagebuildlogstatuscode.statuscodeid'], 
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['logid'],['log.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+    ForeignKeyConstraint(['packagebuildid'],['packagebuild.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+)
+Grant_RW(PackageBuildLogTable)
+
+
+# Log changes to packages in collections.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :packageListingId: The packageListing that changed.
+# :action: What happened to the package in the collection.
+PackageListingLogTable = Table('packagelistinglog', metadata,
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('packagelistingid', Integer(),  nullable=False),
+    Column('action', Integer(),  nullable=False),
+    ForeignKeyConstraint(['action'],['packagelistinglogstatuscode.statuscodeid'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+    ForeignKeyConstraint(['logid'],['log.id'], 
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['packagelistingid'],['packagelisting.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+)
+Index('packagelistinglog_packagelistingid_idx', PackageListingLogTable.c.packagelistingid)
+DDL('ALTER TABLE packagelistinglog CLUSTER ON packagelistinglog_packagelistingid_idx', on='postgres')\
+    .execute_at('after-create', PackageListingLogTable)
+Grant_RW(PackageListingLogTable)
+
+
+PackageAclLogStatusCodeTable = Table('packageacllogstatuscode', metadata,
+    Column('statuscodeid', Integer(), autoincrement=False, primary_key=True, nullable=False),
+)
+Grant_RW(PackageAclLogStatusCodeTable)
+
+
+PackageListingLogStatusCodeTable = Table('packagelistinglogstatuscode', metadata,
+    Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+)
+Grant_RW(PackageListingLogStatusCodeTable)
+
+
+# Log changes to the acls someone holds on a package.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :personPackageListingAclId: The Person-PackageListing ACL that's changed.
+# :action: What happened to the ACLs for the package.
 PersonPackageListingAclLogTable = Table('personpackagelistingacllog', metadata,
-        autoload = True)
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('personpackagelistingaclid', Integer(), nullable=False),
+    Column('action', Integer(),  nullable=False),
+    ForeignKeyConstraint(['action'],['packageacllogstatuscode.statuscodeid'], 
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['logid'],['log.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+    ForeignKeyConstraint(['personpackagelistingaclid'],['personpackagelistingacl.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+)
+Index('personpackagelistingacllog_personpackagelistingaclid_idx', PersonPackageListingAclLogTable.c.personpackagelistingaclid)
+DDL('ALTER TABLE personpackagelistingacllog CLUSTER ON personpackagelistingacllog_personpackagelistingaclid_idx', on='postgres')\
+    .execute_at('after-create', PersonPackageListingAclLogTable)
+Grant_RW(PersonPackageListingAclLogTable)
+
+
+# Log changes to the acls a group holds on the package.
+#
+# Fields:
+# :logId: The id of the log entry.
+# :groupPackageListingAclId: The group-package acl that's changed.
+# :action: What happened to the ACLs for the package.
 GroupPackageListingAclLogTable = Table('grouppackagelistingacllog', metadata,
-        autoload = True)
+    Column('logid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    Column('grouppackagelistingaclid', Integer(), nullable=False),
+    Column('action', Integer(),  nullable=False),
+    ForeignKeyConstraint(['action'],['packageacllogstatuscode.statuscodeid'], 
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['logid'],['log.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+    ForeignKeyConstraint(['grouppackagelistingaclid'],['grouppackagelistingacl.id'], 
+        onupdate="CASCADE", ondelete="RESTRICT"),
+)
+Index('grouppackagelistingacllog_grouppackagelistingaclid_idx', GroupPackageListingAclLogTable.c.grouppackagelistingaclid)
+DDL('ALTER TABLE grouppackagelistingacllog CLUSTER ON grouppackagelistingacllog_grouppackagelistingaclid_idx', on='postgres')\
+    .execute_at('after-create', GroupPackageListingAclLogTable)
+Grant_RW(GroupPackageListingAclLogTable)
+
 
 logJoin = polymorphic_union (
         {'pkglog': select((LogTable.join(

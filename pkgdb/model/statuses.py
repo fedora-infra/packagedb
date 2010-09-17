@@ -21,7 +21,9 @@
 Mapping of database tables related to Statuses to python classes
 '''
 
-from sqlalchemy import Table
+from sqlalchemy import Table, Column, Integer, String, Text
+from sqlalchemy import ForeignKeyConstraint, DDL
+from sqlalchemy import text, Index
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine
@@ -29,10 +31,32 @@ from turbogears.database import metadata, mapper, get_engine
 from fedora.tg.json import SABase
 
 from pkgdb.model.packages import Package, PackageListing
-from pkgdb.model.collections import CollectionPackage, Collection
 from pkgdb.model.acls import PersonPackageListingAcl, GroupPackageListingAcl
+from pkgdb.lib.db import Grant_RW, initial_data
 
 get_engine()
+
+# status codes constants
+SC_ACTIVE = 1
+SC_ADDED = 2
+SC_APPROVED = 3
+SC_AWAITING_BRANCH = 4
+SC_AWAITING_DEVELOPMENT = 5
+SC_AWAITING_QA = 6
+SC_AWAITING_PUBLISH = 7
+SC_AWAITING_REVIEW = 8
+SC_EOL = 9
+SC_DENIED = 10
+SC_MAINTENENCE = 11
+SC_MODIFIED = 12
+SC_OBSOLETE = 13
+SC_ORPHANED = 14
+SC_OWNED = 15
+SC_REJECTED = 16
+SC_REMOVED = 17
+SC_UNDER_DEVELOPMENT = 18
+SC_UNDER_REVIEW = 19
+SC_DEPRECATED = 20
 
 #
 # Mapped Tables
@@ -45,23 +69,212 @@ get_engine()
 # code as # these variables are special.  They chould be treated more like
 # class definitions than constants.  Oh well.
 # pylint: disable-msg=C0103
-StatusTranslationTable = Table('statuscodetranslation', metadata, autoload=True)
 
-CollectionStatusTable = Table('collectionstatuscode', metadata, autoload=True)
+# statuscode
+# Status of the various components.
+#
+# Fields:
+# :id: The id of a statusCode.  Can be used to reference a status from another
+#   table.
+statuscode = Table('statuscode', metadata,
+    Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
+)
+initial_data(statuscode,
+    ['id'],
+    *[[id] for id in range(1, 21)])
+Grant_RW(statuscode)
+
+
+# statuscodetranslation
+# Contains translations of the status codes into natural languages.
+#
+# Fields:
+# :statusCodeId: The id of the status that is referenced from other tables.
+# :language: The language code for the natural language used.
+# :statusName: The translated status code.
+# :description: A longer description of what the status means.  May be used
+#    in tooltips or help pages.
+StatusTranslationTable = Table('statuscodetranslation', metadata,
+    Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
+    Column('language', String(32), server_default=text("'C'"), primary_key=True, nullable=False),
+    Column('statusname', Text(), nullable=False),
+    Column('description', Text()),
+    ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+initial_data(StatusTranslationTable, 
+    ('statuscodeid', 'language', 'statusname', 'description'), 
+	(SC_ACTIVE, 'C', 'Active', ''),
+	(SC_ADDED, 'C', 'Added', ''),
+	(SC_APPROVED, 'C', 'Approved', ''),
+	(SC_AWAITING_BRANCH, 'C', 'Awaiting Branch', ''),
+	(SC_AWAITING_DEVELOPMENT, 'C', 'Awaiting Development', ''),
+	(SC_AWAITING_QA, 'C', 'Awaiting QA', ''),
+	(SC_AWAITING_PUBLISH, 'C', 'Awaiting Publish', ''),
+	(SC_AWAITING_REVIEW, 'C', 'Awaiting Review', ''),
+	(SC_EOL, 'C', 'EOL', ''),
+	(SC_DENIED, 'C', 'Denied', ''),
+	(SC_MAINTENENCE, 'C', 'Maintenence', ''),
+	(SC_MODIFIED, 'C', 'Modified', ''),
+	(SC_OBSOLETE, 'C', 'Obsolete', ''),
+	(SC_ORPHANED, 'C', 'Orphaned', ''),
+	(SC_OWNED, 'C', 'Owned', ''),
+	(SC_REJECTED, 'C', 'Rejected', ''),
+	(SC_REMOVED, 'C', 'Removed', ''),
+	(SC_UNDER_DEVELOPMENT, 'C', 'Under Development', ''),
+	(SC_UNDER_REVIEW, 'C', 'Under Review', ''),
+	(SC_DEPRECATED, 'C', 'Deprecated', ''))
+Index('statuscodetranslation_statusname_idx', StatusTranslationTable.c.statusname)
+Grant_RW(StatusTranslationTable)
+
+
+CollectionStatusTable = Table('collectionstatuscode', metadata,
+    Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
+    ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+initial_data(CollectionStatusTable,
+    ['statuscodeid'],
+    [SC_ACTIVE], [SC_EOL], [SC_REJECTED], [SC_UNDER_DEVELOPMENT])
+Grant_RW(CollectionStatusTable)
+
+# Create a trigger to update the available log actions depending on the
+# available status codes for that table.
+# Jan 20 2007 Tested:
+# pgsql 8.1
+# insert into packagestatuscode also added to packagelogstatuscode
+# delete from packagestatuscode also deleted from packagelogstatuscode
+# update packagestatuscode propagated to packagelogstatuscode
+add_status_to_log_pgfunc = """
+    CREATE OR REPLACE FUNCTION add_status_to_log() RETURNS trigger
+        AS $_$
+    DECLARE
+      cmd text;
+      tableName text;
+    BEGIN
+      -- 8.2 uses a different name:
+      -- tableName := regexp_replace(TG_TABLE_NAME, 'statuscode$', 'logstatuscode');
+      tableName := regexp_replace(TG_RELNAME, 'statuscode$', 'logstatuscode');
+      if (TG_OP = 'INSERT') then
+        cmd := 'insert into ' || tableName || ' values (' || NEW.statusCodeId ||')';
+        execute cmd;
+        return NEW;
+      elsif (TG_OP = 'DELETE') then
+        cmd := 'delete from ' || tableName || ' where statusCodeId = ' || OLD.statusCodeId;
+        execute cmd;
+        return OLD;
+      elsif (TG_OP = 'UPDATE') then
+        cmd := 'update ' || tableName || ' set statusCodeId = ' || NEW.statusCodeId || ' where statusCodeId = ' || OLD.statusCodeId;
+        execute cmd;
+        return NEW;
+      end if;
+      return NULL;
+    END;
+    $_$
+        LANGUAGE plpgsql;
+    """
+DDL(add_status_to_log_pgfunc, on='postgres')\
+    .execute_at('before-create', CollectionStatusTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+
+# FIXME: This trigger is created just in postgres. If it is needed in other DB
+# (in sqlite for testing) it has to be added manually
+DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON collectionstatuscode '
+        'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
+    .execute_at('after-create', CollectionStatusTable)
+
+
+# <something>statuscode tables hold status codes specific to a particular table.
+# Insert the status codes that a particular table can have into each of these
+# tables.  This allows us to use foreign key constraints to limit what the
+# db sees and also allows an easy query to return the human readable
+# statusNames for the table.
+
 
 # Package Listing Status Table.  Like the other status tables, this one has to
 # connect translations to the statuses particular to the PackageListing.  This
 # make it somewhat more convoluted but all the status tables follow the same
 # pattern.
 PackageListingStatusTable = Table('packagelistingstatuscode', metadata,
-        autoload=True)
+    Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
+    ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+initial_data(PackageListingStatusTable,
+    ['statuscodeid'],
+    [SC_APPROVED], [SC_AWAITING_BRANCH], [SC_AWAITING_REVIEW], [SC_DENIED], 
+    [SC_OBSOLETE], [SC_ORPHANED], [SC_REMOVED], [SC_DEPRECATED])
+# FIXME: This trigger is created just in postgres. If it is needed in other DB
+# (in sqlite for testing) it has to be added manually
+DDL(add_status_to_log_pgfunc, on='postgres')\
+    .execute_at('before-create', PackageListingStatusTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON packagelistingstatuscode '
+        'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
+    .execute_at('after-create', PackageListingStatusTable)
+Grant_RW(PackageListingStatusTable)
+
 
 # Package Status Table.
-PackageStatusTable = Table('packagestatuscode', metadata, autoload=True)
+PackageStatusTable = Table('packagestatuscode', metadata,
+    Column('statuscodeid', Integer(), primary_key=True, autoincrement=False, nullable=False),
+    ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+initial_data(PackageStatusTable,
+    ['statuscodeid'],
+    [SC_APPROVED], [SC_AWAITING_REVIEW], [SC_DENIED], [SC_REMOVED], [SC_UNDER_REVIEW])
+# FIXME: This trigger is created just in postgres. If it is needed in other DB
+# (in sqlite for testing) it has to be added manually
+DDL(add_status_to_log_pgfunc, on='postgres')\
+    .execute_at('before-create', PackageStatusTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+
+DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON packagestatuscode '
+        'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
+    .execute_at('after-create', PackageStatusTable)
+Grant_RW(PackageStatusTable)
+
+
 
 # Package Acl Status Table
-PackageAclStatusTable = Table('packageaclstatuscode', metadata, autoload=True)
+PackageAclStatusTable = Table('packageaclstatuscode', metadata,
+    Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+initial_data(PackageAclStatusTable,
+    ['statuscodeid'],
+    [SC_APPROVED], [SC_AWAITING_REVIEW], [SC_DENIED], [SC_OBSOLETE])
+DDL(add_status_to_log_pgfunc, on='postgres')\
+    .execute_at('before-create', PackageAclStatusTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+# FIXME: This trigger is created just in postgres. If it is needed in other DB
+# (in sqlite for testing) it has to be added manually
+DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON packageaclstatuscode '
+        'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
+    .execute_at('after-create', PackageAclStatusTable)
+Grant_RW(PackageAclStatusTable)
 
+
+PackageBuildStatusCodeTable = Table('packagebuildstatuscode', metadata,
+    Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
+    ForeignKeyConstraint(['statuscodeid'], ['statuscode.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+)
+initial_data(PackageBuildStatusCodeTable,
+    ['statuscodeid'],
+    [SC_APPROVED], [SC_AWAITING_DEVELOPMENT], [SC_AWAITING_QA], [SC_AWAITING_PUBLISH], 
+    [SC_AWAITING_REVIEW], [SC_DENIED], [SC_OBSOLETE])
+DDL(add_status_to_log_pgfunc, on='postgres')\
+    .execute_at('before-create', PackageBuildStatusCodeTable)
+# DROP is not necessary as we drop plpgsql with CASCADE
+# FIXME: This trigger is created just in postgres. If it is needed in other DB
+# (in sqlite for testing) it has to be added manually
+DDL('CREATE TRIGGER add_status_to_action AFTER INSERT OR DELETE OR UPDATE ON packagebuildstatuscode '
+        'FOR EACH ROW EXECUTE PROCEDURE add_status_to_log()', on='postgres')\
+    .execute_at('after-create', PackageBuildStatusCodeTable)
+Grant_RW(PackageBuildStatusCodeTable)
 
 #
 # Mapped Classes
@@ -145,9 +358,6 @@ class PackageAclStatus(BaseStatus):
 
 mapper(StatusTranslation, StatusTranslationTable)
 mapper(CollectionStatus, CollectionStatusTable, properties={
-    'collections': relation(Collection, backref=backref('status')),
-    'collectionPackages': relation(CollectionPackage,
-        backref=backref('status')),
     'translations': relation(StatusTranslation,
         order_by=StatusTranslationTable.c.language,
         primaryjoin=StatusTranslationTable.c.statuscodeid \

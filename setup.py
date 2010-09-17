@@ -48,9 +48,11 @@ class BuildScripts(_build_scripts, object):
 
         '''
         for script in self.scripts:
+            log.debug(script)
             # If there's a script name with .in attached, make substitutions
             infile = script + '.in'
             if not os.path.exists(infile):
+                log.debug("%s not found", script)
                 continue
             if not self.force and not newer (infile, script):
                 log.debug("not substituting in %s (up-to-date)", script)
@@ -179,9 +181,11 @@ setup(
         "TurboMail",
         "python_fedora >= 0.3.12",
         "SQLAlchemy >= 0.5.5",
+        "python_migrate >= 0.5.0"
+        "pytz"
     ],
-    scripts = ["start-pkgdb", "pkgdb.wsgi", "server-scripts/pkgdb-sync-yum",
-        "server-scripts/pkgdb-sync-bugzilla", "clients/pkgdb-client",],
+    scripts = ["start-pkgdb", "pkgdb.wsgi", "manage_db", "server-scripts/pkgdb-sync-yum",
+        "server-scripts/pkgdb-sync-bugzilla", "clients/pkgdb-client"],
     # Note: these need to be installed somewhere in the data directory so that
     # the end user can upgrade the db "update-schema/pkgdb-0.3.10-0.3.11.py"
     # "update-schema/*"

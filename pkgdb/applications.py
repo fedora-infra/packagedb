@@ -465,7 +465,8 @@ class ApplicationController(controllers.Controller):
         '''
         self.app_title = app_title
 
-    @expose(template='pkgdb.templates.application', allow_json=True)
+    @expose(template='pkgdb.templates.application')
+    @expose('json')
     def default(self, app_name=None, repo='F-11-i386'):
         '''Retrieve application by its name.
 
@@ -493,10 +494,9 @@ class ApplicationController(controllers.Controller):
                              ' it.') % {'app': app_name})
             if request_format() != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
-                return error
-        
-        tagscore = application.scores
 
+            return error
+        
         #pylint:disable-msg=E1101
         comment_query = session.query(Comment).filter(
             Comment.application==application).order_by(Comment.time)
@@ -509,10 +509,9 @@ class ApplicationController(controllers.Controller):
 
         return dict(title=_('%(title)s -- %(app)s') % {
             'title': self.app_title, 'app': application.name},
-                    tagscore=tagscore,
-                    app=application,
-                    comments=comments)
-
+                status=True,
+                app=application,
+                comments=comments)
 
 class AppIconController(controllers.Controller):
     '''Application icon API.
