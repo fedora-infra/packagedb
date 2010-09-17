@@ -44,8 +44,7 @@ mail.encoding='utf-8'
 mail.debug=True
 
 # DATABASE
-sqlalchemy.dburi="postgres://pkgdbadmin:bunbunbun@localhost/pkgdb"
-# sqlalchemy.dburi="sqlite://%(current_dir_uri)s/devdata.sqlite"
+sqlalchemy.dburi="postgres://postgres@/pkgdb"
 database.common_user='pkgdbadmin'
 database.readonly_user='pkgdbreadonly'
 

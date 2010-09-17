@@ -75,35 +75,37 @@ Get and Build the Source
 
 Configuration files
 ~~~~~~~~~~~~~~~~~~~
-First copy the pkgdb.cfg.sample file to pkgdb.cfg.  Next, edit pkgdb.cfg to
-configure the server to see your database.  You'll need to set fas.username to
-a username (your Fedora Account System username will work), fas.password (if
-you use your username, your password will work), and sqlalchemy.dburi.  
+First copy the pkgdb.cfg.sample file to pkgdb.cfg, test.cfg.sample to test.cfg 
+and db_setup.cfg.sample to db_setup.cfg. 
 
 We use three different types of access to the database.
 o superuser - to create and modify database schema (username: postgres or test)
 o common - used by webserver to access database for example (username: pkgdbadmin)
 o read-only - read-only access (username: pkgdbreadonly)
 
-The dburi line will differ according to purpose of the config file.
+Edit each .cfg to configure the server to see your database.  
+You'll need to set fas.username to a username (your Fedora Account System username will work), 
+fas.password (if you use your username, your password will work), and sqlalchemy.dburi.  
 
-In pkgdb.cfg to be used by webserver::
+The dburi will differ according to purpose of the config file.
+
+In pkgdb.cfg that is used by webserver and pkgdb tools scripts::
 
   sqlalchemy.dburi="postgres://pkgdbadmin:bunbunbun@localhost/pkgdb"
 
 In test.cfg it is more complex::
 
-  sqlalchemy.dburi="postgres://pkgdbadmin:pkgdbadmin@127.0.0.1/test"
+  sqlalchemy.dburi="postgres://pkgdbadmin:bunbunbun@127.0.0.1/test"
   database.admin_dburi="postgres://test:test@127.0.0.1/test"
   database.common_user='pkgdbadmin'
   database.readonly_user='pkgdbreadonly'
 
 The testing framework is creating the DB during the tests so it has to know access to 
-superuser account. The framework uses dburi set up in database.admin_dburi for that, 
-so that it could spare sqlalchemy.dburi for dburi used by webserver or import scripts
+DB superuser account. The framework uses dburi set up in database.admin_dburi for that, 
+so that it could spare sqlalchemy.dburi for dburi used by webserver or tools
 that are tested.
 
-In db_setup.cfg that is used for db schema management
+In db_setup.cfg that is used for db schema management::
 
   sqlalchemy.dburi="postgres://postgres@/pkgdb"
   database.common_user='pkgdbadmin'
