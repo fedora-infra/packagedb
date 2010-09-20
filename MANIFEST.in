@@ -7,7 +7,6 @@ include manage_db.in
 exclude manage_db
 include server-scripts/*.in
 include server-scripts/*.cfg
-include server-scripts/transform-ids.py
 exclude server-scripts/pkgdb-sync-repo
 recursive-include update-schema *
 include AUTHORS README COPYING ChangeLog NEWS
