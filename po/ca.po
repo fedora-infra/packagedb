@@ -2,14 +2,15 @@
 # Copyright (C) 2009 ORGANIZATION
 # This file is distributed under the same license as the fedora-packagedb
 # project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2009.
+#
+# Robert Antoni Buj Gelonch <robert.buj@gmail.com>, 2010
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fedora-packagedb 0.4.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2009-11-11 16:32-0800\n"
-"PO-Revision-Date: 2010-08-30 06:14+0100\n"
+"PO-Revision-Date: 2010-09-20 04:52+0100\n"
 "Last-Translator: Robert Antoni Buj Gelonch <robert.buj@gmail.com>\n"
 "Language-Team: Catalan <fedora@softcatala.net>\n"
 "MIME-Version: 1.0\n"
@@ -17,6 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 0.9.4\n"
 "X-Poedit-Language: Catalan\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: pkgdb/bugs.py:80
 msgid "Can only store bugzilla.Bug type"
