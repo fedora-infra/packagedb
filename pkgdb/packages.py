@@ -29,7 +29,7 @@ Controller for displaying PackageBuild(Rpm) related information
 
 from turbogears import controllers, expose, redirect
 
-from fedora.tg.util import request_format
+from fedora.tg.tg1utils import request_format
 
 from pkgdb.model import PackageBuild, Repo
 from pkgdb import _
