@@ -61,7 +61,7 @@ from pkgdb import _
 from pkgdb.lib.validators import CollectionNameVersion, SetOf, \
         IsCollectionSimpleNameRegex
 
-from fedora.tg.util import jsonify_validation_errors
+from fedora.tg.tg1utils import jsonify_validation_errors
 
 
 #
