@@ -181,8 +181,8 @@ setup(
         "TurboMail",
         "python_fedora >= 0.3.12",
         "SQLAlchemy >= 0.5.5",
-        "python_migrate >= 0.5.0"
-        "pytz"
+        "sqlalchemy_migrate >= 0.5.0",
+        #"pytz"
     ],
     scripts = ["start-pkgdb", "pkgdb.wsgi", "manage_db", "server-scripts/pkgdb-sync-yum",
         "server-scripts/pkgdb-sync-bugzilla", "clients/pkgdb-client"],
