@@ -96,66 +96,6 @@ DDL('ALTER TABLE collection CLUSTER ON collection_name_key', on='postgres')\
 Grant_RW(CollectionTable)
 
 
-# Associate the packages in one collection with another collection.
-#
-# This table is used to allow one `Collection` to be based on another with
-# certain packages that are overridden or not available in the `base`
-# `Collection`.  For instance, a `Collection` may be used to experiment with
-# a major version upgrade of python and all the dependent packages that need
-# to be rebuilt against it.  In this scenario, the base might be
-# "Fedora Core - devel".  The overlay "FC devel python3".  The overlay will
-# contain python packages that override what is present in the base.  Any
-# package that is not present in the overlay will also be searched for in
-# the base collection.
-# Once we're ready to commit to using the upgraded set of packages, we want
-# to merge them into devel.  To do this, we will actually move the packages
-# from the overlay into the base collection.  Probably, at this time, we
-# will also mark the overlay as obsolete.
-#
-# Keeping things consistent is a bit problematic because we have to search for
-# for packages in the collection plus all the bases (an overlay can have
-# multiple bases) and any bases that they're overlays for.  SQL doesn't do
-# recursion -- in and of itself so we have to work around it in one of these
-# ways:
-# 1) Do the searching for packages in code; either a trigger on the server or
-#    in any application code which looks at the database.
-# 2) Use a check constraint to only have one level of super/subset.  So if
-#    devel contains python-2.5, devel cannot be a subset and python-2.5 cannot
-#    be a superset to any other collection.  Have an insert trigger that
-#    checks for this.
-# 3) Copy the packages.  When we make one collection a subset of another, add
-#    all its packages including subset's packages to the superset.  Have an
-#    insert trigger on packageList and packageListVer that check whether this
-#    collection is a subset and copies the package to other collections.
-# Option 1, in application code may be the simplest to implement.  However,
-# option 3 has the benefit of running during insert rather than select.  As
-# always, doing something within the database rather than application logic
-# allows us to keep better control over the information.
-#
-# * Note: Do not have an ondelete trigger as there may be overlap between the
-# packages in the parent and child collection.
-#
-# Fields:
-# :overlay: The `Collection` which overrides packages in the base.
-# :base: The `Collection` which provides packages not explicitly listed in
-#    `overlay`.
-# :priority: When searching for a package within a collection, first check the
-#    `overlay`.  If not found check the lowest priority `base` collection and
-#    any `base` Collections that belong to it.  Then check the next lowest
-#    priority `base` until we find the package or run out. `base`s of the same
-#    `overlay` with the same `priority` are searched in an undefined order.
-CollectionSetTable = Table('collectionset', metadata,
-    Column('overlay', Integer(),  primary_key=True, autoincrement=False, nullable=False),
-    Column('base', Integer(),  primary_key=True, autoincrement=False, nullable=False),
-    Column('priority', Integer(), PassiveDefault(text('0'))),
-    ForeignKeyConstraint(['overlay'],['collection.id'],
-        onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['base'],['collection.id'],
-        onupdate="CASCADE", ondelete="CASCADE"),
-)
-Grant_RW(CollectionSetTable)
-
-
 # `Collection`s with their own branch in the VCS have extra information.
 #
 # Fields:
