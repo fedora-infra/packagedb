@@ -1,14 +1,12 @@
 include pkgdb.wsgi.in
 include setup.py
 include httpd-pkgdb.conf.in
-include pkgdb.sql
 include start-pkgdb.in
 exclude start-pkgdb
 include manage_db.in
 exclude manage_db
 include server-scripts/*.in
 include server-scripts/*.cfg
-include server-scripts/transform-ids.py
 exclude server-scripts/pkgdb-sync-repo
 recursive-include update-schema *
 include AUTHORS README COPYING ChangeLog NEWS
