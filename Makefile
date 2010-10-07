@@ -4,6 +4,9 @@ dblist:
 test:
 	nosetests -w . tests/unit -a \!slow
 
+testcurr:
+	nosetests -v -w . tests/ -a current
+
 testall:
 	nosetests -w . tests/
 
@@ -31,4 +34,10 @@ resetdb:
 
 pylint-model:
 	pylint -e -i y -f colorized pkgdb/model/
+
+coverage:
+	nosetests -w . tests/unit -v  --with-coverage --cover-erase --cover-inclusive --cover-package=pkgdb --with-xunit
+
+coveragehtml:
+	nosetests -w . tests/unit -v  --with-coverage --cover-erase --cover-inclusive --cover-package=pkgdb --cover-html
 
