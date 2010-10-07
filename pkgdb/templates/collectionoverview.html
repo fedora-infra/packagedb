@@ -16,16 +16,18 @@
             Number of Packages
           </th><th class="ColumnHead" id="actionhead" title="Actions that may be carried out against all the packages in this collection.  Usually need to be in the cvsadmin group to operate on these">
             Actions
+          </th><th class="ColumnHead" id="branchnamehead" title="Git Branchname - Name of the branch in the Git VCS">
+            Branch name
           </th><th class="ColumnHead" id="shortnamehead" title="Collection Shortname - Short name of the Collection">
             Shortname
         </th></tr>
         <tr py:for="collection, numpkgs  in collections">
           <td class="collection">
-            <a href="${tg.url('/collections/name/%s' % collection.simple_name)}"
+            <a href="${tg.url('/collections/name/%s' % collection.branchname)}"
                py:content="collection.name">Collection Name</a>
           </td>
           <td class="version">
-            <a href="${tg.url('/collections/name/%s' % collection.simple_name)}"
+            <a href="${tg.url('/collections/name/%s' % collection.branchname)}"
                py:content="collection.version">Collection Version</a>
           </td>
           <td py:content="numpkgs" class="package">
@@ -35,14 +37,20 @@
             <?python
         from pkgdb.lib.utils import admin_grp
         ?>
-            <form py:if="collection.status.locale['C'].statusname != 'EOL' and hasattr(collection, 'branchname') and collection.branchname and collection.koji_name and collection.branchname != 'devel'" action="${tg.url('/collections/mass_branch/' + collection.simple_name)}" method="POST">
+            <form py:if="collection.status.locale['C'].statusname != 'EOL' and hasattr(collection, 'branchname') and collection.branchname and collection.koji_name and collection.branchname != 'devel'" action="${tg.url('/collections/mass_branch/' + collection.branchname)}" method="POST">
               <input py:if="not tg.identity.anonymous and admin_grp in tg.identity.groups" type="submit" value="Branch All" class="Active MassBranchButton" title="Branch every package in 'Fedora devel' to this branch.  This copies the permissions and makes it possible to create a branch on the cvs server."/>
               <input py:if="tg.identity.anonymous or not admin_grp in tg.identity.groups" type="submit" disabled="true" value="Branch All" class="Inactive MassBranchButton"/>
             </form>
           </td>
           <td class="shortname">
-            <a href="${tg.url('/collections/name/%s' % collection.simple_name)}"
+            <a href="${tg.url('/collections/name/%s' % collection.branchname)}"
                py:content="collection.branchname">
+              Git branch name
+            </a>
+          </td>
+          <td class="shortname">
+            <a href="${tg.url('/collections/name/%s' % collection.branchname)}"
+               py:content="collection.short_name">
               Collection Shortname
             </a>
           </td>

@@ -156,6 +156,10 @@ Examples:
             if group not in config['pkgdb.knowngroups']:
                 raise ArgumentsError('Do not know how to handle group %s at this time' % group)
 
+    # translate the old CVS branch names to the git format
+    opts.branchList = [bn == 'devel' and 'master' or bn.lower().replace('-', '') 
+            for bn in opts.branchList]
+
     return opts
 
 def clone_branch(pkgdb, options):

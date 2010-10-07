@@ -93,14 +93,14 @@ import simplejson
         <tr id="${pkg.collection.branchname}">
           <td>
             <py:choose>
-              <py:when test="pkg.collection.gitbranchname=='master' and pkg.status.locale['C'].statusname=='Approved'">
+              <py:when test="pkg.collection.branchname=='master' and pkg.status.locale['C'].statusname=='Approved'">
                 <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s;hb=%s'
-                  % (pkgUrlName, pkg.collection.gitbranchname, pkg.collection.gitbranchname)}">
+                  % (pkgUrlName, pkg.collection.branchname, pkg.collection.branchname)}">
                   <span class="invisible">Spec File</span></a>
               </py:when>
-              <py:when test="pkg.collection.gitbranchname and pkg.status.locale['C'].statusname=='Approved'">
+              <py:when test="pkg.collection.branchname and pkg.status.locale['C'].statusname=='Approved'">
                 <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s/master;hb=%s/master'
-                  % (pkgUrlName, pkg.collection.gitbranchname, pkg.collection.gitbranchname)}">
+                  % (pkgUrlName, pkg.collection.branchname, pkg.collection.branchname)}">
                   <span class="invisible">Spec File</span></a>
               </py:when>
               <py:when test="pkg.status.locale['C'].statusname=='Approved' and pkg.collection.status.locale['C'].statusname != 'EOL'">

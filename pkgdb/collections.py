@@ -47,7 +47,7 @@ import koji
 from fedora.tg.tg1utils import json_or_redirect, request_format, tg_url
 
 from pkgdb import _
-from pkgdb.model.collections import CollectionPackage, Collection, Branch
+from pkgdb.model.collections import CollectionPackage, Collection
 from pkgdb.model.packages import Package, PackageListing, PackageTable
 from pkgdb.notifier import EventLogger
 from pkgdb.lib.utils import admin_grp, STATUS
@@ -76,7 +76,7 @@ class Collections(controllers.Controller):
         :returns: list of collections
         '''
         #pylint:disable-msg=E1101
-        collections = Collection.query.options(lazyload('listings'),
+        collections = session.query(Collection).options(lazyload('listings'),
                 lazyload('status')).add_column(CollectionPackage.numpkgs
                 ).filter(Collection.id==CollectionPackage.id).order_by(
             Collection.name, Collection.version)
@@ -105,7 +105,7 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             #pylint:disable-msg=E1101
-            collection = Collection.by_simple_name(collctn)
+            collection = session.query(Collection).filter_by(branchname=collctn).one()
         except InvalidRequestError:
             # Either the name doesn't exist or somehow it references more than
             # one value
@@ -174,7 +174,7 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             #pylint:disable-msg=E1101
-            collection_entry = Collection.query.options(
+            collection_entry = session.query(Collection).options(
                     lazyload('listings2'), eagerload('status.locale'))\
                     .filter_by(id=collection_id).one()
         except InvalidRequestError:
@@ -204,7 +204,7 @@ class Collections(controllers.Controller):
 
         # Retrieve the packagelist for this collection
         # pylint:disable-msg=E1101
-        packages = Package.query.options(lazyload('listings2.people2'),
+        packages = session.query(Package).options(lazyload('listings2.people2'),
                 lazyload('listings2.groups2')).join('listings2')\
                         .filter_by(collectionid=collection_id)\
                         .filter(Package.statuscode!=STATUS['Removed'])
@@ -357,7 +357,7 @@ class Collections(controllers.Controller):
         # Retrieve the collection to make the new branches on
         try:
             #pylint:disable-msg=E1101
-            to_branch = Branch.query.filter_by(branchname=branch).one()
+            to_branch = session.query(Collection).filter_by(branchname=branch).one()
         except InvalidRequestError, e:
             session.rollback() #pylint:disable-msg=E1101
             flash(_('Unable to locate a branch for %(branch)s') % {
@@ -387,7 +387,7 @@ class Collections(controllers.Controller):
 
         # Retrieve the devel branch for comparison
         #pylint:disable-msg=E1101
-        devel_branch = Branch.query.filter_by(branchname='devel').one()
+        devel_branch = session.query(Collection).filter_by(branchname='master').one()
         #pylint:enable-msg=E1101
 
         # Retrieve the package from koji
@@ -412,19 +412,31 @@ class Collections(controllers.Controller):
         flash(_('Mass branch started.  You will be emailed the results.'))
         return {}
 
+
     @expose(allow_json=True)
     def by_simple_name(self, collctn_name, collctn_ver):
         '''
         Retrieve a collection by its simple_name
         '''
-        collection = Collection.query.filter_by( #pylint:disable-msg=E1101
+        try:
+            collection = session.query(Collection).filter_by( #pylint:disable-msg=E1101
                 name=collctn_name, version=collctn_ver).one()
-        return dict(name=collection.simple_name)
+        except InvalidRequestError, e:
+            return dict(status=False,
+                message=_('Collection %s %s was not found' % (
+                    collctn_name, collctn_ver)))
+        return dict(name=collection.branchname, status=True)
+
 
     @expose(allow_json=True)
     def by_canonical_name(self, collctn):
         '''
         Retrieve a collection by its canonical_name
         '''
-        collection, version = Collection.by_simple_name(collctn)
-        return dict(collctn_name=collection, collctn_ver=version)
+        try:
+            collection = session.query(Collection).filter_by(branchname=collctn).one()
+        except InvalidRequestError, e:
+            return dict(status=False,
+                message=_('Collection with branchname %s was not found' % collctn))
+        return dict(status=True, collctn_name=collection.name, 
+            collctn_ver=collection.version)

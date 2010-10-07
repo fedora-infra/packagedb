@@ -431,7 +431,7 @@ class PackageBuildImporter(object):
             #pylint:enable-msg=E1101
         except NoResultFound:
             raise PkgImportError('The package (%s) is not '
-                    'included in requested collection (%s)!' % (package.name, self.collection.simple_name))
+                    'included in requested collection (%s)!' % (package.name, self.collection.short_name))
 
         return True
             

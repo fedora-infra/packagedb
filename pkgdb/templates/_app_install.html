@@ -8,7 +8,7 @@
           <div style="display: none" dojoType="dojox.layout.ContentPane">
           <div id="app-install">
             <div py:for="(col, builds) in app.builds_by_collection().iteritems()">
-              <h4>${col.simple_name}</h4>
+              <h4>${col.short_name}</h4>
                 <ul>
                     <li py:for="b in builds">
                         <a href="${b.download_path()}">${str(b)}</a>

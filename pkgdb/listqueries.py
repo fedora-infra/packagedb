@@ -46,20 +46,20 @@ from turbogears import controllers, validators
 from turbogears.database import get_engine, session
 
 
-from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
+from pkgdb.model import Package, GroupPackageListing, Collection, \
         GroupPackageListingAcl, PackageListing, PersonPackageListing, \
         PersonPackageListingAcl, Repo, PackageBuild, PackageBuildRepo, Tag
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
         CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
-        BinaryPackageTag, BranchTable
+        BinaryPackageTag
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 from pkgdb.lib.validators import CollectionNameVersion, SetOf, \
-        IsCollectionSimpleNameRegex
+        IsCollectionBranchNameRegex
 
 from fedora.tg.tg1utils import jsonify_validation_errors
 
@@ -238,7 +238,7 @@ class ListQueries(controllers.Controller):
         group_acls = select((
             #pylint:disable-msg=E1101
             Package.name,
-            Branch.branchname,
+            Collection.branchname,
             GroupPackageListing.groupname), and_(
                 GroupPackageListingAcl.acl == 'commit',
                 GroupPackageListingAcl.statuscode == STATUS['Approved'],
@@ -248,7 +248,6 @@ class ListQueries(controllers.Controller):
                         == PackageListing.id,
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
-                Branch.collectionid == Collection.id,
                 PackageListing.statuscode != STATUS['Removed'],
                 Package.statuscode != STATUS['Removed']
                 )
@@ -270,12 +269,11 @@ class ListQueries(controllers.Controller):
         owner_acls = select((
             #pylint:disable-msg=E1101
             Package.name,
-            Branch.branchname, PackageListing.owner),
+            Collection.branchname, PackageListing.owner),
             and_(
                 PackageListing.packageid==Package.id,
                 PackageListing.collectionid==Collection.id,
                 PackageListing.owner!='orphan',
-                Collection.id==Branch.collectionid,
                 PackageListing.statuscode != STATUS['Removed'],
                 Package.statuscode != STATUS['Removed']
                 ),
@@ -294,7 +292,7 @@ class ListQueries(controllers.Controller):
         person_acls = select((
             #pylint:disable-msg=E1101
             Package.name,
-            Branch.branchname, PersonPackageListing.username),
+            Collection.branchname, PersonPackageListing.username),
             and_(
                 PersonPackageListingAcl.acl=='commit',
                 PersonPackageListingAcl.statuscode == STATUS['Approved'],
@@ -304,7 +302,6 @@ class ListQueries(controllers.Controller):
                         == PackageListing.id,
                 PackageListing.packageid == Package.id,
                 PackageListing.collectionid == Collection.id,
-                Branch.collectionid == Collection.id,
                 PackageListing.statuscode != STATUS['Removed'],
                 Package.statuscode != STATUS['Removed']
                 ),
@@ -717,7 +714,7 @@ class ListQueries(controllers.Controller):
 
     @expose(allow_json=True)
     @validate(validators = {'collctn_list': SetOf(use_set=True,
-            element_validator=IsCollectionSimpleNameRegex())})
+            element_validator=IsCollectionBranchNameRegex())})
     @error_handler()
     def critpath(self, collctn_list=None):
         '''Retrieve the list of packages that are critpath
@@ -736,13 +733,13 @@ class ListQueries(controllers.Controller):
         if errors:
             return errors
 
-        pkg_names = select((BranchTable.c.branchname, PackageTable.c.name))\
+        pkg_names = select((Collection.c.branchname, PackageTable.c.name))\
                 .where(and_(PackageTable.c.id==PackageListingTable.c.packageid,
                     PackageListingTable.c.collectionid==CollectionTable.c.id,
-                    CollectionTable.c.id==BranchTable.c.collectionid,
                     PackageListingTable.c.critpath==True))
         if collctn_list:
-            pkg_names = pkg_names.where(BranchTable.c.branchname.in_(collctn_list))
+            collectn_list = Collection.unify_branchnames(collectn_list)
+            pkg_names = pkg_names.where(CollectionTable.c.branchname.in_(collctn_list))
         else:
             pkg_names = pkg_names.where(CollectionTable.c.statuscode!=STATUS['EOL'])
 

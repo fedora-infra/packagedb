@@ -471,10 +471,7 @@ def _export_icons(staticdir, all):
             for i in app.iconname.icons:
                 # guess filenames
                 idir = os.path.join(adir, i.theme.name)
-                try:
-                    iname = '%s%s.png' % (app_name, i.collection.disttag)
-                except:
-                    iname = '%s.%s.png' % (app_name, i.collection.simple_name)
+                iname = '%s%s.png' % (app_name, i.collection.disttag)
 
                 # cerate directory
                 if not os.path.exists(idir):

@@ -47,8 +47,8 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
         GroupPackageListing, GroupPackageListingAcl, PersonPackageListing, \
         PersonPackageListingAcl, PackageListing, PackageListingLog, Package, \
         Collection, PersonPackageListingAclLog, GroupPackageListingAclLog, \
-        PackageLog, Branch
-from pkgdb.model import BranchTable, CollectionTable, PackageTable, \
+        PackageLog
+from pkgdb.model import CollectionTable, PackageTable, \
         PackageListingTable
 
 from fedora.tg.tg1utils import tg_url, jsonify_validation_errors
@@ -57,7 +57,7 @@ from pkgdb import _
 from pkgdb.notifier import EventLogger
 from pkgdb.lib.utils import fas, get_bz, admin_grp, critpath_grps, pkger_grp, \
         provenpkger_grp, newpkger_grp, LOG, STATUS
-from pkgdb.lib.validators import SetOf, IsCollectionSimpleNameRegex
+from pkgdb.lib.validators import SetOf, IsCollectionBranchNameRegex
 
 MAXSYSTEMUID = 9999
 
@@ -1141,14 +1141,13 @@ class PackageDispatcher(controllers.Controller):
                 owner_name = devel_pkg.owner
 
             collection_data = changes['collections']
-            if not isinstance(collection_data, (tuple, list)):
-                collection_data = [collection_data]
+            collection_data = Collection.unify_branchnames(collection_data)
             for collection_name in collection_data:
                 # Check if collection/version exists
                 try:
                     #pylint:disable-msg=E1101
-                    collection = Collection.by_simple_name(
-                            collection_name)
+                    collection = session.query(Collection)\
+                        .filter_by(branchname = collection_name).one()
                 except InvalidRequestError:
                     return dict(status=False, message=_('No collection'
                         ' %(collctn)s') % {'collctn': collection_name})
@@ -1396,7 +1395,7 @@ class PackageDispatcher(controllers.Controller):
     def clone_branch(self, pkg, branch, master, email_log=True):
         '''Make `branch` permissions mirror `master`, creating if necessary.
 
-        Note: Branch names are short names like 'F-10', 'devel', 'EL-5'
+        Note: Branch names are short names like 'F-10', 'master', 'EL-5'
 
         This is a Layer 2 API
 
@@ -1413,9 +1412,9 @@ class PackageDispatcher(controllers.Controller):
         # Retrieve the packagelisting for the master branch
         try:
             #pylint:disable-msg=E1101
-            master_branch = PackageListing.query.join('package'
+            master_branch = session.query(PackageListing).join('package'
                     ).join('collection').options(lazyload('status')).filter(
-                        and_(Package.name==pkg, Branch.branchname==master)
+                        and_(Package.name==pkg, Collection.branchname==master)
                         ).one()
         except InvalidRequestError:
             session.rollback() #pylint:disable-msg=E1101
@@ -1474,7 +1473,7 @@ class PackageDispatcher(controllers.Controller):
         '''
         try:
             #pylint:disable-msg=E1101
-            pkg = Package.query.filter_by(name=pkg_name).one()
+            pkg = session.query(Package).filter_by(name=pkg_name).one()
         except InvalidRequestError:
             flash(_('Package %(pkg)s does not exist') % {'pkg': pkg_name})
             return dict(exc='NoPackageError')
@@ -1489,19 +1488,19 @@ class PackageDispatcher(controllers.Controller):
         package_listings = []
 
         if collectn_list:
-            if not isinstance(collectn_list, (tuple, list)):
-                collectn_list = [collectn_list]
-            for simple_name in collectn_list:
+            collectn_list = Collection.unify_branchnames(collectn_list)
+            for branchname in collectn_list:
                 try:
-                    collectn = Collection.by_simple_name(simple_name)
+                    collectn = session.query(Collection)\
+                        .filter_by(branchname=branchname).one()
                 except InvalidRequestError:
                     flash(_('Collection %(collctn)s does not exist') % {
-                        'collctn': simple_name})
+                        'collctn': branchname})
                     return dict(exc='NoCollectionError')
 
                 #pylint:disable-msg=E1101
-                pkg_listing = PackageListing.query.filter_by(packageid=pkg.id,
-                                  collectionid=collectn.id).one()
+                pkg_listing = session.query(PackageListing)\
+                    .filter_by(packageid=pkg.id, collectionid=collectn.id).one()
                 #pylint:enable-msg=E1101
                 package_listings.append(pkg_listing)
 
@@ -1510,7 +1509,7 @@ class PackageDispatcher(controllers.Controller):
 
         for pkg_listing in package_listings:
             #pylint:disable-msg=E1101
-            acls = PersonPackageListingAcl.query.filter(and_(
+            acls = session.query(PersonPackageListingAcl).filter(and_(
                        PersonPackageListingAcl.personpackagelistingid
                                == PersonPackageListing.id,
                        PersonPackageListing.packagelistingid
@@ -1589,15 +1588,15 @@ class PackageDispatcher(controllers.Controller):
         package_listings = []
 
         if collectn_list:
-            if not isinstance(collectn_list, (tuple, list)):
-                collectn_list = [collectn_list]
-            for simple_name in collectn_list:
+            collectn_list = Collection.unify_branchnames(collectn_list)
+            for branchname in collectn_list:
                 try:
-                    collectn = Collection.by_simple_name(simple_name)
+                    collectn = session.query(Collection)\
+                        .filter_by(branchname=branchname).one()
                 except InvalidRequestError:
                     return dict(status=False, message=
                         _('Collection %(collctn)s does not exist') % {
-                        'collctn': simple_name})
+                        'collctn': branchname})
                 #pylint:disable-msg=E1101
                 pkg_listing = PackageListing.query.filter_by(packageid=pkg.id,
                                   collectionid=collectn.id).one()
@@ -1659,7 +1658,7 @@ class PackageDispatcher(controllers.Controller):
             element_validator=validators.UnicodeString(not_empty=False)),
         'critpath': validators.StringBool(),
         'collctn_list': SetOf(use_set=True,
-            element_validator=IsCollectionSimpleNameRegex()),
+            element_validator=IsCollectionBranchNameRegex()),
         'reset': validators.StringBool(),
         })
     @error_handler()
@@ -1689,11 +1688,12 @@ class PackageDispatcher(controllers.Controller):
         # Remove critpath from all packages in the given collections
         if reset:
             pkg_listing_ids = select((PackageListingTable.c.id,),
-                    from_obj=(PackageListingTable.join(CollectionTable).join(BranchTable,
-                        onclause=CollectionTable.c.id==BranchTable.c.collectionid)))\
+                    from_obj=(PackageListingTable.join(CollectionTable)))\
                         .where(PackageListingTable.c.critpath==True)
             if collctn_list:
-                pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
+                if not isinstance(collctn_list, (tuple, list)):
+                    collctn_list = [collctn_list]
+                pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.branchname.in_(collctn_list))
             else:
                 pkg_listing_ids = pkg_listing_ids\
                         .where(CollectionTable.c.statuscode!=STATUS['EOL'])
@@ -1714,8 +1714,7 @@ class PackageDispatcher(controllers.Controller):
 
         if pkg_list:
             pkg_listing_ids = select((PackageListingTable.c.id,), from_obj=(PackageTable\
-                .join(PackageListingTable).join(CollectionTable)\
-                .join(BranchTable, onclause=CollectionTable.c.id==BranchTable.c.collectionid)))\
+                .join(PackageListingTable).join(CollectionTable)))\
                 .where(and_(PackageTable.c.name.in_(pkg_list),
                         PackageListingTable.c.critpath!=critpath))
         else:
@@ -1725,7 +1724,9 @@ class PackageDispatcher(controllers.Controller):
                     PackageListingTable.c.critpath!=critpath))
 
         if collctn_list:
-            pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
+            if not isinstance(collctn_list, (tuple, list)):
+                collctn_list = [collctn_list]
+            pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.branchname.in_(collctn_list))
         else:
             pkg_listing_ids = pkg_listing_ids\
                     .where(CollectionTable.c.statuscode!=STATUS['EOL'])

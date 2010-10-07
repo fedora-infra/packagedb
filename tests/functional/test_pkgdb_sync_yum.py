@@ -8,30 +8,26 @@ class TestPkgDBSyncYum(DBTest):
 
     def test_update(self):
         """
-        FEATURE: As PkgDb Admin I want package description beeing updated from RAWHIDE builds
+        FEATURE: As PkgDB Admin I want package description beeing updated from RAWHIDE builds
+        
+        FEATURE: As PkgDB Admin I want to have build records for just the builds being available
+                 in the active repos.
         """
 
-
-        from pkgdb.model import Repo, Branch, Collection, BranchTable, CollectionTable
+        from pkgdb.model import Repo, Collection, CollectionTable
         from pkgdb.model import Package, PackageTable, PackageListing
         from pkgdb.model import SC_UNDER_DEVELOPMENT, SC_ACTIVE, SC_APPROVED
         import pkgdb
         
         # db setup, set branch as active
         self.session.begin()
-        conn = self.session.connection(Collection)
-        i = CollectionTable.insert()
-        conn.execute(i, dict(name='Testing', version='devel', statuscode=SC_ACTIVE, owner='owner'))
-        s = CollectionTable.select()
-        rs = conn.execute(s)
-        coll = rs.fetchone()
-        i = BranchTable.insert()
-        conn.execute(i, dict(collectionid=coll.id, branchname='devel', 
-                gitbranchname='master', disttag='.f14', parentid=None))
+        coll = Collection('Testing', 'devel', SC_ACTIVE, 'owner', 'master', '.f14')
+        self.session.add(coll)
 
         # set up testing repo
         devel_repo = Repo('Testing Devel', 'devel', 'tests/functional/repo/', 
-            'file://%s/'%pkgdb.__path__[0], True, coll.id)
+            'file://%s/'%pkgdb.__path__[0], True, None)
+        coll.repos.append(devel_repo)
         self.session.add(devel_repo)
 
         # set up package

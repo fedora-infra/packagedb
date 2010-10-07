@@ -398,7 +398,7 @@ class Package(SABase):
         This creates a new PackageListing for this Package.  The PackageListing
         has default values set for group acls.
         '''
-        from pkgdb.lib.utils import STATUS
+        from pkgdb.model import STATUS
         from pkgdb.model.logs import PackageListingLog
         pkg_listing = PackageListing(owner, STATUS[statusname],
                 collectionid=collection.id,
@@ -479,23 +479,23 @@ class PackageListing(SABase):
         :returns: new branch
         :rtype: PackageListing
         '''
-        from pkgdb.model.collections import Branch
+        from pkgdb.model.collections import Collection
         from pkgdb.model.logs import GroupPackageListingAclLog, \
                 PersonPackageListingAclLog
         # Retrieve the PackageListing for the to clone branch
         try:
             #pylint:disable-msg=E1101
-            clone_branch = PackageListing.query.join('package'
+            clone_branch = session.query(PackageListing).join('package'
                     ).join('collection').filter(
                         and_(Package.name==self.package.name,
-                            Branch.branchname==branch)).one()
+                            Collection.branchname==branch)).one()
             #pylint:enable-msg=E1101
         except InvalidRequestError:
             ### Create a new package listing for this release ###
 
             # Retrieve the collection to make the branch for
             #pylint:disable-msg=E1101
-            clone_collection = Branch.query.filter_by(branchname=branch).one()
+            clone_collection = session.query(Collection).filter_by(branchname=branch).one()
             #pylint:enable-msg=E1101
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
@@ -575,7 +575,7 @@ def collection_alias(pkg_listing):
     This is used to make Branch keys for the dictionary mapping of pkg listings
     into packages.
     '''
-    return pkg_listing.collection.simple_name
+    return pkg_listing.collection.short_name
 
 class PackageBuildDepends(SABase):
     '''PackageBuild Dependencies to one another.
@@ -708,7 +708,8 @@ class PackageBuild(SABase):
 
 mapper(Package, PackageTable, properties={
     # listings is here for compatibility.  Will be removed in 0.4.x
-    'listings': relation(PackageListing),
+    'listings': relation(PackageListing,
+        backref=backref('package_')),
     'listings2': relation(PackageListing,
         backref=backref('package'),
         collection_class=mapped_collection(collection_alias)),
