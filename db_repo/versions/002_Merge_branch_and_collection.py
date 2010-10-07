@@ -11,7 +11,7 @@ metadata = MetaData()
 CollectionTable = Table('collection', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
     Column('branchname', Text(), unique=True, nullable=True), # later make not null
-    Column('disttag', String(32),  nullable=True) # later make not null
+    Column('disttag', Text(),  nullable=True) # later make not null
 )
 
 

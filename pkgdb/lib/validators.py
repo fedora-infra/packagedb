@@ -109,7 +109,7 @@ class IsCollectionBranchNameRegex(Regex):
     :kwarg strip: If True, strips whitespace from the beginnng and end of the
         value.  (default True)
     :kwarg regex: regular expression object or string to be compiled to match
-        the branchname against. Default: r'^[A-Z]+-([0-9]+|devel)$'
+        the branchname against. Default: r'^[a-z]+([0-9]+|master)$'
     '''
     strip = True
     regex = re.compile(r'^([a-z]+[0-9]+|master)$')
