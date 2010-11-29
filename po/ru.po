@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: fedora-packagedb 0.4.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2009-11-11 16:32-0800\n"
-"PO-Revision-Date: 2010-11-25 22:02+0800\n"
+"PO-Revision-Date: 2010-11-28 22:23+0800\n"
 "Last-Translator: Yuri Khabarov <madb00blik@gmail.com>\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -27,7 +27,7 @@ msgstr "Неверный URL: перенаправление: %(url)s"
 #: pkgdb/bugs.py:160
 #, python-format
 msgid "%(app)s -- Not a Valid Package Name"
-msgstr ""
+msgstr "%(app)s -- Недействительное имя пакета"
 
 #: pkgdb/bugs.py:162
 #: pkgdb/dispatcher.py:571
@@ -92,7 +92,7 @@ msgstr ""
 
 #: pkgdb/collections.py:316
 msgid "Unable to log into koji"
-msgstr ""
+msgstr "Невозможно войти в koji"
 
 #: pkgdb/collections.py:341
 msgid "Mass branch started.  You will be emailed the results."
@@ -105,7 +105,7 @@ msgstr "База данных пакетов Fedora"
 #: pkgdb/controllers.py:63
 #: pkgdb/templates/login.html:11
 msgid "Login to the PackageDB"
-msgstr ""
+msgstr "Логин в БД Пакетов"
 
 #: pkgdb/dispatcher.py:170
 #, python-format
@@ -257,12 +257,12 @@ msgstr ""
 #: pkgdb/dispatcher.py:921
 #: pkgdb/dispatcher.py:1124
 msgid "User must be in admin_grp"
-msgstr ""
+msgstr "Пользователь должен быть в admin_grp"
 
 #: pkgdb/dispatcher.py:928
 #, python-format
 msgid "Package %(pkg)s already exists"
-msgstr ""
+msgstr "Пакет %(pkg)s уже существует"
 
 #: pkgdb/dispatcher.py:934
 #, python-format
@@ -290,7 +290,7 @@ msgstr ""
 
 #: pkgdb/dispatcher.py:1075
 msgid "Permission denied"
-msgstr ""
+msgstr "Доступ запрещён"
 
 #: pkgdb/dispatcher.py:1082
 #, python-format
@@ -330,7 +330,7 @@ msgstr ""
 #: pkgdb/dispatcher.py:1436
 #, python-format
 msgid "%(pkg)s summary updated by %(user)s"
-msgstr ""
+msgstr "%(pkg)s полностью обновлен пользователем %(user)s"
 
 #: pkgdb/dispatcher.py:1442
 #, python-format
@@ -430,7 +430,7 @@ msgstr ""
 #: pkgdb/packages.py:145
 #, python-format
 msgid "%(app)s -- Not in Collection"
-msgstr ""
+msgstr "%(app)s -- Не в коллекции"
 
 #: pkgdb/packages.py:147
 #, python-format
@@ -440,7 +440,7 @@ msgstr ""
 #: pkgdb/packages.py:235
 #, python-format
 msgid "%(title)s -- %(pkg)s"
-msgstr ""
+msgstr "%(title)s -- %(pkg)s"
 
 #: pkgdb/packages.py:252
 #, python-format
@@ -454,7 +454,7 @@ msgstr ""
 #: pkgdb/packages.py:263
 #, python-format
 msgid "%(app)s -- Unknown Package"
-msgstr ""
+msgstr "%(app)s -- Неизвестный пакет"
 
 #: pkgdb/packages.py:265
 #, python-format
@@ -468,7 +468,7 @@ msgstr ""
 
 #: pkgdb/release.py:8
 msgid "The Fedora Package Database"
-msgstr ""
+msgstr "База Пакетов Fedora"
 
 #: pkgdb/release.py:9
 msgid ""
@@ -482,7 +482,7 @@ msgstr ""
 #: pkgdb/search.py:69
 #, python-format
 msgid "%(app)s -- Advanced Search"
-msgstr ""
+msgstr "%(app)s -- Расширенный поиск"
 
 #: pkgdb/search.py:242
 #, python-format
@@ -491,17 +491,17 @@ msgstr ""
 
 #: pkgdb/stats.py:58
 msgid "need to be logged in"
-msgstr ""
+msgstr "необходимо авторизоваться"
 
 #: pkgdb/stats.py:113
 #, python-format
 msgid "%(app)s -- Package Stats"
-msgstr ""
+msgstr "%(app)s -- Статистика пакета"
 
 #: pkgdb/users.py:126
 #: pkgdb/users.py:219
 msgid "You must be logged in to view your information"
-msgstr ""
+msgstr "чтобы посмотреть свою информацию, вы должны быть авторизованы"
 
 #: pkgdb/users.py:130
 #, python-format
@@ -511,7 +511,7 @@ msgstr ""
 #: pkgdb/users.py:223
 #, python-format
 msgid "%(app)s -- %(name)s -- Info"
-msgstr ""
+msgstr "%(app)s -- %(name)s -- Информация"
 
 #: pkgdb/utils.py:93
 #, python-format
@@ -553,7 +553,7 @@ msgstr ""
 
 #: pkgdb/controllers.bak/root.py:33
 msgid "You must provide your credentials before accessing this resource."
-msgstr ""
+msgstr "Вы должны ввести свои данный прежде чем получить доступ к этим ресурсам"
 
 #: pkgdb/controllers.bak/root.py:36
 msgid "Please log in."
@@ -739,7 +739,7 @@ msgstr ""
 #: pkgdb/templates/letter_paginator.html:16
 #: pkgdb/templates/paginator.html:33
 msgid "[show all]"
-msgstr ""
+msgstr "[показать всё]"
 
 #: pkgdb/templates/pkgbugoverview.html:11
 msgid ""
@@ -799,7 +799,7 @@ msgstr "Отзывы об ошибках"
 
 #: pkgdb/templates/pkgheader.html:18
 msgid "Package Info"
-msgstr ""
+msgstr "Инфо Пакета"
 
 #: pkgdb/templates/pkgpage.html:37
 msgid "Contents:"
@@ -824,7 +824,7 @@ msgstr ""
 
 #: pkgdb/templates/search.html:16
 msgid "Advanced search"
-msgstr ""
+msgstr "Подробный поиск"
 
 #: pkgdb/templates/search.html:21
 msgid "matches found in"
@@ -874,7 +874,7 @@ msgstr ""
 #: pkgdb/templates/stats.html:18
 #: pkgdb/templates/stats.html:34
 msgid "Counter"
-msgstr ""
+msgstr "Счётчик"
 
 #: pkgdb/templates/stats.html:21
 msgid "Number of packages owned"
@@ -884,7 +884,7 @@ msgstr ""
 #: pkgdb/templates/stats.html:37
 #: pkgdb/templates/useroverview.html:9
 msgid "Packages"
-msgstr ""
+msgstr "Пакеты"
 
 #: pkgdb/templates/stats.html:32
 msgid "Top 20 Maintainers (owners or comaintainers)"
@@ -908,7 +908,7 @@ msgstr "Здравствуйте"
 
 #: pkgdb/templates/useroverview.html:8
 msgid "View users:"
-msgstr ""
+msgstr "Просмотр пользователей:"
 
 #: pkgdb/templates/useroverview.html:8
 msgid "Info"
@@ -929,11 +929,11 @@ msgstr ""
 #: pkgdb/templates/userpkgs.html:36
 #: pkgdb/templates/userpkgs.html:52
 msgid "View:"
-msgstr ""
+msgstr "Просмотр:"
 
 #: pkgdb/templates/userpkgs.html:37
 msgid "My Info"
-msgstr ""
+msgstr "Моя информация"
 
 #: pkgdb/templates/userpkgs.html:37
 msgid ""
