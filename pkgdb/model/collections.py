@@ -21,6 +21,8 @@
 Mapping of collection and repo related database tables to python classes
 '''
 
+import re
+import warnings
 from sqlalchemy import Table, Column, Integer, Text, String
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, text
 from sqlalchemy import select, not_, Boolean, PassiveDefault, func
@@ -28,14 +30,20 @@ from sqlalchemy import PrimaryKeyConstraint, DDL, Index
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import polymorphic_union, relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from turbogears.database import metadata, mapper, get_engine
+from turbogears.database import metadata, mapper, get_engine, session
 
 from fedora.tg.json import SABase
+from pkgdb import _
 
 from pkgdb.model.packages import PackageBuild, PackageBuildReposTable
 from pkgdb.model.packages import PackageListing, PackageListingTable
 from pkgdb.model import CollectionStatus
 from pkgdb.lib.db import View, Grant_RW
+
+try:
+    from fedora.textutils import to_unicode
+except ImportError:
+    from pkgdb.lib.utils import to_unicode
 
 get_engine()
 
@@ -67,6 +75,10 @@ get_engine()
 #   the specific package built.
 # :summary: Brief description of the collection.
 # :description: Longer description of the collection.
+# :branchName: Name of the branch in the VCS ("FC-3", "devel")
+# :distTag: DistTag used in the buildsystem (".fc3", ".fc6")
+# :parent: Many collections are branches of other collections.  This field
+#    records the parent collection to branch from.
 
 # Collections and Branches have an inheritance relationship.  ie: Branches are
 # just Collections that have additional data.
@@ -85,6 +97,8 @@ CollectionTable = Table('collection', metadata,
     Column('summary', Text()),
     Column('description', Text()),
     Column('koji_name', Text(), unique=True),
+    Column('branchname', Text(), unique=True, nullable=False),
+    Column('disttag', Text(),  nullable=False),
     UniqueConstraint('name', 'version', name='collection_name_key'),
     ForeignKeyConstraint(['statuscode'],['collectionstatuscode.statuscodeid'], 
         use_alter=True, name='collection_statuscode_fkey', 
@@ -94,91 +108,6 @@ Index('collection_status_idx', CollectionTable.c.statuscode)
 DDL('ALTER TABLE collection CLUSTER ON collection_name_key', on='postgres')\
     .execute_at('after-create', CollectionTable)
 Grant_RW(CollectionTable)
-
-
-# Associate the packages in one collection with another collection.
-#
-# This table is used to allow one `Collection` to be based on another with
-# certain packages that are overridden or not available in the `base`
-# `Collection`.  For instance, a `Collection` may be used to experiment with
-# a major version upgrade of python and all the dependent packages that need
-# to be rebuilt against it.  In this scenario, the base might be
-# "Fedora Core - devel".  The overlay "FC devel python3".  The overlay will
-# contain python packages that override what is present in the base.  Any
-# package that is not present in the overlay will also be searched for in
-# the base collection.
-# Once we're ready to commit to using the upgraded set of packages, we want
-# to merge them into devel.  To do this, we will actually move the packages
-# from the overlay into the base collection.  Probably, at this time, we
-# will also mark the overlay as obsolete.
-#
-# Keeping things consistent is a bit problematic because we have to search for
-# for packages in the collection plus all the bases (an overlay can have
-# multiple bases) and any bases that they're overlays for.  SQL doesn't do
-# recursion -- in and of itself so we have to work around it in one of these
-# ways:
-# 1) Do the searching for packages in code; either a trigger on the server or
-#    in any application code which looks at the database.
-# 2) Use a check constraint to only have one level of super/subset.  So if
-#    devel contains python-2.5, devel cannot be a subset and python-2.5 cannot
-#    be a superset to any other collection.  Have an insert trigger that
-#    checks for this.
-# 3) Copy the packages.  When we make one collection a subset of another, add
-#    all its packages including subset's packages to the superset.  Have an
-#    insert trigger on packageList and packageListVer that check whether this
-#    collection is a subset and copies the package to other collections.
-# Option 1, in application code may be the simplest to implement.  However,
-# option 3 has the benefit of running during insert rather than select.  As
-# always, doing something within the database rather than application logic
-# allows us to keep better control over the information.
-#
-# * Note: Do not have an ondelete trigger as there may be overlap between the
-# packages in the parent and child collection.
-#
-# Fields:
-# :overlay: The `Collection` which overrides packages in the base.
-# :base: The `Collection` which provides packages not explicitly listed in
-#    `overlay`.
-# :priority: When searching for a package within a collection, first check the
-#    `overlay`.  If not found check the lowest priority `base` collection and
-#    any `base` Collections that belong to it.  Then check the next lowest
-#    priority `base` until we find the package or run out. `base`s of the same
-#    `overlay` with the same `priority` are searched in an undefined order.
-CollectionSetTable = Table('collectionset', metadata,
-    Column('overlay', Integer(),  primary_key=True, autoincrement=False, nullable=False),
-    Column('base', Integer(),  primary_key=True, autoincrement=False, nullable=False),
-    Column('priority', Integer(), PassiveDefault(text('0'))),
-    ForeignKeyConstraint(['overlay'],['collection.id'],
-        onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['base'],['collection.id'],
-        onupdate="CASCADE", ondelete="CASCADE"),
-)
-Grant_RW(CollectionSetTable)
-
-
-# `Collection`s with their own branch in the VCS have extra information.
-#
-# Fields:
-# :collectionId: `Collection` this branch provides information for.
-# :branchName: Name of the branch in the VCS ("FC-3", "devel")
-# :distTag: DistTag used in the buildsystem (".fc3", ".fc6")
-# :parent: Many collections are branches of other collections.  This field
-#    records the parent collection to branch from.
-BranchTable = Table('branch', metadata,
-    Column('collectionid', Integer(), autoincrement=False, nullable=False),
-    Column('branchname', String(32), unique=True, nullable=False),
-    Column('gitbranchname', Text(), nullable=False),
-    Column('disttag', String(32),  nullable=False),
-    Column('parentid', Integer()),
-    PrimaryKeyConstraint('collectionid', name='branch_pkey'),
-    ForeignKeyConstraint(['collectionid'],['collection.id'],
-        onupdate="CASCADE", ondelete="CASCADE"),
-    ForeignKeyConstraint(['parentid'],['collection.id'],
-        onupdate="CASCADE", ondelete="SET NULL"),
-)
-DDL('ALTER TABLE branch CLUSTER ON branch_pkey', on='postgres')\
-    .execute_at('after-create', BranchTable)
-Grant_RW(BranchTable)    
 
 
 ReposTable = Table('repos', metadata,
@@ -196,20 +125,6 @@ ReposTable = Table('repos', metadata,
         ondelete="CASCADE"),
 )
 Grant_RW(ReposTable)
-
-
-CollectionJoin = polymorphic_union (
-        {'b' : select((CollectionTable.join(
-            BranchTable, CollectionTable.c.id == BranchTable.c.collectionid),)),
-         'c' : select((CollectionTable,),
-             not_(CollectionTable.c.id.in_(select(
-                 (CollectionTable.c.id,),
-                 CollectionTable.c.id == BranchTable.c.collectionid)
-             )))
-         },
-        'kind', 'CollectionJoin'
-        )
-
 
 
 # This is view
@@ -258,7 +173,7 @@ class Collection(SABase):
     Table -- Collection
     '''
     # pylint: disable-msg=R0902, R0903
-    def __init__(self, name, version, statuscode, owner,
+    def __init__(self, name, version, statuscode, owner, branchname, disttag, 
             publishurltemplate=None, pendingurltemplate=None, summary=None,
             description=None):
         # pylint: disable-msg=R0913
@@ -271,86 +186,44 @@ class Collection(SABase):
         self.pendingurltemplate = pendingurltemplate
         self.summary = summary
         self.description = description
+        self.branchname = branchname
+        self.disttag = disttag
+
+
+    @classmethod
+    def unify_branchnames(cls, branchnames):
+        if isinstance(branchnames, basestring):
+            branchnames = [branchnames]
+        if isinstance(branchnames, (tuple, list)):
+            return [cls.unify_branchname(bn) for bn in branchnames]
+        else:
+            raise TypeError('Only arg of type str or list is supported')
+
+
+
+    @classmethod
+    def unify_branchname(cls, branchname):
+        if branchname == 'devel':
+            return u'master'
+        else:
+            return to_unicode(branchname.lower().replace('-', ''))
+
+
+    @property
+    def short_name(self):
+        if self.branchname == 'master':
+            return 'devel'
+        else:
+            return re.sub(r'(\d+)$', r'-\1', self.branchname.upper())
 
     def __repr__(self):
-        return 'Collection(%r, %r, %r, %r, publishurltemplate=%r,' \
+        return 'Collection(%r, %r, %r, %r, %r, %r, publishurltemplate=%r,' \
                 ' pendingurltemplate=%r, summary=%r, description=%r)' % (
-                self.name, self.version, self.statuscode, self.owner,
+                self.name, self.version, self.statuscode, self.owner, 
+                self.branchname, self.disttag,
                 self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
 
-    @property
-    def simple_name(self):
-        '''Return a simple name for the Collection
-        '''
-        try:
-            # :E1101: If Collection is actually a branch, it will have a
-            # branchname attribute given it by SQLAlchemy
-            # pylint: disable-msg=E1101
-            simple_name = self.branchname
-        except AttributeError:
-            simple_name = '-'.join((self.name, self.version))
-        return simple_name
-
-    @classmethod
-    def by_simple_name(cls, simple_name):
-        '''Return the Collection that matches the simple name
-
-        :arg simple_name: simple name for a Collection
-        :returns: The Collection that matches the name
-        :raises sqlalchemy.InvalidRequestError: if the simple name is not found
-
-        simple_name will be looked up first as the Branch name.  Then as the
-        Collection name joined by a hyphen with the version.  ie:
-        'Fedora EPEL-5'.
-        '''
-        # :E1101: SQLAlchemy adds many methods to the Branch and Collection
-        # classes
-        # pylint: disable-msg=E1101
-        try:
-            collection = Branch.query.filter_by(branchname=simple_name).one()
-        except InvalidRequestError:
-            name, version = simple_name.rsplit('-')
-            collection = Collection.query.filter_by(name=name,
-                    version=version).one()
-        return collection
-
-class Branch(Collection):
-    '''Collection that has a physical existence.
-
-    Some Collections are only present as a name and collection of packages.  The
-    Collections that have a branch record are also present in our VCS and
-    download repositories.
-
-    Table -- Branch
-    '''
-    # pylint: disable-msg=R0902, R0903
-    def __init__(self, branchname, disttag, parentid,
-                 gitbranchname=None, *args):
-        # pylint: disable-msg=R0913
-        branch_mapping = {'F-13': 'f13', 'F-12': 'f12', 'F-11': 'f11',
-                          'F-10': 'f10', 'F-9': 'f9', 'F-8': 'f8',
-                          'F-7': 'f7', 'FC-6': 'fc6', 'EL-6': 'el6',
-                          'EL-5': 'el5', 'EL-4':'el4', 'OLPC-3': 'olpc3'}
-
-        super(Branch, self).__init__(*args)
-        self.branchname = branchname
-        self.disttag = disttag
-        self.parentid = parentid
-
-        if (not gitbranchname):
-            if (branchname in branch_mapping):
-                self.gitbranchname = branch_mapping[branchname]
-
-    def __repr__(self):
-        # pylint: disable-msg=E1101
-        return 'Branch(%r, %r, %r, %r, %r, %r, %r, %r,' \
-                ' publishurltemplate=%r, pendingurltemplate=%r,' \
-                ' summary=%r, description=%r, gitbranchname=%r)' % \
-                (self.collectionid, self.branchname, self.disttag,
-                 self.parentid, self.name, self.version, self.statuscode,
-                 self.owner, self.publishurltemplate, self.pendingurltemplate,
-                 self.summary, self.description, self.gitbranchname)
 
 class Repo(SABase):
     '''Repos are actual yum repositories.
@@ -388,12 +261,10 @@ class CollectionPackage(SABase):
 #
 
 mapper(Collection, CollectionTable,
-        polymorphic_on=CollectionJoin.c.kind,
-        polymorphic_identity='c',
-        with_polymorphic=('*', CollectionJoin),
         properties={
             # listings is deprecated.  It will go away in 0.4.x
-            'listings': relation(PackageListing),
+            'listings': relation(PackageListing,
+                backref=backref('collection_')),
             # listings2 is slower than listings.  It has a front-end cost to
             # load the data into the dict.  However, if we're using listings
             # to search for multiple packages, this will likely be faster.
@@ -406,11 +277,6 @@ mapper(Collection, CollectionTable,
             'status': relation(CollectionStatus, backref=backref('collections')),
         })
 
-mapper(Branch, BranchTable, inherits=Collection,
-        inherit_condition=CollectionJoin.c.id==BranchTable.c.collectionid,
-        inherit_foreign_keys=ForeignKeyConstraint(['collectionid'], ['collection.id']),
-        polymorphic_identity='b',
-        )
 
 mapper(CollectionPackage, CollectionPackageTable,
         properties={

@@ -102,6 +102,8 @@ def setup_parser():
             help='with this option the script skips to next repo on first already imported build occurence')
     parser_update.add_argument('--staticdir',
             help='directory where the icons will be stored. If not set, we are looking for server.static_icons_dir option in config file. If not found use "/var/pkgdb/static" as default. Make sure cachedir is writeable.')
+    parser_update.add_argument('--skip-inactive', action='store_true',
+            help="skip inactive repos. Skip cleaning of the data related to inactive repos.")
     parser_update.add_argument('--profile', metavar='dir',
             help='directory where data collected from profiler should be stored. Output is in kcachegrind format.')
     parser_update.add_argument('--profile-skip', type=int, default=0,
@@ -272,11 +274,16 @@ def update(args):
 
     # find repo
     #pylint:disable-msg=E1101
-    repos = session.query(Repo)\
-            .filter(and_(
+
+    if args.skip_inactive:
+        repo_filter = and_(
                 Repo.active==True, 
-                Repo.shortname.like(args.repo.replace('*','%'))))\
-            .all()
+                Repo.shortname.like(args.repo.replace('*','%')))
+    else:
+        repo_filter = Repo.shortname.like(args.repo.replace('*','%'))
+
+    repos = session.query(Repo).filter(repo_filter).all()
+
     #pylint:disable-msg=E1101
     if len(repos)==0:
         log.error("Repo '%s' not found!" % args.repo)
@@ -291,6 +298,11 @@ def update(args):
                     cachedir=cachedir)
         except Exception, e:
             log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
+            continue
+
+        if not repo.active:
+            importer.delete_all_builds()
+            log.info(' clean')
             continue
 
         try:
@@ -471,10 +483,7 @@ def _export_icons(staticdir, all):
             for i in app.iconname.icons:
                 # guess filenames
                 idir = os.path.join(adir, i.theme.name)
-                try:
-                    iname = '%s%s.png' % (app_name, i.collection.disttag)
-                except:
-                    iname = '%s.%s.png' % (app_name, i.collection.simple_name)
+                iname = '%s%s.png' % (app_name, i.collection.disttag)
 
                 # cerate directory
                 if not os.path.exists(idir):

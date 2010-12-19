@@ -43,7 +43,7 @@ from pkgdb.lib.utils import mod_grp
 from pkgdb import release, _
 from pkgdb.lib.text_utils import excerpt
 
-from fedora.tg.util import request_format
+from fedora.tg.tg1utils import request_format
 
 from operator import itemgetter
 import re

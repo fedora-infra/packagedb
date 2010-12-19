@@ -42,6 +42,7 @@ import re
 
 from turbogears.validators import Invalid, FancyValidator, Set, Regex, \
         UnicodeString
+from turbogears.database import session
 from sqlalchemy.exceptions import InvalidRequestError
 
 try:
@@ -102,30 +103,34 @@ class SetOf(Set):
 #      object.
 #
 
-class IsCollectionSimpleNameRegex(Regex):
-    '''Test the collection simple name against a simple heuristic
+class IsCollectionBranchNameRegex(Regex):
+    '''Test the collection branchhname against a simple heuristic
 
     :kwarg strip: If True, strips whitespace from the beginnng and end of the
         value.  (default True)
     :kwarg regex: regular expression object or string to be compiled to match
-        the simple name against. Default: r'^[A-Z]+-([0-9]+|devel)$'
+        the branchname against. Default: r'^[a-z]+([0-9]+|master)$'
     '''
     strip = True
-    regex = re.compile(r'^([A-Z]+-[0-9]+|devel)$')
+    regex = re.compile(r'^([a-z]+[0-9]+|master)$')
 
-    messages = {'no_collection': _('%(collection)s does not match the pattern'
-        ' for collection names')}
+    messages = {
+        'no_collection': _('%(collection)s does not match the pattern'
+            ' for collection names'),
+        }
 
     def _to_python(self, value, state):
         value = Regex._to_python(self, value, state)
         return to_unicode(value)
 
     def validate_python(self, value, state):
+        value = Collection.unify_branchname(value)
         if not self.regex.match(value):
             raise Invalid(self.message('no_collection', state,
                 collection=value), value, state)
 
-class IsCollectionSimpleName(UnicodeString):
+
+class IsCollectionBranchName(UnicodeString):
     '''Test that the value is a recognized collection short name.
 
     :kwarg eol: If True, include eol releases. (default False)
@@ -141,8 +146,10 @@ class IsCollectionSimpleName(UnicodeString):
                 }
 
     def validate_python(self, value, state):
+        value = Collection.unify_branchname(value)
         try:
-            collection = Collection.by_simple_name(value)
+            collection = session.query(Collection)\
+                .filter_by(branchname=value).one()
         except InvalidRequestError:
             raise Invalid(self.message('no_collection', state,
                 collection=value), value, state)
@@ -152,7 +159,7 @@ class IsCollectionSimpleName(UnicodeString):
                 collection=value), value, state)
         return value
 
-class IsCollection(IsCollectionSimpleName):
+class IsCollection(IsCollectionBranchName):
     '''Transforms a Collection simplename into a Collection.
 
     :kwarg eol: If True, include eol releases. (default False)
@@ -167,8 +174,10 @@ class IsCollection(IsCollectionSimpleName):
                 }
 
     def validate_python(self, value, state):
+        value = Collection.unify_branchname(value)
         try:
-            collection = Collection.by_simple_name(value)
+            collection = session.query(Collection)\
+                .filter_by(branchname=value).one()
         except InvalidRequestError:
             raise Invalid(self.message('no_collection', state,
                 collection=value), value, state)

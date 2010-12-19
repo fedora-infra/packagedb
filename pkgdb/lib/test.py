@@ -158,7 +158,7 @@ class DBTest(TestCase):
 
 
     def tearDown(self):
-        # finish unfinished transaction to prevent locak during drop table
+        # finish unfinished transaction to prevent lock during drop table
         try:
             self.session.rollback()
         except:
@@ -239,6 +239,50 @@ def slow(func):
 
     func.slow = True
     return func
+
+
+def current(func):
+    """Decorator to mark tests we are currently working on
+
+    nose can run just marked tests 'nose -a current'
+
+        @current
+        def test_something(self):
+            pass
+
+    """
+
+    func.current = True
+    return func
+
+
+def rollback(func):
+    """
+    Decorator to isolate db access in DBTest methods in transaction 
+    that is rolled back in the end. This is usefull when we need to test model
+    and not to make new db instance in every test.
+
+    Usage:
+
+    class TestModel(DBTest):
+        @rollback
+        def _test_something(self):
+            ....
+        @rollback
+        def _test_something_else(self):
+            ....
+
+        def test_model(self):
+            self._test_something()
+            self._test_something_else()
+    """
+    def trans(self, *args, **kvargs):
+        self.session.begin()
+        res = func(self, *args, **kvargs)
+        self.session.rollback()
+        self.session.expunge_all()
+        return res
+    return trans
 
 
 def create_stuff_table(metadata):

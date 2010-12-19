@@ -58,6 +58,51 @@ SC_UNDER_DEVELOPMENT = 18
 SC_UNDER_REVIEW = 19
 SC_DEPRECATED = 20
 
+STATUS_DEF = (
+	(SC_ACTIVE, 'Active'),
+	(SC_ADDED, 'Added'),
+	(SC_APPROVED, 'Approved'),
+	(SC_AWAITING_BRANCH, 'Awaiting Branch'),
+	(SC_AWAITING_DEVELOPMENT, 'Awaiting Development'),
+	(SC_AWAITING_QA, 'Awaiting QA'),
+	(SC_AWAITING_PUBLISH, 'Awaiting Publish'),
+	(SC_AWAITING_REVIEW, 'Awaiting Review'),
+	(SC_EOL, 'EOL'),
+	(SC_DENIED, 'Denied'),
+	(SC_MAINTENENCE, 'Maintenence'),
+	(SC_MODIFIED, 'Modified'),
+	(SC_OBSOLETE, 'Obsolete'),
+	(SC_ORPHANED, 'Orphaned'),
+	(SC_OWNED, 'Owned'),
+	(SC_REJECTED, 'Rejected'),
+	(SC_REMOVED, 'Removed'),
+	(SC_UNDER_DEVELOPMENT, 'Under Development'),
+	(SC_UNDER_REVIEW, 'Under Review'),
+	(SC_DEPRECATED, 'Deprecated'),
+)
+
+class StatusDict(dict):
+    
+    def __init__(cls, statuses):
+        data = list(statuses)
+        data.extend([reversed(st) for st in statuses])
+        super(StatusDict, cls).__init__(data)
+
+
+    def __getitem__(self, status):
+        try:
+            return super(StatusDict, self).__getitem__(status)
+        except KeyError:
+            raise KeyError(_('Unknown status: %(status)s') %
+                {'status': status})
+
+
+    def __setitem__(self, statusname, value):
+        raise TypeError(_('Item assignment is not supported'))
+
+
+STATUS = StatusDict(STATUS_DEF)
+
 #
 # Mapped Tables
 #
@@ -103,27 +148,8 @@ StatusTranslationTable = Table('statuscodetranslation', metadata,
         onupdate="CASCADE", ondelete="CASCADE"),
 )
 initial_data(StatusTranslationTable, 
-    ('statuscodeid', 'language', 'statusname', 'description'), 
-	(SC_ACTIVE, 'C', 'Active', ''),
-	(SC_ADDED, 'C', 'Added', ''),
-	(SC_APPROVED, 'C', 'Approved', ''),
-	(SC_AWAITING_BRANCH, 'C', 'Awaiting Branch', ''),
-	(SC_AWAITING_DEVELOPMENT, 'C', 'Awaiting Development', ''),
-	(SC_AWAITING_QA, 'C', 'Awaiting QA', ''),
-	(SC_AWAITING_PUBLISH, 'C', 'Awaiting Publish', ''),
-	(SC_AWAITING_REVIEW, 'C', 'Awaiting Review', ''),
-	(SC_EOL, 'C', 'EOL', ''),
-	(SC_DENIED, 'C', 'Denied', ''),
-	(SC_MAINTENENCE, 'C', 'Maintenence', ''),
-	(SC_MODIFIED, 'C', 'Modified', ''),
-	(SC_OBSOLETE, 'C', 'Obsolete', ''),
-	(SC_ORPHANED, 'C', 'Orphaned', ''),
-	(SC_OWNED, 'C', 'Owned', ''),
-	(SC_REJECTED, 'C', 'Rejected', ''),
-	(SC_REMOVED, 'C', 'Removed', ''),
-	(SC_UNDER_DEVELOPMENT, 'C', 'Under Development', ''),
-	(SC_UNDER_REVIEW, 'C', 'Under Review', ''),
-	(SC_DEPRECATED, 'C', 'Deprecated', ''))
+    ('statuscodeid', 'language', 'statusname', 'description'),
+    *((st[0], 'C', st[1], '') for st in STATUS_DEF))
 Index('statuscodetranslation_statusname_idx', StatusTranslationTable.c.statusname)
 Grant_RW(StatusTranslationTable)
 

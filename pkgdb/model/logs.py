@@ -31,7 +31,14 @@ from fedora.tg.json import SABase
 
 from pkgdb.model.packages import Package, PackageListing
 from pkgdb.model.acls import PersonPackageListingAcl, GroupPackageListingAcl
-from pkgdb.lib.db import Grant_RW
+
+from pkgdb.model import SC_ACTIVE, SC_ADDED, SC_APPROVED, SC_AWAITING_BRANCH  # 1-4
+from pkgdb.model import SC_AWAITING_DEVELOPMENT, SC_AWAITING_QA, SC_AWAITING_PUBLISH, SC_AWAITING_REVIEW # 5-8
+from pkgdb.model import SC_EOL, SC_DENIED, SC_MAINTENENCE, SC_MODIFIED # 9-12
+from pkgdb.model import SC_OBSOLETE, SC_ORPHANED, SC_OWNED, SC_REJECTED # 13-16
+from pkgdb.model import SC_REMOVED, SC_UNDER_DEVELOPMENT, SC_UNDER_REVIEW, SC_DEPRECATED # 17-20
+
+from pkgdb.lib.db import Grant_RW, initial_data
 
 get_engine()
 
@@ -170,6 +177,10 @@ Grant_RW(LogTable)
 PackageLogStatusCodeTable = Table('packagelogstatuscode', metadata,
     Column('statuscodeid', Integer(), autoincrement=False, primary_key=True, nullable=False),
 )
+initial_data(PackageLogStatusCodeTable,
+    ['statuscodeid'],
+    [SC_ADDED], [SC_APPROVED], [SC_AWAITING_REVIEW], [SC_DENIED], 
+    [SC_MODIFIED], [SC_REMOVED], [SC_UNDER_REVIEW])
 Grant_RW(PackageLogStatusCodeTable)
 
 
@@ -199,6 +210,10 @@ Grant_RW(PackageLogTable)
 CollectionLogStatusCodeTable = Table('collectionlogstatuscode', metadata,
     Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
 )
+initial_data(CollectionLogStatusCodeTable,
+    ['statuscodeid'],
+    [SC_ACTIVE], [SC_ADDED], [SC_EOL], [SC_REJECTED], 
+    [SC_REMOVED], [SC_UNDER_DEVELOPMENT])
 Grant_RW(CollectionLogStatusCodeTable)
 
 
@@ -228,6 +243,10 @@ Grant_RW(CollectionLogTable)
 PackageBuildLogStatusCodeTable = Table('packagebuildlogstatuscode', metadata,
     Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
 )
+initial_data(PackageBuildLogStatusCodeTable,
+    ['statuscodeid'],
+    [SC_ADDED], [SC_APPROVED], [SC_AWAITING_DEVELOPMENT], [SC_AWAITING_QA],
+    [SC_AWAITING_PUBLISH], [SC_AWAITING_REVIEW], [SC_DENIED], [SC_OBSOLETE])
 Grant_RW(PackageBuildLogStatusCodeTable)
 
 
@@ -277,12 +296,19 @@ Grant_RW(PackageListingLogTable)
 PackageAclLogStatusCodeTable = Table('packageacllogstatuscode', metadata,
     Column('statuscodeid', Integer(), autoincrement=False, primary_key=True, nullable=False),
 )
+initial_data(PackageAclLogStatusCodeTable,
+    ['statuscodeid'],
+    [SC_ADDED], [SC_APPROVED], [SC_AWAITING_REVIEW], [SC_DENIED], [SC_OBSOLETE])
 Grant_RW(PackageAclLogStatusCodeTable)
 
 
 PackageListingLogStatusCodeTable = Table('packagelistinglogstatuscode', metadata,
     Column('statuscodeid', Integer(),  primary_key=True, autoincrement=False, nullable=False),
 )
+initial_data(PackageListingLogStatusCodeTable,
+    ['statuscodeid'],
+    [SC_ADDED], [SC_APPROVED], [SC_AWAITING_BRANCH], [SC_AWAITING_REVIEW],
+    [SC_DENIED], [SC_OBSOLETE], [SC_ORPHANED], [SC_OWNED], [SC_REMOVED], [SC_DEPRECATED])
 Grant_RW(PackageListingLogStatusCodeTable)
 
 

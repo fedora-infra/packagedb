@@ -34,7 +34,7 @@ from turbogears.database import session
 
 from cherrypy import request
 
-from fedora.tg.util import request_format
+from fedora.tg.tg1utils import request_format
 
 from pkgdb.model import Comment, PackageBuild, Application
 from pkgdb.lib.utils import mod_grp, is_xhr
