@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2010  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -32,11 +32,11 @@ Controller for displaying Package Bug Information.
 
 from urllib import quote
 import xmlrpclib
-
 from turbogears import controllers, expose, config, redirect
 from sqlalchemy.exceptions import InvalidRequestError
 from cherrypy import request
 from fedora.tg.tg1utils import request_format
+from operator import itemgetter, attrgetter
 
 try:
     # python-bugzilla 0.4 >= rc5
@@ -94,7 +94,7 @@ class BugList(list):
         bug.product = to_unicode(bug.product)
         return {'url': bug.url, 'bug_status': bug.bug_status,
                 'short_desc': bug.short_desc, 'bug_id': bug.bug_id,
-                'product': bug.product}
+                'product': bug.product, 'version': 'Unknown'}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
@@ -133,6 +133,49 @@ class Bugs(controllers.Controller):
         # requests to download files.  These refused to go away even when
         # we fixed up the apache redirects.  Send them to download.fp.o
         # manually.
+
+        def bug_sort(arg1, arg2):
+            if (arg1['product'] < arg2['product']):
+                return -1
+
+            elif (arg1['product'] > arg2['product']):
+                return 1
+
+            else:
+                #
+                # version is a string which may contain an integer such as 13 or
+                # a string such as 'rawhide'.  We want the integers first in
+                # decending order followed by the strings.
+                #
+                try:
+                    val1 = int(arg1['version'])
+                    try:
+                        val2 = int(arg2['version'])
+                    except ValueError:
+                        return -1
+                except ValueError:
+                    try:
+                        val2 = int(arg2['version'])
+                        return 1
+                    except ValueError:
+                        val1 = arg1['version']
+                        val2 = arg2['version']
+
+                if (val1 < val2):
+                    return 1
+
+                elif (val1 > val2):
+                    return -1
+
+                else:
+                    if (arg1['bug_id'] < arg2['bug_id']):
+                        return -1
+
+                    elif (arg1['bug_id'] < arg2['bug_id']):
+                        return -1
+
+                    return 0
+
         if args or kwargs:
             if args:
                 url = 'http://download.fedoraproject.org/' \
@@ -152,6 +195,7 @@ class Bugs(controllers.Controller):
                 'bug_status': ('ASSIGNED', 'NEW', 'MODIFIED',
                     'ON_DEV', 'ON_QA', 'VERIFIED', 'FAILS_QA',
                     'RELEASE_PENDING', 'POST') }
+        
         # :E1101: python-bugzilla monkey patches this in
         try:
             bugzilla = get_bz()
@@ -167,8 +211,21 @@ class Bugs(controllers.Controller):
  
         raw_bugs = bugzilla.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
+        bug_ids = []
         for bug in raw_bugs:
             bugs.append(bug)
+            bug_id = bugs[-1]['bug_id']
+            bug_ids.append(bug_id)
+
+        bug_details = bugzilla.getbugssimple(bug_ids)
+
+        if bugs:
+            for bug in bugs:
+                bug_id1 = bug['bug_id']
+                for bug_info in bug_details:
+                    if bug_id1 == bug_info.bug_id:
+                        bug['version'] = bug_info.version
+                        break
 
         if not bugs:
             # Check that the package exists
@@ -185,6 +242,7 @@ class Bugs(controllers.Controller):
                     error['tg_template'] = 'pkgdb.templates.errors'
                 return error
 
-        return dict(title=_('%(app)s -- Open Bugs for %(pkg)s') %
+        bugs.sort(cmp=bug_sort)
+        return  dict(title=_('%(app)s -- Open Bugs for %(pkg)s') %
                 {'app': self.app_title, 'pkg': package_name},
                 package=package_name, bugs=bugs)
