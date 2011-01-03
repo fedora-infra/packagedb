@@ -23,6 +23,7 @@
         <th>Version</th>
         <th>Number</th>
         <th>Status</th>
+        <th>Keywords</th>
         <th>Description</th>
       </tr>
       <tr py:for="bug in bugs">
@@ -30,6 +31,7 @@
         <td class="bug">$bug.version</td>
         <td class="bug"><a href="$bug.url">$bug.bug_id</a></td>
         <td class="bug">${bug.bug_status.lower()}</td>
+        <td class="bug">$bug.keywords</td>
         <td class="bug"><a href="$bug.url">$bug.short_desc</a></td>
       </tr>
     </table>

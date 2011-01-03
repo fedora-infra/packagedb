@@ -94,7 +94,7 @@ class BugList(list):
         bug.product = to_unicode(bug.product)
         return {'url': bug.url, 'bug_status': bug.bug_status,
                 'short_desc': bug.short_desc, 'bug_id': bug.bug_id,
-                'product': bug.product, 'version': 'Unknown'}
+                'product': bug.product, 'version': 'Unknown', 'keywords': ''}
 
     def __setitem__(self, index, bug):
         bug = self.__convert(bug)
@@ -208,7 +208,7 @@ class Bugs(controllers.Controller):
             if request_format() != 'json':
                 error['tg_template'] = 'pkgdb.templates.errors'
             return error
- 
+
         raw_bugs = bugzilla.query(query) # pylint: disable-msg=E1101
         bugs = BugList(self.bzQueryUrl, self.bzUrl)
         bug_ids = []
@@ -222,9 +222,13 @@ class Bugs(controllers.Controller):
         if bugs:
             for bug in bugs:
                 bug_id1 = bug['bug_id']
-                for bug_info in bug_details:
+                for i in range(len(bug_details)):
+                    bug_info = bug_details[i]
                     if bug_id1 == bug_info.bug_id:
                         bug['version'] = bug_info.version
+                        if ('Triaged' in bug_info.keywords):
+                            bug['keywords'] = 'Triaged'
+                        del bug_details[i]
                         break
 
         if not bugs:
