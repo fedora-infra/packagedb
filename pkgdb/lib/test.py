@@ -21,12 +21,15 @@
 Library with helpers making tests more readable
 """
 
+
 from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy import ForeignKey, MetaData, create_engine
+from sqlalchemy.exc import InvalidRequestError
 
 from turbogears import config, update_config, startup, database
 import turbogears
 from turbogears.util import get_model
+from minimock import Mock
 import os
 from unittest import TestCase
 import atexit
@@ -34,6 +37,10 @@ import cherrypy
 import cherrypy._cpwsgi
 import fedora.tg.tg1utils
 from webtest import TestApp
+
+# check if schema is created
+_schema_created = False
+_drop_registred = False
 
 cherrypy_major_ver = int(cherrypy.__version__.split('.')[0])
 #if cherrypy_major_ver < 3:
@@ -50,6 +57,7 @@ if os.path.exists('test.cfg'):
             break
     else:
         modulename = None
+   
     update_config(configfile="test.cfg", modulename=modulename)
     # use database.admin_dburi as primary dburi during tests
     if config.get('database.admin_dburi', False):
@@ -135,6 +143,44 @@ def mount(controller, path="/"):
         cherrypy.tree.mount(controller, path)
     return make_wsgiapp()
 
+class RPMMock(Mock):
+
+    def __init__(cls, name, verrel, filelist=[], summary='', 
+            description='', executables=[], desktop=[]):
+        from pkgdb.lib.rpmlib import RPM
+        super(RPMMock, cls).__init__(RPM)
+        # parse verrel
+        ver, rel = verrel.split('-')
+        try:
+            epoch, ver = ver.split(':')
+        except:
+            epoch = 0
+
+        cls.name = name
+        cls.epoch = epoch
+        cls.version = ver
+        cls.release = rel
+        cls.arch = 'i386'
+        cls.size = 0
+        cls.url = 'http://localhost/'
+        cls.license = 'GPL'
+        cls.summary = summary
+        cls.description = description
+        cls.sourcerpm = '%s-%s.src.rpm' % (name, verrel)
+        cls.changelog = ((1287659345, 'me me@fp.o', 'Log'),)
+        cls.filelist = filelist
+        cls.executables = executables
+        cls.provides = []
+        cls.obsoletes = []
+        cls.conflicts = []
+        cls.requires_with_pre = []
+
+        cls.has_desktop = Mock(bool)
+        cls.has_desktop.mock_returns = (len(desktop) > 0)
+        cls.desktops = desktop
+
+        cls.icons = Mock(list)
+        cls.icons.mock_returns = []
 
 
 class DBTest(TestCase):
@@ -146,30 +192,105 @@ class DBTest(TestCase):
     cleaning after itself.
     """
     
-    def __init__(self, methodName='runTest'):
+    def __init__(self, methodName='runTest', keep_schema=None, auto_transaction=True):
         super(DBTest, self).__init__(methodName)
         from turbogears.database import session, metadata
+        global _drop_registred
+
+        def drop_schema():
+            global _schema_created
+            if _schema_created:
+                metadata.drop_all()
+                _schema_created = False
+
         self.session = session
         self.metadata = metadata
         self.model = get_model()
+        self.auto_transaction = auto_transaction
+
+        if keep_schema is not None:
+            self.keep_schema = keep_schema
+        else: 
+            self.keep_schema = config.get('database.keep_schema', True)
+
+        if self.keep_schema and not _drop_registred:
+            atexit.register(drop_schema)
+            _drop_registred = True
+
 
     def setUp(self):
-        self.metadata.create_all()
+        global _schema_created
+
+        if not _schema_created:
+            self.metadata.create_all()
+        else:
+            if not self.keep_schema:
+                self.metadata.drop_all()
+                self.metadata.create_all()
+        _schema_created = True
+        if self.auto_transaction:
+            try:
+                self.session.begin()
+            except InvalidRequestError:
+                self.session.rollback()
+                self.session.begin()
 
 
     def tearDown(self):
+        global _schema_created
         # finish unfinished transaction to prevent lock during drop table
         try:
             self.session.rollback()
         except:
             pass
-        self.metadata.drop_all()
 
+        self.session.expunge_all()
+        if not self.keep_schema:
+            self.metadata.drop_all()
+            _schema_created = False
+
+
+    def setup_collection(self, name, version, status_code=None, branch_name='master', dist_tag=None):
+        from pkgdb.model import Collection, SC_ACTIVE
+        if not status_code:
+            status_code = SC_ACTIVE
+        if not dist_tag:
+            dist_tag = ".%s%s" % (name.lower(), version.lower())
+        coll = Collection(name, version, status_code, 'owner', branch_name, dist_tag)
+        self.session.add(coll)
+        return coll
+
+
+    def setup_repo(self, name, shortname, url, coll, active=True):
+        from pkgdb.model import Repo
+        import pkgdb
+        repo = Repo(name, shortname, url, 
+            'file://%s/'%pkgdb.__path__[0], active, None)
+        self.session.add(repo)
+        coll.repos.append(repo)
+        return repo
+        
+    def setup_package(self, name, statuscode=None, colls=[], 
+            summary=u'summary', description=u'description'):
+        from pkgdb.model import Package, PackageListing, SC_APPROVED
+        if not statuscode:
+            statuscode = SC_APPROVED
+        pkg = Package(name, summary, statuscode, description)
+        self.session.add(pkg)
+        if colls:
+            self.session.flush()
+            for coll in colls:
+                pkg_listing = PackageListing('owner', SC_APPROVED, packageid=pkg.id, collectionid=coll.id)
+                self.session.add(pkg_listing)
+                self.session.flush()
+                self.session.refresh(coll)
+        return pkg
 
 class WebAppTest(DBTest):
 
     def __init__(self, methodName='runTest'):
-        super(WebAppTest, self).__init__(methodName)
+        super(WebAppTest, self).__init__(methodName, 
+            keep_schema=False, auto_transaction=False)
 
     def _init_env(self):
         import pkgdb.lib.utils
@@ -225,7 +346,6 @@ class BrowsingSession(object):
         self.cookie_encoded = response.headers.get('Set-Cookie', '')
 
 
-
 def slow(func):
     """Decorator to mark long-running tests
 
@@ -254,35 +374,6 @@ def current(func):
 
     func.current = True
     return func
-
-
-def rollback(func):
-    """
-    Decorator to isolate db access in DBTest methods in transaction 
-    that is rolled back in the end. This is usefull when we need to test model
-    and not to make new db instance in every test.
-
-    Usage:
-
-    class TestModel(DBTest):
-        @rollback
-        def _test_something(self):
-            ....
-        @rollback
-        def _test_something_else(self):
-            ....
-
-        def test_model(self):
-            self._test_something()
-            self._test_something_else()
-    """
-    def trans(self, *args, **kvargs):
-        self.session.begin()
-        res = func(self, *args, **kvargs)
-        self.session.rollback()
-        self.session.expunge_all()
-        return res
-    return trans
 
 
 def create_stuff_table(metadata):

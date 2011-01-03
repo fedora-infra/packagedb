@@ -21,31 +21,20 @@
 PackageBuild related tools
 '''
 
-from turbogears.database import session, get_engine
+from turbogears.database import session
 import datetime
 import logging
 import pytz
-import re
-import os
 import sys
-import atexit
-from StringIO import StringIO
-import stat
-import rpmUtils
-import ConfigParser
-from cpioarchive import CpioArchive, CpioError
+from cpioarchive import CpioError
 from sqlalchemy.sql import and_
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import eagerload
 
+import re
 import yum
 from yum.misc import getCacheDir
 from yum.parser import varReplace
-
-# Currently, this is broken for xz so use our version
-#from rpmUtils.miscutils import rpm2cpio
-from pkgdb.lib.utils import rpm2cpio
-
 
 try:
     from fedora.textutils import to_unicode
@@ -56,16 +45,11 @@ from pkgdb.model import Package, PackageBuild, PackageListing, BinaryPackage
 from pkgdb.model import RpmFiles, RpmProvides, RpmObsoletes, RpmConflicts
 from pkgdb.model import RpmRequires, PackageBuildDepends, PackageBuildRepo
 from pkgdb.model import Icon, IconName, Theme, Repo
-from pkgdb.model import Application
+from pkgdb.model import Application, Executable, AppCollection
+from pkgdb.model import PkgBuildExecutable
 from pkgdb.model import SC_UNDER_DEVELOPMENT
 
-from pkgdb.lib.desktop import Desktop, DesktopParseError
-from pkgdb.lib.icon import Icon as IconImage
-
 log = logging.getLogger(__name__)
-
-RE_APP_ICON_FILE = re.compile(
-        "^.*/(icons|pixmaps)/([^/]*)/(\d+x\d+)/apps/([^/]*)\.png$")
 
 class PkgImportError(Exception):
     def __init__(self, value):
@@ -82,232 +66,14 @@ class PkgImportAlreadyExists(Exception):
     def __str__(self):
         return repr(self.parameter)
 
+DEFAULT_PATH = re.compile(r'^(/bin/|/sbin/|/usr/bin/|/usr/sbin/|/usr/local/bin/|/usr/local/sbin/|)(.*)')
 
-class RPM(object):
-    '''
-
-    Note: RPM objects store their strings as byte strings.  This is because we
-    can't tell here what we're going to do with the data.  At some point you
-    may need to transform the data from bytes into unicode.
-    '''
-    
-    def __init__(self, build, yumrepo):
-    
-        self.build = build
-        self._cpio = None
-        self._fdno = None
-        self.yumrepo = yumrepo
-        self._issued_arch_closes = []
+def _separate_executable(file):
+    res = DEFAULT_PATH.match(file)
+    return res.groups()
 
 
-    def close(self):
-        """Clean after yourself
-        """
-        # cpioarchive registers iself in atexit and thuc can't be 
-        # garbage collected
-        if len(self._issued_arch_closes) == 0:
-            return 
-        
-        pos_to_del = []
-
-        for (pos, eh) in enumerate(atexit._exithandlers):
-             if eh[0] in self._issued_arch_closes:
-                eh[0](*(eh[1]), **(eh[2]))
-                pos_to_del.append(pos)
-
-        # a bit awkward way to drop unnecesary stuff
-        for (idx,pos) in enumerate(pos_to_del):
-            del atexit._exithandlers[pos-idx]
-
-
-    @property
-    def archive(self):
-        """ Open an load rpm file and return the enclosed CpioArchive object.
-            The requestor is responsible for closing the archive.
-        """
-
-        if not self._cpio:
-            filename = self.build.localPkg()
-            if not os.path.exists(filename):
-                try:
-                    log.info("          Downloading...")
-                    filename = self.yumrepo.getPackage(self.build)
-                except:
-                    exc_class, exc, tb = sys.exc_info()
-                    e = PkgImportError(exc)
-                    raise e.__class__, e, tb
-
-            self._fdno = os.open(filename, os.O_RDONLY)
-
-            # rpm2cpio won't just output a blob of data, it needs a file.
-            # Using StringIO here takes more memory than a tempfile, but
-            # should be faster.
-            # rpm2cpio closes fdno
-            cpio = StringIO()
-            try:
-                rpm2cpio(self._fdno, out=cpio)
-            except Exception, e:
-                exc_class, exc, tb = sys.exc_info()
-                e = PkgImportError("Invalid RPM file (%s). Yum cache broken?" % exc)
-                raise e.__class__, e, tb
-            self._cpio = cpio
-
-        # Back to the beginning of the file
-        self._cpio.seek(0)
-
-        archive = CpioArchive(fileobj=self._cpio)
-        self._issued_arch_closes.append(archive.close)
-
-        return archive
-
-
-    def re_custom_icons(self, icon_names=()):
-            return re.compile(r"^.*/(icons|pixmaps).*/(%s)\.png$" % '|'.join((re.escape(e) for e in icon_names)))
-
-
-    def has_icon(self, icon_names=()):
-        """Finds out if rpm contains at least one icon file
-
-        :arg icon_names: list of icon names we are especially looking for
-        :returns: result of the test
-        :rtype: boolean
-        """
-        if icon_names:
-            re_cust_icons = self.re_custom_icons(icon_names)
-
-
-        for f in self.filelist:
-            if RE_APP_ICON_FILE.match(f) or (
-                    icon_names and re_cust_icons.match(f)):
-                return True
-            
-        return False
-
-
-    def _prune_icons(self, icons):
-        """Leave one icon (optimal for resize to 48x48)
-        for every name and theme pair
-
-        :arg icons: list of Icon objects
-        :returns: pruned list of Icon objects
-        """
-
-        _icons = {}
-
-        # organize
-        for i in icons:
-            sel = _icons.get(i.group_key, {})
-            sel[i.size] = i
-            _icons[i.group_key] = sel
-
-        # prune
-        pruned = []
-        for i_set in _icons.values():
-            if i_set.has_key(48):
-                pruned.append(i_set[48])
-            else:
-                pruned.append(i_set[max(i_set.keys())])
-        
-        return pruned
-
-
-    def icons(self, icon_names=()):
-        """List of icons included in rpm
-
-        The list is pruned and only one icon (optimal for resizing
-        to 48x48) is left for each name, theme pair.
-
-        :arg icon_names: list of icon names that will help us
-            with search in unusual locations
-        :returns: list of Icon objects
-        """
-
-        # check for icons first, getting full rpm is expensive
-        if not self.has_icon(icon_names):
-            return []
-
-        icons = []
-
-        if icon_names:
-            re_cust_icons = self.re_custom_icons(icon_names)
-
-        arch = self.archive
-
-        for f in arch:
-            if RE_APP_ICON_FILE.match(f.name) or (
-                    icon_names and re_cust_icons.match(f.name)):
-                icon_file = StringIO(f.read())
-                try:
-                    icon = IconImage.from_filename(f.name, icon_file)
-                    icon.check()
-                    icons.append(icon)
-                except:
-                    log.warning("%s: Unable to parse icon: %s" % (self.build, f.name))
-
-        arch.close()
-
-        return self._prune_icons(icons)
-
-
-    def has_desktop(self):
-        """Finds out if rpm contains at least one .desktop file
-
-        :returns: result of the test
-        :rtype: boolean
-        """
-        for f in self.filelist:
-            if f.endswith('.desktop'):
-                return True
-        return False
-        
-
-    def desktops(self):
-        """All .desktop file entries from rpm
-        :returns: Iterator over Desktop objects (parsed .desktop files)
-        """
-        # check for desktops first, getting full rpm is expensive
-        if not self.has_desktop():
-            raise StopIteration
-       
-        arch = self.archive
-
-        for f in arch:
-            if f.name.endswith('.desktop'):
-                desktop_file = StringIO(f.read())
-                try:
-                    desktop = Desktop.from_file(desktop_file)
-                except DesktopParseError, e:
-                    log.warning("%s: Invalid .desktop file: %s" % (self.build, e))
-                    desktop_file.close()
-                    continue
-
-                desktop_file.close()
-                yield desktop
-
-        arch.close()
-
-
-    sourcerpm = property(lambda self: self.build.sourcerpm)
-    name = property(lambda self: self.build.name)
-    epoch = property(lambda self: self.build.epoch)
-    version = property(lambda self: self.build.version)
-    arch = property(lambda self: self.build.arch)
-    release = property(lambda self: self.build.release)
-    changelog = property(lambda self: self.build.changelog)
-    filelist = property(lambda self: self.build.filelist)
-    provides = property(lambda self: self.build.provides)
-    obsoletes = property(lambda self: self.build.obsoletes)
-    conflicts = property(lambda self: self.build.conflicts)
-    url = property(lambda self: self.build.url)
-    size = property(lambda self: self.build.size)
-    license = property(lambda self: self.build.license)
-    summary = property(lambda self: self.build.summary)
-    description = property(lambda self: self.build.description)
-
-    requires_with_pre = property(lambda self: self.build._requires_with_pre)
-
-
-class PackageBuildImporter(object):
+class BuildImporter(object):
 
     def __init__(self, repo, cachedir='/var/tmp', force=False):
         self.archlist=['x86_64', 'ia32e', 'athlon', 'i686', 'i586', 'i486', 'i386', 'noarch']
@@ -376,7 +142,9 @@ class PackageBuildImporter(object):
             self.yumbase.repos.disableRepo('*')
             repopath = '%s%s' % (self.repo.mirror, self.repo.url)
             log.debug('Enabling repo: pkgdb-%s (%s)' % (self.repo.shortname, repopath))
-            self.yumbase.add_enable_repo('pkgdb-%s' % self.repo.shortname, [str(repopath)])
+            # the repo id needs to be str (not unicode), 
+            # rpm header paths will be refused by rpm otherwise
+            self.yumbase.add_enable_repo(str('pkgdb-%s' % self.repo.shortname), [str(repopath)])
             self._yumrepo = self.yumbase.repos.getRepo('pkgdb-%s' % self.repo.shortname)
 
             # populate sack
@@ -436,7 +204,7 @@ class PackageBuildImporter(object):
         return True
             
 
-    def store_package_build(self, rpm):
+    def _store_package_build(self, rpm):
         """Store packagebuild data in DB
 
         :args rpm: RPMBase instance
@@ -514,7 +282,7 @@ class PackageBuildImporter(object):
         return pkgbuild
 
 
-    def store_binary_package(self, name):
+    def _store_binary_package(self, name):
         """Store bianrypackage in DB
 
         :args name: packagebuild name
@@ -534,7 +302,7 @@ class PackageBuildImporter(object):
         return binary_package
 
 
-    def store_filelist(self, rpm, pkgbuild):
+    def _store_filelist(self, rpm, pkgbuild):
         """Store filelist
 
         :args rpm: RPMBase instance 
@@ -549,7 +317,7 @@ class PackageBuildImporter(object):
             rpm_file.build = pkgbuild
 
 
-    def store_provides(self, rpm, pkgbuild):
+    def _store_provides(self, rpm, pkgbuild):
         """Store provides
 
         :args rpm: RPMBase instance 
@@ -565,7 +333,7 @@ class PackageBuildImporter(object):
             obj.build = pkgbuild
 
 
-    def store_obsoletes(self, rpm, pkgbuild):
+    def _store_obsoletes(self, rpm, pkgbuild):
         """Store obsoletes
 
         :args rpm: RPMBase instance 
@@ -581,7 +349,7 @@ class PackageBuildImporter(object):
             obj.build = pkgbuild
 
 
-    def store_conflicts(self, rpm, pkgbuild):
+    def _store_conflicts(self, rpm, pkgbuild):
         """Store conflicts
 
         :args rpm: RPMBase instance 
@@ -597,7 +365,7 @@ class PackageBuildImporter(object):
             obj.build = pkgbuild
 
 
-    def store_requires(self, rpm, pkgbuild):
+    def _store_requires(self, rpm, pkgbuild):
         """Store requires
 
         :args rpm: RPMBase instance 
@@ -607,13 +375,13 @@ class PackageBuildImporter(object):
         session.query(RpmRequires).filter_by(build=pkgbuild)\
             .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
-        for (n, f, (e, v, r), p) in rpm.requires_with_pre():
+        for (n, f, (e, v, r), p) in rpm.requires_with_pre:
             obj = RpmRequires(name=n, flags=f, epoch=e,
                             version=v, release=r, prereq=bool(p))
             obj.build = pkgbuild
 
 
-    def store_dependencies(self, rpm, pkgbuild):
+    def _store_dependencies(self, rpm, pkgbuild):
         """Store dependencies
 
         :args rpm: RPMBase instance 
@@ -624,13 +392,35 @@ class PackageBuildImporter(object):
             .delete(synchronize_session=False)
         #pylint:enable-msg=E1101
         providers = set()
-        for (n, f, (e, v, r), p) in rpm.requires_with_pre():
+        for (n, f, (e, v, r), p) in rpm.requires_with_pre:
             for provider in self.yumrepo.sack.searchProvides(n):
                 providers.add(provider.name)
 
         for provider in providers:
             dep = PackageBuildDepends(packagebuildname=provider)
             dep.build = pkgbuild
+
+
+    def _store_executables(self, rpm, pkgbuild):
+
+        for exe_file in rpm.executables:
+            (path, executable) = _separate_executable(exe_file)
+            session.flush()
+            try:
+                exe = session.query(Executable).filter_by(executable=executable).one()
+                log.debug(' %r found.' % exe)
+            except NoResultFound:
+                exe = Executable(executable)
+                session.add(exe)
+                log.debug(' %r created.' % exe)
+
+            try:
+                pbexe = session.query(PkgBuildExecutable).filter_by(
+                    executable=exe, path=path, packagebuild=pkgbuild).one()
+            except NoResultFound:
+                pbexe = PkgBuildExecutable(executable=exe, path=path, packagebuild=pkgbuild)
+                session.add(pbexe)
+                exe.paths.append(pbexe)
 
 
     def store_icon_name(self, name):
@@ -710,7 +500,7 @@ class PackageBuildImporter(object):
         session.flush() #pylint:disable-msg=E1101
 
 
-    def store_desktop_app(self, rpm, pkgbuild, desktop):
+    def _store_desktop_app(self, rpm, pkgbuild, desktop):
         """Create Application instance and related stuff found in .desktop
 
         Application is created or update depending on its presence in DB.
@@ -723,15 +513,34 @@ class PackageBuildImporter(object):
         :arg desktop: Desktop object
         :returns: new or updated Application instance
         """
+        splited = desktop.command.split(' ', 1)
+        (path, command) = _separate_executable(splited[0])
+        command_args = ''
+        if len(splited) > 1:
+            command_args = splited[1]
+
+        session.flush()
+        try:
+            exe = session.query(Executable).filter_by(executable=command).one()
+        except NoResultFound:
+            exe = None
 
         # application
         try:
             #pylint:disable-msg=E1101
             app = session.query(Application)\
                 .filter_by(
-                    name=desktop.name,
+                    command=command,
+                    commandargs=command_args, 
                     apptype='desktop')\
-                .one()
+                .first()
+            if app is not None:
+                log.debug("  Matched by command! (%s)" % app.name)
+            else:
+                app = session.query(Application)\
+                    .filter_by(name=desktop.name)\
+                    .one()
+                log.debug("  Matched by name! (%s)" % app.name)
             #pylint:enable-msg=E1101
         except NoResultFound:
             app = Application(
@@ -740,13 +549,39 @@ class PackageBuildImporter(object):
                 summary=desktop.generic_name,
                 url=rpm.url,
                 apptype='desktop',
-                desktoptype=desktop.target_type)
+                desktoptype=desktop.target_type,
+                command=command,
+                commandargs=command_args
+                )
             session.add(app) #pylint:disable-msg=E1101
+            log.debug("  %r created!" % app)
         else:
-            app.description=desktop.comment
-            app.summary=desktop.generic_name
-            app.url=rpm.url
-            app.desktoptype=desktop.target_type
+            # update only with datat from rawhide
+            if self.collection.statuscode == SC_UNDER_DEVELOPMENT:
+                app.name = desktop.name
+                app.description = desktop.comment
+                app.summary = desktop.generic_name
+                app.url = rpm.url
+                app.desktoptype = desktop.target_type
+            if not app.command:
+                app.command = command
+                app.commandargs = command_args
+
+        # update the executable link
+        if exe:
+            app.executable = exe
+            log.debug("   - executable linked (%s)" % exe.executable)
+
+        # add app name for collection
+        try:
+            app_coll = session.query(AppCollection).filter_by(
+                applicationid=app.id, collectionid=self.collection.id, 
+                packageid=pkgbuild.packageid).one()
+        except NoResultFound:
+            app_coll = AppCollection(desktop.name, app, self.collection, pkgbuild.package)
+            session.add(app_coll)
+        else:
+            app_coll.name = desktop.name
 
         # icon name
         if desktop.icon_name:
@@ -764,11 +599,6 @@ class PackageBuildImporter(object):
         for mimetype in desktop.mimetypes:
             app.assign_mimetype(mimetype)
             session.flush()
-
-
-        # assign to build
-        if app not in pkgbuild.applications:
-            pkgbuild.applications.append(app)
 
         session.flush() #pylint:disable-msg=E1101
 
@@ -849,22 +679,24 @@ class PackageBuildImporter(object):
         :args rpm: build 
         """
 
-        pkgbuild = self.store_package_build(rpm)
-        binary_package = self.store_binary_package(rpm.name)
+        pkgbuild = self._store_package_build(rpm)
+        binary_package = self._store_binary_package(rpm.name)
 
-        self.store_filelist(rpm, pkgbuild)
-        self.store_provides(rpm, pkgbuild)
-        self.store_obsoletes(rpm, pkgbuild)
-        self.store_conflicts(rpm, pkgbuild)
-        self.store_requires(rpm, pkgbuild)
-        self.store_dependencies(rpm, pkgbuild)
+        self._store_filelist(rpm, pkgbuild)
+        self._store_provides(rpm, pkgbuild)
+        self._store_obsoletes(rpm, pkgbuild)
+        self._store_conflicts(rpm, pkgbuild)
+        self._store_requires(rpm, pkgbuild)
+        self._store_dependencies(rpm, pkgbuild)
+
+        self._store_executables(rpm, pkgbuild)
 
         icon_names = set()
 
         try:
-            for desktop in rpm.desktops():
-                log.info("  Application found: %s" % desktop.name)
-                self.store_desktop_app(rpm, pkgbuild, desktop)
+            for desktop in rpm.desktops:
+                log.info("  Application found in .desktop: %s" % desktop.name)
+                self._store_desktop_app(rpm, pkgbuild, desktop)
                 if desktop.icon_name:
                     icon_names.add(desktop.icon_name)
         except CpioError, e:
@@ -874,4 +706,6 @@ class PackageBuildImporter(object):
         icons = rpm.icons(icon_names)
         for icon in icons:
             self.store_icon(icon)
+
+        return pkgbuild
 

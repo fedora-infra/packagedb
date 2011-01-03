@@ -51,8 +51,8 @@ from pkgdb.model import Package, GroupPackageListing, Collection, \
         PersonPackageListingAcl, Repo, PackageBuild, PackageBuildRepo, Tag
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
-        CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
-        BinaryPackageTag
+        CollectionTable, ApplicationTag, BinaryPackageTag
+#from pkgdb.model import PackageBuildApplicationsTable
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.lib.utils import STATUS

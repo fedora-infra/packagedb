@@ -10,8 +10,11 @@ testcurr:
 testall:
 	nosetests -w . tests/
 
+testallv:
+	nosetests -v -w . tests/
+
 testfunc:
-	nosetests -w . tests/functional -a \!slow
+	nosetests -w . tests/functional -v -a \!slow
 
 testfuncd:
 	nosetests -v -w . tests/functional -a \!slow --pdb
@@ -26,7 +29,8 @@ shell:
 	tg-admin --config=test.cfg shell
 
 build:
-	paver build
+	paver egg_info
+	paver build --install-conf=`pwd` --install-data=`pwd` --install-sbin=`pwd`
 
 resetdb:
 	sudo -u postgres dropdb test

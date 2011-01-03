@@ -15,6 +15,7 @@ class TestPkgDBSyncYum(DBTest):
         conn.execute("DELETE FROM repos")
         conn.execute("DELETE FROM package")
         conn.execute("DELETE FROM binarypackages")
+        conn.execute("DELETE FROM applications")
         self.session.commit()
 
     def _create_testing_active_collection(self):
@@ -38,7 +39,15 @@ class TestPkgDBSyncYum(DBTest):
     def _create_testing_devel_active_repo(self):
         from pkgdb.model import Repo
         import pkgdb
-        repo = Repo('Testing Devel', 'devel', 'tests/functional/repo/', 
+        repo = Repo('Testing Devel', 'devel', '../tests/repo-minimal/', 
+            'file://%s/'%pkgdb.__path__[0], True, None)
+        self.session.add(repo)
+        return repo
+
+    def _create_testing_devel_basic_repo(self):
+        from pkgdb.model import Repo
+        import pkgdb
+        repo = Repo('Testing Basic', 'devel', '../tests/repo-basic/', 
             'file://%s/'%pkgdb.__path__[0], True, None)
         self.session.add(repo)
         return repo
@@ -46,7 +55,7 @@ class TestPkgDBSyncYum(DBTest):
     def _create_inactive_repo(self):
         from pkgdb.model import Repo
         import pkgdb
-        repo = Repo('Old 1', 'O-1', 'tests/functional/repo-old/', 
+        repo = Repo('Old 1', 'O-1', '../tests/repo-old/', 
             'file://%s/'%pkgdb.__path__[0], False, None)
         self.session.add(repo)
         return repo
@@ -181,9 +190,24 @@ class TestPkgDBSyncYum(DBTest):
 
         self.session.rollback()
         self._clean_db()
-       
+      
+
+    def _test_update_basic(self):
+        self.session.begin()
+        coll = self.setup_collection('Test', '1', branch_name='tb1')
+        repo = self.setup_repo('Testing Basic', 'tb1', '../tests/repo-basic/', coll) 
+        pkg = self.setup_package('specto', colls=[coll])
+        self.session.commit()
+
+        output = Popen(['server-scripts/pkgdb-sync-yum', '--verbose', '-c', 'test.cfg', 'update', '--skip-inactive'], stdout=PIPE).communicate()[0]
+        print output
+
+        self.session.rollback()
+        self._clean_db()
 
     def test_update(self):
+        self.session.rollback()
+        self._test_update_basic()
         self._test_update_skip_inactive()
         self._test_update_clean_builds()
         self._test_update_updates_description_devel()

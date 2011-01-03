@@ -39,7 +39,7 @@ class Desktop(object):
     
     def __init__(self, name, generic_name=None, comment=None,
             target_type='Application', icon_name=None, 
-            categories=[], mimetypes=[]):
+            categories=[], mimetypes=[], command=None):
         self.name = name
         self.generic_name = generic_name
         self.comment = comment
@@ -47,6 +47,7 @@ class Desktop(object):
         self.icon_name = icon_name
         self.categories = categories
         self.mimetypes = mimetypes
+        self.command = command
 
 
     @classmethod
@@ -79,6 +80,11 @@ class Desktop(object):
         if conf.has_option('Desktop Entry', 'Comment'):
             comment = to_unicode(conf.get('Desktop Entry', 'Comment'))
 
+        # exec
+        command = ''
+        if conf.has_option('Desktop Entry', 'Exec'):
+            command = to_unicode(conf.get('Desktop Entry', 'Exec'))
+
         # target_type
         target_type = None
         if conf.has_option('Desktop Entry', 'Type'):
@@ -106,5 +112,5 @@ class Desktop(object):
         return self(name, generic_name=generic_name, 
                 comment=comment, icon_name=icon_name,
                 target_type=target_type, categories=categories,
-                mimetypes=mimetypes)
+                mimetypes=mimetypes, command=command)
 
