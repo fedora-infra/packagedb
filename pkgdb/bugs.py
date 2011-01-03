@@ -38,6 +38,7 @@ from cherrypy import request
 from fedora.tg.tg1utils import request_format
 from operator import itemgetter, attrgetter
 
+
 try:
     # python-bugzilla 0.4 >= rc5
     from bugzilla.base import _Bug as Bug
@@ -59,6 +60,20 @@ from pkgdb.model import Package
 from pkgdb.letter_paginator import Letters
 from pkgdb.lib.utils import LOG, get_bz
 from pkgdb import _
+
+from bugzilla import base
+def getbugssimple(self,idlist):
+    '''Return a list of Bug objects for the given bug ids, populated with
+    simple info. As with getbugs(), if there's a problem getting the data
+    for a given bug ID, the corresponding item in the returned list will
+    be None.'''
+    mc = self._multicall()
+    for id in idlist:
+        mc._getbugsimple(id)
+    raw_results = mc.run()
+    del mc
+    return [Bug(self,dict=b) for b in raw_results]
+base.BugzillaBase.getbugssimple = getbugssimple
 
 class BugList(list):
     '''Transform and store values in the bugzilla.Bug data structure
