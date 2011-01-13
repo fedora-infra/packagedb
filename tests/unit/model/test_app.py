@@ -34,17 +34,12 @@ class TestApplication(DBTest):
         coll = self.setup_collection('Test', '1', SC_ACTIVE)
         repo = self.setup_repo('Testing Devel', 'devel', 'tests/functional/repo/', coll) 
         pkg = self.setup_package('name', colls=[coll])
-        app = Application('name', 'description', 'url', 'desktop', 'summary')
-        self.session.add(app)
         exe = Executable('exe')
-        app.executable = exe
-        binpkg = BinaryPackage('name-pkg')
-        self.session.add(binpkg)
-        pkgbuild = PackageBuild('name-pkg', None, 0, '1', '0', 'i386', 0, 'GPL', '', datetime.now(), 'me')
-        pkgbuild.package = pkg
-        pkgbuild.repos.append(repo)
-        self.session.add(pkgbuild)
-        pbexe = PkgBuildExecutable(executable=exe, path='', packagebuild=pkgbuild)
+        app = self.setup_app('Name 1', executable=exe)
+
+        pkgbuild = self.setup_build('name-pkg', package=pkg, repos=[repo], 
+            executables=[exe])
+
         self.session.flush()
 
         assert_true(app.builds, [pkgbuild])

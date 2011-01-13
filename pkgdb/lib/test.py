@@ -37,6 +37,7 @@ import cherrypy
 import cherrypy._cpwsgi
 import fedora.tg.tg1utils
 from webtest import TestApp
+from datetime import datetime
 
 # check if schema is created
 _schema_created = False
@@ -260,7 +261,7 @@ class DBTest(TestCase):
         self.session.add(coll)
         return coll
 
-
+    
     def setup_repo(self, name, shortname, url, coll, active=True):
         from pkgdb.model import Repo
         import pkgdb
@@ -269,7 +270,8 @@ class DBTest(TestCase):
         self.session.add(repo)
         coll.repos.append(repo)
         return repo
-        
+    
+
     def setup_package(self, name, statuscode=None, colls=[], 
             summary=u'summary', description=u'description'):
         from pkgdb.model import Package, PackageListing, SC_APPROVED
@@ -285,6 +287,36 @@ class DBTest(TestCase):
                 self.session.flush()
                 self.session.refresh(coll)
         return pkg
+
+
+    def setup_app(self, name, executable=None):
+        from pkgdb.model import Application
+
+        app = Application(name, 'description', 'url', 'desktop', 'summary')
+        if executable:
+            app.executable = executable
+        self.session.add(app)
+
+        return app
+
+
+    def setup_build(self, name, package=None, repos=[], executables=[]):
+        from pkgdb.model import BinaryPackage, PackageBuild
+        from pkgdb.model import PkgBuildExecutable
+
+        binpkg = BinaryPackage(name)
+        self.session.add(binpkg)
+
+        pkgbuild = PackageBuild(name, None, 0, '1', '0', 'i386', 0, 'GPL', '', datetime.now(), 'me')
+        pkgbuild.package = package
+        pkgbuild.repos.extend(repos)
+        self.session.add(pkgbuild)
+
+        for exe in executables:
+            PkgBuildExecutable(executable=exe, path='', packagebuild=pkgbuild)
+
+        return pkgbuild
+
 
 class WebAppTest(DBTest):
 

@@ -235,6 +235,12 @@
     ${app.description}
     </p>
     <p>
+    <div id="aliases">
+      <h3>Known as</h3>
+            <div py:for="(alt_name, colls) in app.alt_names.iteritems()">
+                <span class="app-alias">${alt_name}</span> in ${', '.join([col[0].short_name for col in colls])}
+            </div>
+    </div>
     <div id="userRatingList" dojoType="dojox.layout.ContentPane">
       <xi:include href="_user_ratings.html" />
     </div>

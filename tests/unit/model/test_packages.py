@@ -99,3 +99,28 @@ class TestPackageListing(DBTest):
         assert_true(listing2.groups2['testgroup'].acls2['commit'])
         assert_true(listing2.people2['testperson'])
         assert_true(listing2.people2['testperson'].acls2['commit'])
+
+
+class TestPackageBuild(DBTest):
+
+    def test_applications(self):
+        
+        from pkgdb.model import Executable, SC_ACTIVE
+        coll = self.setup_collection('Test', '1', SC_ACTIVE)
+        repo = self.setup_repo('Testing Devel', 'devel', 'tests/functional/repo/', coll) 
+        pkg = self.setup_package('name', colls=[coll])
+
+        exe1 = Executable('exe1')
+        app1 = self.setup_app('Name 1', executable=exe1)
+
+        exe2 = Executable('exe2')
+        app2 = self.setup_app('Name 2', executable=exe2)
+
+        pkgbuild = self.setup_build('name-pkg', package=pkg, repos=[repo], 
+            executables=[exe1, exe2])
+
+        self.session.flush()
+
+        assert_true(pkgbuild.applications, [app1, app2])
+
+
