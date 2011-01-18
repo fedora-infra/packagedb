@@ -52,7 +52,7 @@ from pkgdb.model import Package, GroupPackageListing, Collection, \
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
         CollectionTable, ApplicationTag, BinaryPackageTag
-#from pkgdb.model import PackageBuildApplicationsTable
+from pkgdb.model import ApplicationsTable, PkgBuildExecutablesTable
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.lib.utils import STATUS
@@ -355,8 +355,9 @@ class ListQueries(controllers.Controller):
                                    Tag.name,
                                    ApplicationTag.score),
                                and_(Tag.id == ApplicationTag.tagid,
-                                    ApplicationTag.applicationid == PackageBuildApplicationsTable.c.applicationid,
-                                    PackageBuildApplicationsTable.c.packagebuildid == PackageBuild.id,
+                                    ApplicationTag.applicationid == ApplicationsTable.c.id,
+                                    ApplicationsTable.c.executableid == PkgBuildExecutablesTable.c.executableid,
+                                    PkgBuildExecutablesTable.c.packagebuildid == PackageBuild.id,
                                     PackageBuildRepo.repoid == Repo.id,
                                     PackageBuildRepo.packagebuildid==PackageBuild.id,
                                     Repo.shortname==repo))
@@ -372,7 +373,7 @@ class ListQueries(controllers.Controller):
                 buildtags[repo][pkgname][tag] = score
 
         return dict(title=_('%(app)s -- Build Tags') % {'app': self.app_title},
-                    buildtags=buildtags, repos=repos)
+                    buildtags=buildtags, repos=repos, status=True)
 
     @expose(content_type='application/sqlite')
     def sqlitebuildtags(self, repo):
