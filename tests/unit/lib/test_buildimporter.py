@@ -17,15 +17,21 @@ class TestBuildImporter(DBTest):
         repo = self.setup_repo('Testing Devel', 'devel', 'tests/functional/repo/', coll) 
         pkg = self.setup_package('test-pkg', colls=[coll])
 
-        desktop = Desktop('Test App', 'Generic name', 'Comment', command='/usr/bin/test')
+        desktop = Desktop('Test App', 'Generic name', 'Comment', command='/usr/bin/test -f')
+        desktop_nodisplay = Desktop('Test App Filter', 'Generic name', 'Comment', 
+            command='/usr/bin/test', nodisplay=True)
+
+
 
         # fake rpm
         rpm = RPMMock('test-pkg', '1.0-1', filelist=[
                 '/usr/bin/test',
                 '/usr/sbin/test',
                 '/usr/share/applications/test.desktop',
+                '/usr/share/applications/test_filter.desktop',
                 '/usr/share/icons/hicolor/48x48/apps/test.png'], 
-            executables = ['/usr/bin/test', '/usr/sbin/test'], desktop=[desktop])
+            executables=['/usr/bin/test', '/usr/sbin/test'], 
+            desktop=[desktop, desktop_nodisplay])
 
         bi = BuildImporter(repo)
         build = bi.process(rpm)
@@ -40,8 +46,12 @@ class TestBuildImporter(DBTest):
         assert_equals(app.executable, exe)
         assert_equals(app.builds, [build])
 
-        assert_equals(app.alt_names, {u'Test App': set([(coll, pkg),])})
+        # did we skip nodisplay .desktop?
+        apps = self.session.query(Application).filter_by(name='Test App Filter').all()
+        assert_equals(len(apps), 0)
 
+        # test alternative names
+        assert_equals(app.alt_names, {u'Test App': set([(coll, pkg),])})
 
     def test_appcollection_import(self):
         from pkgdb.lib.buildimporter import BuildImporter

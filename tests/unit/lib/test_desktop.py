@@ -20,8 +20,10 @@ StartupNotify=true
 Terminal=false
 Type=Application
 X-Desktop-File-Install-Version=0.16
+NoDisplay=true
 """
         f_desktop = StringIO(desktop)
         d = Desktop.from_file(f_desktop)
 
         assert_equals(d.command, u'specto')
+        assert_true(d.nodisplay)

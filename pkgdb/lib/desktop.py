@@ -39,7 +39,7 @@ class Desktop(object):
     
     def __init__(self, name, generic_name=None, comment=None,
             target_type='Application', icon_name=None, 
-            categories=[], mimetypes=[], command=None):
+            categories=[], mimetypes=[], command=None, nodisplay=False):
         self.name = name
         self.generic_name = generic_name
         self.comment = comment
@@ -48,6 +48,7 @@ class Desktop(object):
         self.categories = categories
         self.mimetypes = mimetypes
         self.command = command
+        self.nodisplay = nodisplay
 
 
     @classmethod
@@ -109,8 +110,14 @@ class Desktop(object):
                 if mt.strip():
                     mimetypes.add(to_unicode(mt))
 
+        # nodisplay
+        nodisplay = False
+        if conf.has_option('Desktop Entry', 'NoDisplay') \
+                and conf.get('Desktop Entry', 'NoDisplay') == 'true':
+            nodisplay = True
+
         return self(name, generic_name=generic_name, 
                 comment=comment, icon_name=icon_name,
                 target_type=target_type, categories=categories,
-                mimetypes=mimetypes, command=command)
+                mimetypes=mimetypes, command=command, nodisplay=nodisplay)
 

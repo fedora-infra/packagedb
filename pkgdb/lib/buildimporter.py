@@ -695,6 +695,8 @@ class BuildImporter(object):
 
         try:
             for desktop in rpm.desktops:
+                if desktop.nodisplay:
+                    continue
                 log.info("  Application found in .desktop: %s" % desktop.name)
                 self._store_desktop_app(rpm, pkgbuild, desktop)
                 if desktop.icon_name:
