@@ -189,7 +189,6 @@ Run the following scripts to bring it up to date::
   sudo -u postgres psql pkgdb < update-schema/04_updates_to_make_db_match_the_model.sql
   python update-schema/05_migrate_version.py pkgdb.cfg > update-schema/05_migrate_version.sql
   sudo -u postgres psql pkgdb < update-schema/05_migrate_version.sql
-  sudo -u postgres ./manage_db upgrade
 
 TODO: remove the lines above in favour of
 
@@ -197,7 +196,7 @@ If your database is not up to date with the latest changes in your branch
 (DB created from dump, merged in db updates),run the following scripts 
 to bring it up to date::
 
-  sudo -u postgres ./manage_db upgrade
+  sudo -u postgres python ./manage_db -c db_setup.cfg upgrade
 
 
 Create the database from scratch
@@ -261,6 +260,8 @@ to access the database as frequently.  To use it you need to install and start i
 
 Setting up the cron jobs
 ------------------------
+If you imported the database dump, skip this section.
+
 A cron job is needed to sync information from the yum repositories into the
 packagedb. server-scripts/pkgdb-sync-yum update
 

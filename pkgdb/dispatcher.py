@@ -609,6 +609,108 @@ class PackageDispatcher(controllers.Controller):
         return dict(status=True, retirement=retirement)
 
     @expose(allow_json=True)
+    @identity.require(identity.not_anonymous())
+    def set_retirement(self, pkg_name, collectn, collectn_version, retirement):
+        '''Retire/Unretire package
+
+        Rules for retiring:
+        - owned packages - can be retired by: maintainers and cvsadmin
+        - orphaned packages - can be retired by: anyone
+
+        Unretiring can only be done by cvsadmin
+
+        :arg pkg_name:         The name of the package to be (un)retired.
+        :arg collectn:         Collection name
+        :arg collectn_version: Collection version
+        :arg retirement:       Retirement status - 'Retire' or 'Unretire'
+        '''
+        # Check that the pkg exists
+        try:
+            #pylint:disable-msg=E1101
+            pkg = PackageListing.query.filter(and_(Package.name==pkg_name,
+                                                   Package.id==PackageListing.packageid,
+                                                   Collection.name==collectn,
+                                                   Collection.version==collectn_version,
+                                                   Collection.id==PackageListing.collectionid)
+                                             ).one()
+            pkg_listing_id = pkg.id
+        except InvalidRequestError:
+            return dict(status=False, message=_('No such package %(pkg)s') %
+                    {'pkg': pkg_name})
+        approved = self._user_can_set_acls(identity, pkg)
+
+        if (retirement == 'Retire'):
+            if pkg.statuscode != STATUS['Deprecated'] and \
+               (pkg.statuscode == STATUS['Orphaned'] or
+                approved in ('admin', 'owner')):
+                # Retire package
+                if pkg.owner != 'orphan':
+                    try:
+                        person = fas.cache['orphan']
+                    except KeyError:
+                        return dict(status=False, message=_('specified owner %(owner)s'
+                            ' does not have a fedora account') % {
+                                'owner': 'orphan'})
+                    # let set_owner handle bugzilla and other stuff
+                    try:
+                        self._set_owner(pkg, person)
+                    except (InvalidRequestError, xmlrpclib.ProtocolError), e:
+                        return dict(status=False, 
+                            message=_('Unable to retire package: %(err)s') % {'err': e})
+
+                pkg.statuscode = STATUS['Deprecated']
+                log_msg = 'Package %s in %s %s has been retired by %s' % (
+                    pkg.package.name, pkg.collection.name,
+                    pkg.collection.version, identity.current.user_name)
+                statuscode = STATUS['Deprecated']
+            else:
+                return dict(status=False, message=
+                        _('The retiring of package %(pkg)s could not be' \
+                                ' completed. Check your permissions.') % {
+                                    'pkg': pkg_name})
+
+        elif (retirement == 'Unretire'):
+            if (pkg.statuscode == STATUS['Deprecated'] and
+                approved == 'admin'):
+                # Unretire package
+                pkg.statuscode = STATUS['Orphaned']
+                log_msg = 'Package %s in %s %s has been unretired by %s and' \
+                        ' is now orphan.' % (
+                                pkg.package.name, pkg.collection.name,
+                                pkg.collection.version, identity.current.user_name)
+                statuscode = STATUS['Orphaned']
+            else:
+                return dict(status=False, message=
+                        _('The unretiring of package %(pkg)s could not be' \
+                                ' completed. Check your permissions.') % {
+                                    'pkg': pkg_name})
+
+        else:
+            return dict(status=False, message=
+                    _('Invalid value for retirement.  Acceptable values are "Retire" and' \
+                            ' "Unretire".  Value received is %s') % (pkg_name))
+
+        # Retired and just-unretired packages are orphan
+        pkg.owner = 'orphan'
+        # Make a log in the db.
+        log = PackageListingLog(identity.current.user_name,
+                statuscode, log_msg, None, pkg_listing_id)
+        log.packagelistingid = pkg.id
+
+        try:
+            session.flush() #pylint:disable-msg=E1101
+        except SQLError, e:
+            # An error was generated
+            return dict(status=False,
+                message=_('Unable to (un)retire package %(pkg)s') % {
+                    'pkg': pkg_name})
+        # Send a log to people interested in the package
+        self._send_log_msg(log_msg, _('%(pkg)s (un)retirement') % {
+            'pkg': pkg.package.name}, identity.current.user, (pkg,),
+            ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
+        return dict(status=True, retirement=retirement)
+
+    @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
     @identity.require(identity.not_anonymous())
     def set_acl_status(self, pkgid, person_name, new_acl, statusname):

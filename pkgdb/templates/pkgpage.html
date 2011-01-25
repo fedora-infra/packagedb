@@ -250,7 +250,9 @@ import simplejson
           <div py:choose="" py:strip="">
             <td>
               <div py:when="pkg.status.locale['C'].statusname!='Deprecated'"
-                   py:attrs="{'name' : str(pkg.id)}"
+                   py:attrs="{'name':str(packageListings[0].package.name) + '/' +
+                                     str(pkg.collection.name) + '/' + 
+                                     str(pkg.collection.version) + '/Retire'}"
                    class="requestContainer retirement not_retired"
                    py:choose="">
                 <input py:when="aclChanger or (pkger_grp in tg.identity.groups
@@ -262,8 +264,11 @@ import simplejson
               </div>
             </td>
             <td>
-              <div py:otherwise="" py:attrs="{'name' : str(pkg.id)}"
-                class="requestContainer retirement retired" py:choose="">
+              <div py:otherwise=""
+                   py:attrs="{'name':str(packageListings[0].package.name) + '/' +
+                                     str(pkg.collection.name) + '/' + 
+                                     str(pkg.collection.version) + '/Unretire'}"
+                   class="requestContainer retirement retired" py:choose="">
                 <input py:when="admin_grp in tg.identity.groups"
                   class="retirementButton unretireButton"
                   type="button" value="Unretire package"/>
