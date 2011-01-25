@@ -57,7 +57,8 @@ import logging
 import argparse
 from fnmatch import fnmatch
 
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_, not_
+from sqlalchemy.orm import eagerload
 from sqlalchemy.exceptions import SADeprecationWarning
 
 from turbogears import config, update_config
@@ -123,7 +124,7 @@ def setup_parser():
     parser_showrepos.set_defaults(func='show_repos')
 
     # clean command
-    parser_clean = subparsers.add_parser('clean', help='Clean up pkgdb database. It removes all builds from inactive repos. For list of inactive repos run "%(prog)s showrepos --inactive". This command also removes all builds that are no longer in active repos.')
+    parser_clean = subparsers.add_parser('clean', help='Clean up pkgdb database. It removes all builds from inactive repos. For list of inactive repos run "%(prog)s showrepos --inactive". This command also removes all builds that are no longer in active repos and tries to fix applications in undefined state')
     parser_clean.add_argument('--cachedir',
             help='directory where the yum cache will be created. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
     parser_clean.set_defaults(func='clean')
@@ -389,7 +390,7 @@ def clean(args):
     Remove all builds from inactive repos. 
     Remove all builds that are no longer in active repos.
     """
-    from pkgdb.model import Repo
+    from pkgdb.model import Repo, Application, AppCollection, ApplicationTag, ApplicationUsage
     from pkgdb.lib.buildimporter import BuildImporter
 
     cachedir = _get_cachedir(args.cachedir)
@@ -397,7 +398,6 @@ def clean(args):
     #pylint:disable-msg=E1101
     repos = session.query(Repo).all()
     #pylint:enable-msg=E1101
-
     for repo in repos:
         log.info("Cleaning: %s" % repo.name)
         # prepare importer
@@ -415,6 +415,51 @@ def clean(args):
             importer.delete_all_builds()
         importer.close(prune=False)
         session.commit() #pylint:disable-msg=E1101
+
+    # prune applications
+    apps = session.query(Application)\
+        .options(eagerload(Application.usages, Application.comments, Application.tags))\
+        .filter_by(command=None)\
+        .all()
+
+    for app in apps:
+        log.info(app.name)
+        session.begin() #pylint:disable-msg=E1101
+
+        if app.comments or app.tags or app.usages:  
+            # check whether the app is already imported with different name
+            altname = session.query(AppCollection)\
+                .filter(and_(
+                    AppCollection.name==app.name, 
+                    not_(AppCollection.applicationid==app.id)))\
+                .first()
+            if altname:
+                # move the associated content
+                new_app = altname.application
+
+                for comment in app.comments:
+                    comment.application = new_app
+                for app_usage in app.usages:
+                    new_app.update_rating(
+                        app_usage.usage.name,
+                        app_usage.rating,
+                        app_usage.author,
+                        skip_if_exists=True)
+                for tag, score in app.scores.iteritems():
+                    new_app.tag(tag.name, add_score=score)
+                    session.flush()
+
+                # remove original app
+                session.delete(app)
+                log.info("  - is other name for %s. Data were merged." % new_app)
+            else:
+                log.info("  - executable for this app was not found in the DB..")
+
+        else:
+            session.delete(app)
+            log.info("  - safely removed")
+        
+        session.commit()
 
     log.info('Done.')
 

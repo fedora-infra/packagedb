@@ -289,10 +289,10 @@ class DBTest(TestCase):
         return pkg
 
 
-    def setup_app(self, name, executable=None):
+    def setup_app(self, name, executable=None, command=None):
         from pkgdb.model import Application
 
-        app = Application(name, 'description', 'url', 'desktop', 'summary')
+        app = Application(name, 'description', 'url', 'desktop', 'summary', command=command)
         if executable:
             app.executable = executable
         self.session.add(app)

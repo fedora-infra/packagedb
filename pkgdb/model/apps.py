@@ -398,7 +398,7 @@ class Application(SABase):
         return usages
     
 
-    def tag(self, tag_name):
+    def tag(self, tag_name, add_score=1):
         '''Tag application.
 
         Add tag to application. If the tag already exists, 
@@ -419,7 +419,7 @@ class Application(SABase):
 
         score = self.scores.get(tag, 0)
        
-        self.scores[tag] = score + 1
+        self.scores[tag] = score + add_score
         return tag
 
 
@@ -448,7 +448,7 @@ class Application(SABase):
         return mimetype
 
 
-    def update_rating(self, usage_name, rating, author):
+    def update_rating(self, usage_name, rating, author, skip_if_exists=False):
 
         #pylint:disable-msg=E1101
         try:
@@ -462,7 +462,8 @@ class Application(SABase):
 
         for app_usage in self.usages:
             if app_usage.usage == usage and app_usage.author == author:
-                user_rating = app_usage
+                if not skip_if_exists:
+                    user_rating = app_usage
                 found = True
                 break
         
@@ -715,7 +716,7 @@ class AppCollection(SABase):
         self.package = package
 
     def __repr__(self):
-        return 'AppCollection(name, applicationid=%r, collectionid=%r)' % (
+        return 'AppCollection(%r, applicationid=%r, collectionid=%r)' % (
             self.name, self.applicationid, self.collectionid)#pylint:disable-msg=E1101
 
 
@@ -940,11 +941,10 @@ mapper(Application, ApplicationsTable, properties={
     'tags': relation(ApplicationTag, cascade='all'),
     'mimetypes': relation(MimeType, backref=backref('applications'),
         secondary=AppsMimeTypesTable, cascade='all'),
-    'comments': relation(Comment, backref=backref('application'),
-        cascade='all, delete-orphan'),
+    'comments': relation(Comment, backref=backref('application')),
     'iconname': relation(IconName, backref=backref('applications')),
     'icon': relation(Icon, backref=backref('applications')),
-    'usages': relation(ApplicationUsage, cascade='all'),
+    'usages': relation(ApplicationUsage, cascade='all' ),
     'executable': relation(Executable),
     'collections': relation(AppCollection)
     })
@@ -960,14 +960,14 @@ mapper(AppCollection, AppCollectionsTable,
 
 mapper(ApplicationUsage, ApplicationsUsagesTable, 
     properties={
-        'usage': relation(Usage, cascade='all'),
-        'application': relation(Application, cascade='all'),
+        'usage': relation(Usage),
+        'application': relation(Application),
     })
 
 mapper(ApplicationTag, ApplicationsTagsTable, 
     properties={
-        'tag': relation(Tag, cascade='all'),
-        'application': relation(Application, cascade='all'),
+        'tag': relation(Tag),
+        'application': relation(Application),
     })
 
 mapper(BinaryPackageTag, BinaryPackageTagsTable, 
