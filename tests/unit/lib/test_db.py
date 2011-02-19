@@ -28,7 +28,7 @@ class TestLibDB(TestCase):
                             stuff.c.data.label('data'), 
                             more_stuff.c.data.label('moredata')]).\
                         select_from(stuff.join(more_stuff)).\
-                        where(stuff.c.data.like(text("'orange%%'"))
+                        where(stuff.c.data.like(text("'orange%'"))
                         )
                     )
 

@@ -42,7 +42,7 @@ MS_SYNCED = 2
 
 from sqlalchemy import Table, Column, ForeignKeyConstraint, func, desc
 from sqlalchemy import Integer, String, Text, Boolean, DateTime, Binary
-from sqlalchemy import PassiveDefault, text
+from sqlalchemy import PassiveDefault, text, UniqueConstraint
 from sqlalchemy.orm import relation, backref
 from sqlalchemy.sql.expression import and_
 from sqlalchemy.orm.exc import NoResultFound
@@ -54,7 +54,7 @@ from fedora.tg.json import SABase
 from turbogears import url, config
 from fedora.tg.tg1utils import tg_url
 
-from pkgdb.model import PackageBuild, BinaryPackage, Collection
+from pkgdb.model import PackageBuild, BinaryPackage, Collection, Package
 from pkgdb.lib.dt_utils import fancy_delta
 from pkgdb.lib.db import Grant_RW, initial_data
 
@@ -63,6 +63,14 @@ log = logging.getLogger('pkgdb.model.apps')
 #
 # Tables
 #
+
+ExecutablesTable = Table('executables', metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True,
+        nullable=False),    
+    Column('executable', Text, unique=True, nullable=False),
+)
+Grant_RW(ExecutablesTable)
+
 
 ApplicationsTable = Table('applications', metadata, 
     Column('id', Integer, primary_key=True, autoincrement=True,
@@ -76,13 +84,33 @@ ApplicationsTable = Table('applications', metadata,
     Column('iconid', nullable=True),
     Column('summary', Text, nullable=True),
     Column('icon_status_id', PassiveDefault(text(str(MS_NEW))), nullable=False),
+    Column('command', Text, nullable=True),
+    Column('commandargs', Text, nullable=True),
+    Column('executableid', nullable=True),
     ForeignKeyConstraint(['apptype'],['apptypes.apptype'], onupdate="CASCADE"),
     ForeignKeyConstraint(['iconid'],['icons.id']),
     ForeignKeyConstraint(['iconnameid'],['iconnames.id']),
     ForeignKeyConstraint(['icon_status_id'],['media_status.id'], onupdate="CASCADE",
         ondelete="CASCADE"),
+    ForeignKeyConstraint(['executableid'],['executables.id'], onupdate="CASCADE",
+        ondelete="SET NULL"),
+    UniqueConstraint('command', 'commandargs'),
 )
 Grant_RW(ApplicationsTable)
+
+AppCollectionsTable = Table('appcollections', metadata,
+    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('collectionid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('packageid', Integer, primary_key=True, autoincrement=False, nullable=False),
+    Column('name', Text, nullable=False),
+    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+        onupdate="CASCADE", ondelete="CASCADE"),
+    ForeignKeyConstraint(['collectionid'], ['collection.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+    ForeignKeyConstraint(['packageid'], ['package.id'], onupdate="CASCADE",
+        ondelete="CASCADE"),
+)
+Grant_RW(AppCollectionsTable)
 
 #TODO:review ondelete in FKs - take set null set default into account
 
@@ -138,15 +166,16 @@ BinaryPackageTagsTable = Table('binarypackagetags', metadata,
 Grant_RW(BinaryPackageTagsTable)
 
 
-PackageBuildApplicationsTable = Table('packagebuildapplications', metadata,
-    Column('applicationid', Integer, primary_key=True, autoincrement=False, nullable=False),
+PkgBuildExecutablesTable = Table('pkgbuildexecutables', metadata,
+    Column('executableid', Integer, primary_key=True, autoincrement=False, nullable=False),
     Column('packagebuildid', Integer, primary_key=True, autoincrement=False, nullable=False),
-    ForeignKeyConstraint(['applicationid'], ['applications.id'],
+    Column('path', Text, primary_key=True, nullable=True),
+    ForeignKeyConstraint(['executableid'], ['executables.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
     ForeignKeyConstraint(['packagebuildid'], ['packagebuild.id'],
         onupdate="CASCADE", ondelete="CASCADE"),
 )
-Grant_RW(PackageBuildApplicationsTable)
+Grant_RW(PkgBuildExecutablesTable)
 
 
 AppTypesTable = Table('apptypes', metadata,
@@ -264,6 +293,33 @@ def _create_apptag(tag, score):
 # Mapped Classes
 # 
 
+def _create_path(pkgbuild, path):
+    return PkgBuildExecutable(packagebuild=pkgbuild, path=path)
+
+class Executable(SABase):
+    '''Executable file. The minimal part that can be used
+    to run an application when default PATH is set.
+
+    Table -- executables
+    '''
+
+    def __init__(self, executable):
+        super(Executable, self).__init__()
+        self.executable = executable
+
+    def __repr__(self):
+        return 'Executable(%r)' % (self.executable)
+       
+    @property
+    def builds(self):
+        builds = {}
+        for p in self.paths:
+            blds = builds.get(p.packagebuild, [])
+            blds.append(p.path)
+            builds[p.packagebuild] = blds
+        return builds
+
+
 class Application(SABase):
     '''Application
 
@@ -273,7 +329,8 @@ class Application(SABase):
     '''
 
     def __init__(self, name, description, url, apptype, summary,
-            desktoptype=None, iconname=None, icon=None, icon_status_id=None ):
+            desktoptype=None, iconname=None, icon=None, icon_status_id=None,
+            command=None, commandargs=None, executable=None):
         super(Application, self).__init__()
         self.name = name
         self.description = description
@@ -284,6 +341,9 @@ class Application(SABase):
         self.summary = summary
         self.icon = icon
         self.icon_status_id = icon_status_id
+        self.command = command
+        self.commandargs = commandargs
+        self.executable = executable
         self.scores.__json__ = lambda: dict(((tag.name, score) for tag, score in self.scores.iteritems()))
 
     # scores is dict {<tag_object>:score}
@@ -296,8 +356,8 @@ class Application(SABase):
     _rating = None
 
     def __repr__(self):
-        return 'Application(%r, summary=%r, url=%r, apptype=%r )' % (
-            self.name, self.summary, self.url, self.apptype)
+        return "Application(%r, summary=%r, url=%r, apptype=%r, command='%s %s' )" % (
+            self.name, self.summary, self.url, self.apptype, self.command, self.commandargs)
 
 
     def rating(self):
@@ -338,7 +398,7 @@ class Application(SABase):
         return usages
     
 
-    def tag(self, tag_name):
+    def tag(self, tag_name, add_score=1):
         '''Tag application.
 
         Add tag to application. If the tag already exists, 
@@ -359,7 +419,7 @@ class Application(SABase):
 
         score = self.scores.get(tag, 0)
        
-        self.scores[tag] = score + 1
+        self.scores[tag] = score + add_score
         return tag
 
 
@@ -388,7 +448,7 @@ class Application(SABase):
         return mimetype
 
 
-    def update_rating(self, usage_name, rating, author):
+    def update_rating(self, usage_name, rating, author, skip_if_exists=False):
 
         #pylint:disable-msg=E1101
         try:
@@ -402,7 +462,8 @@ class Application(SABase):
 
         for app_usage in self.usages:
             if app_usage.usage == usage and app_usage.author == author:
-                user_rating = app_usage
+                if not skip_if_exists:
+                    user_rating = app_usage
                 found = True
                 break
         
@@ -458,6 +519,21 @@ class Application(SABase):
 
         return build_names.keys()
 
+    @property
+    def builds(self):
+        if self.executable:
+            return self.executable.pkgbuilds
+        else:
+            return []
+
+    @property
+    def alt_names(self):
+        names = dict()
+        for c in self.collections:
+            colls = names.get(c.name, set())
+            colls.add((c.collection, c.package))
+            names[c.name] = colls
+        return names
 
     @classmethod
     def search(cls, tags, operator):
@@ -554,7 +630,7 @@ class Application(SABase):
                     PackageBuild.committime,
                     PackageBuild.committer)\
                 .distinct()\
-                .join('builds')\
+                .join('executable', 'pkgbuilds')\
                 .filter(and_(
                     Application.apptype == 'desktop', 
                     Application.desktoptype=='Application'))\
@@ -623,6 +699,26 @@ class Application(SABase):
     def icon_url(self):
         return icon_url(self.name, self.icon_status_id)
         
+
+class AppCollection(SABase):
+    '''Application name and collection association.
+
+    The association holds name that shows how the 
+    application is called in given collection. 
+    More nemaes per collection are allowed
+    '''
+
+    def __init__(self, name, application=None, collection=None, package=None):
+        super(AppCollection, self).__init__()
+        self.name = name
+        self.application = application
+        self.collection = collection
+        self.package = package
+
+    def __repr__(self):
+        return 'AppCollection(%r, applicationid=%r, collectionid=%r)' % (
+            self.name, self.applicationid, self.collectionid)#pylint:disable-msg=E1101
+
 
 #class Blacklist(SABase):
 #
@@ -698,6 +794,24 @@ class BinaryPackageTag(SABase):
         return 'BinaryPackageTag(binarypackage=%r, tagid=%r, score=%r)' % (
             self.binarypackagename, self.tagid, self.score) #pylint:disable-msg=E1101
 
+
+class PkgBuildExecutable(SABase):
+    '''Package build and executable association.
+
+    PkgBuildExecutable.path + Executable.executable 
+    = executable with full path. The path contains either 
+    member of system default PATH or None
+    '''
+
+    def __init__(self, executable=None, packagebuild=None, path=None):
+        super(PkgBuildExecutable, self).__init__()
+        self.path = path
+        self.executable = executable
+        self.packagebuild = packagebuild
+
+    def __repr__(self):
+        return 'PkgBuildExecutable(executable=%r, packagebuild=%s, path)' % (
+            self.executable.executable, self.packagebuild, self.path)#pylint:disable-msg=E1101
 
 
 class Comment(SABase):
@@ -815,39 +929,57 @@ class Icon(SABase):
 # Mappers
 #
 
+mapper(Executable, ExecutablesTable, properties={
+    'paths': relation(PkgBuildExecutable),
+    'pkgbuilds': relation(PackageBuild, secondary=PkgBuildExecutablesTable,
+        backref=backref('executables')),
+    })
+
 mapper(Application, ApplicationsTable, properties={
-    'builds': relation(PackageBuild, backref=backref('applications'),
-        secondary=PackageBuildApplicationsTable, cascade='all'),
     'by_tag': relation(ApplicationTag,
         collection_class=attribute_mapped_collection('tag')),
     'tags': relation(ApplicationTag, cascade='all'),
     'mimetypes': relation(MimeType, backref=backref('applications'),
         secondary=AppsMimeTypesTable, cascade='all'),
-    'comments': relation(Comment, backref=backref('application'),
-        cascade='all, delete-orphan'),
+    'comments': relation(Comment, backref=backref('application')),
     'iconname': relation(IconName, backref=backref('applications')),
     'icon': relation(Icon, backref=backref('applications')),
-    'usages': relation(ApplicationUsage, cascade='all'),
+    'usages': relation(ApplicationUsage, cascade='all' ),
+    'executable': relation(Executable),
+    'collections': relation(AppCollection)
+    })
+
+mapper(AppCollection, AppCollectionsTable, 
+    properties={
+        'collection': relation(Collection, cascade='all'),
+        'application': relation(Application, cascade='all'),
+        'package': relation(Package, cascade='all'),
     })
 
 #mapper(Blacklist, BlacklistTable)
 
 mapper(ApplicationUsage, ApplicationsUsagesTable, 
     properties={
-        'usage': relation(Usage, cascade='all'),
-        'application': relation(Application, cascade='all'),
+        'usage': relation(Usage),
+        'application': relation(Application),
     })
 
 mapper(ApplicationTag, ApplicationsTagsTable, 
     properties={
-        'tag': relation(Tag, cascade='all'),
-        'application': relation(Application, cascade='all'),
+        'tag': relation(Tag),
+        'application': relation(Application),
     })
 
 mapper(BinaryPackageTag, BinaryPackageTagsTable, 
     properties={
         'tag': relation(Tag, cascade='all'),
         'binarypackage': relation(BinaryPackage, cascade='all'),
+    })
+
+mapper(PkgBuildExecutable, PkgBuildExecutablesTable, 
+    properties={
+        'executable': relation(Executable, cascade='all'),
+        'packagebuild': relation(PackageBuild, cascade='all'),
     })
 
 mapper(Comment, CommentsTable)

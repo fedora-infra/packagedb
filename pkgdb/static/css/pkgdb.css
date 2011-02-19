@@ -175,6 +175,11 @@
     background: #ffff99;
 }
 
+.app-alias {
+    font-weight: bold;
+    color: #337acc;
+}
+
 #app-viewer-tabs {
     background: #ffffff url(../images/tabs-background.png) repeat-x;
     border-radius: 4px;
@@ -298,7 +303,6 @@
 #user_ratings .usage-label {
     color: #337acc;
     font-weight: bold;
-
 }
 
 .rating-result {

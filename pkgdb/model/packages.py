@@ -666,8 +666,11 @@ class PackageBuild(SABase):
                 break
 
         # format path
-        return "%s%s%s%s.rpm" % (repo.mirror, repo.url,
-                ('','Packages/')[repo.url.endswith('os/')], self)
+        repo_url = repo.url
+        if not repo_url.endswith('/'):
+            repo_url = repo_url+'/'
+        return "%s%s%s%s.rpm" % (repo.mirror, repo_url,
+                ('','Packages/')[repo_url.endswith('os/')], self)
 
 
     def scores(self):
@@ -701,6 +704,16 @@ class PackageBuild(SABase):
         if limit > 0:
             fresh = fresh.limit(limit)
         return fresh
+
+    @property
+    def applications(self):
+        from pkgdb.model import Application
+        apps = session.query(Application)\
+                .join('executable', 'pkgbuilds')\
+                .filter(PackageBuild.id==self.id)\
+                .order_by(Application.name.asc())\
+                .all()
+        return apps
 
 #
 # Mappers
