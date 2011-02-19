@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright (C) 2007-2011 Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -53,6 +53,7 @@ from pkgdb.search import Search
 from pkgdb.tag import Tags
 from pkgdb.user_rating import UserRatings
 from pkgdb.users import Users
+from pkgdb.massacls import MassAcls
 
 from pkgdb.model import PackageBuild, Comment, Application
 
@@ -84,6 +85,7 @@ class Root(controllers.RootController):
     rating = UserRatings(app_title)
     users = Users(app_title)
     builds = BuildsController(app_title)
+    massacls = MassAcls()
 
 
     @expose(template="pkgdb.templates.login", allow_json=True)
