@@ -54,12 +54,6 @@ class AclNotAllowedError(Exception):
     '''
     pass
 
-class NonFASUserError(Exception):
-    '''
-    The entity specified is not a valid FAS user.
-    '''
-    pass
-
 
 class MassAcls(controllers.Controller):
     eventLogger = EventLogger()
@@ -148,6 +142,7 @@ class MassAcls(controllers.Controller):
         '''
         if not user:
             user = identity.current.user
+
         # watchbugzilla and owner needs a valid bugzilla address
         if acl in ('watchbugzilla', 'owner'):
             if not 'bugzilla_email' in user:
@@ -209,11 +204,9 @@ class MassAcls(controllers.Controller):
                     if group['name'] in self.comaintainer_memberships]:
                 return True
             raise AclNotAllowedError(_('%(user)s must be in one of these'
-                                       ' groups: %(groups)s to hold the '
-                                       '%(acl)s acl') % {
-                                       'user': user['username'],
-                                       'groups': self.comaintainer_memberships,
-                                       'acl': acl})
+                    'groups: %(groups)s to hold the %(acl)s acl') % 
+                    {'user': user['username'],
+                     'groups': self.comaintainer_memberships, 'acl': acl})
         elif identity.in_any_group(*self.comaintainer_memberships):
             return True
         raise AclNotAllowedError(_('%(user)s must be in one of these'
@@ -298,8 +291,8 @@ class MassAcls(controllers.Controller):
             particular version of a distribution.
 
         Returns
-            on success, status=True
-            on failure, raises an exception
+            on success, message indicating the number of packages updated.
+            on failure, message indicating error and exc set. 
 
         '''
 
@@ -311,11 +304,11 @@ class MassAcls(controllers.Controller):
         if (identity.current.user_name != maintainer):
             admin_grp = config.get('pkgdb.admin_grp', 'cvsadmin')
             if not identity.in_group(admin_grp):
-                raise AclNotAllowedError(_('%(user)s must either be the '
-                                           'maintainer or in the admin group '
-                                           '(%(group)s) to add comaintainers' %
-                                           {'user': identity.current.user_name,
-                                            'group': admin_grp}))
+                flash(_('%(user)s must be either the maintainer or in the '
+                        'admin group (%(group)s) to add comaintainers' %
+                        {'user': identity.current.user_name,
+                         'group': admin_grp}))
+                return dict(exc='AclNotAllowedError')
 
         #
         # Validate the list of new comaintainers.
@@ -330,8 +323,9 @@ class MassAcls(controllers.Controller):
 
         if len(nonFASUsers) != 0:
             userList = ','.join(nonFASUsers)
-            raise NonFASUserError(_('The following users are not valid FAS '
-                                    'users %(users)s') % {'users': userList})
+            flash(_('The following users are not valid FAS '
+                    'users: %(users)s') % {'users': userList})
+            return dict(exc='NonFASUserError')
 
         #
         # Validate the list of new comaintainers.
@@ -347,9 +341,9 @@ class MassAcls(controllers.Controller):
 
         if len(nonAcls) != 0:
             userList = ','.join(nonAcls)
-            raise AclNotAllowedError(_('The following users do not hold '
-                                       'approveacls users %(comaintainers)s') %
-                                     userList)
+            flash(_('The following users do not hold approveacls users '
+                    '%(comaintainers)s') % userList)
+            return dict(exc='AclNotAllowedError')
 
         #
         # Convert the pattern to a postgresql pattern.
@@ -362,24 +356,23 @@ class MassAcls(controllers.Controller):
         #
         # Build a query to get packagelistings owned by the maintainer.
         #
-        if not collectn_ver:
-            pkgsOwned_query = select([PackageTable.c.name,
-                                      CollectionTable.c.name,
-                                      CollectionTable.c.version,
-                                      PackageListingTable.c.id],
-                                     and_(Package.name.like(sqlPattern),
-                                          Package.statuscode == 
-                                              STATUS['Approved'],
-                                          PackageListing.statuscode == 
-                                              STATUS['Approved'],
-                                          Collection.name == collectn_name,
-                                          Collection.statuscode == 
-                                              STATUS['Active'],
-                                          Package.id == 
-                                              PackageListing.packageid,
-                                          PackageListing.collectionid == 
-                                              Collection.id,
-                                          PackageListing.owner == maintainer))
+        pkgsOwned_query = select([PackageTable.c.name,
+                                  CollectionTable.c.name,
+                                  CollectionTable.c.version,
+                                  PackageListingTable.c.id],
+                                 and_(Package.name.like(sqlPattern),
+                                      Package.statuscode == 
+                                          STATUS['Approved'],
+                                      PackageListing.statuscode == 
+                                          STATUS['Approved'],
+                                      Collection.name == collectn_name,
+                                      Collection.statuscode == 
+                                          STATUS['Active'],
+                                      Package.id == 
+                                          PackageListing.packageid,
+                                      PackageListing.collectionid == 
+                                          Collection.id,
+                                      PackageListing.owner == maintainer))
         if collectn_ver:
             pkgsOwned_query = pkgsOwned_query.where(Collection.version == 
                                                     collectn_ver)
@@ -469,4 +462,5 @@ class MassAcls(controllers.Controller):
                            ('PackageDB', 'pkgdb@fedoraproject.org'),
                            email_recipients.values())
 
-        return dict(status=True)
+        msg = '%d packages were updated.' % len(pkgListings)
+        return dict(tg_flash=msg)
