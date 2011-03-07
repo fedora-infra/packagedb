@@ -74,13 +74,17 @@ def parse_commands(config):
 
 Sub Commands:
     add: Add a new package
-    add_comaintainers: Add comaintainers to packages
+    add_comaintainers: Add comaintainers to packagelistings
+    change_owner: Change the owner of packagelistings
     edit: Edit the properties of an existing package
     mass-branch: Mass branch from "devel" to --branch
 
 Examples:
     pkgdb-client add -u toshio -o testowner -d 'Purely a test package' -b devel -b F-7 -b EL-5 -c toshio -c kevin -m wtogami fedoratest
-    pkgdb-client add_comaintainers --maintainer toshio --comaintainer fchiulli 
+    pkgdb-client add_comaintainers --owner toshio --comaintainer fchiulli 
+                 --pkg_pattern 'python-sql*' --collection_name Fedora 
+                 --collection_version 14 --if_comaint
+    pkgdb-client change_owner --owner toshio --new_owner fchiulli 
                  --pkg_pattern 'python-sql*' --collection_name Fedora 
                  --collection_version 14
     pkgdb-client edit -u toshio -o jkeating fedoratest
@@ -160,6 +164,15 @@ Examples:
             dest='collectn_ver',
             action='store',
             help='Collection version.')
+    parser.add_option('-n', '--new_owner',
+            dest='new_owner',
+            action='store',
+            help='New owner of the package on the branch')
+    parser.add_option('--if_comaint',
+            action='store_true',
+            dest='if_comaint',
+            default=False,
+            help='Change packagelistings for which owner is a co-maintainer.')
     (opts, args) = parser.parse_args()
 
     # Must specify a package name except for mass_branch
@@ -332,17 +345,44 @@ if __name__ == '__main__':
                 try:
                     if (options.collectn_ver):
                         response = pkgdb.add_comaintainers(
-                                       maintainer=options.maintList[0],
+                                       owner=options.owner,
                                        comaintainers=options.comaintList,
                                        pkg_pattern=options.pkg_pattern,
                                        collectn_name=options.collectn_name,
-                                       collectn_ver=options.collectn_ver)
+                                       collectn_ver=options.collectn_ver,
+                                       if_comaint=options.if_comaint)
                     else:
                         response = pkgdb.add_comaintainers(
-                                       maintainer=options.maintList[0],
+                                       owner=options.owner,
                                        comaintainers=options.comaintList,
                                        pkg_pattern=options.pkg_pattern,
-                                       collectn_name=options.collectn_name)
+                                       collectn_name=options.collectn_name,
+                                       if_comaint=options.if_comaint)
+
+                except AppError, e:
+                    print e.message
+                    sys.exit(1)
+                else:
+                    print response.tg_flash
+                    sys.exit(0)
+
+            elif options.pkg_action == 'change_owner':
+                try:
+                    if (options.collectn_ver):
+                        response = pkgdb.change_owner(
+                                       owner=options.owner,
+                                       new_owner=options.new_owner,
+                                       pkg_pattern=options.pkg_pattern,
+                                       collectn_name=options.collectn_name,
+                                       collectn_ver=options.collectn_ver,
+                                       if_comaint=options.if_comaint)
+                    else:
+                        response = pkgdb.change_owner(
+                                       owner=options.owner,
+                                       new_owner=options.new_owner,
+                                       pkg_pattern=options.pkg_pattern,
+                                       collectn_name=options.collectn_name,
+                                       if_comaint=options.if_comaint)
 
                 except AppError, e:
                     print e.message
@@ -352,8 +392,9 @@ if __name__ == '__main__':
                     sys.exit(0)
 
             else:
-                print 'You must specify add, add_comaintainers, edit or ' \
-                      'mass-branch as a subcommand to pkgdb-client.'
+                print 'You must specify add, add_comaintainers, ' \
+                      'change_owner, edit or mass-branch as a ' \
+                      'subcommand to pkgdb-client.'
                 sys.exit(1)
 
         except AuthError, e:
