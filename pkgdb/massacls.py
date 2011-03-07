@@ -40,6 +40,7 @@ from pkgdb.model import Collection, CollectionTable, Package, PackageTable, \
 from pkgdb.notifier import EventLogger
 from pkgdb.lib.utils import admin_grp, fas, pkger_grp, provenpkger_grp, \
         STATUS, LOG
+from pkgdb.lib.validators import SetOf
 
 try:
     from fedora.textutils import to_unicode
@@ -53,6 +54,31 @@ class AclNotAllowedError(Exception):
     The entity specified is not allowed to hold the requested acl.
     '''
     pass
+
+#
+# Validators
+#
+class MassAclsAdd_Comaintainers(validators.Schema):
+    '''Validator for the massacls.add_comaintainers.'''
+    # validator schemas don't have methods (R0903, W0232)
+    #pylint:disable-msg=R0903,W0232
+    owner =  validators.UnicodeString(not_empty=True, strip=True)
+    comaintainers = SetOf(use_set=True,
+                        element_validator=validators.UnicodeString(not_empty=True))
+    pkg_pattern = validators.UnicodeString(not_empty=True, strip=True)
+    collectn_name = validators.UnicodeString(not_empty=True, strip=True)
+    if_comaint = validators.StringBool()
+
+
+class MassAclsChange_Owner(validators.Schema):
+    '''Validator for the massacls.change_owner.'''
+    # validator schemas don't have methods (R0903, W0232)
+    #pylint:disable-msg=R0903,W0232
+    owner =  validators.UnicodeString(not_empty=True, strip=True)
+    new_owner =  validators.UnicodeString(not_empty=True, strip=True)
+    pkg_pattern = validators.UnicodeString(not_empty=True, strip=True)
+    collectn_name = validators.UnicodeString(not_empty=True, strip=True)
+    if_comaint = validators.StringBool()
 
 
 class MassAcls(controllers.Controller):
@@ -273,22 +299,28 @@ class MassAcls(controllers.Controller):
 
         return person_acl
 
-    @expose(allow_json=True)
     @identity.require(identity.not_anonymous())
-    def add_comaintainers(self, maintainer, comaintainers, pkg_pattern,
-                          collectn_name, collectn_ver=None):
-        '''Add comaintainers to all packagelistings that the maintainer either
+    @validate(validators=MassAclsAdd_Comaintainers())
+    @error_handler()
+    @expose(allow_json=True)
+    def add_comaintainers(self, owner, comaintainers, pkg_pattern,
+                          collectn_name, collectn_ver=None, if_comaint=False,
+                          tg_errors=None):
+        '''Add comaintainers to all packagelistings that the owner either
         is the owner or has approveacls on.  Then email comaintainers/owners
         on those packages that the maintainer has changed the acls.
 
-        :arg maintainer: the maintainer's username
-             The current user must be the maintainer or the current user
-             must be in the cvsadmin group.
+        :arg owner: the owner's username
+             The current user must be the owner or the current user must be in
+             the cvsadmin group.
         :arg comaintainers: a list of new comaintainers
         :arg pkg_pattern: a simple pattern for package names
         :arg collectn_name: limit packages to branches for this distribution.
         :kwarg collectn_ver: If given, limit information to this
             particular version of a distribution.
+        :kwarg if_comaint: If True, then process packagelistings for which
+            owner is a co-maintainer (i.e., has approveacls).
+        :kwarg tg_errors: validation errors, if any
 
         Returns
             on success, message indicating the number of packages updated.
@@ -296,18 +328,25 @@ class MassAcls(controllers.Controller):
 
         '''
 
+        if tg_errors:
+            message = 'Validation errors'
+            for arg, msg in tg_errors.items():
+                message = message + ': ' + arg + ' - ' + msg
+            flash(message)
+            return dict(exc='ValidationError')
+
         #
         # Validate the current user.
-        # Either the current user is the maintainer or
+        # Either the current user is the owner or
         # the current user is in the cvsadmin group.
         #
-        if (identity.current.user_name != maintainer):
+        if (identity.current.user_name != owner):
             admin_grp = config.get('pkgdb.admin_grp', 'cvsadmin')
             if not identity.in_group(admin_grp):
-                flash(_('%(user)s must be either the maintainer or in the '
-                        'admin group (%(group)s) to add comaintainers' %
+                flash(_('%(user)s must be either the owner or in the '
+                        'admin group (%(group)s) to add comaintainers') %
                         {'user': identity.current.user_name,
-                         'group': admin_grp}))
+                         'group': admin_grp})
                 return dict(exc='AclNotAllowedError')
 
         #
@@ -341,8 +380,223 @@ class MassAcls(controllers.Controller):
 
         if len(nonAcls) != 0:
             userList = ','.join(nonAcls)
-            flash(_('The following users do not hold approveacls users '
-                    '%(comaintainers)s') % userList)
+            flash(_('The following users do not hold approveacls: '
+                    '%(users)s') % {'users': userList})
+            return dict(exc='AclNotAllowedError')
+
+        #
+        # Convert the pattern to a postgresql pattern.
+        #
+        pattern = to_unicode(pkg_pattern)
+        sqlPattern = pattern.translate({ord(u'_'):u'\_',
+                                        ord(u'*'):u'%',
+                                        ord(u'?'):u'_'})
+
+        #
+        # Build a query to get packagelistings owned by the owner.
+        #
+        pkgsOwned_query = select([PackageTable.c.name,
+                                  CollectionTable.c.name,
+                                  CollectionTable.c.version,
+                                  PackageListingTable.c.id],
+                                 and_(Package.name.like(sqlPattern),
+                                      Package.statuscode == 
+                                          STATUS['Approved'],
+                                      PackageListing.statuscode == 
+                                          STATUS['Approved'],
+                                      Collection.name == collectn_name,
+                                      Collection.statuscode == 
+                                          STATUS['Active'],
+                                      Package.id == 
+                                          PackageListing.packageid,
+                                      PackageListing.collectionid == 
+                                          Collection.id,
+                                      PackageListing.owner == owner))
+        if collectn_ver:
+            pkgsOwned_query = pkgsOwned_query.where(Collection.version == 
+                                                    collectn_ver)
+
+        #
+        # If if_comaint, then build a query to get packagelistings for which
+        # the owner has approveacls.
+        #
+        if if_comaint:
+            pkgsAcls_query = select([PackageTable.c.name,
+                                     CollectionTable.c.name,
+                                     CollectionTable.c.version, 
+                                     PackageListingTable.c.id],
+                                    and_(Package.name.like(sqlPattern),
+                                         Package.statuscode ==
+                                             STATUS['Approved'],
+                                         PackageListing.statuscode == 
+                                             STATUS['Approved'],
+                                         PackageListing.packageid ==
+                                             Package.id,
+                                         PackageListing.collectionid == 
+                                             Collection.id,
+                                         Collection.statuscode ==
+                                             STATUS['Active'],
+                                         PersonPackageListing.username ==
+                                             owner,
+                                         PersonPackageListing.packagelistingid ==
+                                             PackageListing.id,
+                                         PersonPackageListing.id ==
+                                             PersonPackageListingAcl.personpackagelistingid,
+                                         PersonPackageListingAcl.acl ==
+                                             'approveacls',
+                                         PersonPackageListingAcl.statuscode ==
+                                             STATUS['Approved']))
+            if collectn_ver:
+                pkgsAcls_query = pkgsAcls_query.where(Collection.version == 
+                                                  collectn_ver)
+
+        #
+        # Turn the queries into a python object.
+        #
+        pkgListings = {}
+        if if_comaint:
+            for pkglisting in itertools.chain(pkgsOwned_query.execute(),
+                                              pkgsAcls_query.execute()):
+                pkgListings[pkglisting[PackageListingTable.c.id]] = pkglisting
+        else:
+            for pkglisting in itertools.chain(pkgsOwned_query.execute()):
+                pkgListings[pkglisting[PackageListingTable.c.id]] = pkglisting
+
+        if (len(pkgListings) == 0):
+            if if_comaint:
+                flash(_('No packagelistings were found matching the pattern '
+                        '"%(pattern)s" where %(owner)s is the owner or has '
+                        'approveacls.') % {'pattern': pkg_pattern, 'owner': owner})
+            else:
+                flash(_('No packagelistings were found matching the pattern '
+                        '"%(pattern)s" where %(owner)s is the owner.') % \
+                      {'pattern': pkg_pattern, 'owner': owner})
+
+            return dict(exc='NoPackageListingsFound')
+
+        #
+        # Add Acls.
+        #
+        for pkglistingid in sorted(pkgListings.iterkeys()):
+            pkglisting = PackageListing.query.filter_by(id =
+                                                        pkglistingid).one()
+            for comaintainer in list(iterate(comaintainers)):
+                self._create_or_modify_acl(pkglisting, comaintainer,
+                                           'approveacls', 'Approved')
+
+        #
+        # Get everyone with approveacls on all the packages.
+        #
+        email_recipients = {}
+        email_recipients[owner] = owner + "@fedoraproject.org"
+        email_recipients[owner] = \
+            email_recipients[owner].encode('ascii', 'replace')
+        for pkglistingid in pkgListings.keys():
+            comaintainers_query = select((PersonPackageListing.username,),
+                                      and_(PackageListing.id == pkglistingid,
+                                           PackageListing.id ==
+                                               PersonPackageListing.packagelistingid,
+                                           PersonPackageListing.id ==
+                                               PersonPackageListingAcl.id,
+                                           PersonPackageListingAcl.acl ==
+                                               'approveacls',
+                                           PersonPackageListingAcl.statuscode ==
+                                               STATUS['Approved']))
+            user_list = comaintainers_query.execute()
+            for record in user_list:
+                username = record[0]
+                email_recipients[username] = username + "@fedoraproject.org"
+                email_recipients[username] = \
+                    email_recipients[username].encode('ascii', 'replace')
+
+        msg = '%s has added %s as a comaintainer to the following packages. ' \
+              ' You are receiving this email because you are also a' \
+              ' comaintainer of one or more of the packages.  You do not' \
+              ' need to do anything at this time.\n' % \
+              (owner, comaintainers)
+        for pkglisting in pkgListings.values():
+            msg += '\n'
+            msg += ', '.join(pkglisting[0:3])
+
+        self._send_log_msg(msg, 'Add Comaintainers',
+                           ('PackageDB', 'pkgdb@fedoraproject.org'),
+                           email_recipients.values())
+
+        flash(_('%d packages were updated.') % len(pkgListings))
+        return dict(tg_flash=msg)
+
+
+    @expose(allow_json=True)
+    @validate(validators=MassAclsChange_Owner())
+    @error_handler()
+    @identity.require(identity.not_anonymous())
+    def change_owner(self, owner, new_owner, pkg_pattern, collectn_name,
+                     collectn_ver=None, if_comaint=False, tg_errors=None):
+        '''Change the owner of all packagelistings that the owner either is
+        the owner or has approveacls on (if if_comaint is True).  Then email
+        comaintainers/owners on those packages that the owner has changed the
+        owner.
+
+        :arg owner: the current owner's username
+             The current user must be the owner or the current user
+             must be in the cvsadmin group.
+        :arg new_owner: the new owner's username
+        :arg pkg_pattern: a simple pattern for package names
+        :arg collectn_name: limit packages to branches for this distribution.
+        :kwarg collectn_ver: If given, limit information to this
+            particular version of a distribution.
+        :kwarg if_comaint: If True, then process packagelistings for which
+            owner is a co-maintainer (i.e., has approveacls).
+        :kwarg tg_errors: validation errors, if any
+
+        Returns
+            on success, message indicating the number of packages updated.
+            on failure, message indicating error and exc set. 
+
+        '''
+
+        if tg_errors:
+            message = 'Validation errors'
+            for arg, msg in tg_errors.items():
+                message = message + ': ' + arg + ' - ' + msg
+            flash(message)
+            return dict(exc='ValidationError')
+
+        #
+        # Validate the current user.
+        # Either the current user is the owner or
+        # the current user is in the cvsadmin group.
+        #
+        if (identity.current.user_name != owner):
+            admin_grp = config.get('pkgdb.admin_grp', 'cvsadmin')
+            if not identity.in_group(admin_grp):
+                flash(_('%(user)s must be either the maintainer or in the '
+                        'admin group (%(group)s) to add comaintainers') %
+                        {'user': identity.current.user_name,
+                         'group': admin_grp})
+                return dict(exc='AclNotAllowedError')
+
+        #
+        # Validate the new owner.
+        # The user must be a valid FAS user.
+        #
+        try:
+            person = fas.cache[new_owner]
+        except KeyError:
+            flash(_('The new user, %(user)s, is not a valid FAS user.') % \
+                  {'user': new_owner})
+            return dict(exc='NonFASUserError')
+
+        #
+        # Validate the new owner.
+        # The user must have approveacls.
+        #
+        person = fas.cache[new_owner]
+        try:
+            self._acl_can_be_held_by_user('approveacls', person)
+        except AclNotAllowedError:
+            flash(_('The new user, %(user)s, does not hold approveacls.') % \
+                  {'user': new_owner})
             return dict(exc='AclNotAllowedError')
 
         #
@@ -372,65 +626,90 @@ class MassAcls(controllers.Controller):
                                           PackageListing.packageid,
                                       PackageListing.collectionid == 
                                           Collection.id,
-                                      PackageListing.owner == maintainer))
+                                      PackageListing.owner == owner))
         if collectn_ver:
             pkgsOwned_query = pkgsOwned_query.where(Collection.version == 
                                                     collectn_ver)
 
         #
-        # Build a query to get packagelistings for which the maintainer has
+        # Build a query to get packagelistings for which the owner has
         # approveacls.
         #
-        pkgsAcls_query = select([PackageTable.c.name, CollectionTable.c.name,
-                                 CollectionTable.c.version, 
-                                 PackageListingTable.c.id],
-                                and_(Package.name.like(sqlPattern),
-                                     Package.statuscode == STATUS['Approved'],
-                                     PackageListing.statuscode == 
-                                         STATUS['Approved'],
-                                     PackageListing.packageid == Package.id,
-                                     PackageListing.collectionid == 
-                                         Collection.id,
-                                     Collection.statuscode == STATUS['Active'],
-                                     PersonPackageListing.username == 
-                                         maintainer,
-                                     PersonPackageListing.packagelistingid ==
-                                         PackageListing.id,
-                                     PersonPackageListing.id ==
-                                         PersonPackageListingAcl.personpackagelistingid,
-                                     PersonPackageListingAcl.acl ==
-                                         'approveacls',
-                                     PersonPackageListingAcl.statuscode ==
-                                         STATUS['Approved']))
-        if collectn_ver:
-            pkgsAcls_query = pkgsAcls_query.where(Collection.version == 
-                                                  collectn_ver)
+        if if_comaint:
+            pkgsAcls_query = select([PackageTable.c.name,
+                                     CollectionTable.c.name,
+                                     CollectionTable.c.version, 
+                                     PackageListingTable.c.id],
+                                    and_(Package.name.like(sqlPattern),
+                                         Package.statuscode ==
+                                             STATUS['Approved'],
+                                         PackageListing.statuscode == 
+                                             STATUS['Approved'],
+                                         PackageListing.packageid == Package.id,
+                                         PackageListing.collectionid == 
+                                             Collection.id,
+                                         Collection.statuscode ==
+                                             STATUS['Active'],
+                                         PersonPackageListing.username ==
+                                             owner,
+                                         PersonPackageListing.packagelistingid ==
+                                             PackageListing.id,
+                                         PersonPackageListing.id ==
+                                             PersonPackageListingAcl.personpackagelistingid,
+                                         PersonPackageListingAcl.acl ==
+                                             'approveacls',
+                                         PersonPackageListingAcl.statuscode ==
+                                             STATUS['Approved']))
+            if collectn_ver:
+                pkgsAcls_query = pkgsAcls_query.where(Collection.version == 
+                                                      collectn_ver)
 
         #
         # Turn the queries into a python object.
         #
         pkgListings = {}
-        for pkglisting in itertools.chain(pkgsOwned_query.execute(),
-                                          pkgsAcls_query.execute()):
-            pkgListings[pkglisting[PackageListingTable.c.id]] = pkglisting
+        if if_comaint:
+            for pkglisting in itertools.chain(pkgsOwned_query.execute(),
+                                              pkgsAcls_query.execute()):
+                pkgListings[pkglisting[PackageListingTable.c.id]] = pkglisting
+        else:
+            for pkglisting in itertools.chain(pkgsOwned_query.execute()):
+                pkgListings[pkglisting[PackageListingTable.c.id]] = pkglisting
+
+        if (len(pkgListings) == 0):
+            if if_comaint:
+                flash(_('No packagelistings were found matching the pattern '
+                        '"%(pattern)s" where %(owner)s is the owner or has '
+                        'approveacls.') % {'pattern': pkg_pattern, 'owner': owner})
+            else:
+                flash(_('No packagelistings were found matching the pattern '
+                        '"%(pattern)s" where %(owner)s is the owner.') % \
+                      {'pattern': pkg_pattern, 'owner': owner})
+
+            return dict(exc='NoPackageListingsFound')
 
         #
-        # Add Acls.
+        # Change owner.
         #
         for pkglistingid in sorted(pkgListings.iterkeys()):
-            pkglisting = PackageListing.query.filter_by(id =
-                                                        pkglistingid).one()
-            for comaintainer in list(iterate(comaintainers)):
-                self._create_or_modify_acl(pkglisting, comaintainer,
-                                           'approveacls', 'Approved')
+            pkglisting = PackageListing.query.filter_by(id = pkglistingid).one()
+            pkglisting.owner = new_owner
+            try:
+                session.flush()     #pylig:disable-msg=E1101
+            except SQLError, e:
+                # An error was generted.
+                flash(_('Not able to change owner information for %(pkg)s.  '
+                        'SQL message: %(err)s.') % {\
+                        'pkg': pkgListings[pkglistingid][0:3], 'err':e})
+                return dict(exc='SQLError')
 
         #
         # Get everyone with approveacls on all the packages.
         #
         email_recipients = {}
-        email_recipients[maintainer] = maintainer + "@fedoraproject.org"
-        email_recipients[maintainer] = \
-            email_recipients[maintainer].encode('ascii', 'replace')
+        email_recipients[owner] = owner + "@fedoraproject.org"
+        email_recipients[owner] = \
+            email_recipients[owner].encode('ascii', 'replace')
         for pkglistingid in pkgListings.keys():
             comaintainers_query = select((PersonPackageListing.username,),
                                       and_(PackageListing.id == pkglistingid,
@@ -449,18 +728,19 @@ class MassAcls(controllers.Controller):
                 email_recipients[username] = \
                     email_recipients[username].encode('ascii', 'replace')
 
-        msg = '%s has added %s as a comaintainer to the following packages. ' \
-              ' You are receiving this email because you are also a' \
-              ' comaintainer of one or more of the packages.  You do not' \
-              ' need to do anything at this time.\n' % \
-              (maintainer, comaintainers)
+        msg = '%s has changed the owner of the following packages to %s. ' \
+              'You are receiving this email because you are also a ' \
+              'comaintainer of one or more of the packages.  You do not ' \
+              'need to do anything at this time.\n' % \
+              (owner, new_owner)
         for pkglisting in pkgListings.values():
             msg += '\n'
             msg += ', '.join(pkglisting[0:3])
 
-        self._send_log_msg(msg, 'Add Comaintainers',
+        self._send_log_msg(msg, 'Change Owner',
                            ('PackageDB', 'pkgdb@fedoraproject.org'),
                            email_recipients.values())
 
-        msg = '%d packages were updated.' % len(pkgListings)
+        msg = '%d packages were changed.' % len(pkgListings)
         return dict(tg_flash=msg)
+
