@@ -20,7 +20,7 @@
       </li>
       <li>
         <label>
-          <input type="checkbox" name="eol" value="eol"
+          <input type="checkbox" name="eol" value="True"
           py:attrs="{'checked': tg.checker(eol)}"/>
           Include EOL Distributions
         </label>
@@ -42,10 +42,10 @@
         View: Orphaned Packages (${pkgCount}) - 
         <div py:choose="eol" py:strip="">
           <div py:when="True" py:strip="">
-            <a href="${tg.url('/acls/orphans/')}">hide</a>
+            <a href="${tg.url('/acls/orphans', eol=False)}">hide</a>
           </div>
           <div py:when="False" py:strip="">
-            <a href="${tg.url('/acls/orphans/eol')}">show</a>
+            <a href="${tg.url('/acls/orphans', eol=True)}">show</a>
           </div>
         </div> EOL packages
       </div>
