@@ -189,6 +189,7 @@ Run the following scripts to bring it up to date::
   sudo -u postgres psql pkgdb < update-schema/04_updates_to_make_db_match_the_model.sql
   python update-schema/05_migrate_version.py pkgdb.cfg > update-schema/05_migrate_version.sql
   sudo -u postgres psql pkgdb < update-schema/05_migrate_version.sql
+  sudo -u postgres psql pkgdb < update-schema/05_update_statuscodetranslation.sql
 
 TODO: remove the lines above in favour of
 

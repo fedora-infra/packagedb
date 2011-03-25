@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2010  Red Hat, Inc.
+# Copyright (C) 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -549,7 +549,7 @@ class PackageDispatcher(controllers.Controller):
                     {'pkg': pkg_listing_id})
         approved = self._user_can_set_acls(identity, pkg)
 
-        if pkg.statuscode != STATUS['Deprecated']\
+        if pkg.statuscode != STATUS['Retired']\
                 and (pkg.statuscode == STATUS['Orphaned']
                         or approved in ('admin', 'owner')):
             # Retire package
@@ -567,13 +567,13 @@ class PackageDispatcher(controllers.Controller):
                     return dict(status=False, 
                         message=_('Unable to retire/unretire package: %(err)s') % {'err': e})
 
-            pkg.statuscode = STATUS['Deprecated']
+            pkg.statuscode = STATUS['Retired']
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
                 pkg.collection.version, identity.current.user_name)
-            statuscode = STATUS['Deprecated']
+            statuscode = STATUS['Retired']
             retirement = 'Retired'
-        elif (pkg.statuscode == STATUS['Deprecated']
+        elif (pkg.statuscode == STATUS['Retired']
                 and approved == 'admin'):
             # Unretire package
             pkg.statuscode = STATUS['Orphaned']
@@ -640,7 +640,7 @@ class PackageDispatcher(controllers.Controller):
         approved = self._user_can_set_acls(identity, pkg)
 
         if (retirement == 'Retire'):
-            if pkg.statuscode != STATUS['Deprecated'] and \
+            if pkg.statuscode != STATUS['Retired'] and \
                (pkg.statuscode == STATUS['Orphaned'] or
                 approved in ('admin', 'owner')):
                 # Retire package
@@ -658,11 +658,11 @@ class PackageDispatcher(controllers.Controller):
                         return dict(status=False, 
                             message=_('Unable to retire package: %(err)s') % {'err': e})
 
-                pkg.statuscode = STATUS['Deprecated']
+                pkg.statuscode = STATUS['Retired']
                 log_msg = 'Package %s in %s %s has been retired by %s' % (
                     pkg.package.name, pkg.collection.name,
                     pkg.collection.version, identity.current.user_name)
-                statuscode = STATUS['Deprecated']
+                statuscode = STATUS['Retired']
             else:
                 return dict(status=False, message=
                         _('The retiring of package %(pkg)s could not be' \
@@ -670,7 +670,7 @@ class PackageDispatcher(controllers.Controller):
                                     'pkg': pkg_name})
 
         elif (retirement == 'Unretire'):
-            if (pkg.statuscode == STATUS['Deprecated'] and
+            if (pkg.statuscode == STATUS['Retired'] and
                 approved == 'admin'):
                 # Unretire package
                 pkg.statuscode = STATUS['Orphaned']
@@ -833,7 +833,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Package Listing with id:'
                 ' %(pkg)s does not exist') % {'pkg': pkg_listing_id})
 
-        if pkg.statuscode == STATUS['Deprecated']:
+        if pkg.statuscode == STATUS['Retired']:
             # Retired packages must be brought out of retirement first
             return dict(status=False, message=_('This package is retired.  It'
                 ' must be unretired first'))

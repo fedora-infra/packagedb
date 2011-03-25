@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc.
+# Copyright (C) 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -36,7 +36,7 @@ from pkgdb.model import SC_ACTIVE, SC_ADDED, SC_APPROVED, SC_AWAITING_BRANCH  # 
 from pkgdb.model import SC_AWAITING_DEVELOPMENT, SC_AWAITING_QA, SC_AWAITING_PUBLISH, SC_AWAITING_REVIEW # 5-8
 from pkgdb.model import SC_EOL, SC_DENIED, SC_MAINTENENCE, SC_MODIFIED # 9-12
 from pkgdb.model import SC_OBSOLETE, SC_ORPHANED, SC_OWNED, SC_REJECTED # 13-16
-from pkgdb.model import SC_REMOVED, SC_UNDER_DEVELOPMENT, SC_UNDER_REVIEW, SC_DEPRECATED # 17-20
+from pkgdb.model import SC_REMOVED, SC_UNDER_DEVELOPMENT, SC_UNDER_REVIEW, SC_RETIRED # 17-20
 
 from pkgdb.lib.db import Grant_RW, initial_data
 
@@ -308,7 +308,7 @@ PackageListingLogStatusCodeTable = Table('packagelistinglogstatuscode', metadata
 initial_data(PackageListingLogStatusCodeTable,
     ['statuscodeid'],
     [SC_ADDED], [SC_APPROVED], [SC_AWAITING_BRANCH], [SC_AWAITING_REVIEW],
-    [SC_DENIED], [SC_OBSOLETE], [SC_ORPHANED], [SC_OWNED], [SC_REMOVED], [SC_DEPRECATED])
+    [SC_DENIED], [SC_OBSOLETE], [SC_ORPHANED], [SC_OWNED], [SC_REMOVED], [SC_RETIRED])
 Grant_RW(PackageListingLogStatusCodeTable)
 
 

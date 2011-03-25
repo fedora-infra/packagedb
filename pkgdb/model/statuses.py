@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2008  Red Hat, Inc.
+# Copyright (C) 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -56,7 +56,7 @@ SC_REJECTED = 16
 SC_REMOVED = 17
 SC_UNDER_DEVELOPMENT = 18
 SC_UNDER_REVIEW = 19
-SC_DEPRECATED = 20
+SC_RETIRED = 20
 
 STATUS_DEF = (
 	(SC_ACTIVE, 'Active'),
@@ -78,7 +78,7 @@ STATUS_DEF = (
 	(SC_REMOVED, 'Removed'),
 	(SC_UNDER_DEVELOPMENT, 'Under Development'),
 	(SC_UNDER_REVIEW, 'Under Review'),
-	(SC_DEPRECATED, 'Deprecated'),
+	(SC_RETIRED, 'Retired'),
 )
 
 class StatusDict(dict):
@@ -229,7 +229,7 @@ PackageListingStatusTable = Table('packagelistingstatuscode', metadata,
 initial_data(PackageListingStatusTable,
     ['statuscodeid'],
     [SC_APPROVED], [SC_AWAITING_BRANCH], [SC_AWAITING_REVIEW], [SC_DENIED], 
-    [SC_OBSOLETE], [SC_ORPHANED], [SC_REMOVED], [SC_DEPRECATED])
+    [SC_OBSOLETE], [SC_ORPHANED], [SC_REMOVED], [SC_RETIRED])
 # FIXME: This trigger is created just in postgres. If it is needed in other DB
 # (in sqlite for testing) it has to be added manually
 DDL(add_status_to_log_pgfunc, on='postgres')\
