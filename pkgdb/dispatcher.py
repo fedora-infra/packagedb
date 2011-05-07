@@ -1764,7 +1764,8 @@ class PackageDispatcher(controllers.Controller):
         'reset': validators.StringBool(),
         })
     @error_handler()
-    def set_critpath(self, pkg_list=None, critpath=True, collctn_list=None, reset=False):
+    def set_critpath(self, pkg_list=None, critpath=True, collctn_list=None,
+                     reset=False):
         '''Mark packages as being in the critical path.
 
         Critical path packages are subject to more testing or stringency of
@@ -1782,6 +1783,7 @@ class PackageDispatcher(controllers.Controller):
         :raises InvalidBranch: 
         :returns: On success, return nothing
         '''
+
         # Check for validation errors requesting this form
         errors = jsonify_validation_errors()
         if errors:
@@ -1790,19 +1792,23 @@ class PackageDispatcher(controllers.Controller):
         # Remove critpath from all packages in the given collections
         if reset:
             pkg_listing_ids = select((PackageListingTable.c.id,),
-                    from_obj=(PackageListingTable.join(CollectionTable)))\
-                        .where(PackageListingTable.c.critpath==True)
+                                     from_obj=(PackageListingTable.
+                                               join(CollectionTable)))\
+                              .where(PackageListingTable.c.critpath==True)
             if collctn_list:
                 if not isinstance(collctn_list, (tuple, list)):
                     collctn_list = [collctn_list]
-                pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.branchname.in_(collctn_list))
+                pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.\
+                                                        branchname.\
+                                                        in_(collctn_list))
             else:
                 pkg_listing_ids = pkg_listing_ids\
                         .where(CollectionTable.c.statuscode!=STATUS['EOL'])
 
             try:
-                PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
-                        .values(critpath=False).execute()
+                PackageListingTable.update().where(PackageListingTable.c.id.\
+                                                   in_(pkg_listing_ids))\
+                                            .values(critpath=False).execute()
                 session.flush()
             except InvalidRequestError, e:
                 session.rollback() #pylint:disable-msg=E1101
@@ -1815,27 +1821,52 @@ class PackageDispatcher(controllers.Controller):
                 return dict()
 
         if pkg_list:
-            pkg_listing_ids = select((PackageListingTable.c.id,), from_obj=(PackageTable\
-                .join(PackageListingTable).join(CollectionTable)))\
-                .where(and_(PackageTable.c.name.in_(pkg_list),
-                        PackageListingTable.c.critpath!=critpath))
+            invalidPkgs = []
+            for pkg_name in pkg_list:
+                query = select((Package.id,))
+                query = query.where(Package.name == pkg_name)
+                result = query.execute()
+                row = result.fetchone()
+                result.close()
+                if not row:
+                    invalidPkgs.append(str(pkg_name))
+
+            if len(invalidPkgs) != 0:
+                pkgList = ','.join(invalidPkgs)
+                flash(_('The following are not valid package names: %s') %
+                      invalidPkgs)
+                return dict(exc='InvalidPackage')
+
+            pkg_listing_ids = select((PackageListingTable.c.id,),
+                                     from_obj=(PackageTable\
+                                               .join(PackageListingTable)\
+                                               .join(CollectionTable)))\
+                              .where(and_(PackageTable.c.name.in_(pkg_list),
+                                          PackageListingTable.c.critpath!=\
+                                              critpath))
         else:
-            pkg_listing_ids = select((PackageListingTable.c.id,)).where(and_(
-                    not_(PackageListingTable.c.statuscode.in_((STATUS['EOL'],
-                        STATUS['Removed']))),
-                    PackageListingTable.c.critpath!=critpath))
+            pkg_listing_ids = select((PackageListingTable.c.id,))\
+                              .where(and_(not_(PackageListingTable.c.statuscode\
+                                                   .in_((STATUS['EOL'],
+                                                         STATUS['Removed']))),
+                                          PackageListingTable.c.critpath!=\
+                                              critpath))
 
         if collctn_list:
             if not isinstance(collctn_list, (tuple, list)):
                 collctn_list = [collctn_list]
-            pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.branchname.in_(collctn_list))
+            pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c\
+                                                      .branchname\
+                                                      .in_(collctn_list))
         else:
             pkg_listing_ids = pkg_listing_ids\
-                    .where(CollectionTable.c.statuscode!=STATUS['EOL'])
+                                  .where(CollectionTable.c.statuscode!=\
+                                         STATUS['EOL'])
 
         try:
-            PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
-                    .values(critpath=critpath).execute()
+            PackageListingTable.update()\
+                .where(PackageListingTable.c.id.in_(pkg_listing_ids))\
+                .values(critpath=critpath).execute()
             session.flush()
         except InvalidRequestError, e:
             session.rollback() #pylint:disable-msg=E1101
