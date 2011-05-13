@@ -245,6 +245,8 @@ class Acls(controllers.Controller):
         '''List orphaned packages.
 
         :kwarg eol: If set, list packages that are in EOL distros.
+        :kwarg tg_paginate_limit: set the maximum number of packages returned.
+            If set to 0, all packages owned by orphan are returned.
         :returns: A list of packages.
         '''
         ### FIXME: Replace with a validator
