@@ -194,7 +194,7 @@ class Users(controllers.Controller):
         for pkg in my_pkgs:
             pkg.json_props = {'Package': ('listings',)}
             pkg_list.append(pkg)
-            for pkglisting in pkg.listing:
+            for pkglisting in pkg.listings:
                 statuses.add(pkglisting.statuscode)
 
         statusMap = dict([(statuscode, STATUS[statuscode]) for statuscode in
