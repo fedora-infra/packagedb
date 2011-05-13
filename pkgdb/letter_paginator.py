@@ -110,9 +110,15 @@ class Letters(controllers.Controller):
                 #pylint:enable-msg=E1101
             else:
                 packages = PackageBuild.query.all() #pylint:disable-msg=E1101
-            
-        searchwords = searchwords.replace('%','*')            
+
+        statuses = set()
+        for pkg in packages:
+            statuses.add(pkg.statuscode)
+        statusMap = dict([(statuscode, STATUS[statuscode]) for statuscode in statuses])
+
+        searchwords = searchwords.replace('%','*')
+
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {
             'app': self.app_title, 'mode': mode.strip('/')},
                        searchwords=searchwords, packages=packages, mode=mode,
-                       bzurl=bzUrl)
+                       bzurl=bzUrl, statusMap=statusMap)
