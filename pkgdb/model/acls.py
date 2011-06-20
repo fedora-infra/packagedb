@@ -112,7 +112,7 @@ PersonPackageListingAclTable = Table('personpackagelistingacl', metadata,
         ondelete="CASCADE"),
     ForeignKeyConstraint(['statuscode'],['packageaclstatuscode.statuscodeid'], onupdate="CASCADE",
         ondelete="RESTRICT"),
-    CheckConstraint("acl = 'commit' OR acl = 'build' OR acl = 'watchbugzilla' OR acl = 'watchcommits'"
+    CheckConstraint("acl = 'commit' OR acl = 'watchbugzilla' OR acl = 'watchcommits'"
         " OR acl = 'approveacls' OR acl = 'checkout'", name='personpackagelistingacl_acl_check')
 )
 # FIXME: This trigger is created just in postgres. If it is needed in other DB
@@ -167,7 +167,7 @@ GroupPackageListingAclTable = Table('grouppackagelistingacl', metadata,
         ondelete="CASCADE"),
     ForeignKeyConstraint(['statuscode'],['packageaclstatuscode.statuscodeid'], onupdate="CASCADE",
         ondelete="RESTRICT"),
-    CheckConstraint("acl = 'commit' OR acl = 'build' OR acl = 'watchbugzilla' OR acl = 'watchcommits'"
+    CheckConstraint("acl = 'commit' OR acl = 'watchbugzilla' OR acl = 'watchcommits'"
         " OR acl = 'approveacls' OR acl = 'checkout'", name='grouppackagelistingacl_acl_check')
 )
 Index('grouppackagelistingacl_grouppackagelistingid_idx', GroupPackageListingAclTable.c.grouppackagelistingid)

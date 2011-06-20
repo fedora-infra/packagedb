@@ -63,8 +63,7 @@ error_log = logging.getLogger('pkgdb.model.packages')
 
 get_engine()
 
-DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'build': True,
-    'checkout': True}}
+DEFAULT_GROUPS = {'provenpackager': {'commit': True, 'checkout': True}}
 
 #
 # Tables
