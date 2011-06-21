@@ -185,18 +185,23 @@ class PackageDispatcher(controllers.Controller):
         # Send the log
         self.eventLogger.send_msg(msg, subject, recipients.keys())
 
-    def _user_can_set_acls(self, ident, pkg):
+    def _user_can_set_acls(self, ident, pkg, acl_for=None,
+            acl_status=None):
         '''Check that the current user can set acls.
 
         This method will return one of these values::
 
             'admin', 'owner', 'comaintainer', False
+            'admin', 'owner', 'comaintainer', 'himself', False
 
         depending on why the user is granted access.  You can therefore use the
         value for finer grained access to some resources.
 
         :arg ident: identity instance from this request
         :arg pkg: packagelisting to find the user's permissions on
+        :karg acl_for: username of the user for which the acl is requested
+        :karg acl_status: status of the acl requested (should be either
+        'Obsolete', 'Awaiting Review' for the current use-case)
         '''
         # Make sure the current tg user has permission to set acls
         # If the user is in the admin group they can
@@ -205,8 +210,12 @@ class PackageDispatcher(controllers.Controller):
         # The owner can
         if identity.current.user_name == pkg.owner:
             return 'owner'
-        # Wasn't the owner.  See if they have been granted permission
-        # explicitly
+        #Wasn't the owner or an admin. See it is requested for himself
+        if identity.current.user_name == acl_for \
+            and acl_status in ('Obsolete', 'Awaiting Review'):
+            return "himself"
+        # Wasn't the owner, an admin and requesting for himeself.
+        # See if they have been granted permission explicitly
         for person in pkg.people:
             if person.username == identity.current.user_name:
                 # Check each acl that this person has on the package.
@@ -642,7 +651,8 @@ class PackageDispatcher(controllers.Controller):
                     'version': pkg.collection.version})
 
         # Check that the current user is allowed to change acl statuses
-        approved = self._user_can_set_acls(identity, pkg)
+        approved = self._user_can_set_acls(identity, pkg,
+                            acl_for=person_name, acl_status=statusname)
         if not approved:
             return dict(status=False, message=
                     _('%(user)s is not allowed to approve Package ACLs') % {
