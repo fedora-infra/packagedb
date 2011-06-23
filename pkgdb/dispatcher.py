@@ -37,8 +37,8 @@ from sqlalchemy import and_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
 from sqlalchemy.orm import eagerload, lazyload
 
-from turbogears import controllers, error_handler, expose, identity, config,\
-        flash, validators, validate
+from turbogears import controllers, error_handler, expose, identity, \
+        config, flash, validators, validate
 from turbogears.database import session
 
 import simplejson
@@ -717,6 +717,64 @@ class PackageDispatcher(controllers.Controller):
             'pkg': pkg.package.name}, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
         return dict(status=True, retirement=retirement)
+
+    @expose(allow_json=True)
+    # Check that the requestor is in a group that could potentially set ACLs.
+    @identity.require(identity.not_anonymous())
+    def set_remove_acl_request(self, pkgid, person_name, acl_name, set_acl):
+        '''
+        Set or remove the acl request on a package.
+
+        If its set the acl request, it sets its status to 
+        "Awaiting Review" if it has not already been granted.
+
+        If it removes the acl request, it sets its status to "Obsolete".
+
+        :arg pkgid: packageListing.id
+        :arg person_name: username of the person to make the request for
+        :arg acl_name: The acl we're changing the status of
+        (commit, watchcommit...)
+        :arg set_acl: Wether it set or remove the acl request ie: change
+        the acl to (Awaiting Review or Obsolete)
+        '''
+
+        # Change strings into numbers because we do some comparisons later on
+        pkgid = int(pkgid)
+
+        # Make sure the package listing exists
+        try:
+            #pylint:disable-msg=E1101
+            pkg = PackageListing.query.filter_by(id=pkgid).one()
+        except InvalidRequestError:
+            return dict(status=False,
+                    message=_('PackageListing %(pkg)s does not exist') % {
+                        'pkg': pkgid})
+
+        # Make sure the person we're setting the acl for exists
+        try:
+            user = fas.cache[person_name]
+        except KeyError:
+            return dict(status=False, message=_('No such user %(username),'
+                ' for package %(pkg)s in %(collection)s %(version)s') % {
+                    'username': person_name, 'pkg': pkg.package.name,
+                    'collection': pkg.collection.name,
+                    'version': pkg.collection.version})
+
+        for person in pkg.people:
+            if person.username == identity.current.user_name:
+                # Check each acl that this person has on the package.
+                for acl in person.acls:
+                    if acl.acl == acl_name\
+                            and acl.statuscode == STATUS['Approved']\
+                            and str(set_acl).lower() == "true":
+                        return dict(status=True, message=
+                                _('%(user)s already has this ACL') % {
+                                    'user': identity.current.user_name})
+        if str(set_acl).lower() == "true":
+            action = "Awaiting Review"
+        else:
+            action = "Obsolete"
+        return self.set_acl_status(pkgid, person_name, acl_name, action)
 
     @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
