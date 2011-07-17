@@ -37,8 +37,8 @@ from sqlalchemy import and_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
 from sqlalchemy.orm import eagerload, lazyload
 
-from turbogears import controllers, error_handler, expose, identity, config,\
-        flash, validators, validate
+from turbogears import controllers, error_handler, expose, identity, \
+        config, flash, validators, validate
 from turbogears.database import session
 
 import simplejson
@@ -185,18 +185,22 @@ class PackageDispatcher(controllers.Controller):
         # Send the log
         self.eventLogger.send_msg(msg, subject, recipients.keys())
 
-    def _user_can_set_acls(self, ident, pkg):
+    def _user_can_set_acls(self, ident, pkg, acl_for=None,
+            acl_status=None):
         '''Check that the current user can set acls.
 
         This method will return one of these values::
 
-            'admin', 'owner', 'comaintainer', False
+            'admin', 'owner', 'comaintainer', 'himself', False
 
         depending on why the user is granted access.  You can therefore use the
         value for finer grained access to some resources.
 
         :arg ident: identity instance from this request
         :arg pkg: packagelisting to find the user's permissions on
+        :karg acl_for: username of the user for which the acl is requested
+        :karg acl_status: status of the acl requested (should be either
+        'Obsolete', 'Awaiting Review' for the current use-case)
         '''
         # Make sure the current tg user has permission to set acls
         # If the user is in the admin group they can
@@ -205,8 +209,12 @@ class PackageDispatcher(controllers.Controller):
         # The owner can
         if identity.current.user_name == pkg.owner:
             return 'owner'
-        # Wasn't the owner.  See if they have been granted permission
-        # explicitly
+        #Wasn't the owner or an admin. See it is requested for himself
+        if identity.current.user_name == acl_for \
+            and acl_status in ('Obsolete', 'Awaiting Review'):
+            return "himself"
+        # Wasn't the owner, an admin and requesting for himeself.
+        # See if they have been granted permission explicitly
         for person in pkg.people:
             if person.username == identity.current.user_name:
                 # Check each acl that this person has on the package.
@@ -713,6 +721,64 @@ class PackageDispatcher(controllers.Controller):
     @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
     @identity.require(identity.not_anonymous())
+    def set_remove_acl_request(self, pkgid, person_name, acl_name, set_acl):
+        '''
+        Set or remove the acl request on a package.
+
+        If its set the acl request, it sets its status to 
+        "Awaiting Review" if it has not already been granted.
+
+        If it removes the acl request, it sets its status to "Obsolete".
+
+        :arg pkgid: packageListing.id
+        :arg person_name: username of the person to make the request for
+        :arg acl_name: The acl we're changing the status of
+        (commit, watchcommit...)
+        :arg set_acl: Wether it set or remove the acl request ie: change
+        the acl to (Awaiting Review or Obsolete)
+        '''
+
+        # Change strings into numbers because we do some comparisons later on
+        pkgid = int(pkgid)
+
+        # Make sure the package listing exists
+        try:
+            #pylint:disable-msg=E1101
+            pkg = PackageListing.query.filter_by(id=pkgid).one()
+        except InvalidRequestError:
+            return dict(status=False,
+                    message=_('PackageListing %(pkg)s does not exist') % {
+                        'pkg': pkgid})
+
+        # Make sure the person we're setting the acl for exists
+        try:
+            user = fas.cache[person_name]
+        except KeyError:
+            return dict(status=False, message=_('No such user %(username),'
+                ' for package %(pkg)s in %(collection)s %(version)s') % {
+                    'username': person_name, 'pkg': pkg.package.name,
+                    'collection': pkg.collection.name,
+                    'version': pkg.collection.version})
+
+        for person in pkg.people:
+            if person.username == identity.current.user_name:
+                # Check each acl that this person has on the package.
+                for acl in person.acls:
+                    if acl.acl == acl_name\
+                            and acl.statuscode == STATUS['Approved']\
+                            and str(set_acl).lower() == "true":
+                        return dict(status=True, message=
+                                _('%(user)s already has this ACL') % {
+                                    'user': identity.current.user_name})
+        if str(set_acl).lower() == "true":
+            action = "Awaiting Review"
+        else:
+            action = "Obsolete"
+        return self.set_acl_status(pkgid, person_name, acl_name, action)
+
+    @expose(allow_json=True)
+    # Check that the requestor is in a group that could potentially set ACLs.
+    @identity.require(identity.not_anonymous())
     def set_acl_status(self, pkgid, person_name, new_acl, statusname):
         '''Set the acl on a package to a particular status.
 
@@ -758,7 +824,8 @@ class PackageDispatcher(controllers.Controller):
                     'version': pkg.collection.version})
 
         # Check that the current user is allowed to change acl statuses
-        approved = self._user_can_set_acls(identity, pkg)
+        approved = self._user_can_set_acls(identity, pkg,
+                            acl_for=person_name, acl_status=statusname)
         if not approved:
             return dict(status=False, message=
                     _('%(user)s is not allowed to approve Package ACLs') % {
