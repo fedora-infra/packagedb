@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+
+  <head>
+    <script type="text/javascript"
+            src="${tg.url('/static/javascript/pendingpkgs.js')}">
+    </script>
+  </head>
+  <body>
+    <h2>Packages Awaiting Review</h2>
+    <p>${owner} is either a maintainer or a comaintainer of these packages.</p>
+    <form name="Pending" action="${tg.url('/users/approvepending/%s' % owner)}" method="post">
+      <span py:if="can_approve">
+        <input type="button"
+               value="Select All" onClick="setCheckBox(true,'Pending')"/>
+        &nbsp;&nbsp;
+        <input type="button"
+               value="Deselect All" onclick="setCheckBox(false, 'Pending')"/>
+        &nbsp;&nbsp;
+        <input type="submit" value="Approve Selected"/>
+      </span>
+      <table>
+        <thead>
+          <tr>
+            <th>Package</th>
+            <th>Collection</th>
+            <th>ACL</th>
+            <th>ACL Owner</th>
+            <th py:if="can_approve">Approve?</th>
+          </tr>
+        </thead>
+        <span py:for="pkgname in sorted(pkgs.keys())">
+          <span py:for="collection in sorted(pkgs[pkgname].keys())">
+            <span py:for="acl in sorted(pkgs[pkgname][collection].keys())">
+              <tr>
+                <td>${pkgname}</td>
+                <td>${collection}</td>
+                <td>${acl}</td>
+                <td>${pkgs[pkgname][collection][acl][0]}</td>
+                <td py:if="can_approve">
+                <center>
+                    <input type="checkbox"
+                           name="acls"
+                           value="${pkgs[pkgname][collection][acl][1]}"
+                           py:attrs="{'checked': tg.checker(1)}"/>
+                    </center>
+                </td>
+              </tr>
+            </span>
+            <tr style="background: LightGrey">
+              <td style="height:5px;font-size:10%" colspan="5">&nbsp;</td>
+            </tr>
+          </span>
+        </span>
+      </table>
+    </form>
+  </body>
+</html>
