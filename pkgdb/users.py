@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007  Nigel Jones
-# Copyright © 2007, 2009-2010  Red Hat, Inc.
+# Copyright (C) 2007  Nigel Jones
+# Copyright (C) 2007, 2009-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -30,21 +30,28 @@ Controller to show information about packages by user.
 # :E1101: SQLAlchemy monkey patches the db fields into the class mappers so we
 #   have to disable this check wherever we use the mapper classes.
 # :C0322: Disable space around operator checking in multiline decorators
+import itertools
 
 import urllib
 
 import sqlalchemy
+from sqlalchemy import and_, select
+from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import lazyload
 
-from turbogears import controllers, expose, flash, identity, paginate, redirect
-from turbogears import validate, validators
+from turbogears import config, controllers, expose, flash, identity, paginate
+from turbogears import redirect, validate, validators
+from turbogears.database import session
 
 from pkgdb.model import Collection, Package, PackageListing, \
         PersonPackageListing, PersonPackageListingAcl
-from pkgdb.lib.utils import STATUS
+from pkgdb.model import PersonPackageListingAclTable
+
+from pkgdb.lib.utils import STATUS, LOG
+
 from pkgdb import _
 
-from fedora.tg.tg1utils import request_format
+from fedora.tg.tg1utils import request_format, tg_url
 
 
 #
@@ -73,6 +80,36 @@ class Users(controllers.Controller):
         :arg app_title: Title of the web app.
         '''
         self.app_title = app_title
+
+    def _send_log_msg(self, msg, subject, author, recipients):
+        '''Send a log message to interested parties.
+
+        This takes a message and sends it to the recipients.
+
+        :arg msg: The log message to send
+        :arg subject: A textual description or summary of the content of the
+            message.
+        :arg author: Email address or addresses of the author(s)
+        :arg recipients: Email address or address which should receive the
+            message (To header)
+
+        All email addresses can be given either as a string or as a tuple
+        ('Full Name', 'name@example.com').
+        '''
+
+        if config.get('mail.on', False):
+            email = turbomail.Message(author, recipients,
+                        '[pkgdb] %s' % (subject,))
+            email.plain = msg
+            turbomail.enqueue(email)
+        else:
+            LOG.debug(_('Would have sent: %(subject)s') % {
+                        'subject': subject.encode('ascii', 'replace')})
+            LOG.debug('To: %s' % recipients)
+            LOG.debug('From: %s %s' %
+                      (author[0].encode('ascii', 'replace'),
+                       author[1].encode('ascii', 'replace')))
+            LOG.debug('%s' % msg.encode('ascii', 'replace'))
 
     @expose(template='pkgdb.templates.useroverview')
     def index(self):
@@ -214,7 +251,7 @@ class Users(controllers.Controller):
             pkg_list.append(pkg)
 
         return dict(title=page_title, pkgCount=len(pkg_list),
-                pkgs=pkg_list, acls=acl_list, fasname=fasname, eol=eol)
+                    pkgs=pkg_list, acls=acl_list, fasname=fasname, eol=eol)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):
@@ -238,3 +275,257 @@ class Users(controllers.Controller):
         page_title = _('%(app)s -- %(name)s -- Info') % {
                 'app': self.app_title, 'name': fasname}
         return dict(title=page_title, fasname=fasname)
+
+    @expose(template='pkgdb.templates.pendingpkgs', allow_json=True)
+    def pending(self, owner=None):
+        '''List packages that are awaiting approval.
+
+        This method returns a list of packagelistings whose status is Awaiting
+        Review.
+
+        :kwarg owner: The owner of the packagelistings.
+               Default is the current user.
+
+        :returns: A dictionary of the owner, package information andi
+                  can_approve.
+        '''
+
+        #
+        # if user is logged in
+        #     if owner specified
+        #         can_appprove = (user == owner)
+        #     else
+        #        owner = user
+        #        can_approve = True
+        # else
+        #     if owner specified
+        #         can_approve = False
+        #     else
+        #         Error!
+        #
+        can_approve = False
+        if not identity.current.anonymous:
+            user = identity.current.user_name
+            if owner != None:
+                can_approve = (user == owner)
+            else:
+                owner = user
+                can_approve = True
+        else:
+            if owner != None:
+                can_approve = False
+            else:
+                message = "Either login or specify an owner"
+                flash(message)
+                if request_format() == 'json':
+                    return dict(exc='IdentityFailure')
+                else:
+                    return dict(title="Error", pkgs={})
+
+        page_title = _('%(app)s -- %(name)s -- Packages') % {
+                       'app': self.app_title, 'name': owner}
+
+        #
+        # Build a query to get packagelistings owned by 'owner'.
+        #
+        pkgsOwned_query = select((PackageListing.id,),
+                                 and_(PackageListing.owner == owner,
+                                      PackageListing.statuscode ==
+                                          STATUS['Approved'],
+                                      PackageListing.packageid == Package.id,
+                                      Package.statuscode == STATUS['Approved'],
+                                      PackageListing.collectionid ==
+                                          Collection.id,
+                                      Collection.statuscode ==
+                                          STATUS['Active']))
+
+        #
+        # Build a query to get packagelistings for which 'owner' has
+        # approveacls.
+        #
+        pkgsAcls_query = select((PackageListing.id,),
+                                and_(PersonPackageListingAcl.acl ==
+                                         'approveacls',
+                                     PersonPackageListingAcl.statuscode ==
+                                         STATUS['Approved'],
+                                     PersonPackageListingAcl.\
+                                         personpackagelistingid ==
+                                         PersonPackageListing.id,
+                                     PersonPackageListing.username == owner,
+                                     PersonPackageListing.packagelistingid ==
+                                         PackageListing.id,
+                                     PackageListing.packageid == Package.id,
+                                     Package.statuscode == STATUS['Approved'],
+                                     PackageListing.collectionid ==
+                                         Collection.id,
+                                     Collection.statuscode == STATUS['Active'],
+                                     PackageListing.statuscode ==
+                                         STATUS['Approved']))
+
+        pkglistings = {}
+        for record in itertools.chain(pkgsOwned_query.execute(),
+                                      pkgsAcls_query.execute()):
+            pkg_listing_id = record[0]
+            pkglistings[pkg_listing_id] = 1
+
+        pkg_listing_ids = pkglistings.keys()
+        pkgsPending_query = select((Package.name,
+                                    Collection.name,
+                                    Collection.version,
+                                    PersonPackageListing.username,
+                                    PersonPackageListingAcl.acl,
+                                    PersonPackageListingAcl.id),
+                                   and_(PackageListing.id.in_(pkg_listing_ids),
+                                        PackageListing.collectionid == 
+                                            Collection.id,
+                                        PackageListing.packageid ==
+                                            Package.id,
+                                        PackageListing.id == 
+                                            PersonPackageListing.\
+                                                packagelistingid,
+                                        PersonPackageListing.id ==
+                                            PersonPackageListingAcl.\
+                                                personpackagelistingid,
+                                        PersonPackageListingAcl.statuscode ==
+                                            STATUS['Awaiting Review']))
+        pkgs = {}
+        for record in pkgsPending_query.execute():
+            pkg_name = record[0]
+            collection = record[1] + ' ' + record[2]
+            acl_owner = record[3]
+            acl = record[4]
+            acl_id = record[5]
+
+            if (not pkgs.has_key(pkg_name)):
+                pkgs[pkg_name] = {}
+            if (not pkgs[pkg_name].has_key(collection)):
+                pkgs[pkg_name][collection] = {}
+            pkgs[pkg_name][collection][acl] = []
+            pkgs[pkg_name][collection][acl].append(acl_owner)
+            pkgs[pkg_name][collection][acl].append(acl_id)
+
+        return dict(title=page_title, owner=owner, pkgs=pkgs,
+                    can_approve=can_approve)
+
+    @expose(allow_json=True)
+    def approvepending(self, owner, acls=''):
+        '''Approve selected packagelistings.
+
+        :arg owner: The owner of the packagelistings.
+
+        '''
+
+        if not isinstance(acls, (list, tuple)):
+            acls = [acls]
+
+        if identity.current.anonymous:
+            message = "You must be logged in to approve."
+            flash(message)
+            url = '/users/pending/%s/' % owner
+            redirect(url)
+
+        else:
+           user = identity.current.user_name
+
+        if not user == owner:
+            message = "You must be the owner to approve."
+            flash(message)
+            url = '/users/pending/%s/' % owner
+            redirect(url)
+
+        if (len(acls) == 1) and (acls[0] == ''):
+            message = "Please select at least one packagelisting to approve."
+            flash(message)
+            url = '/users/pending/%s/' % owner
+            redirect(url)
+
+        emsg = '%s has approved the following acls. ' \
+               ' You are receiving this email because either you are the' \
+               ' owner of one or more of the packages or you have an' \
+               ' approveacls on one or more of the packages or your acl is' \
+               ' being approved.  You do not need to do anything at this' \
+               ' time.\n' % (owner)
+
+        email_recipients = {}
+        email_recipients[owner] = owner + "@fedoraproject.org"
+        email_recipients[owner] = email_recipients[owner].\
+                                      encode('ascii', 'replace')
+        for acl_id in acls:
+            try:
+                PersonPackageListingAclTable.update().\
+                    where(PersonPackageListingAclTable.c.id == acl_id).\
+                    values(statuscode=STATUS['Approved']).execute()
+                session.flush()
+            except InvalidRequestError, e:
+                session.rollback()  #pyling:disable-msg=E1101
+                flash(_('Approving ACL failed for id %d with error: %s') %
+                    acl_id, e)
+                url = '/users/pending/%s/' % owner
+                redirect(url)
+
+            pkgs_query = select((Package.name,
+                                 PackageListing.id,
+                                 PackageListing.owner,
+                                 Collection.name,
+                                 Collection.version,
+                                 PersonPackageListing.username,
+                                 PersonPackageListingAcl.acl),
+                                and_(PersonPackageListingAcl.id == acl_id,
+                                     PersonPackageListingAcl.\
+                                         personpackagelistingid ==
+                                         PersonPackageListing.id,
+                                     PersonPackageListing.packagelistingid ==
+                                         PackageListing.id,
+                                     PackageListing.collectionid ==
+                                         Collection.id,
+                                     PackageListing.packageid == Package.id))
+            for record in pkgs_query.execute():
+                pkgname = record[0]
+                pkglistingid = record[1]
+                pkgowner = record[2]
+                collection = record[3] + ' ' + record[4]
+                acl_owner = record[5]
+                acl = record[6]
+                email_recipients[pkgowner] = pkgowner + "@fedoraproject.org"
+                email_recipients[pkgowner] = email_recipients[pkgowner].\
+                                                 encode('ascii', 'replace')
+                email_recipients[acl_owner] = acl_owner + "@fedoraproject.org"
+                email_recipients[acl_owner] = email_recipients[acl_owner].\
+                                                  encode('ascii', 'replace')
+
+                emsg += '\n'
+                emsg += ', '.join([pkgname, collection, acl])
+
+                #
+                # Get everyone with approveacls on this package.
+                #
+                app_acls_query = select((PersonPackageListing.username,),
+                                        and_(PackageListing.id == pkglistingid,
+                                             PackageListing.id == 
+                                                 PersonPackageListing.\
+                                                 packagelistingid,
+                                             PersonPackageListing.id ==
+                                                 PersonPackageListingAcl.id,
+                                             PersonPackageListingAcl.acl ==
+                                                 'approveacls',
+                                             PersonPackageListingAcl.\
+                                                 statuscode ==
+                                                 STATUS['Approved']))
+                user_list = app_acls_query.execute()
+                for record2 in user_list:
+                    username = record[0]
+
+                    email_recipients[username] = \
+                        username + "@fedoraproject.org"
+                    email_recipients[username] = \
+                        email_recipients[username].encode('ascii', 'replace')
+
+        self._send_log_msg(emsg, 'ACL Approval',
+                           ('PackageDB', 'pkgdb@fedoraproject.org'),
+                           email_recipients.values())
+
+        url = '/users/pending/%s/' % owner
+        redirect(url)
+
+        return dict(title='Testing')
+
