@@ -2,12 +2,15 @@ from sqlalchemy import *
 from pkgdb.lib.db import Grant_RW
 from migrate import *
 from migrate.changeset import *
-try:
-    from migrate.changeset.constraint import UniqueConstraint
-except:
+import migrate.changeset
+
+# is sqlalchemy-migrate > 0.5
+if hasattr(migrate.changeset.constraint, 'UniqueConstraint'):
+    migrate_engine=None
     from pkgdb.lib.migratelib import UniqueConstraint
 
-metadata = MetaData()
+metadata = MetaData(migrate_engine)
+
 
 CollectionTable = Table('collection', metadata,
     Column('id', Integer(),  primary_key=True, autoincrement=True, nullable=False),
@@ -75,7 +78,7 @@ PackageBuildApplicationsTable = Table('packagebuildapplications', metadata,
 )
 Grant_RW(PackageBuildApplicationsTable)
 
-def upgrade():
+def upgrade(migrate_engine=migrate_engine):
     metadata.bind = migrate_engine
 
     ExecutablesTable.create()
@@ -89,7 +92,7 @@ def upgrade():
     # inreversible
     PackageBuildApplicationsTable.drop()
 
-def downgrade():
+def downgrade(migrate_engine=migrate_engine):
     metadata.bind = migrate_engine
 
     ApplicationsTable.drop_column('command')
