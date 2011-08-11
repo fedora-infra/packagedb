@@ -144,51 +144,54 @@ class StatusCache(dict):
     def __init__(self, timeout=3600):
         self.timeout = timeout
 
-    def __getitem__(self, status_id):
+    def __getitem__(self, status_key):
         '''Return the other half of status from memcache or the database
 
-        :arg status_id: This can be either a statuscode or a statusname.
+        :arg status_key: This can be either a statuscode or a statusname.
             If it's a statusname, the statuscode will be returned.  If it's
             a statusname, the statuscode will be returned.
         '''
-        if isinstance(status_id, basestring):
+        if isinstance(status_key, basestring):
             # Have a statusname, looking for an id
 
             # First ask memcache server for the value
-            mc_id = 'pkgdb:status:%s' % Hasher(status_id).hexdigest()
+            mc_id = 'pkgdb:status:%s' % Hasher(status_key).hexdigest()
             status_value = MEMCACHE.get(mc_id)
 
             if not status_value:
                 status = select((StatusTranslationTable,), and_(
                     StatusTranslationTable.c.language=='C',
-                    StatusTranslationTable.c.statusname==status_id))\
+                    StatusTranslationTable.c.statusname==status_key))\
                             .execute().fetchone()
+                if status:
+                    status_value = status.statuscodeid
+
         else:
             # Have an id, look for a statusname
 
             # Ask memcache server for the value
-            mc_id = 'pkgdb:status:%s' % str(status_id)
+            mc_id = 'pkgdb:status:%s' % str(status_key)
             status_value = MEMCACHE.get(mc_id)
 
             if not status_value:
                 try:
                     status = select((StatusTranslationTable,), and_(
                         StatusTranslationTable.c.language=='C',
-                        StatusTranslationTable.c.statuscodeid==status_id))\
+                        StatusTranslationTable.c.statuscodeid==status_key))\
                                 .execute().fetchone()
                 except DataError:
-                    # If status_id was not an integer we get a DataError.  In
+                    # If status_key was not an integer we get a DataError.  In
                     # that case, we know we won't find the value we want
-                    status = None
+                    status_value = None
+                status_value = status.statusname
 
         if not status_value:
             if not status:
                 raise KeyError(_('Unknown status: %(status)s') %
-                    {'status': status_id})
+                    {'status': status_key})
 
-            status_value = status.statuscodeid
-            # Save in memcache for the next status lookup
-            MEMCACHE.set(mc_id, status_value, self.timeout)
+        # Save in memcache for the next status lookup
+        MEMCACHE.set(mc_id, status_value, self.timeout)
 
         return status_value
 
