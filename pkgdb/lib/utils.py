@@ -183,8 +183,8 @@ class StatusCache(dict):
                     # If the status is not present in the db, we may get here.
                     # We'll throw a KeyError based on this later which should
                     # do just what we want.
-                    status_value = None
-                else:
+                    pass
+                if status:
                     status_value = status.statusname
 
         if not status_value:
