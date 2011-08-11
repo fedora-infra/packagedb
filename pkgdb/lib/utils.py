@@ -179,15 +179,16 @@ class StatusCache(dict):
                         StatusTranslationTable.c.language=='C',
                         StatusTranslationTable.c.statuscodeid==status_key))\
                                 .execute().fetchone()
-                except DataError:
-                    # If status_key was not an integer we get a DataError.  In
-                    # that case, we know we won't find the value we want
+                except:
+                    # If the status is not present in the db, we may get here.
+                    # We'll throw a KeyError based on this later which should
+                    # do just what we want.
                     status_value = None
-                status_value = status.statusname
+                else:
+                    status_value = status.statusname
 
         if not status_value:
-            if not status:
-                raise KeyError(_('Unknown status: %(status)s') %
+            raise KeyError(_('Unknown status: %(status)s') %
                     {'status': status_key})
 
         # Save in memcache for the next status lookup
