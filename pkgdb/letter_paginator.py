@@ -111,14 +111,23 @@ class Letters(controllers.Controller):
             else:
                 packages = PackageBuild.query.all() #pylint:disable-msg=E1101
 
+        # generate the statusMap with statuscode and collectionid
         statuses = set()
+        collectn_map = {}
+        pkg_list = []
         for pkg in packages:
+            pkg.json_props = {'Package':('listings',)}
+            pkg_list.append(pkg)
             statuses.add(pkg.statuscode)
+            for pkglisting in pkg.listings:
+                if pkglisting.collection.collectionid not in collectn_map:
+                    collectn_map[pkglisting.collection.collectionid] = \
+                        pkglisting.collection.branchname
         statusMap = dict([(statuscode, STATUS[statuscode]) for statuscode in statuses])
 
         searchwords = searchwords.replace('%','*')
 
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {
             'app': self.app_title, 'mode': mode.strip('/')},
-                       searchwords=searchwords, packages=packages, mode=mode,
-                       bzurl=bzUrl, statusMap=statusMap)
+                       searchwords=searchwords, packages=pkg_list, mode=mode,
+                       bzurl=bzUrl, statusMap=statusMap, collectn_map=collectn_map)

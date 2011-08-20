@@ -268,13 +268,19 @@ class Acls(controllers.Controller):
                     Collection.statuscode!=STATUS['EOL'])
         pkg_list = []
         statuses = set()
+        collectn_map = {}
         for pkg in query:
             pkg.json_props = {'Package':('listings',)}
             pkg_list.append(pkg)
             for pkglisting in pkg.listings:
                 statuses.add(pkglisting.statuscode)
+                if pkglisting.collection.collectionid not in collectn_map \
+                    and pkglisting.collection.statuscode!=STATUS['EOL']:
+                    collectn_map[pkglisting.collection.collectionid] = pkglisting.collection.branchname
 
         statusMap = dict([(statuscode, STATUS[statuscode]) for statuscode in
             statuses])
+
         return dict(title=page_title, pkgCount=len(pkg_list), pkgs=pkg_list,
-                fasname='orphan', eol=eol, statusMap=statusMap)
+                fasname='orphan', eol=eol, statusMap=statusMap,
+                collectn_map=collectn_map)
