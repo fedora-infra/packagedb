@@ -1,7 +1,7 @@
 #!/usr/bin/python -tt
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2008-2009  Red Hat, Inc.
+# Copyright ©  2008-2011 Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -18,6 +18,7 @@
 #
 # Author(s): Toshio Kuratomi <tkuratom@redhat.com>
 # Author(s): Mike Watters <valholla@fedoraproject.org>
+# Author(s): Frank Chiulli <fchiulli@fedoraproject.org>
 #
 
 __version__ = '0.3'
@@ -37,7 +38,7 @@ def parse_config():
     # configspec to validate types and set defaults
     configspec = '''
     [global]
-        pkgdb.url = string(default = 'https://admin.fedoraproject.org/pkgdb')
+        pkgdb.url = string(default = 'https://publictest5.fedoraproject.org/pkgdb')
         pkgdb.retries = integer(default = 5)
         pkgdb.knowngroups = list(default = list())
     '''.splitlines()
@@ -73,11 +74,19 @@ def parse_commands(config):
 
 Sub Commands:
     add: Add a new package
+    add_comaintainers: Add comaintainers to packagelistings
+    change_owner: Change the owner of packagelistings
     edit: Edit the properties of an existing package
     mass-branch: Mass branch from "devel" to --branch
 
 Examples:
     pkgdb-client add -u toshio -o testowner -d 'Purely a test package' -b devel -b F-7 -b EL-5 -c toshio -c kevin -m wtogami fedoratest
+    pkgdb-client add_comaintainers --owner toshio --comaintainer fchiulli 
+                 --pkg_pattern 'python-sql*' --collection_name Fedora 
+                 --collection_version 14 --if_comaint
+    pkgdb-client change_owner --owner toshio --new_owner fchiulli 
+                 --pkg_pattern 'python-sql*' --collection_name Fedora 
+                 --collection_version 14
     pkgdb-client edit -u toshio -o jkeating fedoratest
     pkgdb-client mass-branch -u toshio -b F-12
 ''')
@@ -112,9 +121,9 @@ Examples:
             action='append',
             help='Person to cc on bugs and commits for this branch.  May be specified multiple times')
     parser.add_option('-m', '--maintainer',
-            dest='comaintList',
+            dest='maintList',
             action='append',
-            help='Comaintainers for this branch.  May be specified multiple times')
+            help='Maintainers for this branch.  May be specified multiple times')
     parser.add_option('--remove-user',
             dest='removeUserList',
             action='append',
@@ -133,6 +142,37 @@ Examples:
             type='string',
             dest='groups',
             help='Remove commit access for GROUP on this branch.  May be specified multiple times.')
+    parser.add_option('--insecure',
+            action='store_true',
+            dest='insecure',
+            default=False,
+            help='Establish an insecure connection with PackageDB.')
+    parser.add_option('--comaintainer',
+            dest='comaintList',
+            action='append',
+            help='Comaintainers for this package.  May be specified ' +
+                 'multiple times')
+    parser.add_option('--pkg_pattern',
+            dest='pkg_pattern',
+            action='store',
+            help='Pattern to use for determining packages.')
+    parser.add_option('--collection_name',
+            dest='collectn_name',
+            action='store',
+            help='Collection name.')
+    parser.add_option('--collection_version',
+            dest='collectn_ver',
+            action='store',
+            help='Collection version.')
+    parser.add_option('-n', '--new_owner',
+            dest='new_owner',
+            action='store',
+            help='New owner of the package on the branch')
+    parser.add_option('--if_comaint',
+            action='store_true',
+            dest='if_comaint',
+            default=False,
+            help='Change packagelistings for which owner is a co-maintainer.')
     (opts, args) = parser.parse_args()
 
     # Must specify a package name except for mass_branch
@@ -157,7 +197,8 @@ Examples:
                 raise ArgumentsError('Do not know how to handle group %s at this time' % group)
 
     # translate the old CVS branch names to the git format
-    opts.branchList = [bn == 'devel' and 'master' or bn.lower().replace('-', '') 
+    if (opts.branchList):
+        opts.branchList = [bn == 'devel' and 'master' or bn.lower().replace('-', '') 
             for bn in opts.branchList]
 
     return opts
@@ -180,12 +221,12 @@ def clone_branch(pkgdb, options):
             continue
 
         # Make changes to the master branch before cloning
-        if options.groups or options.comaintList or options.ccList \
+        if options.groups or options.maintList or options.ccList \
                 or options.description or options.owner:
             try:
                 pkgdb.edit_package(package, options.owner,
                         options.description, [options.masterBranch],
-                        options.ccList, options.comaintList, options.groups)
+                        options.ccList, options.maintList, options.groups)
             except AppError, e:
                 failedPackages[package] = 'Could not save changes to master' \
                         ' branch.  Error: %(msg)s' % {'msg': e.message}
@@ -215,7 +256,7 @@ def add_package(pkgdb, options):
                     description=options.description,
                     branches=options.branchList,
                     cc_list=options.ccList,
-                    comaintainers=options.comaintList,
+                    comaintainers=options.maintList,
                     groups=options.groups)
         except AppError, e:
             failedPackages[package] = e.message
@@ -232,7 +273,7 @@ def edit_package(pkgdb, options):
                     description=options.description,
                     branches=options.branchList,
                     cc_list=options.ccList,
-                    comaintainers=options.comaintList,
+                    comaintainers=options.maintList,
                     groups=options.groups)
         except AppError, e:
             failedPackages[package] = e.message
@@ -260,6 +301,7 @@ def remove_user(pkgdb, options):
             continue
     return failedPackages
 
+
 if __name__ == '__main__':
     config = parse_config()
     try:
@@ -269,7 +311,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     pkgdb = PackageDB(config['pkgdb.url'], username=options.username,
-            debug=options.debug)
+            debug=options.debug, insecure=options.insecure)
     failedPackages = {}
 
     for retry in range(1, config['pkgdb.retries'] + 1):
@@ -279,6 +321,7 @@ if __name__ == '__main__':
                     print 'You can only specify one package to add at a time'
                     sys.exit(1)
                 failedPackages.update(add_package(pkgdb, options))
+
             elif options.pkg_action == 'edit':
                 if options.masterBranch:
                     failedPackages.update(clone_branch(pkgdb, options))
@@ -286,6 +329,7 @@ if __name__ == '__main__':
                     failedPackages.update(remove_user(pkgdb, options))
                 else:
                     failedPackages.update(edit_package(pkgdb, options))
+
             elif options.pkg_action == 'mass-branch':
                 try:
                     response = pkgdb.mass_branch(options.branchList[0])
@@ -296,9 +340,63 @@ if __name__ == '__main__':
                     # Mass branch has been started
                     print response.tg_flash
                     sys.exit(0)
+
+            elif options.pkg_action == 'add_comaintainers':
+                try:
+                    if (options.collectn_ver):
+                        response = pkgdb.add_comaintainers(
+                                       owner=options.owner,
+                                       comaintainers=options.comaintList,
+                                       pkg_pattern=options.pkg_pattern,
+                                       collectn_name=options.collectn_name,
+                                       collectn_ver=options.collectn_ver,
+                                       if_comaint=options.if_comaint)
+                    else:
+                        response = pkgdb.add_comaintainers(
+                                       owner=options.owner,
+                                       comaintainers=options.comaintList,
+                                       pkg_pattern=options.pkg_pattern,
+                                       collectn_name=options.collectn_name,
+                                       if_comaint=options.if_comaint)
+
+                except AppError, e:
+                    print e.message
+                    sys.exit(1)
+                else:
+                    print response.tg_flash
+                    sys.exit(0)
+
+            elif options.pkg_action == 'change_owner':
+                try:
+                    if (options.collectn_ver):
+                        response = pkgdb.change_owner(
+                                       owner=options.owner,
+                                       new_owner=options.new_owner,
+                                       pkg_pattern=options.pkg_pattern,
+                                       collectn_name=options.collectn_name,
+                                       collectn_ver=options.collectn_ver,
+                                       if_comaint=options.if_comaint)
+                    else:
+                        response = pkgdb.change_owner(
+                                       owner=options.owner,
+                                       new_owner=options.new_owner,
+                                       pkg_pattern=options.pkg_pattern,
+                                       collectn_name=options.collectn_name,
+                                       if_comaint=options.if_comaint)
+
+                except AppError, e:
+                    print e.message
+                    sys.exit(1)
+                else:
+                    print response.tg_flash
+                    sys.exit(0)
+
             else:
-                print 'You must specify add, edit, or mass-branch as a subcommand to pkgdb-client.'
+                print 'You must specify add, add_comaintainers, ' \
+                      'change_owner, edit or mass-branch as a ' \
+                      'subcommand to pkgdb-client.'
                 sys.exit(1)
+
         except AuthError, e:
             if sys.stdin.isatty():
                 if retry >= config['pkgdb.retries']:

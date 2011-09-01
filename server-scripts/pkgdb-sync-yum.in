@@ -27,6 +27,10 @@ available in the pkgdb.
 '''
 
 __requires__ = 'fedora_packagedb'
+import pkg_resources
+pkg_resources.require("sqlalchemy<0.6.0")
+pkg_resources.require("sqlalchemy_migrate<0.6.0")
+pkg_resources.require("CherryPy<3.0")
 
 # Pylint Errors
 # :E1101: Ignore this anytime we use the session.  SQLAlchemy monkeypatches
@@ -48,12 +52,13 @@ THEME_PRIORITY = {
     'oxygen': 1
 }
 
-import pkg_resources
+
 import logging
 import argparse
 from fnmatch import fnmatch
 
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_, not_
+from sqlalchemy.orm import eagerload
 from sqlalchemy.exceptions import SADeprecationWarning
 
 from turbogears import config, update_config
@@ -119,7 +124,7 @@ def setup_parser():
     parser_showrepos.set_defaults(func='show_repos')
 
     # clean command
-    parser_clean = subparsers.add_parser('clean', help='Clean up pkgdb database. It removes all builds from inactive repos. For list of inactive repos run "%(prog)s showrepos --inactive". This command also removes all builds that are no longer in active repos.')
+    parser_clean = subparsers.add_parser('clean', help='Clean up pkgdb database. It removes all builds from inactive repos. For list of inactive repos run "%(prog)s showrepos --inactive". This command also removes all builds that are no longer in active repos and tries to fix applications in undefined state')
     parser_clean.add_argument('--cachedir',
             help='directory where the yum cache will be created. If not set, we are looking for sync-yum.cachedir option in config file. If not found use "/var/tmp" as default. Make sure cachedir is writeable.')
     parser_clean.set_defaults(func='clean')
@@ -193,7 +198,8 @@ def import_local(args):
     from pkgdb.model import Repo
     from yum.packages import YumLocalPackage
     from rpmUtils.transaction import initReadOnlyTransaction
-    from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
+    from pkgdb.lib.buildimporter import BuildImporter
+    from pkgdb.lib.rpmlib import RPM
     from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
 
     # prepare rpm transaction for rpm parser
@@ -212,14 +218,14 @@ def import_local(args):
         exit(1)
 
     # prepare importer
-    importer = PackageBuildImporter(repo, force=args.force)
+    importer = BuildImporter(repo, force=args.force)
 
     for f in args.files:
         session.begin() #pylint:disable-msg=E1101
-        log.info("PackageBuild: %s" % f)
+        log.info("Build: %s" % f)
         pkg = YumLocalPackage(ts=ts, filename=f)    
         try:
-            importer.process(RPM(pkg, yumrepo=None))
+            importer.process(RPM(pkg, yumbase=None))
         except PkgImportAlreadyExists, e:
             rpm.close()
             log.info("%s: Already imported - skipping" % pkg.name)
@@ -262,8 +268,9 @@ def update(args):
     from pkgdb.model import Repo
     from datetime import datetime
     from pkgdb.lib.dt_utils import fancy_delta
-    from pkgdb.lib.packagebuild import PackageBuildImporter, RPM
-    from pkgdb.lib.packagebuild import PkgImportAlreadyExists, PkgImportError
+    from pkgdb.lib.buildimporter import BuildImporter
+    from pkgdb.lib.buildimporter import PkgImportAlreadyExists, PkgImportError
+    from pkgdb.lib.rpmlib import RPM
 
     started = datetime.now()
 
@@ -294,7 +301,7 @@ def update(args):
         # prepare importer
     
         try:
-            importer = PackageBuildImporter(repo, force=args.force,
+            importer = BuildImporter(repo, force=args.force,
                     cachedir=cachedir)
         except Exception, e:
             log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
@@ -320,7 +327,7 @@ def update(args):
             session.begin() #pylint:disable-msg=E1101
             log.info(" (%s/%s)%s" % (counter, total, pkg))
             counter += 1
-            rpm = RPM(pkg, yumrepo=importer.yumrepo)
+            rpm = RPM(pkg, yumbase=importer.yumbase)
 
             if args.profile:
                 if profile_skip == 0:
@@ -383,21 +390,20 @@ def clean(args):
     Remove all builds from inactive repos. 
     Remove all builds that are no longer in active repos.
     """
-    from pkgdb.model import Repo
-    from pkgdb.lib.packagebuild import PackageBuildImporter
+    from pkgdb.model import Repo, Application, AppCollection, ApplicationTag, ApplicationUsage
+    from pkgdb.lib.buildimporter import BuildImporter
 
     cachedir = _get_cachedir(args.cachedir)
 
     #pylint:disable-msg=E1101
     repos = session.query(Repo).all()
     #pylint:enable-msg=E1101
-
     for repo in repos:
         log.info("Cleaning: %s" % repo.name)
         # prepare importer
     
         try:
-            importer = PackageBuildImporter(repo, cachedir=cachedir)
+            importer = BuildImporter(repo, cachedir=cachedir)
         except Exception, e:
             log.error('Failed to setup import for repo %s! (%s)' % (repo.name, e))
             continue
@@ -409,6 +415,51 @@ def clean(args):
             importer.delete_all_builds()
         importer.close(prune=False)
         session.commit() #pylint:disable-msg=E1101
+
+    # prune applications
+    apps = session.query(Application)\
+        .options(eagerload(Application.usages, Application.comments, Application.tags))\
+        .filter_by(command=None)\
+        .all()
+
+    for app in apps:
+        log.info(app.name)
+        session.begin() #pylint:disable-msg=E1101
+
+        if app.comments or app.tags or app.usages:  
+            # check whether the app is already imported with different name
+            altname = session.query(AppCollection)\
+                .filter(and_(
+                    AppCollection.name==app.name, 
+                    not_(AppCollection.applicationid==app.id)))\
+                .first()
+            if altname:
+                # move the associated content
+                new_app = altname.application
+
+                for comment in app.comments:
+                    comment.application = new_app
+                for app_usage in app.usages:
+                    new_app.update_rating(
+                        app_usage.usage.name,
+                        app_usage.rating,
+                        app_usage.author,
+                        skip_if_exists=True)
+                for tag, score in app.scores.iteritems():
+                    new_app.tag(tag.name, add_score=score)
+                    session.flush()
+
+                # remove original app
+                session.delete(app)
+                log.info("  - is other name for %s. Data were merged." % new_app)
+            else:
+                log.info("  - executable for this app was not found in the DB..")
+
+        else:
+            session.delete(app)
+            log.info("  - safely removed")
+        
+        session.commit()
 
     log.info('Done.')
 

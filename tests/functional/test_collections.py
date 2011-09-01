@@ -6,7 +6,6 @@ import simplejson as json
 
 class TestCollections(WebAppTest):
 
-    @current
     def test_by_simple_and_canonical_name(self):
         # populate with test data
         from pkgdb.model import Collection, SC_ACTIVE

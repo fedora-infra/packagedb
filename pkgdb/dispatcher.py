@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2010  Red Hat, Inc.
+# Copyright (C) 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -37,8 +37,8 @@ from sqlalchemy import and_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
 from sqlalchemy.orm import eagerload, lazyload
 
-from turbogears import controllers, error_handler, expose, identity, config,\
-        flash, validators, validate
+from turbogears import controllers, error_handler, expose, identity, \
+        config, flash, validators, validate
 from turbogears.database import session
 
 import simplejson
@@ -185,18 +185,22 @@ class PackageDispatcher(controllers.Controller):
         # Send the log
         self.eventLogger.send_msg(msg, subject, recipients.keys())
 
-    def _user_can_set_acls(self, ident, pkg):
+    def _user_can_set_acls(self, ident, pkg, acl_for=None,
+            acl_status=None):
         '''Check that the current user can set acls.
 
         This method will return one of these values::
 
-            'admin', 'owner', 'comaintainer', False
+            'admin', 'owner', 'comaintainer', 'himself', False
 
         depending on why the user is granted access.  You can therefore use the
         value for finer grained access to some resources.
 
         :arg ident: identity instance from this request
         :arg pkg: packagelisting to find the user's permissions on
+        :karg acl_for: username of the user for which the acl is requested
+        :karg acl_status: status of the acl requested (should be either
+        'Obsolete', 'Awaiting Review' for the current use-case)
         '''
         # Make sure the current tg user has permission to set acls
         # If the user is in the admin group they can
@@ -205,8 +209,12 @@ class PackageDispatcher(controllers.Controller):
         # The owner can
         if identity.current.user_name == pkg.owner:
             return 'owner'
-        # Wasn't the owner.  See if they have been granted permission
-        # explicitly
+        #Wasn't the owner or an admin. See it is requested for himself
+        if identity.current.user_name == acl_for \
+            and acl_status in ('Obsolete', 'Awaiting Review'):
+            return "himself"
+        # Wasn't the owner, an admin and requesting for himeself.
+        # See if they have been granted permission explicitly
         for person in pkg.people:
             if person.username == identity.current.user_name:
                 # Check each acl that this person has on the package.
@@ -549,7 +557,7 @@ class PackageDispatcher(controllers.Controller):
                     {'pkg': pkg_listing_id})
         approved = self._user_can_set_acls(identity, pkg)
 
-        if pkg.statuscode != STATUS['Deprecated']\
+        if pkg.statuscode != STATUS['Retired']\
                 and (pkg.statuscode == STATUS['Orphaned']
                         or approved in ('admin', 'owner')):
             # Retire package
@@ -567,13 +575,13 @@ class PackageDispatcher(controllers.Controller):
                     return dict(status=False, 
                         message=_('Unable to retire/unretire package: %(err)s') % {'err': e})
 
-            pkg.statuscode = STATUS['Deprecated']
+            pkg.statuscode = STATUS['Retired']
             log_msg = 'Package %s in %s %s has been retired by %s' % (
                 pkg.package.name, pkg.collection.name,
                 pkg.collection.version, identity.current.user_name)
-            statuscode = STATUS['Deprecated']
+            statuscode = STATUS['Retired']
             retirement = 'Retired'
-        elif (pkg.statuscode == STATUS['Deprecated']
+        elif (pkg.statuscode == STATUS['Retired']
                 and approved == 'admin'):
             # Unretire package
             pkg.statuscode = STATUS['Orphaned']
@@ -607,6 +615,166 @@ class PackageDispatcher(controllers.Controller):
             'pkg': pkg.package.name}, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
         return dict(status=True, retirement=retirement)
+
+    @expose(allow_json=True)
+    @identity.require(identity.not_anonymous())
+    def set_retirement(self, pkg_name, collectn, collectn_version, retirement):
+        '''Retire/Unretire package
+
+        Rules for retiring:
+        - owned packages - can be retired by: maintainers and cvsadmin
+        - orphaned packages - can be retired by: anyone
+
+        Unretiring can only be done by cvsadmin
+
+        :arg pkg_name:         The name of the package to be (un)retired.
+        :arg collectn:         Collection name
+        :arg collectn_version: Collection version
+        :arg retirement:       Retirement status - 'Retire' or 'Unretire'
+        '''
+        # Check that the pkg exists
+        try:
+            #pylint:disable-msg=E1101
+            pkg = PackageListing.query.filter(and_(Package.name==pkg_name,
+                                                   Package.id==PackageListing.packageid,
+                                                   Collection.name==collectn,
+                                                   Collection.version==collectn_version,
+                                                   Collection.id==PackageListing.collectionid)
+                                             ).one()
+            pkg_listing_id = pkg.id
+        except InvalidRequestError:
+            return dict(status=False, message=_('No such package %(pkg)s') %
+                    {'pkg': pkg_name})
+        approved = self._user_can_set_acls(identity, pkg)
+
+        if (retirement == 'Retire'):
+            if pkg.statuscode != STATUS['Retired'] and \
+               (pkg.statuscode == STATUS['Orphaned'] or
+                approved in ('admin', 'owner')):
+                # Retire package
+                if pkg.owner != 'orphan':
+                    try:
+                        person = fas.cache['orphan']
+                    except KeyError:
+                        return dict(status=False, message=_('specified owner %(owner)s'
+                            ' does not have a fedora account') % {
+                                'owner': 'orphan'})
+                    # let set_owner handle bugzilla and other stuff
+                    try:
+                        self._set_owner(pkg, person)
+                    except (InvalidRequestError, xmlrpclib.ProtocolError), e:
+                        return dict(status=False, 
+                            message=_('Unable to retire package: %(err)s') % {'err': e})
+
+                pkg.statuscode = STATUS['Retired']
+                log_msg = 'Package %s in %s %s has been retired by %s' % (
+                    pkg.package.name, pkg.collection.name,
+                    pkg.collection.version, identity.current.user_name)
+                statuscode = STATUS['Retired']
+            else:
+                return dict(status=False, message=
+                        _('The retiring of package %(pkg)s could not be' \
+                                ' completed. Check your permissions.') % {
+                                    'pkg': pkg_name})
+
+        elif (retirement == 'Unretire'):
+            if (pkg.statuscode == STATUS['Retired'] and
+                approved == 'admin'):
+                # Unretire package
+                pkg.statuscode = STATUS['Orphaned']
+                log_msg = 'Package %s in %s %s has been unretired by %s and' \
+                        ' is now orphan.' % (
+                                pkg.package.name, pkg.collection.name,
+                                pkg.collection.version, identity.current.user_name)
+                statuscode = STATUS['Orphaned']
+            else:
+                return dict(status=False, message=
+                        _('The unretiring of package %(pkg)s could not be' \
+                                ' completed. Check your permissions.') % {
+                                    'pkg': pkg_name})
+
+        else:
+            return dict(status=False, message=
+                    _('Invalid value for retirement.  Acceptable values are "Retire" and' \
+                            ' "Unretire".  Value received is %s') % (pkg_name))
+
+        # Retired and just-unretired packages are orphan
+        pkg.owner = 'orphan'
+        # Make a log in the db.
+        log = PackageListingLog(identity.current.user_name,
+                statuscode, log_msg, None, pkg_listing_id)
+        log.packagelistingid = pkg.id
+
+        try:
+            session.flush() #pylint:disable-msg=E1101
+        except SQLError, e:
+            # An error was generated
+            return dict(status=False,
+                message=_('Unable to (un)retire package %(pkg)s') % {
+                    'pkg': pkg_name})
+        # Send a log to people interested in the package
+        self._send_log_msg(log_msg, _('%(pkg)s (un)retirement') % {
+            'pkg': pkg.package.name}, identity.current.user, (pkg,),
+            ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
+        return dict(status=True, retirement=retirement)
+
+    @expose(allow_json=True)
+    # Check that the requestor is in a group that could potentially set ACLs.
+    @identity.require(identity.not_anonymous())
+    def set_remove_acl_request(self, pkgid, person_name, acl_name, set_acl):
+        '''
+        Set or remove the acl request on a package.
+
+        If its set the acl request, it sets its status to 
+        "Awaiting Review" if it has not already been granted.
+
+        If it removes the acl request, it sets its status to "Obsolete".
+
+        :arg pkgid: packageListing.id
+        :arg person_name: username of the person to make the request for
+        :arg acl_name: The acl we're changing the status of
+        (commit, watchcommit...)
+        :arg set_acl: Wether it set or remove the acl request ie: change
+        the acl to (Awaiting Review or Obsolete)
+        '''
+
+        # Change strings into numbers because we do some comparisons later on
+        pkgid = int(pkgid)
+
+        # Make sure the package listing exists
+        try:
+            #pylint:disable-msg=E1101
+            pkg = PackageListing.query.filter_by(id=pkgid).one()
+        except InvalidRequestError:
+            return dict(status=False,
+                    message=_('PackageListing %(pkg)s does not exist') % {
+                        'pkg': pkgid})
+
+        # Make sure the person we're setting the acl for exists
+        try:
+            user = fas.cache[person_name]
+        except KeyError:
+            return dict(status=False, message=_('No such user %(username),'
+                ' for package %(pkg)s in %(collection)s %(version)s') % {
+                    'username': person_name, 'pkg': pkg.package.name,
+                    'collection': pkg.collection.name,
+                    'version': pkg.collection.version})
+
+        for person in pkg.people:
+            if person.username == identity.current.user_name:
+                # Check each acl that this person has on the package.
+                for acl in person.acls:
+                    if acl.acl == acl_name\
+                            and acl.statuscode == STATUS['Approved']\
+                            and str(set_acl).lower() == "true":
+                        return dict(status=True, message=
+                                _('%(user)s already has this ACL') % {
+                                    'user': identity.current.user_name})
+        if str(set_acl).lower() == "true":
+            action = "Awaiting Review"
+        else:
+            action = "Obsolete"
+        return self.set_acl_status(pkgid, person_name, acl_name, action)
 
     @expose(allow_json=True)
     # Check that the requestor is in a group that could potentially set ACLs.
@@ -656,7 +824,8 @@ class PackageDispatcher(controllers.Controller):
                     'version': pkg.collection.version})
 
         # Check that the current user is allowed to change acl statuses
-        approved = self._user_can_set_acls(identity, pkg)
+        approved = self._user_can_set_acls(identity, pkg,
+                            acl_for=person_name, acl_status=statusname)
         if not approved:
             return dict(status=False, message=
                     _('%(user)s is not allowed to approve Package ACLs') % {
@@ -731,7 +900,7 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False, message=_('Package Listing with id:'
                 ' %(pkg)s does not exist') % {'pkg': pkg_listing_id})
 
-        if pkg.statuscode == STATUS['Deprecated']:
+        if pkg.statuscode == STATUS['Retired']:
             # Retired packages must be brought out of retirement first
             return dict(status=False, message=_('This package is retired.  It'
                 ' must be unretired first'))
@@ -1662,7 +1831,8 @@ class PackageDispatcher(controllers.Controller):
         'reset': validators.StringBool(),
         })
     @error_handler()
-    def set_critpath(self, pkg_list=None, critpath=True, collctn_list=None, reset=False):
+    def set_critpath(self, pkg_list=None, critpath=True, collctn_list=None,
+                     reset=False):
         '''Mark packages as being in the critical path.
 
         Critical path packages are subject to more testing or stringency of
@@ -1680,6 +1850,7 @@ class PackageDispatcher(controllers.Controller):
         :raises InvalidBranch: 
         :returns: On success, return nothing
         '''
+
         # Check for validation errors requesting this form
         errors = jsonify_validation_errors()
         if errors:
@@ -1688,19 +1859,23 @@ class PackageDispatcher(controllers.Controller):
         # Remove critpath from all packages in the given collections
         if reset:
             pkg_listing_ids = select((PackageListingTable.c.id,),
-                    from_obj=(PackageListingTable.join(CollectionTable)))\
-                        .where(PackageListingTable.c.critpath==True)
+                                     from_obj=(PackageListingTable.
+                                               join(CollectionTable)))\
+                              .where(PackageListingTable.c.critpath==True)
             if collctn_list:
                 if not isinstance(collctn_list, (tuple, list)):
                     collctn_list = [collctn_list]
-                pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.branchname.in_(collctn_list))
+                pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.\
+                                                        branchname.\
+                                                        in_(collctn_list))
             else:
                 pkg_listing_ids = pkg_listing_ids\
                         .where(CollectionTable.c.statuscode!=STATUS['EOL'])
 
             try:
-                PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
-                        .values(critpath=False).execute()
+                PackageListingTable.update().where(PackageListingTable.c.id.\
+                                                   in_(pkg_listing_ids))\
+                                            .values(critpath=False).execute()
                 session.flush()
             except InvalidRequestError, e:
                 session.rollback() #pylint:disable-msg=E1101
@@ -1713,27 +1888,52 @@ class PackageDispatcher(controllers.Controller):
                 return dict()
 
         if pkg_list:
-            pkg_listing_ids = select((PackageListingTable.c.id,), from_obj=(PackageTable\
-                .join(PackageListingTable).join(CollectionTable)))\
-                .where(and_(PackageTable.c.name.in_(pkg_list),
-                        PackageListingTable.c.critpath!=critpath))
+            invalidPkgs = []
+            for pkg_name in pkg_list:
+                query = select((Package.id,))
+                query = query.where(Package.name == pkg_name)
+                result = query.execute()
+                row = result.fetchone()
+                result.close()
+                if not row:
+                    invalidPkgs.append(str(pkg_name))
+
+            if len(invalidPkgs) != 0:
+                pkgList = ','.join(invalidPkgs)
+                flash(_('The following are not valid package names: %s') %
+                      invalidPkgs)
+                return dict(exc='InvalidPackage')
+
+            pkg_listing_ids = select((PackageListingTable.c.id,),
+                                     from_obj=(PackageTable\
+                                               .join(PackageListingTable)\
+                                               .join(CollectionTable)))\
+                              .where(and_(PackageTable.c.name.in_(pkg_list),
+                                          PackageListingTable.c.critpath!=\
+                                              critpath))
         else:
-            pkg_listing_ids = select((PackageListingTable.c.id,)).where(and_(
-                    not_(PackageListingTable.c.statuscode.in_((STATUS['EOL'],
-                        STATUS['Removed']))),
-                    PackageListingTable.c.critpath!=critpath))
+            pkg_listing_ids = select((PackageListingTable.c.id,))\
+                              .where(and_(not_(PackageListingTable.c.statuscode\
+                                                   .in_((STATUS['EOL'],
+                                                         STATUS['Removed']))),
+                                          PackageListingTable.c.critpath!=\
+                                              critpath))
 
         if collctn_list:
             if not isinstance(collctn_list, (tuple, list)):
                 collctn_list = [collctn_list]
-            pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.branchname.in_(collctn_list))
+            pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c\
+                                                      .branchname\
+                                                      .in_(collctn_list))
         else:
             pkg_listing_ids = pkg_listing_ids\
-                    .where(CollectionTable.c.statuscode!=STATUS['EOL'])
+                                  .where(CollectionTable.c.statuscode!=\
+                                         STATUS['EOL'])
 
         try:
-            PackageListingTable.update().where(PackageListingTable.c.id.in_(pkg_listing_ids))\
-                    .values(critpath=critpath).execute()
+            PackageListingTable.update()\
+                .where(PackageListingTable.c.id.in_(pkg_listing_ids))\
+                .values(critpath=critpath).execute()
             session.flush()
         except InvalidRequestError, e:
             session.rollback() #pylint:disable-msg=E1101

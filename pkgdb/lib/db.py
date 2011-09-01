@@ -18,7 +18,7 @@
 # Red Hat Author(s): Martin Bacovsky <mbacovsk@redhat.com>
 #
 import sqlalchemy
-from sqlalchemy import DDL, Table, Column
+from sqlalchemy import DDL, Table, Column, PrimaryKeyConstraint
 from sqlalchemy.sql.expression import ColumnClause
 from turbogears import config
 
@@ -40,7 +40,15 @@ def View(name, metadata, selectable):
         # make aggregate columns behave like normal columns
         if not isinstance(c, Column) and isinstance(c, ColumnClause):
             c = Column(c.name, c.type)
-        c._make_proxy(t)
+                # in SA >= 0.6 the _make_proxy seems not to be updated to new API
+        if not hasattr(t.primary_key, 'add'):
+            primary_columns = []
+            t.primary_key.add = lambda c:primary_columns.append(c)
+            c._make_proxy(t)
+            if primary_columns:
+                t.append_constraint(PrimaryKeyConstraint(*primary_columns))
+        else:
+            c._make_proxy(t)
 
     create_ddl_1 = "DROP TABLE %s" % (name)
     create_ddl_2 = "CREATE VIEW %s AS %s" % (

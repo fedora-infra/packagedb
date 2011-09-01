@@ -34,8 +34,8 @@ from sqlalchemy.orm import eagerload
 from sqlalchemy import case, cast
 from sqlalchemy.types import Integer 
 
-from turbogears import controllers, error_handler, expose, paginate, validate
-from turbogears import validators
+from turbogears import controllers, error_handler, expose, flash, paginate
+from turbogears import validate, validators 
 
 from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
         PackageListingTable
@@ -52,15 +52,20 @@ COLLECTION = 21
 #
 # Validators
 #
+class AclEol(validators.Schema):
+    '''Validator for the eol argument'''
+    # validator schemas don't have methods (R0903, W0232)
+    #pylint:disable-msg=R0903,W0232
+    eol = validators.StringBool()
 
-class AclName(validators.Schema):
+# fc class AclName(validators.Schema):
+class AclName(AclEol):
     '''Validator for the acls.name method'''
     # validator schemas don't have methods (R0903, W0232)
     #pylint:disable-msg=R0903,W0232
     packageName = validators.UnicodeString(not_empty=True, strip=True)
     collectionName = validators.UnicodeString(not_empty=False, strip=True)
     collectionVersion = validators.UnicodeString(not_empty=False, strip=True)
-    eol = validators.StringBool()
 
 class Acls(controllers.Controller):
     '''Display ownership information related to individual packages.
@@ -79,7 +84,8 @@ class Acls(controllers.Controller):
     @validate(validators=AclName())
     @error_handler()
     @expose(template='pkgdb.templates.pkgpage', allow_json=True)
-    def name(self, packageName, collectionName=None, collectionVersion=None, eol=False):
+    def name(self, packageName, collectionName=None, collectionVersion=None,
+             eol=False, tg_errors=None):
         '''Retrieve Packages by their name.
 
         This method returns ownership and acl information about a package.
@@ -95,7 +101,17 @@ class Acls(controllers.Controller):
         :kwarg eol: end-of-life flag.  If True, do not limit information.
             If False, limit information to non-eol collections.
         '''
-        
+
+        if tg_errors:
+            message = 'Validation errors'
+            for arg, msg in tg_errors.items():
+                message = message + ': ' + arg + ' - ' + msg
+                if arg == 'eol':
+                    eol = False
+            flash(message)
+            if request_format() == 'json':
+                return dict(exc='ValidationError')
+
         #pylint:disable-msg=E1101
         # Return the information about a package.
         package = Package.query.filter(
@@ -238,20 +254,26 @@ class Acls(controllers.Controller):
             packageListings=pkg_listings, statusMap = status_map,
             aclNames=acl_names, aclStatus=acl_status_translations)
 
+    @validate(validators=AclEol())
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name', max_limit=None,
             max_pages=13) #pylint:disable-msg=C0322
-    def orphans(self, eol=None):
+    def orphans(self, eol=False, tg_errors=None):
         '''List orphaned packages.
 
-        :kwarg eol: If set, list packages that are in EOL distros.
+        :kwarg eol: If True, list packages that are in EOL distros.
         :returns: A list of packages.
         '''
-        ### FIXME: Replace with a validator
-        if not eol or eol.lower() in ('false', 'f', '0'):
-            eol = False
-        else:
-            eol = bool(eol)
+
+        if tg_errors:
+            message = 'Validation errors'
+            for arg, msg in tg_errors.items():
+                message = message + ': ' + arg + ' - ' + msg
+                if arg == 'eol':
+                    eol = False
+            flash(message)
+            if request_format() == 'json':
+                return dict(exc='ValidationError')
 
         page_title = _('%(app)s -- Orphaned Packages') % {'app': self.app_title}
 

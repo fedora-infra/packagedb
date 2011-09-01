@@ -51,8 +51,8 @@ from pkgdb.model import Package, GroupPackageListing, Collection, \
         PersonPackageListingAcl, Repo, PackageBuild, PackageBuildRepo, Tag
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
-        CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
-        BinaryPackageTag
+        CollectionTable, ApplicationTag, BinaryPackageTag
+from pkgdb.model import ApplicationsTable, PkgBuildExecutablesTable
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.lib.utils import STATUS
@@ -355,8 +355,9 @@ class ListQueries(controllers.Controller):
                                    Tag.name,
                                    ApplicationTag.score),
                                and_(Tag.id == ApplicationTag.tagid,
-                                    ApplicationTag.applicationid == PackageBuildApplicationsTable.c.applicationid,
-                                    PackageBuildApplicationsTable.c.packagebuildid == PackageBuild.id,
+                                    ApplicationTag.applicationid == ApplicationsTable.c.id,
+                                    ApplicationsTable.c.executableid == PkgBuildExecutablesTable.c.executableid,
+                                    PkgBuildExecutablesTable.c.packagebuildid == PackageBuild.id,
                                     PackageBuildRepo.repoid == Repo.id,
                                     PackageBuildRepo.packagebuildid==PackageBuild.id,
                                     Repo.shortname==repo))
@@ -372,7 +373,7 @@ class ListQueries(controllers.Controller):
                 buildtags[repo][pkgname][tag] = score
 
         return dict(title=_('%(app)s -- Build Tags') % {'app': self.app_title},
-                    buildtags=buildtags, repos=repos)
+                    buildtags=buildtags, repos=repos, status=True)
 
     @expose(content_type='application/sqlite')
     def sqlitebuildtags(self, repo):
@@ -676,14 +677,14 @@ class ListQueries(controllers.Controller):
         # Only grab from certain collections
         if name:
             #pylint:disable-msg=E1101
-            owner_query = owner_query.where(Collection.name==name)
-            watcher_query = watcher_query.where(Collection.name==name)
+            owner_query = owner_query.where(CollectionTable.c.name==name)
+            watcher_query = watcher_query.where(CollectionTable.c.name==name)
             #pylint:enable-msg=E1101
             if version:
                 # Limit the versions of those collections
                 #pylint:disable-msg=E1101
-                owner_query = owner_query.where(Collection.version==version)
-                watcher_query = watcher_query.where(Collection.version==version)
+                owner_query = owner_query.where(CollectionTable.c.version==version)
+                watcher_query = watcher_query.where(CollectionTable.c.version==version)
                 #pylint:enable-msg=E1101
 
         pkgs = {}
@@ -692,8 +693,7 @@ class ListQueries(controllers.Controller):
                 watcher_query.execute()):
             additions = []
             additions.append(pkg[1])
-            pkgs.setdefault(pkg[0], set()).update(
-                    (pkg[1],))
+            pkgs.setdefault(pkg[0], set()).update((pkg[1],))
 
         # Retrieve list of collection information for generating the
         # collection form

@@ -52,6 +52,7 @@
     <span py:if="build.conflicts" py:strip="True"><a href="#conflicts">Conflicts</a> |</span>
     <span py:if="build.depends" py:strip="True"><a href="#depends">Depends</a> |</span>
     <span py:if="build.files" py:strip="True"><a href="#files">Files</a> |</span>
+    <span py:if="build.executables" py:strip="True"><a href="#executables">Executables</a> |</span>
     </p>
 
     <a name="changelog" />
@@ -102,6 +103,13 @@
         <h4 class="thin-comment">Files</h4>
         <ul>
             <li py:for="f in sorted(build.files)">${f}</li>
+        </ul>
+    </div>
+    <a name="executables" />
+    <div id="executables" py:if="build.executables">
+        <h4 class="thin-comment">Executables</h4>
+        <ul>
+            <li py:for="e in sorted(build.executables)">${e.executable}</li>
         </ul>
     </div>
   </div>

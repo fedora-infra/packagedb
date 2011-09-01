@@ -3,9 +3,13 @@ from pkgdb.lib.db import Grant_RW
 from migrate import *
 from migrate.changeset import *
 import re
+import migrate.changeset
 
+# have we sqlalchemy-migrate > 0.5?
+if hasattr(migrate.changeset.constraint, 'UniqueConstraint'):
+    migrate_engine=None
 
-metadata = MetaData()
+metadata = MetaData(migrate_engine)
 
 
 CollectionTable = Table('collection', metadata,
@@ -38,7 +42,7 @@ def git_to_cvs(gitbranchname):
         return re.sub(r'(\d+)$', r'-\1', gitbranchname.upper())
 
 
-def upgrade():
+def upgrade(migrate_engine=migrate_engine):
     metadata.bind = migrate_engine
 
     # add branch columns to collection
@@ -66,7 +70,7 @@ def upgrade():
     BranchTable.drop()
 
 
-def downgrade():
+def downgrade(migrate_engine=migrate_engine):
     metadata.bind = migrate_engine
     
     # create branch table 

@@ -7,6 +7,12 @@ NEWS
 :Version: 0.5.4
 
 -----
+0.5.x
+-----
+- Add massacls with functions add_comaintainers and change_owner (fchiulli)
+- Add validators to acls and users packages; change the eol argument to
+  acls.orphans() and users.packages() a true Boolean
+-----
 0.5.4
 -----
 - fchiulli change to package acls so EOL releases aren't shown by default

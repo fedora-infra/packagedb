@@ -36,7 +36,8 @@ import urllib
 import sqlalchemy
 from sqlalchemy.orm import lazyload
 
-from turbogears import controllers, expose, paginate, redirect, identity
+from turbogears import controllers, expose, flash, identity, paginate, redirect
+from turbogears import validate, validators
 
 from pkgdb.model import Collection, Package, PackageListing, \
         PersonPackageListing, PersonPackageListingAcl
@@ -44,6 +45,17 @@ from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 from fedora.tg.tg1utils import request_format
+
+
+#
+# Validators.
+#
+class UsersEol(validators.Schema):
+    '''Validator for the eol argument'''
+    # validator schemas don't have methods (R0903
+    #pyling:disable-msg=R0903,W0232
+    eol = validators.StringBool()
+
 
 class Users(controllers.Controller):
     '''Controller for all things user related.
@@ -68,10 +80,11 @@ class Users(controllers.Controller):
         '''
         raise redirect('/users/info/')
 
+    @validate(validators=UsersEol())
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=100, default_order='name', max_limit=None,
             max_pages=13) #pylint:disable-msg=C0322
-    def packages(self, fasname=None, acls=None, eol=None):
+    def packages(self, fasname=None, acls=None, eol=False, tg_errors=None):
         '''List packages that the user is interested in.
 
         This method returns a list of packages owned by the user in current,
@@ -85,14 +98,20 @@ class Users(controllers.Controller):
                Note: for backwards compatibility, this can also be a comma
                separated string of acls.
                Default: all acls.
-        :kwarg eol: If set, list packages that are in EOL distros.
+        :kwarg eol: If True, list packages that are in EOL distros.
         :returns: A list of packages.
         '''
-        # Set EOL to false for a few obvious values
-        if not eol or eol.lower() in ('false', 'f', '0'):
-            eol = False
-        else:
-            eol = bool(eol)
+
+        if tg_errors:
+            message = 'Validation errors'
+            for arg, msg in tg_errors.items():
+                message = message + ': ' + arg + ' - ' + msg
+                if arg == 'eol':
+                    eol = False
+
+            flash(message)
+            if request_format() == 'json':
+                return dict(exc='ValidationError')
 
         # For backward compat, redirect the orphan user to the orphan page
         if fasname == 'orphan':

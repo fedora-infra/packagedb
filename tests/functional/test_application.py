@@ -1,6 +1,5 @@
 from nose.tools import *
 from pkgdb.lib.test import slow, WebAppTest
-from turbogears import controllers, expose
 import simplejson as json
 
 

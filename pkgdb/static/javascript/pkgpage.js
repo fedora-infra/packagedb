@@ -167,6 +167,8 @@ function set_acl_approval_box(aclTable, add) {
 
 function toggle_retirement(retirementDiv, data) {
     logDebug('in toggle_retirement');
+    logDebug(data.status);
+    logDebug(data['retirement']);
     if (! data.status) {
         display_error(null, data);
         return;
@@ -200,6 +202,61 @@ function toggle_retirement(retirementDiv, data) {
         addElementClass(addMyselfButton, 'invisible');
     } else {
         /* Reflect the fact that the package has been unretired */
+        swapElementClass(retirementDiv, 'retired', 'not_retired');
+        swapElementClass(retirementButton, 'unretireButton', 'retireButton');
+        swapElementClass(pkglTable, 'orphan', 'owned');
+        retirementButton.value = 'Retire package';
+        statusBox.innerHTML = 'Orphaned';
+        set_acl_approval_box(aclTable, true);
+        removeElementClass(ownerButton, 'invisible');
+        removeElementClass(addMyselfButton, 'invisible');
+    }
+}
+
+function set_retirement(retirementDiv, data) {
+    logDebug('in set_retirement');
+    logDebug(data.status);
+    logDebug(data['retirement']);
+    if (! data.status) {
+        display_error(null, data);
+        return;
+    }
+    var pkglTable = getFirstParentByTagAndClassName(retirementDiv, 'table', 'pkglist');
+    var statusBox = getElementsByTagAndClassName('td', 'status', pkglTable)[0];
+    var retirementButton = getElementsByTagAndClassName('input',
+            'retirementButton', retirementDiv)[0];
+    var ownerBox = getElementsByTagAndClassName('div', 'owner', pkglTable)[0];
+    var ownerButton = getElementsByTagAndClassName('input', 'ownerButton',
+                        ownerBox)[0];
+    var aclTable = getElementsByTagAndClassName('table', 'acls', pkglTable)[0];
+    var addMyselfButton = getElementsByTagAndClassName('input', 'addMyselfButton', pkglTable)[0];
+    var retirementDivNames = retirementDiv.getAttribute('name').split('/');
+
+    if (data['retirement'] == 'Retire') {
+	logDebug('display retire package');
+        /* Reflect the fact that the package is now retired */
+        retirementDivNames[3] = 'Unretire';
+        retirementDiv.setAttribute('name', retirementDivNames.join('/'));
+        swapElementClass(retirementDiv, 'not_retired', 'retired');
+        swapElementClass(retirementButton, 'retireButton', 'unretireButton');
+        swapElementClass(pkglTable, 'owned', 'orphan');
+        swapElementClass(ownerBox, 'owned', 'orphaned');
+        swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
+        retirementButton.value = 'Unretire package';
+        statusBox.innerHTML = 'Retired';
+        ownerButton.setAttribute('value', 'Take Ownership');
+        set_acl_approval_box(aclTable, false);
+        var ownerName = getElementsByTagAndClassName('span', 'ownerName', ownerBox)[0];
+        var newOwnerName = SPAN({'class' : 'ownerName'}, 'orphan');
+        insertSiblingNodesBefore(ownerName, newOwnerName);
+        removeElement(ownerName);
+        addElementClass(ownerButton, 'invisible');
+        addElementClass(addMyselfButton, 'invisible');
+    } else {
+	logDebug('display unretired package');
+        /* Reflect the fact that the package has been unretired */
+        retirementDivNames[3] = 'Retire';
+        retirementDiv.setAttribute('name', retirementDivNames.join('/'));
         swapElementClass(retirementDiv, 'retired', 'not_retired');
         swapElementClass(retirementButton, 'unretireButton', 'retireButton');
         swapElementClass(pkglTable, 'orphan', 'owned');
@@ -530,7 +587,7 @@ function request_status_change(event) {
  * clicks on something.
  */
 function init(event) {
-    logDebug('In Init');
+    logDebug('In init');
 
     /* Global commits hash.  When a change from the user is anticipated, add
      * relevant information to this hash.  After the change is committed or
@@ -546,7 +603,7 @@ function init(event) {
     var retirementButtons = getElementsByTagAndClassName('input', 'retirementButton');
     for (var retNum in retirementButtons) {
         var request_retirement_change = partial(
-                make_request, '/toggle_retirement', toggle_retirement, null);
+                make_request, '/set_retirement', set_retirement, null);
         connect(retirementButtons[retNum], 'onclick', request_retirement_change);
     }
     
