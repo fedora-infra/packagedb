@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2010  Red Hat, Inc.
+ * Copyright (c) 2007-2011  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use,
  * modify, copy, or redistribute it subject to the terms and conditions of the
@@ -15,6 +15,7 @@
  * may only be used or replicated with the express permission of Red Hat, Inc.
  *
  * Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+ * Author(s):         Frank Chiulli <fchiulli@fedoraproject.org>
  */
 
 /*
@@ -269,25 +270,38 @@ function set_retirement(retirementDiv, data) {
 }
 
 function request_owner_change(event) {
+    var cid;
+    var comboContainer;
     var new_owner;
-    var url, query_params;
-    var pkg = scrapeText(getElement('pkg'));
-    var requestContainer = getFirstParentByTagAndClassName(event.target(),
-            'div', 'requestContainer');
+    var owner;
+    var pkg;
+    var query_params;
+    var requestContainer;
+    var url;
+
+    logDebug('In request_owner_change');
+    pkg = scrapeText(getElement('pkg'));
+    requestContainer = getFirstParentByTagAndClassName(event.target(), 'div',
+                           'requestContainer');
+    logDebug('requestContainer = '+requestContainer);
     busy(requestContainer, event);
     url = create_url(requestContainer, 'set_owner');
     query_params = url[1];
 
     /* Find the current owner */
-    owner = scrapeText(getFirstElementByTagAndClassName('span', 'ownerName', parent=requestContainer));
+    owner = scrapeText(getFirstElementByTagAndClassName('span', 'ownerName',
+                parent=requestContainer));
 
-    /* Figure out who the new owner is */
-    if (owner === 'orphan') {
-        if (!fedora.identity.anonymous) {
-            new_owner = fedora.identity.username;
-        }
-    } else {
-        new_owner = 'orphan';
+    /* Get the new owner */
+    comboContainer = getFirstParentByTagAndClassName(event.target(), 'span',
+                         'combo');
+    logDebug('comboContainer = '+comboContainer);
+    cid = getNodeAttribute(comboContainer, 'id');
+    logDebug('cid = '+cid);
+    new_owner = dijit.byId(cid).attr('value');
+    if (!new_owner) {
+        unbusy(requestContainer, event);
+        return;
     }
 
     /* collection */
@@ -326,7 +340,7 @@ function toggle_owner(ownerDiv, data) {
         swapElementClass(ownerDiv, 'owned', 'orphaned');
         swapElementClass(ownerButton, 'orphanButton', 'unorphanButton');
         swapElementClass(pkglTable, 'owned', 'orphan');
-        ownerButton.setAttribute('value', 'Take Ownership');
+        ownerButton.setAttribute('value', 'Change Owner');
         set_acl_approval_box(aclTable, false);
         statusBox.innerHTML = 'Orphaned';
     } else {
@@ -334,7 +348,7 @@ function toggle_owner(ownerDiv, data) {
         swapElementClass(ownerDiv, 'orphaned', 'owned');
         swapElementClass(ownerButton, 'unorphanButton', 'orphanButton');
         swapElementClass(pkglTable, 'orphan', 'owned');
-        ownerButton.setAttribute('value', 'Release Ownership');
+        ownerButton.setAttribute('value', 'Change Owner');
         set_acl_approval_box(aclTable, true);
         statusBox.innerHTML = 'Owned';
     }
@@ -589,17 +603,20 @@ function request_status_change(event) {
 function init(event) {
     logDebug('In init');
 
-    /* Global commits hash.  When a change from the user is anticipated, add
+    /*
+     * Global commits hash.  When a change from the user is anticipated, add
      * relevant information to this hash.  After the change is committed or
      * cancelled, remove it.
      */
     commits = {};
 
+    logDebug('Before ownerButtons');
     var ownerButtons = getElementsByTagAndClassName('input', 'ownerButton');
     for (var buttonNum in ownerButtons) {
         connect(ownerButtons[buttonNum], 'onclick', request_owner_change);
     }
 
+    logDebug('Before retirementButtons');
     var retirementButtons = getElementsByTagAndClassName('input', 'retirementButton');
     for (var retNum in retirementButtons) {
         var request_retirement_change = partial(
