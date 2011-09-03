@@ -38,8 +38,9 @@ from pkgdb.model import Collection, CollectionTable, Package, PackageTable, \
         PackageAclStatus, PackageListing, PackageListingTable, \
         PersonPackageListing, PersonPackageListingAcl
 from pkgdb.notifier import EventLogger
-from pkgdb.lib.utils import admin_grp, fas, pkger_grp, provenpkger_grp, \
-        STATUS, LOG
+from pkgdb.lib.acl_utils import AclNotAllowedError, _acl_can_be_held_by_user, \
+        _create_or_modify_acl
+from pkgdb.lib.utils import admin_grp, fas, LOG, STATUS
 from pkgdb.lib.validators import SetOf
 
 try:
@@ -47,13 +48,6 @@ try:
 except ImportError:
     from pkgdb.lib.utils import to_unicode
 
-MAXSYSTEMUID = 9999
-
-class AclNotAllowedError(Exception):
-    '''
-    The entity specified is not allowed to hold the requested acl.
-    '''
-    pass
 
 #
 # Validators
@@ -64,7 +58,8 @@ class MassAclsAdd_Comaintainers(validators.Schema):
     #pylint:disable-msg=R0903,W0232
     owner =  validators.UnicodeString(not_empty=True, strip=True)
     comaintainers = SetOf(use_set=True,
-                        element_validator=validators.UnicodeString(not_empty=True))
+                        element_validator=\
+                            validators.UnicodeString(not_empty=True))
     pkg_pattern = validators.UnicodeString(not_empty=True, strip=True)
     collectn_name = validators.UnicodeString(not_empty=True, strip=True)
     if_comaint = validators.StringBool()
@@ -83,9 +78,6 @@ class MassAclsChange_Owner(validators.Schema):
 
 class MassAcls(controllers.Controller):
     eventLogger = EventLogger()
-
-    # Groups that a person must be in to own a package
-    owner_memberships = (admin_grp, pkger_grp, provenpkger_grp)
 
     def __init__(self):
         controllers.Controller.__init__(self)
@@ -121,9 +113,6 @@ class MassAcls(controllers.Controller):
                        author[1].encode('ascii', 'replace')))
             LOG.debug('%s' % msg.encode('ascii', 'replace'))
 
-    #
-    # Copied from dispatchery.py.
-    #
     def _user_can_set_acls(self, ident, pkg):
         '''Check that the current user can set acls.
 
@@ -155,149 +144,6 @@ class MassAcls(controllers.Controller):
                         return 'comaintainer'
                 break
         return False
-
-    #
-    # Copied from dispatchery.py.
-    #
-    def _acl_can_be_held_by_user(self, acl, user=None):
-        '''Return true if the user is allowed to hold the specified acl.
-
-        :arg acl: The acl to verify
-        :kwarg user: The user to check.  Either a (user, group) tuple from FAS
-            or None.  If None, the current identity will be used.
-        '''
-        if not user:
-            user = identity.current.user
-
-        # watchbugzilla and owner needs a valid bugzilla address
-        if acl in ('watchbugzilla', 'owner'):
-            if not 'bugzilla_email' in user:
-                # identity doesn't come with bugzilla_email, get it from the
-                # cache
-                user.bugzilla_email = fas.cache[user.username]['bugzilla_email']
-            try:
-                get_bz().getuser(user.bugzilla_email) #pylint:disable-msg=E1101
-            except xmlrpclib.Fault, e:
-                if e.faultCode == 51:
-                    # No such user
-                    raise AclNotAllowedError(_('Email address'
-                            ' %(bugzilla_email)s'
-                            ' is not a valid bugzilla email address.  Either'
-                            ' make a bugzilla account with that email address'
-                            ' or change your email address in the Fedora'
-                            ' Account System'
-                            ' https://admin.fedoraproject.org/accounts/ to a'
-                            ' valid bugzilla email address and try again.')
-                            % user)
-                raise
-            except xmlrpclib.ProtocolError, e:
-                raise AclNotAllowedError(_('Unable to change ownership of bugs'
-                    ' for this package at this time.  Please try again'
-                    ' later.'))
-
-        # Anyone can hold watchcommits and watchbugzilla
-        if acl in ('watchbugzilla', 'watchcommits'):
-            return True
-
-        # For owner and approveacls, the user must be in packager or higher
-
-        if acl in ('owner', 'approveacls'):
-            if user:
-                if user['id'] <= MAXSYSTEMUID:
-                    # Any pseudo user can be the package owner
-                    return True
-                elif [group for group in user['approved_memberships']
-                        if group['name'] in self.owner_memberships]:
-                    # If the user is in a knwon group they are allowed
-                    return True
-                raise AclNotAllowedError(_('%(user)s must be in one of these'
-                        ' groups: %(groups)s to own a package') %
-                        {'user': user['username'],
-                            'groups': self.owner_memberships})
-            # Anyone in a known group can potentially own the package
-            elif identity.in_any_group(*self.owner_memberships):
-                return True
-            raise AclNotAllowedError(_('%(user)s must be in one of these'
-                    ' groups: %(groups)s to own a package') %
-                    {'user': identity.current.user_name,
-                        'groups': self.owner_memberships})
-
-        # For any other acl, check whether the person is in an allowed group
-        # New packagers can hold these acls
-        if user:
-            # If the person isn't in a known group raise an error
-            if [group for group in user['approved_memberships']
-                    if group['name'] in self.comaintainer_memberships]:
-                return True
-            raise AclNotAllowedError(_('%(user)s must be in one of these'
-                    'groups: %(groups)s to hold the %(acl)s acl') % 
-                    {'user': user['username'],
-                     'groups': self.comaintainer_memberships, 'acl': acl})
-        elif identity.in_any_group(*self.comaintainer_memberships):
-            return True
-        raise AclNotAllowedError(_('%(user)s must be in one of these'
-            ' groups: %(groups)s to hold the %(acl)s acl') % {
-                'user': identity.current.user_name,
-                'groups': self.comaintainer_memberships, 'acl': acl})
-
-    #
-    # Copied from dispatchery.py.
-    #
-    def _create_or_modify_acl(self, pkg_listing, person_name, new_acl,
-                              statusname):
-        '''Create or modify an acl.
-
-        Set an acl for a user.  This takes a packageListing and makes sure
-        there's an ACL for them with the given status.  It will create a new
-        ACL or modify an existing one depending on what's in the db already.
-
-        :arg pkg_listing: PackageListing on which to set the ACL.
-        :arg person_name: PersonName to set the ACL for.
-        :arg new_acl: ACL name to set.
-        :arg statusname: Status DB Object we're setting the ACL to.
-        '''
-        # watchbugzilla and watchcommits are autocommit
-        if new_acl in ('watchbugzilla', 'watchcommits') and \
-                       statusname == 'Awaiting Review':
-            statusname = 'Approved'
-
-        change_person = pkg_listing.people2.get(person_name, None)
-        if not change_person:
-            # Person has no ACLs on this Package yet.  Create a record
-            change_person = PersonPackageListing(person_name)
-            pkg_listing.people.append(change_person)
-            pkg_listing.people2[change_person.username] = change_person
-            person_acl = PersonPackageListingAcl(new_acl,
-                    STATUS[statusname])
-            change_person.acls.append(person_acl) #pylint:disable-msg=E1101
-        else:
-            # Look for an acl for the person
-            person_acl = None
-            for acl in change_person.acls:
-                if acl.acl == new_acl:
-                    # Found the acl, change its status
-                    person_acl = acl
-                    acl.statuscode = STATUS[statusname]
-                    break
-            if not person_acl:
-                # Acl was not found.  Create one.
-                person_acl = PersonPackageListingAcl(new_acl,
-                                                     STATUS[statusname])
-                change_person.acls.append(person_acl)
-
-            # For now, we specialcase the build acl to reflect the commit
-            # this is because we need to remove notifications and UI that
-            # depend on any acl being set and for now, the commit acl is being
-            # used for build and push
-            if new_acl == 'commit':
-                self._create_or_modify_acl(pkg_listing, person_name, 'build',
-                                           statusname)
-        #pylint:disable-msg=E1101
-        person_acl.status = session.query(PackageAclStatus).filter(
-                PackageAclStatus.statuscodeid==STATUS[statusname]).one()
-        #pylint:enable-msg=E1101
-
-        return person_acl
 
     @identity.require(identity.not_anonymous())
     @validate(validators=MassAclsAdd_Comaintainers())
@@ -374,7 +220,7 @@ class MassAcls(controllers.Controller):
         for comaintainer in list(iterate(comaintainers)):
             person = fas.cache[comaintainer]
             try:
-                self._acl_can_be_held_by_user('approveacls', person)
+                _acl_can_be_held_by_user('approveacls', person)
             except AclNotAllowedError:
                 nonAcls.append(comaintainer)
 
@@ -438,10 +284,12 @@ class MassAcls(controllers.Controller):
                                              STATUS['Active'],
                                          PersonPackageListing.username ==
                                              owner,
-                                         PersonPackageListing.packagelistingid ==
+                                         PersonPackageListing\
+                                             .packagelistingid ==
                                              PackageListing.id,
                                          PersonPackageListing.id ==
-                                             PersonPackageListingAcl.personpackagelistingid,
+                                             PersonPackageListingAcl\
+                                                 .personpackagelistingid,
                                          PersonPackageListingAcl.acl ==
                                              'approveacls',
                                          PersonPackageListingAcl.statuscode ==
@@ -466,7 +314,8 @@ class MassAcls(controllers.Controller):
             if if_comaint:
                 flash(_('No packagelistings were found matching the pattern '
                         '"%(pattern)s" where %(owner)s is the owner or has '
-                        'approveacls.') % {'pattern': pkg_pattern, 'owner': owner})
+                        'approveacls.') %
+                        {'pattern': pkg_pattern, 'owner': owner})
             else:
                 flash(_('No packagelistings were found matching the pattern '
                         '"%(pattern)s" where %(owner)s is the owner.') % \
@@ -481,8 +330,8 @@ class MassAcls(controllers.Controller):
             pkglisting = PackageListing.query.filter_by(id =
                                                         pkglistingid).one()
             for comaintainer in list(iterate(comaintainers)):
-                self._create_or_modify_acl(pkglisting, comaintainer,
-                                           'approveacls', 'Approved')
+                _create_or_modify_acl(pkglisting, comaintainer, 'approveacls',
+                                      'Approved')
 
         #
         # Get everyone with approveacls on all the packages.
@@ -495,13 +344,14 @@ class MassAcls(controllers.Controller):
             comaintainers_query = select((PersonPackageListing.username,),
                                       and_(PackageListing.id == pkglistingid,
                                            PackageListing.id ==
-                                               PersonPackageListing.packagelistingid,
+                                               PersonPackageListing\
+                                                   .packagelistingid,
                                            PersonPackageListing.id ==
                                                PersonPackageListingAcl.id,
                                            PersonPackageListingAcl.acl ==
                                                'approveacls',
-                                           PersonPackageListingAcl.statuscode ==
-                                               STATUS['Approved']))
+                                           PersonPackageListingAcl.statuscode \
+                                               == STATUS['Approved']))
             user_list = comaintainers_query.execute()
             for record in user_list:
                 username = record[0]
@@ -593,7 +443,7 @@ class MassAcls(controllers.Controller):
         #
         person = fas.cache[new_owner]
         try:
-            self._acl_can_be_held_by_user('approveacls', person)
+            _acl_can_be_held_by_user('approveacls', person)
         except AclNotAllowedError:
             flash(_('The new user, %(user)s, does not hold approveacls.') % \
                   {'user': new_owner})
@@ -645,17 +495,20 @@ class MassAcls(controllers.Controller):
                                              STATUS['Approved'],
                                          PackageListing.statuscode == 
                                              STATUS['Approved'],
-                                         PackageListing.packageid == Package.id,
+                                         PackageListing.packageid == \
+                                             Package.id,
                                          PackageListing.collectionid == 
                                              Collection.id,
                                          Collection.statuscode ==
                                              STATUS['Active'],
                                          PersonPackageListing.username ==
                                              owner,
-                                         PersonPackageListing.packagelistingid ==
-                                             PackageListing.id,
+                                         PersonPackageListing\
+                                             .packagelistingid \
+                                             == PackageListing.id,
                                          PersonPackageListing.id ==
-                                             PersonPackageListingAcl.personpackagelistingid,
+                                             PersonPackageListingAcl\
+                                                 .personpackagelistingid,
                                          PersonPackageListingAcl.acl ==
                                              'approveacls',
                                          PersonPackageListingAcl.statuscode ==
@@ -680,7 +533,8 @@ class MassAcls(controllers.Controller):
             if if_comaint:
                 flash(_('No packagelistings were found matching the pattern '
                         '"%(pattern)s" where %(owner)s is the owner or has '
-                        'approveacls.') % {'pattern': pkg_pattern, 'owner': owner})
+                        'approveacls.') %
+                        {'pattern': pkg_pattern, 'owner': owner})
             else:
                 flash(_('No packagelistings were found matching the pattern '
                         '"%(pattern)s" where %(owner)s is the owner.') % \
@@ -692,7 +546,8 @@ class MassAcls(controllers.Controller):
         # Change owner.
         #
         for pkglistingid in sorted(pkgListings.iterkeys()):
-            pkglisting = PackageListing.query.filter_by(id = pkglistingid).one()
+            pkglisting = PackageListing.query.filter_by(id = pkglistingid)\
+                             .one()
             pkglisting.owner = new_owner
             try:
                 session.flush()     #pylig:disable-msg=E1101
@@ -714,13 +569,14 @@ class MassAcls(controllers.Controller):
             comaintainers_query = select((PersonPackageListing.username,),
                                       and_(PackageListing.id == pkglistingid,
                                            PackageListing.id ==
-                                               PersonPackageListing.packagelistingid,
+                                               PersonPackageListing\
+                                               .packagelistingid,
                                            PersonPackageListing.id ==
                                                PersonPackageListingAcl.id,
                                            PersonPackageListingAcl.acl ==
                                                'approveacls',
-                                           PersonPackageListingAcl.statuscode ==
-                                               STATUS['Approved']))
+                                           PersonPackageListingAcl.statuscode \
+                                               == STATUS['Approved']))
             user_list = comaintainers_query.execute()
             for record in user_list:
                 username = record[0]
