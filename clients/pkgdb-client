@@ -1,7 +1,7 @@
 #!/usr/bin/python -tt
 # -*- coding: utf-8 -*-
 #
-# Copyright ©  2008-2011 Red Hat, Inc.
+# Copyright (C) 2008-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -38,7 +38,7 @@ def parse_config():
     # configspec to validate types and set defaults
     configspec = '''
     [global]
-        pkgdb.url = string(default = 'https://publictest5.fedoraproject.org/pkgdb')
+        pkgdb.url = string(default = 'https://app01.dev.fedoraproject.org/pkgdb')
         pkgdb.retries = integer(default = 5)
         pkgdb.knowngroups = list(default = list())
     '''.splitlines()
@@ -80,7 +80,9 @@ Sub Commands:
     mass-branch: Mass branch from "devel" to --branch
 
 Examples:
-    pkgdb-client add -u toshio -o testowner -d 'Purely a test package' -b devel -b F-7 -b EL-5 -c toshio -c kevin -m wtogami fedoratest
+    pkgdb-client add -u toshio -o testowner -d 'Purely a test package'
+                 -b devel -b F-7 -b EL-5 -c toshio -c kevin -m wtogami
+                 fedoratest
     pkgdb-client add_comaintainers --owner toshio --comaintainer fchiulli 
                  --pkg_pattern 'python-sql*' --collection_name Fedora 
                  --collection_version 14 --if_comaint
@@ -103,11 +105,13 @@ Examples:
     parser.add_option('--master',
             dest='masterBranch',
             action='store',
-            help='Take permissions from this branch and apply to branches specified with -b')
+            help='Take permissions from this branch and apply to branches '\
+                 'specified with -b')
     parser.add_option('-b', '--branch',
             dest='branchList',
             action='append',
-            help='Branch of package to create and make changes to.  May specify multiple times')
+            help='Branch of package to create and make changes to.  '\
+                 'May specify multiple times')
     parser.add_option('-o', '--owner',
             dest='owner',
             action='store',
@@ -119,11 +123,13 @@ Examples:
     parser.add_option('-c', '--cc-member',
             dest='ccList',
             action='append',
-            help='Person to cc on bugs and commits for this branch.  May be specified multiple times')
+            help='Person to cc on bugs and commits for this branch.  '\
+                 'May be specified multiple times')
     parser.add_option('-m', '--maintainer',
             dest='maintList',
             action='append',
-            help='Maintainers for this branch.  May be specified multiple times')
+            help='Maintainers for this branch.  '\
+                 'May be specified multiple times')
     parser.add_option('--remove-user',
             dest='removeUserList',
             action='append',
@@ -134,14 +140,16 @@ Examples:
             callback_args=(True,),
             type='string',
             dest='groups',
-            help='Allow GROUP to commit to this branch.  May be specified multiple times.')
+            help='Allow GROUP to commit to this branch.  '\
+                 'May be specified multiple times.')
     parser.add_option('-r', '--remove-group',
             action='callback',
             callback=store_groups,
             callback_args=(False,),
             type='string',
             dest='groups',
-            help='Remove commit access for GROUP on this branch.  May be specified multiple times.')
+            help='Remove commit access for GROUP on this branch.  '\
+                 'May be specified multiple times.')
     parser.add_option('--insecure',
             action='store_true',
             dest='insecure',
@@ -188,17 +196,20 @@ Examples:
         opts.packages = args
         if len(opts.branchList) != 1:
             # Mass branching must specify exactly one branch
-                raise ArgumentsError('mass-branch must be used with precisely one --branch argument')
+                raise ArgumentsError('mass-branch must be used with '\
+                                     'precisely one --branch argument')
 
     # We only know how to handle a few groups right now.
     if opts.groups:
         for group in opts.groups:
             if group not in config['pkgdb.knowngroups']:
-                raise ArgumentsError('Do not know how to handle group %s at this time' % group)
+                raise ArgumentsError('Do not know how to handle group %s at '\
+                                     'this time' % group)
 
     # translate the old CVS branch names to the git format
     if (opts.branchList):
-        opts.branchList = [bn == 'devel' and 'master' or bn.lower().replace('-', '') 
+        opts.branchList = [bn == 'devel' and 'master' or
+            bn.lower().replace('-', '') 
             for bn in opts.branchList]
 
     return opts
@@ -238,8 +249,8 @@ def clone_branch(pkgdb, options):
             try:
                 pkgdb.clone_branch(package, branch, options.masterBranch)
             except AppError, e:
-                failedBranch.append('[%(branch)s: %(msg)s]' % {'branch': branch,
-                    'msg': e.message})
+                failedBranch.append('[%(branch)s: %(msg)s]' %
+                    {'branch': branch, 'msg': e.message})
         if failedBranch:
             failedPackages[package] = 'Failed to clone branches:' \
                     + ' '.join(failedBranch)
