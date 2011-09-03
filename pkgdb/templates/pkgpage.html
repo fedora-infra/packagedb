@@ -10,6 +10,14 @@ import simplejson
   <xi:include href="pkgheader.html"/>
   <head />
   <body py:with="pkgUrlName=tg.quote_plus(packageListings[0].package.name)">
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true">
+    </script>
+    <script type="text/javascript">
+      dojo.require("dojo.data.ItemFileReadStore");
+      dojo.require("dijit.form.ComboBox");
+    </script>
     <script type="text/javascript" src="${tg.url('/static/javascript/framework.js')}"></script>
     <script type="text/javascript" src="${tg.url('/static/javascript/pkgpage.js')}"></script>
     <script type="text/javascript">
@@ -21,28 +29,36 @@ import simplejson
     ${pkgheader(packageListings[0].package.name, 'pkgdb')}
 
     <table>
-      <tr><th>
+      <tr>
+        <th>
           Status
         </th>
         <td py:content="packageListings[0].package.status.locale['C'].statusname">
-      </td></tr>
-      <tr><th>
+        </td>
+      </tr>
+      <tr>
+        <th>
           Creation Date
-          </th><td py:content="TODO">
+        </th>
+        <td py:content="TODO">
           Fill in the Creation Date
-      </td></tr>
+        </td>
+      </tr>
     </table>
     <p py:content="packageListings[0].package.summary">Summary</p>
     <pre py:content="packageListings[0].package.description">Description</pre>
     <p>Contents:
-    <ul py:for="pkg in packageListings">
-      <li><a py:attrs="{'href' : '#%s' % pkg.collection.branchname}"
-        py:content="'%s %s' % (pkg.collection.name, pkg.collection.version)">
-      </a></li>
-    </ul>
+      <ul py:for="pkg in packageListings">
+        <li>
+          <a py:attrs="{'href' : '#%s' % pkg.collection.branchname}"
+             py:content="'%s %s' % (pkg.collection.name,
+                                    pkg.collection.version)">
+          </a>
+        </li>
+      </ul>
     </p>
     <form action="${tg.url('/acls/dispatcher/')}" method="POST">
-        <div py:def="pkgl">
+      <div py:def="pkgl">
 
         <!--! here begins the py:def pkgl declaration -->    
 
@@ -78,212 +94,264 @@ import simplejson
                 if admin_grp in tg.identity.groups:
                     # Person is an admin and thus can make changes
                     aclChanger = True
+
+            comaintainers = []
+            comaintainers.append('orphan')
+            peopleIndex = [p[1] for p in sorted([(pi[0].username, pi[1]) for pi in
+                          zip(pkg.people, range(0, len(pkg.people)))])]
+            for userIndex in peopleIndex:
+                if pkg.people[userIndex].aclOrder['approveacls']:
+                    comaintainers.append(pkg.people[userIndex].username)
         ?>
-        <tr><th>
-            Collection
-            </th><th>
-            Owner
-            </th><th>
-            QA Contact
-            </th><th>
-            Crit Path
-            </th><th>
-            Status
-        </th></tr>
+        <tr>
+          <th>Collection</th>
+          <th>Owner</th>
+          <th>QA Contact</th>
+          <th>Crit Path</th>
+          <th>Status</th>
+        </tr>
         <tr id="${pkg.collection.branchname}">
           <td>
             <py:choose>
-              <py:when test="pkg.collection.branchname=='master' and pkg.status.locale['C'].statusname=='Approved'">
-                <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s;hb=%s'
+              <py:when test="pkg.collection.branchname=='master' and
+                             pkg.status.locale['C'].statusname=='Approved'">
+                <a class="cvs"
+                   href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s;hb=%s'
                   % (pkgUrlName, pkg.collection.branchname, pkg.collection.branchname)}">
                   <span class="invisible">Spec File</span></a>
               </py:when>
-              <py:when test="pkg.collection.branchname and pkg.status.locale['C'].statusname=='Approved'">
-                <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s/master;hb=%s/master'
+              <py:when test="pkg.collection.branchname and
+                             pkg.status.locale['C'].statusname=='Approved'">
+                <a class="cvs"
+                   href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s/master;hb=%s/master'
                   % (pkgUrlName, pkg.collection.branchname, pkg.collection.branchname)}">
                   <span class="invisible">Spec File</span></a>
               </py:when>
-              <py:when test="pkg.status.locale['C'].statusname=='Approved' and pkg.collection.status.locale['C'].statusname != 'EOL'">
-                <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s/master;hb=%s/master'
+              <py:when test="pkg.status.locale['C'].statusname=='Approved' and
+                             pkg.collection.status.locale['C'].statusname != 'EOL'">
+                <a class="cvs"
+                   href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s/master;hb=%s/master'
                   % (pkgUrlName, pkg.collection.branchname, pkg.collection.branchname)}">
                   <span class="invisible">Spec File</span></a>
               </py:when>
             </py:choose>
             <a href="${tg.url('/collections/name/%s' % pkg.collection.branchname)}"
               py:content="' '.join((pkg.collection.name, pkg.collection.version))"></a>
-          </td><td>
+          </td>
+          <td>
             <div py:choose="" py:strip="">
               <div py:when="pkg.status.locale['C'].statusname in ('Orphaned', 'Retired')"
-                py:attrs="{'name': str(pkg.id)}"
-                class="requestContainer owner orphaned">
+                   py:attrs="{'name': str(pkg.id)}"
+                   class="requestContainer owner orphaned">
                 <span class="ownerName">${pkg.owner}</span>
-                <span py:if="pkger_grp in tg.identity.groups and pkg.collection.status.locale['C'].statusname!='EOL'">
+                <span py:if="pkger_grp in tg.identity.groups and
+                             pkg.collection.status.locale['C'].statusname!='EOL'">
                   <input py:if="pkg.status.locale['C'].statusname!='Retired'"
                     type="button" name="unorphan"
                     class="ownerButton unorphanButton"
-                    value="Take Ownership"/>
+                    value="Change Owner"/>
                   <input py:if="pkg.status.locale['C'].statusname=='Retired'"
                     type="button" name="unorphan"
                     class="ownerButton unorphanButton invisible"
-                    value="Take Ownership"/>
+                    value="Change Owner"/>
                 </span>
               </div>
               <div py:otherwise=""
-                py:attrs="{'name': str(pkg.id)}"
-                class="requestContainer owner owned">
-                <span class="ownerName"><a href="${tg.url('/users/packages/' + pkg.owner)}">${pkg.owner}</a></span>
-                <span py:if="not tg.identity.anonymous and (tg.identity.user_name == pkg.owner or admin_grp in tg.identity.groups)">
+                   py:attrs="{'name': str(pkg.id)}"
+                   class="requestContainer owner owned">
+                <span class="ownerName">
+                  <a href="${tg.url('/users/packages/' + pkg.owner)}">${pkg.owner}</a>
+                </span>
+                <span py:if="not tg.identity.anonymous and
+                            (tg.identity.user_name == pkg.owner or
+                             admin_grp in tg.identity.groups)" class="combo"
+                      id="${pkg.collection.branchname}">
                   <input type="button" name="orphan"
-                    class="ownerButton orphanButton"
-                    value="Release Ownership" />
+                         class="ownerButton orphanButton"
+                         value="Change Owner" />
+                  <select class="combox" dojoType="dijit.form.ComboBox"
+                          id="${pkg.collection.branchname}">
+                    <option selected='yes'>select or type a username</option>
+                    <option py:for="fuser in sorted(comaintainers)">${fuser}</option>
+                  </select>
                 </span>
               </div>
             </div>
           </td>
-          <td py:content="pkg.qacontact">
-          </td><td>
+          <td py:content="pkg.qacontact"></td>
+          <td>
             <!-- At the moment, this can only be set via the client API -->
             <input type="checkbox" class="critpath" disabled="true"
-              py:attrs="{'checked': tg.checker(pkg.critpath)}"/>
-          </td><td class="status" py:content="pkg.status.locale['C'].statusname">
-        </td></tr>
-        <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4"><td colspan="4">
-          <table class="acls" width="100%">
-            <tr>
-              <th py:for="colName in ['User'] + list(aclNames)" py:content="colName">
-              </th>
-            </tr>
-            <!-- Sort the people list and give us a list of the indexes into
-                 the list to access them in sorted order
+                   py:attrs="{'checked': tg.checker(pkg.critpath)}"/>
+          </td>
+          <td class="status" py:content="pkg.status.locale['C'].statusname">
+
+          </td>
+        </tr>
+        <tr py:if="not tg.identity.anonymous or pkg.people" colspan="4">
+          <td colspan="4">
+            <table class="acls" width="100%">
+              <tr>
+                <th py:for="colName in ['User'] + list(aclNames)"
+                    py:content="colName">
+                </th>
+              </tr>
+              <!-- Sort the people list and give us a list of the indexes into
+                   the list to access them in sorted order
               -->
-            <py:with vars="peopleIndex = [p[1] for p in sorted(
-              [(pi[0].username, pi[1]) for pi in
-              zip(pkg.people, range(0, len(pkg.people)))])]">
-              <tr py:for="userIndex in peopleIndex"
-                py:if="[acl for acl in aclNames if pkg.people[userIndex].aclOrder[acl]]"
-                py:with="person = pkg.people[userIndex]"
-                class="aclrow">
-                <td class="acluser"
-                  py:attrs="{'name': str(pkg.id) + ':' + str(person.username)}">
-                  <a href="${tg.url('/users/packages/' + person.username)}">${person.username}</a>
-                </td>
-                <td py:for="acl in aclNames" class="aclcell">
-                  <!-- If the logged in user is this row, add a checkbox to set it -->
-                  <div py:if="not tg.identity.anonymous and
-                    person.username==tg.identity.user_name and
-                    pkg.status.locale['C'].statusname!='Retired'"
-                    py:attrs="{'name' : str(pkg.id) + ':' + acl}"
-                    class="requestContainer aclPresent">
-                    <input type="checkbox" checked="true" class="aclPresentBox"
-                    py:if="person.aclOrder[acl]"/>
-                    <input type="checkbox" class="aclPresentBox"
-                    py:if="not person.aclOrder[acl]"/>
-                  </div>
-                  <!-- If the user can set acls, give drop downs for status -->
-                  <div py:choose="" py:strip="">
-                    <div py:when="aclChanger and pkg.status.locale['C'].statusname!='Retired'"
-                      py:attrs="{'name': str(pkg.id) + ':' + acl}"
-                      class='aclStatus requestContainer'>
-                      <select class="aclStatusList" py:attrs="{'name' : acl}">
-                        <option py:for="status in aclStatus" py:content="status"
-                          py:attrs="{'value': status, 'name': status,
-                          'selected': tg.selector(person.aclOrder.get(acl) and person.aclOrder[acl].status.locale['C'].statusname==status)}"
-                        />
-                      </select>
+              <py:with vars="peopleIndex = [p[1] for p in sorted(
+                [(pi[0].username, pi[1]) for pi in
+                zip(pkg.people, range(0, len(pkg.people)))])]">
+                <tr py:for="userIndex in peopleIndex"
+                    py:if="[acl for acl in aclNames
+                           if pkg.people[userIndex].aclOrder[acl]]"
+                    py:with="person = pkg.people[userIndex]"
+                    class="aclrow">
+                  <td class="acluser"
+                      py:attrs="{'name': str(pkg.id) + ':' +
+                                str(person.username)}">
+                    <a href="${tg.url('/users/packages/' + person.username)}">
+                      ${person.username}
+                    </a>
+                  </td>
+                  <td py:for="acl in aclNames" class="aclcell">
+                    <!-- If the logged in user is this row, add a checkbox to set it -->
+                    <div py:if="not tg.identity.anonymous and
+                                person.username==tg.identity.user_name and
+                                pkg.status.locale['C'].statusname!='Retired'"
+                         py:attrs="{'name' : str(pkg.id) + ':' + acl}"
+                         class="requestContainer aclPresent">
+                      <input type="checkbox" checked="true" class="aclPresentBox"
+                             py:if="person.aclOrder[acl]"/>
+                      <input type="checkbox" class="aclPresentBox"
+                             py:if="not person.aclOrder[acl]"/>
                     </div>
-                    <span py:otherwise="" py:choose="" class="aclStatus"
-                      py:attrs="{'name' : str(pkg.id) + ':' + acl}">
-                      <span py:when="person.aclOrder.get(acl)"
-                      py:replace="person.aclOrder[acl].status.locale['C'].statusname" />
-                    </span>
+                    <!-- If the user can set acls, give drop downs for status -->
+                    <div py:choose="" py:strip="">
+                      <div py:when="aclChanger and pkg.status.locale['C'].statusname!='Retired'"
+                           py:attrs="{'name': str(pkg.id) + ':' + acl}"
+                           class='aclStatus requestContainer'>
+                        <select class="aclStatusList" py:attrs="{'name' : acl}">
+                          <option py:for="status in aclStatus" py:content="status"
+                                  py:attrs="{'value': status, 'name': status,
+                                  'selected': tg.selector(person.aclOrder.get(acl) and
+                                  person.aclOrder[acl].status.locale['C'].statusname==status)}"
+                          />
+                        </select>
+                      </div>
+                      <span py:otherwise="" py:choose="" class="aclStatus"
+                            py:attrs="{'name' : str(pkg.id) + ':' + acl}">
+                        <span py:when="person.aclOrder.get(acl)"
+                              py:replace="person.aclOrder[acl].status.locale['C'].statusname" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </py:with>
+            </table>
+          </td>
+        </tr>
+        <tr py:if="not tg.identity.anonymous or pkg.groups" colspan="4">
+          <td colspan="4">
+            <table class="groupacls" width="100%">
+              <tr py:for="group in pkg.groups" class="aclgrouprow"
+                  py:if="group.aclOrder['commit'] and
+                         group.aclOrder['commit'].status.locale['C'].statusname in
+                         ('Approved', 'Denied')">
+                <td py:content="group.groupname" class="aclgroup"
+                    py:attrs="{'name': str(pkg.id) + ':' + group.groupname}">
+                  Name
+                </td>
+                <!-- If the user has permission to edit the acls, give them a
+                     checkbox to edit this
+                -->
+                <td class="groupaclcell"
+                    py:attrs="{'colspan' : str(len(aclNames))}">
+                  <div py:if="admin_grp in tg.identity.groups and
+                              pkg.status.locale['C'].statusname!='Retired'"
+                       py:attrs="{'name' : str(pkg.id) + ':' +
+                                  group.groupname + ':commit'}"
+                       class="requestContainer groupAclStatus">
+                    group members can commit?
+                    <input type="checkbox" class="groupAclStatusBox"
+                      py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and
+                                 group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
+                  </div>
+                  <div py:if="not admin_grp in tg.identity.groups or
+                              pkg.status.locale['C'].statusname=='Retired'"
+                       py:attrs="{'name' : str(pkg.id) + ':' + group.groupname
+                                 + ':commit'}"
+                       class="groupAclStatus requestContainer">
+                    group members can commit?
+                    <input type="checkbox" class="groupAclStatusLabelBox"
+                           disabled="true"
+                           py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and
+                                     group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
                   </div>
                 </td>
               </tr>
-            </py:with>
-          </table>
-        </td></tr>
-        <tr py:if="not tg.identity.anonymous or pkg.groups" colspan="4"><td colspan="4">
-          <table class="groupacls" width="100%">
-            <tr py:for="group in pkg.groups" class="aclgrouprow"
-              py:if="group.aclOrder['commit'] and group.aclOrder['commit'].status.locale['C'].statusname in ('Approved', 'Denied')">
-              <td py:content="group.groupname" class="aclgroup"
-                py:attrs="{'name': str(pkg.id) + ':' + group.groupname}">
-                Name
-              </td>
-              <!-- If the user has permission to edit the acls, give them a
-              checkbox to edit this
-              -->
-              <td class="groupaclcell" py:attrs="{'colspan' : str(len(aclNames))}">
-                <div py:if="admin_grp in tg.identity.groups and pkg.status.locale['C'].statusname!='Retired'"
-                  py:attrs="{'name' : str(pkg.id) + ':' + group.groupname +
-                  ':commit'}"
-                  class="requestContainer groupAclStatus">
-                  group members can commit?
-                  <input type="checkbox" class="groupAclStatusBox"
-                    py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
-                </div>
-                <div py:if="not admin_grp in tg.identity.groups or pkg.status.locale['C'].statusname=='Retired'"
-                  py:attrs="{'name' : str(pkg.id) + ':' + group.groupname
-                  + ':commit'}"
-                  class="groupAclStatus requestContainer">
-                  group members can commit?
-                  <input type="checkbox" class="groupAclStatusLabelBox"
-                    disabled="true"
-                    py:attrs="{'checked': tg.checker(group.aclOrder.get('commit') and group.aclOrder['commit'].status.locale['C'].statusname=='Approved')}"/>
-                </div>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
+            </table>
+          </td>
+        </tr>
         <tr py:if="not tg.identity.anonymous">
           <td py:if="not interested" class="acladd"
-            py:choose="pkg.status.locale['C'].statusname">
-            <input py:when="'Retired'" type="button" py:attrs="
-            {'name':'add:' + str(pkg.package.id) + ':' + tg.identity.user_name}"
-            class="addMyselfButton invisible"
-            value="Add myself to package"/>
-            <input py:otherwise="" type="button" py:attrs="
-            {'name':'add:' + str(pkg.package.id) + ':' + tg.identity.user_name}"
-            class="addMyselfButton"
-            value="Add myself to package"/>
+              py:choose="pkg.status.locale['C'].statusname">
+            <input py:when="'Retired'" type="button"
+                   py:attrs="{'name':'add:' + str(pkg.package.id) + ':' +
+                             tg.identity.user_name}"
+                   class="addMyselfButton invisible"
+                   value="Add myself to package"/>
+            <input py:otherwise="" type="button"
+                   py:attrs="{'name':'add:' + str(pkg.package.id) + ':' +
+                              tg.identity.user_name}"
+                   class="addMyselfButton"
+                   value="Add myself to package"/>
           </td>
           <div py:choose="" py:strip="">
             <td>
               <div py:when="pkg.status.locale['C'].statusname!='Retired'"
-                   py:attrs="{'name':str(packageListings[0].package.name) + '/' +
-                                     str(pkg.collection.name) + '/' + 
-                                     str(pkg.collection.version) + '/Retire'}"
+                   py:attrs="{'name':str(packageListings[0].package.name) +
+                              '/' + str(pkg.collection.name) + '/' + 
+                              str(pkg.collection.version) + '/Retire'}"
                    class="requestContainer retirement not_retired"
                    py:choose="">
                 <input py:when="aclChanger or (pkger_grp in tg.identity.groups
                   and pkg.status.locale['C'].statusname=='Orphaned')"
-                  type="button" value="Retire package"
-                  class="retirementButton retireButton" />
+                       type="button" value="Retire package"
+                       class="retirementButton retireButton" />
                 <input py:otherwise="" type="button" value="Retire package"
-                  class="retirementButton retireButton invisible" />
+                       class="retirementButton retireButton invisible" />
               </div>
             </td>
             <td>
               <div py:otherwise=""
-                   py:attrs="{'name':str(packageListings[0].package.name) + '/' +
-                                     str(pkg.collection.name) + '/' + 
-                                     str(pkg.collection.version) + '/Unretire'}"
+                   py:attrs="{'name':str(packageListings[0].package.name) +
+                              '/' + str(pkg.collection.name) + '/' + 
+                              str(pkg.collection.version) + '/Unretire'}"
                    class="requestContainer retirement retired" py:choose="">
                 <input py:when="admin_grp in tg.identity.groups"
-                  class="retirementButton unretireButton"
-                  type="button" value="Unretire package"/>
+                       class="retirementButton unretireButton"
+                       type="button" value="Unretire package"/>
                 <input py:otherwise=""
-                  class="retirementButton unretireButton invisible"
-                  type="button" value="Unretire package"/>
+                       class="retirementButton unretireButton invisible"
+                       type="button" value="Unretire package"/>
               </div>
             </td>
           </div>
         </tr>
       </div> <!--! here ends the pkgl def declaration -->
-        <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
-            <table py:when="pkg.status.locale['C'].statusname in ('Orphaned','Retired')" py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">${pkgl()}</table>
-            <table py:when="pkg.status.locale['C'].statusname not in ('Orphaned', 'Retired')" py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">${pkgl()}</table>
-        </div>
+      <div py:for="pkg in packageListings" py:choose="" py:strip=""> 
+        <table py:when="pkg.status.locale['C'].statusname in
+                        ('Orphaned','Retired')"
+               py:attrs="{'name': str(pkg.id), 'class': 'pkglist orphan'}">
+          ${pkgl()}
+        </table>
+        <table py:when="pkg.status.locale['C'].statusname not in
+                        ('Orphaned','Retired')"
+               py:attrs="{'name': str(pkg.id), 'class': 'pkglist owned'}">
+          ${pkgl()}
+        </table>
+      </div>
     </form>
   </body>
 </html>
