@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2008-2010  Red Hat, Inc.
+# Copyright (C) 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -16,6 +16,7 @@
 # may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+# Author(s):         Frank Chiulli <fchiulli@fedoraproject.org>
 #
 '''
 Utilities for all classes to use
@@ -84,6 +85,13 @@ newpkger_grp = config.get('pkgdb.newpkger_grp', 'newpackager')
 
 # Get the critpath groups if specfied
 critpath_grps = config.get('pkgdb.critpath_grps', (admin_grp,))
+
+# Groups that a person must be in to own a package
+owner_memberships = (admin_grp, pkger_grp, provenpkger_grp)
+
+# Groups that a person must be in to co-maintain a package
+comaintainer_memberships = (admin_grp, pkger_grp, provenpkger_grp,
+                            newpkger_grp)
 
 
 def to_unicode(obj, encoding='utf-8', errors='replace'):
@@ -193,7 +201,8 @@ class StatusCache(dict):
         return status_value
 
     def __setitem__(self, statusname, value):
-        raise TypeError(_('\'StatusCache\' object does not support item assignment'))
+        raise TypeError(_('\'StatusCache\' object does not support item '\
+                          'assignment'))
 
     def refresh_status(self):
         '''Recache all the status types
@@ -201,7 +210,8 @@ class StatusCache(dict):
         status_map = {}
         for status in select((StatusTranslationTable,),
                 StatusTranslationTable.c.language=='C').execute():
-            status_map[Hasher(status.statusname).hexdigest()] = status.statuscodeid
+            status_map[Hasher(status.statusname).hexdigest()] = \
+                status.statuscodeid
             status_map[status.statuscodeid] = status.statusname
         MEMCACHE.set_multi(status_map, key_prefix='pkgdb:status:',
             time=self.timeout)
@@ -240,7 +250,8 @@ This is mostly connections to services like FAS, bugzilla, and loading
     LOG = logging.getLogger('pkgdb.controllers')
 
     # Get a connection to the Account System server
-    fas_url = config.get('fas.url', 'https://admin.fedoraproject.org/accounts/')
+    fas_url = config.get('fas.url',
+                         'https://admin.fedoraproject.org/accounts/')
     username = config.get('fas.username', 'admin')
     password = config.get('fas.password', 'admin')
 
@@ -277,7 +288,10 @@ def rpm2cpio(fdno, out=sys.stdout, bufsize=2048):
         f.close()
     elif compr == 'xz':
         # This is a bit hacky
-        xz_cmd = subprocess.Popen(['/usr/bin/xzcat'], stdout=subprocess.PIPE, stdin=os.fdopen(fdno, 'rb', bufsize), bufsize=bufsize, shell=False)
+        xz_cmd = subprocess.Popen(['/usr/bin/xzcat'],
+                                  stdout=subprocess.PIPE,
+                                  stdin=os.fdopen(fdno, 'rb', bufsize),
+                                  bufsize=bufsize, shell=False)
         while 1:
             tmp = xz_cmd.stdout.read(bufsize)
             if tmp == "": break
