@@ -388,9 +388,10 @@ logJoin = polymorphic_union (
 # Mappers
 #
 
-logMapper = mapper(Log, LogTable, select_table=logJoin,
+logMapper = mapper(Log, LogTable, with_polymorphic=("*", logJoin),
         polymorphic_on=logJoin.c.kind, polymorphic_identity='log'
         )
+
 
 mapper(PersonPackageListingAclLog, PersonPackageListingAclLogTable,
         inherits=logMapper, polymorphic_identity='personpkglistacllog',

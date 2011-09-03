@@ -32,7 +32,7 @@
     <p>This is the advanced package search page.</p>
     
     <form action="${tg.url('/search/package/')}"
-          method="get" onsubmit="return jump_search()">
+          method="post" onsubmit="return jump_search()">
     <p>Keywords: <input id="package" name="searchwords" size="20" type="text" />
     
     <input type="radio" id="AND" name="operator" value="AND" checked="checked" />

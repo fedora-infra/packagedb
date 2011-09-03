@@ -434,23 +434,33 @@ Create new update script for your feature/fix
   % ./manage_db script "Add wiki to application"
 
 Edit your update.
+Note: To make scripts compatible with sqlalchemy-migrate versions before and after 0.6 we have to modify the tamplate script a bit
+
   % vim db_repo/versions/011_Add_wiki_to_application.py
 
     from sqlalchemy import *
     from migrate import *
     import migrate.changeset
 
-    meta = MetaData(migrate_engine)
-    app = Table('application', meta,
+    # is sqlalchemy-migrate > 0.5
+    if hasattr(migrate.changeset.constraint, 'UniqueConstraint'):
+        migrate_engine=None
+
+    metadata = MetaData(migrate_engine)
+
+    app = Table('application', metadata,
                 Column('id', Integer, primary_key=True),
                 Column('wiki', Text()),
                 )
 
-    def upgrade():
+    def upgrade(migrate_engine=migrate_engine):
+        metadata.bind = migrate_engine
         app.c.wiki.create()
 
-    def downgrade():
+    def downgrade(migrate_engine=migrate_engine):
+        metadata.bind = migrate_engine
         app.c.wiki.drop()
+
 
 Update the related stuff in pkgdb.model
   % vim pkgdb/model/apps.py
