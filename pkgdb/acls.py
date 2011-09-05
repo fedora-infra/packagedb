@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2010  Red Hat, Inc.
+# Copyright © 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -17,6 +17,7 @@
 #
 # Red Hat Author(s):        Toshio Kuratomi <tkuratom@redhat.com>
 # Fedora Project Author(s): Ionuț Arțăriși <mapleoin@fedoraproject.org>
+#                           Frank Chiulli <fchiulli@fedoraproject.org>
 #
 '''
 Controller for handling Package ownership information.
@@ -55,14 +56,14 @@ COLLECTION = 21
 class AclEol(validators.Schema):
     '''Validator for the eol argument'''
     # validator schemas don't have methods (R0903, W0232)
-    #pylint:disable-msg=R0903,W0232
+    #pylint:disable=R0903,W0232
     eol = validators.StringBool()
 
 # fc class AclName(validators.Schema):
 class AclName(AclEol):
     '''Validator for the acls.name method'''
     # validator schemas don't have methods (R0903, W0232)
-    #pylint:disable-msg=R0903,W0232
+    #pylint:disable=R0903,W0232
     packageName = validators.UnicodeString(not_empty=True, strip=True)
     collectionName = validators.UnicodeString(not_empty=False, strip=True)
     collectionVersion = validators.UnicodeString(not_empty=False, strip=True)
@@ -112,12 +113,12 @@ class Acls(controllers.Controller):
             if request_format() == 'json':
                 return dict(exc='ValidationError')
 
-        #pylint:disable-msg=E1101
+        #pylint:disable=E1101
         # Return the information about a package.
         package = Package.query.filter(
                 Package.statuscode!=STATUS['Removed']
                 ).filter_by(name=packageName).first()
-        #pylint:enable-msg=E1101
+        #pylint:enable=E1101
         if not package:
             error = dict(status=False,
                     title=_('%(app)s -- Invalid Package Name') % {
@@ -133,13 +134,14 @@ class Acls(controllers.Controller):
 
         collection = None
         if collectionName:
-            #pylint:disable-msg=E1101
+            #pylint:disable=E1101
             collection = Collection.query.filter_by(name=collectionName)
-            #pylint:enable-msg=E1101
+            #pylint:enable=E1101
             if collectionVersion:
                 collection = collection.filter_by(version=collectionVersion)
             if (not eol):
-                collection = collection.filter(Collection.statuscode!=STATUS['EOL'])
+                collection = collection.filter(Collection.statuscode!=\
+                                 STATUS['EOL'])
             if not collection.count():
                 error = dict(status=False,
                         title=_('%(app)s -- Not a Collection') % {
@@ -154,7 +156,7 @@ class Acls(controllers.Controller):
         # Possible ACLs
         acl_names = ('watchbugzilla', 'watchcommits', 'commit', 'approveacls')
         # Possible statuses for acls:
-        acl_status = PackageAclStatus.query.options( #pylint:disable-msg=E1101
+        acl_status = PackageAclStatus.query.options( #pylint:disable=E1101
                 eagerload('locale')).all()
         acl_status_translations = ['']
         for status in acl_status:
@@ -164,7 +166,7 @@ class Acls(controllers.Controller):
                 acl_status_translations.append(
                         status.locale['C'].statusname)
 
-        #pylint:disable-msg=E1101
+        #pylint:disable=E1101
         # Fetch information about all the packageListings for this package
         # The order is a bit complex.  We want:
         # 1) EOL collections last
@@ -187,7 +189,7 @@ class Acls(controllers.Controller):
                                 else_=cast(Collection.version, Integer))\
                             .desc()
                         )
-        #pylint:enable-msg=E1101
+        #pylint:enable=E1101
         if collection:
             # User asked to limit it to specific collections
             pkg_listings = pkg_listings.filter(
@@ -210,7 +212,8 @@ class Acls(controllers.Controller):
         status_map = {}
 
         if (not eol):
-            pkg_listings = pkg_listings.filter(Collection.statuscode!=STATUS['EOL'])
+            pkg_listings = pkg_listings.filter(Collection.statuscode!=\
+                               STATUS['EOL'])
 
         pkg_listings = pkg_listings.order_by().all()
 
@@ -257,7 +260,7 @@ class Acls(controllers.Controller):
     @validate(validators=AclEol())
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name', max_limit=None,
-            max_pages=13) #pylint:disable-msg=C0322
+              max_pages=13) #pylint:disable=C0322
     def orphans(self, eol=False, tg_errors=None):
         '''List orphaned packages.
 
@@ -277,13 +280,13 @@ class Acls(controllers.Controller):
 
         page_title = _('%(app)s -- Orphaned Packages') % {'app': self.app_title}
 
-        #pylint:disable-msg=E1101
+        #pylint:disable=E1101
         query = Package.query.join('listings2').distinct().filter(
                     PackageListing.statuscode==STATUS['Orphaned'])
-        #pylint:enable-msg=E1101
+        #pylint:enable=E1101
         if not eol:
             # We don't want EOL releases, filter those out of each clause
-            #pylint:disable-msg=E1101
+            #pylint:disable=E1101
             query = query.join(['listings2', 'collection']).filter(
                     Collection.statuscode!=STATUS['EOL'])
         pkg_list = []
@@ -292,3 +295,43 @@ class Acls(controllers.Controller):
             pkg_list.append(pkg)
         return dict(title=page_title, pkgCount=len(pkg_list), pkgs=pkg_list,
                 fasname='orphan', eol=eol)
+
+    @validate(validators=AclEol())
+    @expose(template='pkgdb.templates.userpkgs', allow_json=True)
+    @paginate('pkgs', limit=75, default_order='name', max_limit=None,
+              max_pages=13) #pylint:disable=C0322
+    def retired(self, eol=False, tg_errors=None):
+        '''List retired packages.
+
+        :returns: A list of packages.
+        '''
+
+        if tg_errors:
+            message = 'Validation errors'
+            for arg, msg in tg_errors.items():
+                message = message + ': ' + arg + ' - ' + msg
+                if arg == 'eol':
+                    eol = False
+            flash(message)
+            if request_format() == 'json':
+                return dict(exc='ValidationError')
+
+        page_title = _('%(app)s -- Retired Packages') % {'app': self.app_title}
+
+        #pylint:disable=E1101
+        query = Package.query.join('listings2').distinct().filter(
+                    PackageListing.statuscode==STATUS['Retired']).filter(
+                    PackageListing.owner=='orphan')
+        #pylint:enable=E1101
+        if not eol:
+            # We don't want EOL releases, filter those out of each clause
+            #pylint:disable=E1101
+            query = query.join(['listings2', 'collection']).filter(
+                    Collection.statuscode!=STATUS['EOL'])
+        pkg_list = []
+        for pkg in query:
+            pkg.json_props = {'Package':('listings',)}
+            pkg_list.append(pkg)
+        return dict(title=page_title, pkgCount=len(pkg_list), pkgs=pkg_list,
+                fasname='retired', eol=eol)
+
