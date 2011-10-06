@@ -18,6 +18,7 @@
 #
 # Author(s): Nigel Jones <nigelj@fedoraproject.org>
 #            Toshio Kuratomi <tkuratom@redhat.com>
+#            Frank Chiulli <fchiulli@fedoraproject.org>
 #
 '''
 Controller to show information about packages by user.
@@ -35,7 +36,7 @@ import itertools
 import urllib
 
 import sqlalchemy
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, union
 from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import lazyload
 
@@ -45,7 +46,8 @@ from turbogears.database import session
 
 from pkgdb.model import Collection, Package, PackageListing, \
         PersonPackageListing, PersonPackageListingAcl
-from pkgdb.model import PersonPackageListingAclTable
+from pkgdb.model import CollectionTable, PackageTable, PackageListingTable, \
+        PersonPackageListingAclTable
 
 from pkgdb.lib.utils import STATUS, LOG
 
@@ -120,7 +122,8 @@ class Users(controllers.Controller):
     @validate(validators=UsersEol())
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=100, default_order='name', max_limit=None,
-            max_pages=13) #pylint:disable-msg=C0322
+              max_pages=13)
+    #pylint:disable=C0322
     def packages(self, fasname=None, acls=None, eol=False, tg_errors=None):
         '''List packages that the user is interested in.
 
@@ -171,8 +174,10 @@ class Users(controllers.Controller):
             # comma separated string of values
             acls = acls.split(',')
 
-        # Create a list where store acl name, whether the acl is currently
-        # being filtered for, and the label to use to display the acl.
+        # Create a list with the following information:
+        #   acl name,
+        #   boolean indicating whether the acl is currently being filtered for,
+        #   the label to use to display the acl.
         acl_list = [(a[0], a[0] in acls, a[1]) for a in self.allAcls]
 
         # Have to either get fasname from the URL or current user
@@ -184,74 +189,108 @@ class Users(controllers.Controller):
                 fasname = identity.current.user_name
 
         page_title = _('%(app)s -- %(name)s -- Packages') % {
-                'app': self.app_title, 'name': fasname}
+                       'app': self.app_title, 'name': fasname}
 
-        # pylint: disable-msg=E1101
-        query = Package.query.join('listings2').distinct().options(
-                lazyload('listings2.groups2'), 
-                lazyload('listings2.groups2.acls2'),
-                lazyload('listings2.people2'), 
-                lazyload('listings2.people2.acls2'), lazyload('listings2'))
+        # pylint: disable=E1101
+        query = select((Package.name,
+                        Package.description,
+                        Package.summary,
+                        Collection.name,
+                        Collection.version,
+                        Collection.branchname,
+                        PackageListing.statuscode),
+                       and_(PackageListing.packageid == Package.id,
+                            PackageListing.collectionid == Collection.id),
+                       use_labels=True
+                      )
 
         if not eol:
             # We don't want EOL releases, filter those out of each clause
-            query = query.join(['listings2', 'collection']).filter(
-                        Collection.statuscode != STATUS['EOL'])
+            query = query.where(Collection.statuscode != STATUS['EOL'])
 
         queries = []
         if 'owner' in acls:
             # Return any package for which the user is the owner
-            queries.append(query.filter(sqlalchemy.and_(
-                        Package.statuscode.in_((
-                            STATUS['Approved'],
-                            STATUS['Awaiting Review'],
-                            STATUS['Under Review'])),
-                        PackageListing.owner==fasname,
-                        PackageListing.statuscode.in_((
-                            STATUS['Approved'],
-                            STATUS['Awaiting Branch'],
-                            STATUS['Awaiting Review']))
-                        )))
+            queries.append(query.where(
+                                 and_(Package.statuscode.in_((
+                                          STATUS['Approved'],
+                                          STATUS['Awaiting Review'],
+                                          STATUS['Under Review'])),
+                                      PackageListing.owner==fasname,
+                                      PackageListing.statuscode.in_((
+                                          STATUS['Approved'],
+                                          STATUS['Awaiting Branch'],
+                                          STATUS['Awaiting Review']))
+                          )))
             del acls[acls.index('owner')]
 
         if acls:
             # Return any package on which the user has an Approved acl.
-            queries.append(query.join(['listings2', 'people2']).join(
-                    ['listings2', 'people2', 'acls2']).filter(sqlalchemy.and_(
-                    Package.statuscode.in_((STATUS['Approved'],
-                        STATUS['Awaiting Review'], STATUS['Under Review'])),
-                    PersonPackageListing.username == fasname,
-                    PersonPackageListingAcl.statuscode == STATUS['Approved'],
-                    PackageListing.statuscode.in_((STATUS['Approved'],
-                        STATUS['Awaiting Branch'], STATUS['Awaiting Review']))
-                    )))
+            queries.append(query.where(
+                                 and_(Package.statuscode.in_((
+                                          STATUS['Approved'],
+                                          STATUS['Awaiting Review'],
+                                          STATUS['Under Review'])),
+                                      PackageListing.id == \
+                                          PersonPackageListing.packagelistingid,
+                                      PersonPackageListing.username == fasname,
+                                      PersonPackageListing.id == \
+                                          PersonPackageListingAcl.personpackagelistingid,
+                                      PersonPackageListingAcl.statuscode == \
+                                          STATUS['Approved'],
+                                      PackageListing.statuscode.in_((
+                                          STATUS['Approved'],
+                                          STATUS['Awaiting Branch'],
+                                          STATUS['Awaiting Review']))
+                          )).distinct())
+
             # Return only those acls which the user wants listed
-            queries[-1] = queries[-1].filter(
-                    PersonPackageListingAcl.acl.in_(acls))
+            queries[-1] = queries[-1].where(
+                                      PersonPackageListingAcl.acl.in_(acls))
 
-        if len(queries) == 2:
-            my_pkgs = Package.query.select_from(
-                            sqlalchemy.union(
-                                    queries[0].statement,
-                                    queries[1].statement
-                                    ))
-        else:
-            my_pkgs = queries[0]
+        # pylint: enable=E1101
+        pkg_list = {}
+        for query in queries:
+            for row in query.execute():
+                pkg_name = row[PackageTable.c.name]
+                pkg_desc = row[PackageTable.c.description]
+                pkg_summary = row[PackageTable.c.summary]
+                cname = row[CollectionTable.c.name]
+                cver = row[CollectionTable.c.version]
+                cbname = row[CollectionTable.c.branchname]
+                statuscode = row[PackageListingTable.c.statuscode]
+                if not pkg_list.has_key(pkg_name):
+                    pkg_list[pkg_name] = []
+                    pkg_list[pkg_name].append(pkg_desc)
+                    pkg_list[pkg_name].append(pkg_summary)
+                    pkg_list[pkg_name].append({})
 
-        my_pkgs = my_pkgs.options(lazyload('listings2.people2'), 
-                                  lazyload('listings2.people2.acls2'), 
-                                  lazyload('listings2.groups2'), 
-                                  lazyload('listings2.groups2.acls2'), 
-                                  lazyload('listings2')
-                                  ).order_by(Package.name)
-        # pylint: enable-msg=E1101
-        pkg_list = []
-        for pkg in my_pkgs:
-            pkg.json_props = {'Package': ('listings',)}
-            pkg_list.append(pkg)
+                if not pkg_list[pkg_name][2].has_key(cname):
+                    pkg_list[pkg_name][2][cname] = {}
 
-        return dict(title=page_title, pkgCount=len(pkg_list),
-                    pkgs=pkg_list, acls=acl_list, fasname=fasname, eol=eol)
+                if not pkg_list[pkg_name][2][cname].has_key(cver):
+                    pkg_list[pkg_name][2][cname][cver] = {}
+
+                if not pkg_list[pkg_name][2][cname][cver].has_key(cbname):
+                    pkg_list[pkg_name][2][cname][cver][cbname] = statuscode
+
+        #
+        # @paginate does not like dictionaries.  But it does like a list of
+        # dictionaries.
+        #
+        pkgs = []
+        pkg_names = pkg_list.keys()
+        pkg_names.sort()
+        for pkg_name in pkg_names:
+            pkg_info = {}
+            pkg_info['name'] = pkg_name
+            pkg_info['desc'] = pkg_list[pkg_name][0]
+            pkg_info['summary'] = pkg_list[pkg_name][1]
+            pkg_info['collections'] = pkg_list[pkg_name][2]
+            pkgs.append(pkg_info)
+
+        return dict(title=page_title, pkgCount=len(pkgs), pkgs=pkgs,
+                    acls=acl_list, fasname=fasname, eol=eol)
 
     @expose(template='pkgdb.templates.useroverview')
     def info(self, fasname=None):
