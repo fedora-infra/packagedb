@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2011  Red Hat, Inc.
+# Copyright (C) 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -32,14 +32,14 @@ Controller for handling Package ownership information.
 # :C0322: Disable space around operator checking in multiline decorators
 
 from sqlalchemy.orm import eagerload
-from sqlalchemy import case, cast
+from sqlalchemy import and_, case, cast, select
 from sqlalchemy.types import Integer 
 
 from turbogears import controllers, error_handler, expose, flash, paginate
 from turbogears import validate, validators 
 
-from pkgdb.model import Package, Collection, PackageAclStatus, PackageListing, \
-        PackageListingTable
+from pkgdb.model import Package, PackageTable, Collection, CollectionTable, \
+        PackageAclStatus, PackageListing, PackageListingTable
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
@@ -260,7 +260,8 @@ class Acls(controllers.Controller):
     @validate(validators=AclEol())
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name', max_limit=None,
-              max_pages=13) #pylint:disable=C0322
+              max_pages=13)
+    #pylint:disable=C0322
     def orphans(self, eol=False, tg_errors=None):
         '''List orphaned packages.
 
@@ -278,31 +279,77 @@ class Acls(controllers.Controller):
             if request_format() == 'json':
                 return dict(exc='ValidationError')
 
-        page_title = _('%(app)s -- Orphaned Packages') % {'app': self.app_title}
+        page_title = _('%(app)s -- Orphaned Packages') % \
+                     {'app': self.app_title}
 
-        #pylint:disable=E1101
-        query = Package.query.join('listings2').distinct().filter(
-                    PackageListing.statuscode==STATUS['Orphaned'])
-        #pylint:enable=E1101
+        pkg_query = select((Package.name,
+                            Package.description,
+                            Package.summary,
+                            Collection.name,
+                            Collection.version,
+                            Collection.branchname,
+                            PackageListing.statuscode),
+                           and_(PackageListing.packageid == Package.id,
+                                PackageListing.collectionid == Collection.id,
+                                PackageListing.statuscode == \
+                                    STATUS['Orphaned']),
+                           use_labels=True
+                          )
         if not eol:
             # We don't want EOL releases, filter those out of each clause
-            #pylint:disable=E1101
-            query = query.join(['listings2', 'collection']).filter(
-                    Collection.statuscode!=STATUS['EOL'])
-        pkg_list = []
-        for pkg in query:
-            pkg.json_props = {'Package':('listings',)}
-            pkg_list.append(pkg)
-        return dict(title=page_title, pkgCount=len(pkg_list), pkgs=pkg_list,
-                fasname='orphan', eol=eol)
+            pkg_query = pkg_query.where(Collection.statuscode != STATUS['EOL'])
+
+        pkg_list = {}
+        for row in pkg_query.execute():
+            pkg_name = row[PackageTable.c.name]
+            pkg_desc = row[PackageTable.c.description]
+            pkg_summary = row[PackageTable.c.summary]
+            cname = row[CollectionTable.c.name]
+            cver = row[CollectionTable.c.version]
+            cbname = row[CollectionTable.c.branchname]
+            statuscode = row[PackageListingTable.c.statuscode]
+            if not pkg_list.has_key(pkg_name):
+                pkg_list[pkg_name] = []
+                pkg_list[pkg_name].append(pkg_desc)
+                pkg_list[pkg_name].append(pkg_summary)
+                pkg_list[pkg_name].append({})
+
+            if not pkg_list[pkg_name][2].has_key(cname):
+                pkg_list[pkg_name][2][cname] = {}
+
+            if not pkg_list[pkg_name][2][cname].has_key(cver):
+                pkg_list[pkg_name][2][cname][cver] = {}
+
+            if not pkg_list[pkg_name][2][cname][cver].has_key(cbname):
+                pkg_list[pkg_name][2][cname][cver][cbname] = statuscode
+
+        #
+        # @paginate does not like dictionaries.  But it does like a list of
+        # dictionaries.
+        #
+        pkgs = []
+        pkg_names = pkg_list.keys()
+        pkg_names.sort()
+        for pkg_name in pkg_names:
+            pkg_info = {}
+            pkg_info['name'] = pkg_name
+            pkg_info['desc'] = pkg_list[pkg_name][0]
+            pkg_info['summary'] = pkg_list[pkg_name][1]
+            pkg_info['collections'] = pkg_list[pkg_name][2]
+            pkgs.append(pkg_info)
+
+        return dict(title=page_title, pkgCount=len(pkgs), pkgs=pkgs,
+                    fasname='orphan', eol=eol)
 
     @validate(validators=AclEol())
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name', max_limit=None,
-              max_pages=13) #pylint:disable=C0322
+              max_pages=13)
+    #pylint:disable=C0322
     def retired(self, eol=False, tg_errors=None):
         '''List retired packages.
 
+        :kwarg eol: If True, list packages that are in EOL distros.
         :returns: A list of packages.
         '''
 
@@ -318,20 +365,62 @@ class Acls(controllers.Controller):
 
         page_title = _('%(app)s -- Retired Packages') % {'app': self.app_title}
 
-        #pylint:disable=E1101
-        query = Package.query.join('listings2').distinct().filter(
-                    PackageListing.statuscode==STATUS['Retired']).filter(
-                    PackageListing.owner=='orphan')
-        #pylint:enable=E1101
+        pkg_query = select((Package.name,
+                            Package.description,
+                            Package.summary,
+                            Collection.name,
+                            Collection.version,
+                            Collection.branchname,
+                            PackageListing.statuscode),
+                           and_(PackageListing.packageid == Package.id,
+                                PackageListing.collectionid == Collection.id,
+                                PackageListing.statuscode == STATUS['Retired']
+                               ),
+                           use_labels=True
+                          )
         if not eol:
             # We don't want EOL releases, filter those out of each clause
-            #pylint:disable=E1101
-            query = query.join(['listings2', 'collection']).filter(
-                    Collection.statuscode!=STATUS['EOL'])
-        pkg_list = []
-        for pkg in query:
-            pkg.json_props = {'Package':('listings',)}
-            pkg_list.append(pkg)
-        return dict(title=page_title, pkgCount=len(pkg_list), pkgs=pkg_list,
-                fasname='retired', eol=eol)
+            pkg_query = pkg_query.where(Collection.statuscode != STATUS['EOL'])
+
+        pkg_list = {}
+        for row in pkg_query.execute():
+            pkg_name = row[PackageTable.c.name]
+            pkg_desc = row[PackageTable.c.description]
+            pkg_summary = row[PackageTable.c.summary]
+            cname = row[CollectionTable.c.name]
+            cver = row[CollectionTable.c.version]
+            cbname = row[CollectionTable.c.branchname]
+            statuscode = row[PackageListingTable.c.statuscode]
+            if not pkg_list.has_key(pkg_name):
+                pkg_list[pkg_name] = []
+                pkg_list[pkg_name].append(pkg_desc)
+                pkg_list[pkg_name].append(pkg_summary)
+                pkg_list[pkg_name].append({})
+
+            if not pkg_list[pkg_name][2].has_key(cname):
+                pkg_list[pkg_name][2][cname] = {}
+
+            if not pkg_list[pkg_name][2][cname].has_key(cver):
+                pkg_list[pkg_name][2][cname][cver] = {}
+
+            if not pkg_list[pkg_name][2][cname][cver].has_key(cbname):
+                pkg_list[pkg_name][2][cname][cver][cbname] = statuscode
+
+        #
+        # @paginate does not like dictionaries.  But it does like a list of
+        # dictionaries.
+        #
+        pkgs = []
+        pkg_names = pkg_list.keys()
+        pkg_names.sort()
+        for pkg_name in pkg_names:
+            pkg_info = {}
+            pkg_info['name'] = pkg_name
+            pkg_info['desc'] = pkg_list[pkg_name][0]
+            pkg_info['summary'] = pkg_list[pkg_name][1]
+            pkg_info['collections'] = pkg_list[pkg_name][2]
+            pkgs.append(pkg_info)
+
+        return dict(title=page_title, pkgCount=len(pkg_list.keys()), pkgs=pkgs,
+                    fasname='retired', eol=eol)
 
