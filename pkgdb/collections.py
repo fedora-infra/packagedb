@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright (C) 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -15,7 +15,8 @@
 # code or documentation are not subject to the GNU General Public License and
 # may only be used or replicated with the express permission of Red Hat, Inc.
 #
-# Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+# Red Hat Author(s):        Toshio Kuratomi <tkuratom@redhat.com>
+# Fedora Project Author(s): Frank Chiulli <fchiulli@fedoraproject.org>
 #
 '''
 Controller for showing Package Collections.
@@ -47,7 +48,8 @@ import koji
 from fedora.tg.tg1utils import json_or_redirect, request_format, tg_url
 
 from pkgdb import _
-from pkgdb.model.collections import CollectionPackage, Collection
+from pkgdb.model.collections import CollectionPackage, Collection, \
+        CollectionTable
 from pkgdb.model.packages import Package, PackageListing, PackageTable
 from pkgdb.notifier import EventLogger
 from pkgdb.lib.utils import admin_grp, STATUS
@@ -75,18 +77,19 @@ class Collections(controllers.Controller):
             which are not eol
         :returns: list of collections
         '''
-        #pylint:disable-msg=E1101
+        #pylint:disable=E1101
         collections = session.query(Collection).options(lazyload('listings'),
                 lazyload('status')).add_column(CollectionPackage.numpkgs
                 ).filter(Collection.id==CollectionPackage.id).order_by(
             Collection.name, Collection.version)
-        #pylint:enable-msg=E1101
+        #pylint:enable=E1101
         if not eol:
             collections = collections.filter(Collection.statuscode!=
                     STATUS['EOL'])
 
-        status_map = dict(((c[0].statuscode, c[0].status.locale['C'].statusname) for
-            c in collections))
+        status_map = dict(((c[0].statuscode,
+                            c[0].status.locale['C'].statusname) for
+                     c in collections))
 
         return dict(title=_('%(app)s -- Collection Overview') %
                 {'app': self.app_title}, collections=collections,
@@ -94,7 +97,7 @@ class Collections(controllers.Controller):
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100, max_limit=None,
-            max_pages=13) #pylint:disable-msg=C0322
+              max_pages=13) #pylint:disable-msg=C0322
     def name(self, collctn):
         '''Return a page with information on a particular Collection
 
@@ -105,7 +108,12 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             #pylint:disable-msg=E1101
-            collection = session.query(Collection).filter_by(branchname=collctn).one()
+            collection = select((Collection.id, Collection.name,
+                                 Collection.version, Collection.owner,
+                                 Collection.description, Collection.summary,
+                                 Collection.statuscode),
+                                and_(Collection.branchname == collctn)
+                               ).execute().fetchone()
         except InvalidRequestError:
             # Either the name doesn't exist or somehow it references more than
             # one value
@@ -124,25 +132,26 @@ class Collections(controllers.Controller):
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
         # 2) We need statusname which is not in the specific table.
-        collection_entry = {'name': collection.name,
-                'version': collection.version,
-                'owner': collection.owner,
-                'summary': collection.summary,
-                'description': collection.description,
-                'statusname': collection.status.locale['C'].statusname
-                }
+        collection_entry = {'name': collection[CollectionTable.c.name],
+                'version': collection[CollectionTable.c.version],
+                'owner': collection[CollectionTable.c.owner],
+                'summary': collection[CollectionTable.c.summary],
+                'description': collection[CollectionTable.c.description],
+                'statusname': STATUS[collection[CollectionTable.c.statuscode]]}
 
         # Retrieve the package list for this collection
         # pylint:disable-msg=E1101
-        packages = select((PackageTable,), and_(Package.id==PackageListing.packageid,
-                PackageListing.collectionid==collection.id,
-                Package.statuscode!=STATUS['Removed']),
-                order_by=(Package.name,)).execute()
+        collectionid = collection[CollectionTable.c.id]
+        packages = select((PackageTable,),
+                          and_(Package.id==PackageListing.packageid,
+                               PackageListing.collectionid==collectionid,
+                               Package.statuscode!=STATUS['Removed']),
+                               order_by=(Package.name,)).execute()
         # pylint:enable-msg=E1101
 
         return dict(title='%s -- %s %s' % (self.app_title, collection.name,
-            collection.version), collection=collection_entry,
-            packages=packages)
+                    collection.version), collection=collection_entry,
+                    packages=packages)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100, max_limit=None,
@@ -357,7 +366,8 @@ class Collections(controllers.Controller):
         # Retrieve the collection to make the new branches on
         try:
             #pylint:disable-msg=E1101
-            to_branch = session.query(Collection).filter_by(branchname=branch).one()
+            to_branch = session.query(Collection).\
+                        filter_by(branchname=branch).one()
         except InvalidRequestError, e:
             session.rollback() #pylint:disable-msg=E1101
             flash(_('Unable to locate a branch for %(branch)s') % {
@@ -387,7 +397,8 @@ class Collections(controllers.Controller):
 
         # Retrieve the devel branch for comparison
         #pylint:disable-msg=E1101
-        devel_branch = session.query(Collection).filter_by(branchname='master').one()
+        devel_branch = session.query(Collection).\
+                       filter_by(branchname='master').one()
         #pylint:enable-msg=E1101
 
         # Retrieve the package from koji
@@ -419,7 +430,8 @@ class Collections(controllers.Controller):
         Retrieve a collection by its simple_name
         '''
         try:
-            collection = session.query(Collection).filter_by( #pylint:disable-msg=E1101
+            collection = session.query(Collection).\
+                         filter_by( #pylint:disable-msg=E1101
                 name=collctn_name, version=collctn_ver).one()
         except InvalidRequestError, e:
             return dict(status=False,
@@ -434,9 +446,11 @@ class Collections(controllers.Controller):
         Retrieve a collection by its canonical_name
         '''
         try:
-            collection = session.query(Collection).filter_by(branchname=collctn).one()
+            collection = session.query(Collection).\
+                         filter_by(branchname=collctn).one()
         except InvalidRequestError, e:
             return dict(status=False,
-                message=_('Collection with branchname %s was not found' % collctn))
+                message=_('Collection with branchname %s was not found' % \
+                          collctn))
         return dict(status=True, collctn_name=collection.name, 
             collctn_ver=collection.version)
