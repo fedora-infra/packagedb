@@ -111,7 +111,7 @@ class IsCollectionSimpleNameRegex(Regex):
         the simple name against. Default: r'^[A-Z]+-([0-9]+|devel)$'
     '''
     strip = True
-    regex = re.compile(r'^([A-Z]+-[0-9]+|devel)$')
+    regex = re.compile(r'^((FC|fc|f|F|EL|el|)-?[0-9]+|devel)$')
 
     messages = {'no_collection': _('%(collection)s does not match the pattern'
         ' for collection names')}
