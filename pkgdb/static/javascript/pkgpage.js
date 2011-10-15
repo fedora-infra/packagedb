@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2010  Red Hat, Inc.
+ * Copyright (c) 2007-2011  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use,
  * modify, copy, or redistribute it subject to the terms and conditions of the
@@ -197,7 +197,9 @@ function toggle_retirement(retirementDiv, data) {
         insertSiblingNodesBefore(ownerName, newOwnerName);
         removeElement(ownerName);
         addElementClass(ownerButton, 'invisible');
-        addElementClass(addMyselfButton, 'invisible');
+        if (addMyselfButton) {
+            addElementClass(addMyselfButton, 'invisible');
+        }
     } else {
         /* Reflect the fact that the package has been unretired */
         swapElementClass(retirementDiv, 'retired', 'not_retired');
