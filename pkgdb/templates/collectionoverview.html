@@ -8,53 +8,97 @@
     <h2>Collections</h2>
     <div class="header-list">
       <table>
-        <tr><th class="ColumnHead" id="collectionhead" title="Collection - Set of Linux packages created and hosted by the Fedora Project">
+        <tr>
+          <th class="ColumnHead" id="collectionhead"
+              title="Collection - Set of Linux packages created and hosted by the Fedora Project">
             Collection
-          </th><th class="ColumnHead" id="versionhead" title="Collection Version - Version of the Collection">
+          </th>
+          <th class="ColumnHead" id="versionhead"
+              title="Collection Version - Version of the Collection">
             Version
-          </th><th class="ColumnHead" id="packagehead" title="Number of Packages - How many packages are in the cvs repository for this colleciton version.  May not have been built for this distribution">
+          </th>
+          <th class="ColumnHead" id="packagehead"
+              title="Number of Packages - How many packages are in the cvs repository for this colleciton version.  May not have been built for this distribution">
             Number of Packages
-          </th><th class="ColumnHead" id="actionhead" title="Actions that may be carried out against all the packages in this collection.  Usually need to be in the cvsadmin group to operate on these">
+          </th>
+          <th class="ColumnHead" id="actionhead"
+              title="Actions that may be carried out against all the packages in this collection.  Usually need to be in the cvsadmin group to operate on these">
             Actions
-          </th><th class="ColumnHead" id="branchnamehead" title="Git Branchname - Name of the branch in the Git VCS">
+          </th>
+          <th class="ColumnHead" id="branchnamehead"
+              title="Git Branchname - Name of the branch in the Git VCS">
             Branch name
-          </th><th class="ColumnHead" id="shortnamehead" title="Collection Shortname - Short name of the Collection">
+          </th>
+          <th class="ColumnHead" id="shortnamehead"
+              title="Collection Shortname - Short name of the Collection">
             Shortname
-        </th></tr>
-        <tr py:for="collection, numpkgs  in collections">
-          <td class="collection">
-            <a href="${tg.url('/collections/name/%s' % collection.branchname)}"
-               py:content="collection.name">Collection Name</a>
-          </td>
-          <td class="version">
-            <a href="${tg.url('/collections/name/%s' % collection.branchname)}"
-               py:content="collection.version">Collection Version</a>
-          </td>
-          <td py:content="numpkgs" class="package">
-            Number of Packages
-          </td>
-          <td>
-            <?python
-        from pkgdb.lib.utils import admin_grp
-        ?>
-            <form py:if="collection.status.locale['C'].statusname != 'EOL' and hasattr(collection, 'branchname') and collection.branchname and collection.koji_name and collection.branchname != 'devel'" action="${tg.url('/collections/mass_branch/' + collection.branchname)}" method="POST">
-              <input py:if="not tg.identity.anonymous and admin_grp in tg.identity.groups" type="submit" value="Branch All" class="Active MassBranchButton" title="Branch every package in 'Fedora devel' to this branch.  This copies the permissions and makes it possible to create a branch on the cvs server."/>
-              <input py:if="tg.identity.anonymous or not admin_grp in tg.identity.groups" type="submit" disabled="true" value="Branch All" class="Inactive MassBranchButton"/>
-            </form>
-          </td>
-          <td class="shortname">
-            <a href="${tg.url('/collections/name/%s' % collection.branchname)}"
-               py:content="collection.branchname">
-              Git branch name
-            </a>
-          </td>
-          <td class="shortname">
-            <a href="${tg.url('/collections/name/%s' % collection.branchname)}"
-               py:content="collection.short_name">
-              Collection Shortname
-            </a>
-          </td>
+          </th>
         </tr>
+        <span py:for="name in sorted(collections.keys())">
+          <?python
+            def mycmp(x, y):
+                if (len(x) < len(y)):
+                    return 1
+                else:
+                    if (len(x) > len(y)):
+                        return -1
+                    else:
+                        if (x < y):
+                            return 1
+                        else:
+                            if (x == y):
+                                return 0
+                            else:
+                                return -1
+          ?>
+          <tr py:for="version in sorted(collections[name].keys(), cmp=mycmp)">
+            <td class="collection">
+              <a href="${tg.url('/collections/name/%s' % collections[name][version]['branchname'])}"
+               py:content="name">Collection Name</a>
+            </td>
+            <td class="version">
+              <a href="${tg.url('/collections/name/%s' % collections[name][version]['branchname'])}"
+                 py:content="version">Collection Version</a>
+            </td>
+            <td py:content="collections[name][version]['numpkgs']"
+                class="package">
+              Number of Packages
+            </td>
+            <td>
+              <?python
+          from pkgdb.lib.utils import admin_grp
+          ?>
+              <form py:if="collections[name][version]['statusname'] != 'EOL' and
+                           collections[name][version]['branchname'] and
+                           collections[name][version]['koji_name'] and
+                           collections[name][version]['branchname'] != 'devel'"
+                    action="${tg.url('/collections/mass_branch/' + collections[name][version]['branchname'])}"
+                    method="POST">
+                <input py:if="not tg.identity.anonymous and
+                              admin_grp in tg.identity.groups"
+                       type="submit" value="Branch All"
+                       class="Active MassBranchButton"
+                       title="Branch every package in 'Fedora devel' to this branch.  This copies the permissions and makes it possible to create a branch on the cvs server."/>
+                <input py:if="tg.identity.anonymous or
+                              not admin_grp in tg.identity.groups"
+                       type="submit" disabled="true" value="Branch All"
+                       class="Inactive MassBranchButton"/>
+              </form>
+            </td>
+            <td class="shortname">
+              <a href="${tg.url('/collections/name/%s' % collections[name][version]['branchname'])}"
+                 py:content="collections[name][version]['branchname']">
+                Git branch name
+              </a>
+            </td>
+            <td class="shortname">
+              <a href="${tg.url('/collections/name/%s' % collections[name][version]['branchname'])}"
+                 py:content="collections[name][version]['short_name']">
+                Collection Shortname
+              </a>
+            </td>
+          </tr>
+        </span>
       </table>
     </div>
   </body>
