@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2007-2011  Red Hat, Inc.
+# Copyright © 2007-2011  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -416,7 +416,7 @@ class PackageDispatcher(controllers.Controller):
 
         if pkg.statuscode != STATUS['Retired']\
                 and (pkg.statuscode == STATUS['Orphaned']
-                        or approved in ('admin', 'owner')):
+                        or approved in ('admin', 'owner', 'comaintainer')):
             # Retire package
             if pkg.owner != 'orphan':
                 try:
@@ -1659,7 +1659,8 @@ class PackageDispatcher(controllers.Controller):
             if pkg_listing.status.locale['C'].statusname != 'Orphaned':
                 approved = self._user_can_set_acls(identity, pkg_listing)
 
-                if not approved or approved not in ('admin', 'owner'):
+                if not approved or approved not in ('admin', 'owner',
+                        'comaintainer'):
                     return dict(status=False, message= _('%(user)s is not'
                         ' allowed to change ownership of this package') %
                         { 'user': identity.current.user_name})

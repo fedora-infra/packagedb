@@ -200,7 +200,9 @@ function toggle_retirement(retirementDiv, data) {
         insertSiblingNodesBefore(ownerName, newOwnerName);
         removeElement(ownerName);
         addElementClass(ownerButton, 'invisible');
-        addElementClass(addMyselfButton, 'invisible');
+        if (addMyselfButton) {
+            addElementClass(addMyselfButton, 'invisible');
+        }
     } else {
         /* Reflect the fact that the package has been unretired */
         swapElementClass(retirementDiv, 'retired', 'not_retired');
