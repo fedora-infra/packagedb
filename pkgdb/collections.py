@@ -35,6 +35,7 @@ Controller for showing Package Collections.
 
 import threading
 import os
+import re
 import sys
 
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
@@ -48,8 +49,9 @@ import koji
 from fedora.tg.tg1utils import json_or_redirect, request_format, tg_url
 
 from pkgdb import _
-from pkgdb.model.collections import CollectionPackage, Collection, \
-        CollectionTable
+from pkgdb.model.collections import Collection, CollectionPackage, \
+        CollectionTable, CollectionPackageTable
+from pkgdb.model.statuses import StatusTranslation, StatusTranslationTable
 from pkgdb.model.packages import Package, PackageListing, PackageTable
 from pkgdb.notifier import EventLogger
 from pkgdb.lib.utils import admin_grp, STATUS
@@ -77,23 +79,47 @@ class Collections(controllers.Controller):
             which are not eol
         :returns: list of collections
         '''
-        #pylint:disable=E1101
-        collections = session.query(Collection).options(lazyload('listings'),
-                lazyload('status')).add_column(CollectionPackage.numpkgs
-                ).filter(Collection.id==CollectionPackage.id).order_by(
-            Collection.name, Collection.version)
-        #pylint:enable=E1101
+        query = select((Collection.name, Collection.version,
+                        StatusTranslation.statusname, Collection.koji_name,
+                        Collection.branchname, CollectionPackage.numpkgs),
+                       and_(Collection.name == CollectionPackage.name,
+                            Collection.version == CollectionPackage.version,
+                            Collection.statuscode == \
+                                StatusTranslation.statuscodeid),
+                       use_labels = True)
         if not eol:
-            collections = collections.filter(Collection.statuscode!=
-                    STATUS['EOL'])
+            query = query.where(Collection.statuscode != STATUS['EOL'])
 
-        status_map = dict(((c[0].statuscode,
-                            c[0].status.locale['C'].statusname) for
-                     c in collections))
+        collections = {}
+        for row in query.execute():
+            name = row[CollectionTable.c.name ]
+            version = row[CollectionTable.c.version]
+            statusname = row[StatusTranslationTable.c.statusname]
+            koji_name = row[CollectionTable.c.koji_name]
+            branchname = row[CollectionTable.c.branchname]
+            numpkgs = row[CollectionPackageTable.c.numpkgs]
+            #
+            # The following code was extracted from pkgdb/model/collections.py
+            #
+            if (branchname == 'master'):
+                short_name = 'devel'
+            else:
+                short_name = re.sub(r'(\d+)$', r'-\1', branchname.upper())
+
+            if not collections.has_key(name):
+                collections[name] = {}
+
+            if not collections[name].has_key(version):
+                collections[name][version] = {}
+
+            collections[name][version]['branchname'] = branchname
+            collections[name][version]['koji_name'] = koji_name
+            collections[name][version]['numpkgs'] = numpkgs
+            collections[name][version]['short_name'] = short_name
+            collections[name][version]['statusname'] = statusname
 
         return dict(title=_('%(app)s -- Collection Overview') %
-                {'app': self.app_title}, collections=collections,
-                status_map=status_map)
+                {'app': self.app_title}, collections=collections)
 
     @expose(template='pkgdb.templates.collectionpage', allow_json=True)
     @paginate('packages', default_order='name', limit=100, max_limit=None,
