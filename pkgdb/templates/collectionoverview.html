@@ -5,9 +5,30 @@
   <xi:include href="layout.html" />
   <head />
   <body>
-    <h2>Collections</h2>
     <div class="header-list">
       <table>
+        <tr>
+          <td colspan="4"><h1>Collections</h1></td>
+          <?python
+            from pkgdb.lib.utils import admin_grp
+          ?>
+          <td>
+            <span py:if="not tg.identity.anonymous and
+                         admin_grp in tg.identity.groups">
+              <a href="${tg.url('/collections/get_new_collection_info')}">
+                <button type="button">
+                  New Collection
+                </button>
+              </a>
+            </span>
+            <span py:if="tg.identity.anonymous or
+                         not admin_grp in tg.identity.groups">
+              <button type="button" disabled="true">
+                New Collection
+              </button>
+            </span>
+          </td>
+        </tr>
         <tr>
           <th class="ColumnHead" id="collectionhead"
               title="Collection - Set of Linux packages created and hosted by the Fedora Project">
@@ -36,7 +57,7 @@
         </tr>
         <span py:for="name in sorted(collections.keys())">
           <?python
-            def mycmp(x, y):
+            def vercmp(x, y):
                 if (len(x) < len(y)):
                     return 1
                 else:
@@ -51,7 +72,7 @@
                             else:
                                 return -1
           ?>
-          <tr py:for="version in sorted(collections[name].keys(), cmp=mycmp)">
+          <tr py:for="version in sorted(collections[name].keys(), cmp=vercmp)">
             <td class="collection">
               <a href="${tg.url('/collections/name/%s' % collections[name][version]['branchname'])}"
                py:content="name">Collection Name</a>
