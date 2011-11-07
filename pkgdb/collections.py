@@ -41,7 +41,8 @@ import sys
 from sqlalchemy.exceptions import InvalidRequestError, SQLError
 from sqlalchemy.orm import lazyload, eagerload
 from sqlalchemy.sql import select, and_
-from turbogears import controllers, expose, paginate, config, identity, flash
+from turbogears import controllers, expose, paginate, config, identity, \
+        flash, redirect
 from turbogears.database import session
 from cherrypy import request
 
@@ -54,7 +55,7 @@ from pkgdb.model.collections import Collection, CollectionPackage, \
 from pkgdb.model.statuses import StatusTranslation, StatusTranslationTable
 from pkgdb.model.packages import Package, PackageListing, PackageTable
 from pkgdb.notifier import EventLogger
-from pkgdb.lib.utils import admin_grp, STATUS
+from pkgdb.lib.utils import admin_grp, fas, STATUS
 
 MASS_BRANCH_SET = 500
 
@@ -480,3 +481,97 @@ class Collections(controllers.Controller):
                           collctn))
         return dict(status=True, collctn_name=collection.name, 
             collctn_ver=collection.version)
+
+    @identity.require(identity.in_group(admin_grp))
+    @expose(template='pkgdb.templates.get_new_collection_info')
+    def get_new_collection_info(self):
+        cvsadmins = fas.people_by_groupname('cvsadmin')
+        admins = {}
+        for admin in cvsadmins:
+            admins[admin['username']] = admin['human_name']
+
+        query = select((Collection.disttag,),
+                       and_(Collection.name == 'Fedora',
+                            Collection.version == 'devel'),
+                       use_labels = True)
+        result = query.execute()
+        row = result.fetchone()
+        result.close()
+        ver = ''
+        koji_name = ''
+        branch_name = ''
+        new_disttag = ''
+        if (row):
+            disttag = row[CollectionTable.c.disttag]
+            verPat = re.compile("^\.fc(\d+)$")
+            matchobj = verPat.match(disttag)
+            if matchobj:
+                start, stop = matchobj.span(1)
+                ver = disttag[start:stop]
+                new_disttag = disttag[:start] + ver
+                koji_name = "f" + ver
+                branch_name = "f" + ver
+
+        return dict(title='New Collection Request', cname='Fedora',
+                    cversion=ver, admins=admins, kname=koji_name,
+                    bname=branch_name, disttag=new_disttag)
+
+    @identity.require(identity.in_group(admin_grp))
+    @expose()
+    def add_new_collection(self, collectn_name, collectn_ver, release_mgr,
+                           koji_name, branch_name, dist_tag):
+        #
+        # Duplicate check.
+        #
+        query = select((Collection.name, Collection.version),
+                       and_(Collection.name == collectn_name,
+                            Collection.version == collectn_ver))
+        results = query.execute()
+        rows = results.rowcount
+        if (rows > 0):
+            flash (_('The collection name and version (%(cname)s %(cversion)s) '
+                     'you specified already exists.  Try again.') %
+                   {'cname': collectn_name, 'cversion': collectn_ver})
+            redirect('/collections/')
+
+        #
+        # Insert new row into Collection table.
+        #
+        ins = CollectionTable.insert()
+        ins.execute(name=collectn_name,
+                    version=collectn_ver, koji_name=koji_name, statuscode=1,
+                    owner=release_mgr, branchname=branch_name,
+                    disttag=dist_tag)
+
+        #
+        # If this is Fedora, update the disttag for devel.
+        #
+        if (collectn_name == 'Fedora'):
+            query = select((Collection.disttag,),
+                           and_(Collection.name == 'Fedora',
+                                Collection.version == 'devel'),
+                           use_labels = True)
+            result = query.execute()
+            row = result.fetchone()
+            result.close()
+            if (row):
+                disttag = row[CollectionTable.c.disttag]
+                verPat = re.compile("^\.fc(\d+)$")
+                matchobj = verPat.match(disttag)
+                if matchobj:
+                    start, stop = matchobj.span(1)
+                    ver = disttag[start:stop]
+                    ver = int(ver)
+                    ver = ver + 1
+                    new_disttag = disttag[:start] + str(ver)
+
+                    update = CollectionTable.update()
+                    update = update.where(and_(Collection.name == 'Fedora',
+                                               Collection.version == 'devel'))
+                    update = update.values(disttag=new_disttag)
+                    update.execute()
+
+        flash(_('Collection successfully added.'))
+        redirect('/collections/')
+        return
+
