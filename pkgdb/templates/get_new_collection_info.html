@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <head />
+  <body>
+    <script type="text/javascript"
+            src="${tg.url('/static/javascript/collection.js')}">
+    </script>
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}">
+    </script>
+    <script type="text/javascript">
+      dojo.require("dijit.form.ComboBox");
+    </script>
+    <script type="text/javascript"
+            src="${tg.url('/static/javascript/framework.js')}">
+    </script>
+    <h2>New Collection Information</h2>
+    <p>
+      The values below are suggestions.  Feel free to modify them.
+    </p>
+    <form name="new_collection"
+          action="${tg.url('/collections/add_new_collection/')}"
+          method="post"
+          onsubmit="return check_fields()">
+      <table>
+        <tr>
+          <td width="50%">Collection name:</td>
+          <td width="50%">
+            <input type="text" size="25" name="collectn_name" value="${cname}"/>
+          </td>
+        </tr>
+        <tr>
+          <td>Collection version:</td>
+          <td>
+            <input type="text" size="25" name="collectn_ver" value="${cversion}"/>
+          </td>
+        </tr>
+        <tr>
+          <td>Release Manager:</td>
+          <td>
+            <select dojoType="dijit.form.ComboBox" name="release_mgr"
+                    id="release_mgr">
+              <option py:for="admin in sorted(admins)" value="${admin}">
+                ${admin} (${admins[admin]})
+              </option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td>Koji name:</td>
+          <td>
+            <input type="text" size="25" name="koji_name" value="${kname}"/>
+          </td>
+        </tr>
+        <tr>
+          <td>Branch name:</td>
+          <td>
+            <input type="text" size="25" name="branch_name" value="${bname}"/>
+          </td>
+        </tr>
+        <tr>
+          <td>Distribution tag:</td>
+          <td>
+            <input type="text" size="25" name="dist_tag" value="${disttag}"/>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" colspan="2">
+            <input type="submit" value="Submit"/>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </body>
+</html>
+
+
