@@ -7,5 +7,3 @@ WHERE pl.statuscode = 3 OR
       pl.statuscode is null
 GROUP BY c.name, c.version, c.id, c.statuscode
 ORDER BY c.name, c.version;
-
-COMMIT;
