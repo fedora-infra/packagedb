@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2010  Red Hat, Inc.
+# Copyright (C) 2007-2012  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -57,7 +57,7 @@ class Letters(controllers.Controller):
         '''Return a list of all packages in the database.
 
            :kwarg searchwords: optional - string to restrict the list, can use
-           % or * as wildcards
+                               % or * as wildcards
         '''
         server_webpath = config.get('server.webpath', '/pkgdb')
         if request.path.startswith("%s/acls/" % server_webpath):
@@ -68,30 +68,33 @@ class Letters(controllers.Controller):
             else:
                 mode = 'acls/name/'
                 bzUrl = ''
+
             if searchwords != '':
-                searchwords = searchwords.replace('*','%')
-                if searchwords.isdigit() and int(searchwords) < 10: # 0-9
+                sqlPattern = searchwords
+                sqlPattern = sqlPattern.replace('*', '%')
+                if sqlPattern.isdigit() and int(sqlPattern) < 10: # 0-9
                     #pylint:disable-msg=E1101
-                    packages = Package.query.options(
-                            lazyload('listings2'), lazyload('status')
-                        ).filter(or_(Package.name.between('0','9'),
-                                     Package.name.like('9%')))
+                    packages = Package.query.options(lazyload('listings2'),
+                                                     lazyload('status')).\
+                                       filter(or_(Package.name.between('0','9'),
+                                                  Package.name.like('9%')))
                     #pylint:enable-msg=E1101
                 else: 
                     # sanitize for ilike:
-                    searchwords = searchwords.replace('&','').replace('_','') 
+                    sqlPattern = sqlPattern.replace('_', '\_').\
+                                            replace('?', '_') 
                     #pylint:disable-msg=E1101
-                    packages = Package.query.options(
-                        lazyload('listings2'),
-                        lazyload('status')).filter(
-                            Package.name.ilike(searchwords)
-                            ).order_by(Package.name.asc())
+                    packages = Package.query.options(lazyload('listings2'),
+                                                     lazyload('status')).\
+                                       filter(Package.name.ilike(sqlPattern)).\
+                                       order_by(Package.name.asc())
                     #pylint:enable-msg=E1101
             else:
                 #pylint:disable-msg=E1101
                 packages = Package.query.options(lazyload('listings2'),
-                            lazyload('status'))
+                                                 lazyload('status'))
                 #pylint:enable-msg=E1101
+
             # minus removed packages
             #pylint:disable-msg=E1101
             packages = packages.filter(
@@ -100,18 +103,19 @@ class Letters(controllers.Controller):
         else:
             mode = 'tag/'
             bzUrl = ''
-            if searchwords != '':
-                searchwords = searchwords.replace('*','%') \
-                              .replace('&','').replace('_','')
+            sqlPattern = searchwords
+            if sqlPattern != '':
+                sqlPattern = sqlPattern.replace('*', '%').\
+                                        replace('_', '\_').\
+                                        replace('?', '_')
 
                 #pylint:disable-msg=E1101
                 packages = session.query(Application).join('tags').filter(
-                        Tag.name.ilike(searchwords)).all()
+                        Tag.name.ilike(sqlPattern)).all()
                 #pylint:enable-msg=E1101
             else:
                 packages = PackageBuild.query.all() #pylint:disable-msg=E1101
             
-        searchwords = searchwords.replace('%','*')            
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {
             'app': self.app_title, 'mode': mode.strip('/')},
                        searchwords=searchwords, packages=packages, mode=mode,
