@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2010  Red Hat, Inc.
+# Copyright © 2007-2012  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -355,11 +355,15 @@ class ListQueries(controllers.Controller):
                                    Tag.name,
                                    ApplicationTag.score),
                                and_(Tag.id == ApplicationTag.tagid,
-                                    ApplicationTag.applicationid == ApplicationsTable.c.id,
-                                    ApplicationsTable.c.executableid == PkgBuildExecutablesTable.c.executableid,
-                                    PkgBuildExecutablesTable.c.packagebuildid == PackageBuild.id,
+                                    ApplicationTag.applicationid == \
+                                        ApplicationsTable.c.id,
+                                    ApplicationsTable.c.executableid == \
+                                        PkgBuildExecutablesTable.c.executableid,
+                                    PkgBuildExecutablesTable.c.packagebuildid \
+                                        == PackageBuild.id,
                                     PackageBuildRepo.repoid == Repo.id,
-                                    PackageBuildRepo.packagebuildid==PackageBuild.id,
+                                    PackageBuildRepo.packagebuildid == \
+                                        PackageBuild.id,
                                     Repo.shortname==repo))
             pkgblds = pkgbld_query.execute()
             #pylint:enable-msg=E1101
@@ -382,7 +386,8 @@ class ListQueries(controllers.Controller):
         The database returned will contain copies or subsets of tables in the
         pkgdb.
 
-        :arg repo: A repository shortname to retrieve tags for (e.g. 'F-11-i386')
+        :arg repo: A repository shortname to retrieve tags for
+                   (e.g. 'F-11-i386')
 
         .. versionadded:: 0.5.0
 
@@ -405,11 +410,13 @@ class ListQueries(controllers.Controller):
                 Tag.name.label('tag'),
                 ApplicationTag.score.label('score')),
             and_(Tag.id==ApplicationTag.tagid,
-                ApplicationTag.applicationid==PackageBuildApplicationsTable.c.applicationid,
-                PackageBuildApplicationsTable.c.packagebuildid==PackageBuild.id,
-                PackageBuildRepo.repoid==Repo.id,
-                PackageBuildRepo.packagebuildid==PackageBuild.id,
-                Repo.shortname==repo)),
+                 ApplicationTag.applicationid==\
+                     PackageBuildApplicationsTable.c.applicationid,
+                 PackageBuildApplicationsTable.c.packagebuildid==\
+                     PackageBuild.id,
+                 PackageBuildRepo.repoid==Repo.id,
+                 PackageBuildRepo.packagebuildid==PackageBuild.id,
+                 Repo.shortname==repo)),
             select((PackageBuild.name.label('name'),
                 Tag.name.label('tag'),
                 BinaryPackageTag.score.label('score')),
@@ -425,7 +432,8 @@ class ListQueries(controllers.Controller):
         used_tags = set()
         for tag in tags.execute().fetchall():
             if (tag[0], tag[1]) not in used_tags:
-                pkg_tags.append({'name': tag[0], 'tag': tag[1], 'score': tag[2]})
+                pkg_tags.append({'name': tag[0], 'tag': tag[1],
+                                 'score': tag[2]})
                 used_tags.add((tag[0], tag[1]))
 
         if pkg_tags:
@@ -445,8 +453,10 @@ class ListQueries(controllers.Controller):
             content_type="text/plain; charset=utf-8", #pylint:disable-msg=C0322
             format='text') #pylint:disable-msg=C0322
     @expose(template="pkgdb.templates.bugzillaacls", allow_json=True)
-    def bugzilla(self):
+    def bugzilla(self, collection=None):
         '''Return the package attributes used by bugzilla.
+
+        :karg collection: Name of the bugzilla collection to gather data on.
 
         Note: The data returned by this function is for the way the current
         Fedora bugzilla is setup as of (2007/6/25).  In the future, bugzilla
@@ -467,20 +477,20 @@ class ListQueries(controllers.Controller):
         username = None
 
         # select all packages that are in an active release
-        package_info = select((
-            #pylint:disable-msg=E1101
-            Collection.name, Package.name,
-            PackageListing.owner, PackageListing.qacontact,
-            Package.summary),
-            and_(
-                Collection.id==PackageListing.collectionid,
-                Package.id==PackageListing.packageid,
-                Package.statuscode!=STATUS['Removed'],
-                PackageListing.statuscode!=STATUS['Removed'],
-                Collection.statuscode.in_((STATUS['Active'],
-                    STATUS['Under Development'])),
-                ),
-            order_by=(Collection.name,), distinct=True)
+        #pylint:disable-msg=E1101
+        package_info = select((Collection.name, Package.name,
+                               PackageListing.owner, PackageListing.qacontact,
+                               Package.summary),
+                              and_(Collection.id==PackageListing.collectionid,
+                                   Package.id==PackageListing.packageid,
+                                   Package.statuscode!=STATUS['Removed'],
+                                   PackageListing.statuscode!=STATUS['Removed'],
+                                   Collection.statuscode.in_((STATUS['Active'],
+                                       STATUS['Under Development'])),
+                                  ),
+                              order_by=(Collection.name,), distinct=True)
+        if (collection):
+            package_info = package_info.where(Collection.branchname==collection);
 
         # List of packages that need more processing to decide who the owner
         # should be.
@@ -489,18 +499,21 @@ class ListQueries(controllers.Controller):
         for pkg in package_info.execute():
             # Lookup the collection
             collection_name = pkg[0]
+            if (collection):
+                collection_name += ' (%s)' % collection
+
             try:
-                collection = bugzilla_acls[collection_name]
+                collectn = bugzilla_acls[collection_name]
             except KeyError:
-                collection = {}
-                bugzilla_acls[collection_name] = collection
+                collections = {}
+                bugzilla_acls[collection_name] = collections
             # Then the package
             package_name = pkg[1]
             try:
-                package = collection[package_name]
+                package = collections[package_name]
             except KeyError:
                 package = BugzillaInfo()
-                collection[package_name] = package
+                collections[package_name] = package
 
             # Save the package information in the data structure to return
             if not package.owner:
@@ -517,20 +530,27 @@ class ListQueries(controllers.Controller):
             # branches.  Need to find one to be the owner of the bugzilla
             # component
             #pylint:disable-msg=E1101
-            package_info = select((Collection.name,
-                Collection.version,
-                Package.name, PackageListing.owner),
-                and_(
-                    Collection.id==PackageListing.collectionid,
-                    Package.id==PackageListing.packageid,
-                    Package.statuscode!=STATUS['Removed'],
-                    PackageListing.statuscode!=STATUS['Removed'],
-                    Collection.statuscode.in_((STATUS['Active'],
-                        STATUS['Under Development'])),
-                    Package.name.in_(undupe_owners),
-                    ),
-                order_by=(Collection.name, Collection.version),
-                distinct=True)
+            package_info = select((Collection.name, Collection.version,
+                                   Package.name, PackageListing.owner),
+                                  and_(Collection.id==\
+                                           PackageListing.collectionid,
+                                       Package.id==\
+                                           PackageListing.packageid,
+                                       Package.statuscode!=STATUS['Removed'],
+                                       PackageListing.statuscode!=\
+                                           STATUS['Removed'],
+                                       Collection.statuscode.\
+                                           in_((STATUS['Active'],
+                                                STATUS['Under Development'])),
+                                       Package.name.in_(undupe_owners),
+                                      ),
+                                  order_by=(Collection.name,
+                                            Collection.version),
+                                  distinct=True)
+
+            if (collection):
+                package_info = package_info.where(Collection.branchname==\
+                                                  collection);
             #pylint:enable-msg=E1101
 
             # Organize the results so that we have:
@@ -545,74 +565,83 @@ class ListQueries(controllers.Controller):
                     by_pkg[pkg[2]] = package
 
                 # Then collection
+                if (collection):
+                    pkg[0] += ' (%s)' % collection
                 try:
-                    collection = package[pkg[0]]
+                    collection_name = package[pkg[0]]
                 except KeyError:
-                    collection = {}
-                    package[pkg[0]] = collection
+                    collections = {}
+                    package[pkg[0]] = collections
 
                 # Then collection version == owner
-                collection[pkg[1]] = pkg[3]
+                collections[pkg[1]] = pkg[3]
 
             # Find the proper owner
             for pkg in by_pkg:
-                for collection in by_pkg[pkg]:
-                    if collection == 'Fedora':
+                for collection_name in by_pkg[pkg]:
+                    if collection_name.startswith('Fedora'):
                         # If devel exists, use its owner
                         # We can safely ignore orphan because we already know
                         # this is a dupe and thus a non-orphan exists.
-                        if 'devel' in by_pkg[pkg][collection]:
-                            if by_pkg[pkg][collection]['devel'] == 'orphan'\
-                                    and len(by_pkg[pkg][collection]) > 1:
+                        if 'devel' in by_pkg[pkg][collection_name]:
+                            if by_pkg[pkg][collection_name]['devel'] == 'orphan'\
+                                    and len(by_pkg[pkg][collection_name]) > 1:
                                 # If there are other owners, try to use them
                                 # instead of orphan
-                                del by_pkg[pkg][collection]['devel']
+                                del by_pkg[pkg][collection_name]['devel']
                             else:
                                 # Prefer devel above all others
-                                bugzilla_acls[collection][pkg].owner = \
-                                        by_pkg[pkg][collection]['devel']
+                                bugzilla_acls[collection_name][pkg].owner = \
+                                        by_pkg[pkg][collection_name]['devel']
                                 continue
 
                     # For any collection except Fedora or Fedora if the devel
                     # version does not exist, treat releases as numbers and
                     # take the results from the latest number
-                    releases = [int(r) for r in by_pkg[pkg][collection] \
-                            if by_pkg[pkg][collection][r] != 'orphan']
+                    releases = [int(r) for r in by_pkg[pkg][collection_name] \
+                            if by_pkg[pkg][collection_name][r] != 'orphan']
                     if not releases:
                         # Every release was an orphan
-                        bugzilla_acls[collection][pkg].owner = 'orphan'
+                        bugzilla_acls[collection_name][pkg].owner = 'orphan'
                     else:
                         releases.sort()
-                        bugzilla_acls[collection][pkg].owner = \
-                                by_pkg[pkg][collection][unicode(releases[-1])]
+                        bugzilla_acls[collection_name][pkg].owner = \
+                            by_pkg[pkg][collection_name][unicode(releases[-1])]
 
         # Retrieve the user acls
 
-        person_acls = select((
-            #pylint:disable-msg=E1101
-            Package.name,
-            Collection.name, PersonPackageListing.username),
-            and_(
-                PersonPackageListingAcl.acl == 'watchbugzilla',
-                PersonPackageListingAcl.statuscode == STATUS['Approved'],
-                PersonPackageListingAcl.personpackagelistingid == \
-                        PersonPackageListing.id,
-                PersonPackageListing.packagelistingid == \
-                        PackageListing.id,
-                PackageListing.packageid == Package.id,
-                PackageListing.collectionid == Collection.id,
-                Package.statuscode!=STATUS['Removed'],
-                PackageListing.statuscode!=STATUS['Removed'],
-                Collection.statuscode.in_((STATUS['Active'],
-                    STATUS['Under Development'])),
-                ),
-            order_by=(PersonPackageListing.username,), distinct=True
-            )
+        #pylint:disable-msg=E1101
+        person_acls = select((Package.name, Collection.name,
+                              PersonPackageListing.username),
+                             and_(PersonPackageListingAcl.acl==\
+                                      'watchbugzilla',
+                                  PersonPackageListingAcl.statuscode==\
+                                      STATUS['Approved'],
+                                  PersonPackageListingAcl.\
+                                      personpackagelistingid==\
+                                      PersonPackageListing.id,
+                                  PersonPackageListing.packagelistingid==\
+                                      PackageListing.id,
+                                  PackageListing.packageid==Package.id,
+                                  PackageListing.collectionid==Collection.id,
+                                  Package.statuscode!=STATUS['Removed'],
+                                  PackageListing.statuscode!=STATUS['Removed'],
+                                  Collection.statuscode.in_((STATUS['Active'],
+                                      STATUS['Under Development'])),
+                                 ),
+                             order_by=(PersonPackageListing.username,),
+                             distinct=True
+                            )
+        if (collection):
+            person_acls = person_acls.where(Collection.branchname==collection);
 
         # Save them into a python data structure
         for record in person_acls.execute():
             username = record[2]
-            self._add_to_bugzilla_acl_list(bugzilla_acls, record[0], record[1],
+            collection_name = record[1]
+            if (collection):
+                collection_name += ' (%s)' % collection
+            self._add_to_bugzilla_acl_list(bugzilla_acls, record[0], collection_name,
                     username, group=False)
 
         ### TODO: No group acls at the moment
@@ -670,8 +699,9 @@ class ListQueries(controllers.Controller):
             #pylint:disable-msg=E1101
             owner_query = owner_query.where(CollectionTable.c.statuscode.in_(
                 (STATUS['Active'], STATUS['Under Development'])))
-            watcher_query = watcher_query.where(CollectionTable.c.statuscode.in_(
-                (STATUS['Active'], STATUS['Under Development'])))
+            watcher_query = watcher_query.where(CollectionTable.c.statuscode.\
+                                          in_((STATUS['Active'],
+                                               STATUS['Under Development'])))
             #pylint:enable-msg=E1101
 
         # Only grab from certain collections
@@ -683,8 +713,10 @@ class ListQueries(controllers.Controller):
             if version:
                 # Limit the versions of those collections
                 #pylint:disable-msg=E1101
-                owner_query = owner_query.where(CollectionTable.c.version==version)
-                watcher_query = watcher_query.where(CollectionTable.c.version==version)
+                owner_query = owner_query.where(CollectionTable.c.version==\
+                                                version)
+                watcher_query = watcher_query.where(CollectionTable.c.version\
+                                                    ==version)
                 #pylint:enable-msg=E1101
 
         pkgs = {}
@@ -739,9 +771,11 @@ class ListQueries(controllers.Controller):
                     PackageListingTable.c.critpath==True))
         if collctn_list:
             collectn_list = Collection.unify_branchnames(collectn_list)
-            pkg_names = pkg_names.where(CollectionTable.c.branchname.in_(collctn_list))
+            pkg_names = pkg_names.where(CollectionTable.c.branchname.\
+                                        in_(collctn_list))
         else:
-            pkg_names = pkg_names.where(CollectionTable.c.statuscode!=STATUS['EOL'])
+            pkg_names = pkg_names.where(CollectionTable.c.statuscode!=
+                                        STATUS['EOL'])
 
         pkgs = {}
         for pkg in pkg_names.execute():
