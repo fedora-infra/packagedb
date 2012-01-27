@@ -46,6 +46,7 @@ from pkgdb.packages import Package
 from pkgdb.stats import Stats
 from pkgdb.search import Search
 from pkgdb.users import Users
+from pkgdb.semantic import DoapController
 
 from pkgdb.model import PackageBuild
 
@@ -68,6 +69,7 @@ class Root(controllers.RootController):
     stats = Stats(app_title)
     search = Search(app_title)
     users = Users(app_title)
+    doap = DoapController()
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, *args, **kwargs):
