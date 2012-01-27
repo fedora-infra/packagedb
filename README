@@ -62,7 +62,7 @@ Install Prerequisites
     postgresql-contrib python-TurboMail python-bugzilla python-fedora \
     python-psycopg2 python-sqlalchemy python-feedparser koji mod_wsgi \
     python-paver httpd mod_ssl babel python-cpio xz python-argparse \
-    python-mako python-memcached
+    python-mako python-memcached python-rdflib
 
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
