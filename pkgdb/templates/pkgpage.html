@@ -17,7 +17,10 @@ import simplejson
         acl_status: ${simplejson.dumps(aclStatus)}};
     </script>
 
-    <h2 id="pkg">${packageListings[0].package.name}</h2>
+    <h2 id="pkg">${packageListings[0].package.name}</h2> 
+    <a href="${tg.url('/doap/' + packageListings[0].package.name)}">
+        (rdf)
+    </a>
     ${pkgheader(packageListings[0].package.name, 'pkgdb')}
 
     <table>
