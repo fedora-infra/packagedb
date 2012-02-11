@@ -141,6 +141,12 @@ class Collections(controllers.Controller):
                                  Collection.statuscode),
                                 and_(Collection.branchname == collctn)
                                ).execute().fetchone()
+            if collection == None:
+		# Test this with 0.6.4+.  fetchone() should have been fixed to
+		# always raise ResourceClosedError( subclas of
+		# InvalidRequresError) in that version.  If so, we can then get
+		# rid of this code
+                raise InvalidRequestError
         except InvalidRequestError:
             # Either the name doesn't exist or somehow it references more than
             # one value
@@ -149,7 +155,7 @@ class Collections(controllers.Controller):
                     ' a link on the fedoraproject.org website, please'
                     ' report it.') % {'collctn': collctn})
             if request_format() == 'json':
-                error = dict(exc='InvalidCollection')
+                error = dict(exc='InvalidCollection', packages=[])
             else:
                 error = dict(title=_('%(app)s -- Invalid Collection Name') % {
                             'app': self.app_title},
