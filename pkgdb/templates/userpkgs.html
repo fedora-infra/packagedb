@@ -29,7 +29,21 @@
     <button type="submit">Filter</button>
   </form>
 
-  <head />
+  <head>
+    <style type="text/css">
+      #orphans table th, #orphans table td {
+        border: 0;
+      }
+    </style>
+
+    <script type="text/javascript"
+             src="${tg.url('/static/javascript/pendingpkgs.js')}">
+    </script>
+    <script type="text/javascript"
+             src="${tg.url('/static/javascript/userpkgs.js')}">
+    </script>
+  </head>
+
   <body>
 
     <p py:choose="fasname" py:strip="">
@@ -38,16 +52,29 @@
         My Packages (${pkgCount})
         ${acl_filter()}
       </div>
-      <div py:when="'orphan'">
-        View: Orphaned Packages (${pkgCount}) - 
-        <div py:choose="eol" py:strip="">
-          <div py:when="True" py:strip="">
-            <a href="${tg.url('/acls/orphans', eol=False)}">hide</a>
-          </div>
-          <div py:when="False" py:strip="">
-            <a href="${tg.url('/acls/retired', eol=True)}">show</a>
-          </div>
-        </div> EOL packages
+      <div id="orphans" py:when="'orphan'">
+        <form name="Collections" action="${tg.url('/acls/update_orphans/')}" method="post">
+          <table border="0">
+            <th colspan="0">Valid Collections</th>
+            <tr py:for="collection in sorted(collections.keys())">
+              <td>$collection</td>
+              <td py:for="branch in sorted(collections[collection].keys())">
+                <input type="checkbox" name="collections" value="$branch"
+                       py:attrs="{'checked': tg.checker(collections[collection][branch])}">
+                  $branch
+                </input>
+              </td>
+            </tr>
+          </table>
+          <input type="button" value="Select All"
+                 onClick="setCheckBox(true,'Collections')"/>
+          &nbsp;&nbsp;
+          <input type="button" value="Deselect All"
+                 onclick="setCheckBox(false, 'Collections')"/>
+          &nbsp;&nbsp;
+          <input type="submit" value="Update"/>
+        </form>
+        <br/>
       </div>
       <div py:when="'retired'">
         View: Retired Packages (${pkgCount}) - 
