@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2007-2011  Red Hat, Inc.
+# Copyright (C) 2007-2012  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -30,13 +30,12 @@ Controller for handling Package ownership information.
 # :E1101: SQLAlchemy monkey patches the database fields into the mapper
 #   classes so we have to disable these checks.
 # :C0322: Disable space around operator checking in multiline decorators
-
 from sqlalchemy.orm import eagerload
 from sqlalchemy import and_, case, cast, select
 from sqlalchemy.types import Integer 
 
 from turbogears import controllers, error_handler, expose, flash, paginate
-from turbogears import validate, validators 
+from turbogears import redirect, validate, validators 
 
 from pkgdb.model import Package, PackageTable, Collection, CollectionTable, \
         PackageAclStatus, PackageListing, PackageListingTable
@@ -49,6 +48,15 @@ from pkgdb import _
 from fedora.tg.tg1utils import request_format
 
 COLLECTION = 21
+
+#
+# Exceptions.
+#
+class InvalidCollection(Exception):
+    '''The entity specified is not a valid collection shortname.
+    '''
+    pass
+
 
 #
 # Validators
@@ -257,15 +265,14 @@ class Acls(controllers.Controller):
             packageListings=pkg_listings, statusMap = status_map,
             aclNames=acl_names, aclStatus=acl_status_translations)
 
-    @validate(validators=AclEol())
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
     @paginate('pkgs', limit=75, default_order='name', max_limit=None,
               max_pages=13)
     #pylint:disable=C0322
-    def orphans(self, eol=False, tg_errors=None):
+    def orphans(self, collctn=None, tg_errors=None):
         '''List orphaned packages.
 
-        :kwarg eol: If True, list packages that are in EOL distros.
+        :kwarg collctn: A list of collections to which the search is limited.
         :returns: A list of packages.
         '''
 
@@ -273,14 +280,81 @@ class Acls(controllers.Controller):
             message = 'Validation errors'
             for arg, msg in tg_errors.items():
                 message = message + ': ' + arg + ' - ' + msg
-                if arg == 'eol':
-                    eol = False
             flash(message)
             if request_format() == 'json':
                 return dict(exc='ValidationError')
 
         page_title = _('%(app)s -- Orphaned Packages') % \
                      {'app': self.app_title}
+
+        collctn_list = None
+        if collctn:
+            if (isinstance(collctn, tuple)):
+                collctn_list = list(collctn)
+
+            else:
+                if (isinstance(collctn, list)):
+                    collctn_list = collctn
+                else:
+                    collctn_list = [collctn]
+
+            if ('devel' in collctn_list):
+                collctn_list[collctn_list.index('devel')] = 'master'
+
+        #
+        # Get a list of valid collections.
+        #
+        valid_collctns = {}
+        valid_shortname_list = []
+        collctn_query = select((Collection.name,
+                                Collection.branchname),
+                               and_(Collection.statuscode != STATUS['EOL']),
+                               use_labels=True)
+        for row in collctn_query.execute():
+            collctn_name = row[CollectionTable.c.name]
+            branch_name = row[CollectionTable.c.branchname]
+            valid_shortname_list.append(branch_name)
+            if (not valid_collctns.has_key(collctn_name)):
+                valid_collctns[collctn_name] = {}
+
+            if (not valid_collctns[collctn_name].has_key(branch_name)):
+                if (collctn_list):
+                    valid_collctns[collctn_name][branch_name] = \
+                        branch_name in collctn_list
+                else:
+                    valid_collctns[collctn_name][branch_name] = True
+
+        #
+        # Validate user-specified collections.
+        #
+        if (collctn_list):
+            invalid_collctn_list = []
+            for collection in collctn_list:
+                if not collection in valid_shortname_list:
+                    invalid_collctn_list.append(collection)
+
+            if (len(invalid_collctn_list) > 0): 
+                message = "The following are not valid collection names:  "
+                for collection in invalid_collctn_list:
+                    message += "%s  " % collection
+
+                pkgs = []
+                flash(message)
+                if request_format() == 'json':
+                    #
+                    # Do not remove the extra arguments after exc.
+                    # They are required for paginate.
+                    #
+                    return dict(exc='InvalidCollection', pkgCount=0, pkgs=pkgs)
+                else:
+                    for collctn_name in valid_collctns.keys():
+                        for branch_name in valid_collctns[collctn_name].keys():
+                           valid_collctns[collctn_name][branch_name] = False
+                           
+                    return dict(title=page_title, pkgCount=0, pkgs=pkgs,
+                                collections=valid_collctns, eol=False,
+                                fasname='orphan')
+                
 
         pkg_query = select((Package.name,
                             Package.description,
@@ -292,12 +366,13 @@ class Acls(controllers.Controller):
                            and_(PackageListing.packageid == Package.id,
                                 PackageListing.collectionid == Collection.id,
                                 PackageListing.statuscode == \
-                                    STATUS['Orphaned']),
+                                    STATUS['Orphaned'],
+                                Collection.statuscode != STATUS['EOL']),
                            use_labels=True
                           )
-        if not eol:
-            # We don't want EOL releases, filter those out of each clause
-            pkg_query = pkg_query.where(Collection.statuscode != STATUS['EOL'])
+
+        if collctn_list:
+            pkg_query = pkg_query.where(Collection.branchname.in_(collctn_list))
 
         pkg_list = {}
         for row in pkg_query.execute():
@@ -339,7 +414,7 @@ class Acls(controllers.Controller):
             pkgs.append(pkg_info)
 
         return dict(title=page_title, pkgCount=len(pkgs), pkgs=pkgs,
-                    fasname='orphan', eol=eol)
+                    collections=valid_collctns, eol=False, fasname='orphan')
 
     @validate(validators=AclEol())
     @expose(template='pkgdb.templates.userpkgs', allow_json=True)
@@ -423,4 +498,19 @@ class Acls(controllers.Controller):
 
         return dict(title=page_title, pkgCount=len(pkg_list.keys()), pkgs=pkgs,
                     fasname='retired', eol=eol)
+
+    @expose()
+    def update_orphans(self, collections=''):
+        if not isinstance(collections, (list, tuple)):
+            collections = [collections]
+
+        if (len(collections) == 1) and (collections[0] == ''):
+            message = "Please select at least one collection."
+            flash(message)
+            url = '/acls/orphans'
+            redirect(url)
+
+        param = '&collctn='.join(collections)
+        url = '/acls/orphans?collctn=' + param
+        redirect(url)
 
