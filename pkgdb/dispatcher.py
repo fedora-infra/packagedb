@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2011  Red Hat, Inc.
+# Copyright © 2007-2012  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -1731,6 +1731,9 @@ class PackageDispatcher(controllers.Controller):
         if errors:
             return errors
 
+        pkg_list = tuple(pkg_list)
+        collctn_list = tuple(collctn_list)
+
         # Remove critpath from all packages in the given collections
         if reset:
             pkg_listing_ids = select((PackageListingTable.c.id,),
@@ -1738,8 +1741,6 @@ class PackageDispatcher(controllers.Controller):
                                                join(CollectionTable)))\
                               .where(PackageListingTable.c.critpath==True)
             if collctn_list:
-                if not isinstance(collctn_list, (tuple, list)):
-                    collctn_list = [collctn_list]
                 pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c.\
                                                         branchname.\
                                                         in_(collctn_list))
@@ -1765,12 +1766,13 @@ class PackageDispatcher(controllers.Controller):
         if pkg_list:
             invalidPkgs = []
             for pkg_name in pkg_list:
-                query = select((Package.id,))
-                query = query.where(Package.name == pkg_name)
+                query = select((Package.id,),
+                               and_(Package.name == pkg_name),
+                               limit=2)
                 result = query.execute()
-                row = result.fetchone()
+                row_count = result.rowcount
                 result.close()
-                if not row:
+                if row_count != 1:
                     invalidPkgs.append(str(pkg_name))
 
             if len(invalidPkgs) != 0:
@@ -1796,8 +1798,6 @@ class PackageDispatcher(controllers.Controller):
                                               critpath))
 
         if collctn_list:
-            if not isinstance(collctn_list, (tuple, list)):
-                collctn_list = [collctn_list]
             pkg_listing_ids = pkg_listing_ids.where(CollectionTable.c\
                                                       .branchname\
                                                       .in_(collctn_list))
@@ -1807,9 +1807,10 @@ class PackageDispatcher(controllers.Controller):
                                          STATUS['EOL'])
 
         try:
-            PackageListingTable.update()\
-                .where(PackageListingTable.c.id.in_(pkg_listing_ids))\
-                .values(critpath=critpath).execute()
+            update = PackageListingTable.update()
+            update = update.where(PackageListingTable.c.id.in_(pkg_listing_ids))
+            update = update.values(critpath=critpath)
+            update.execute()
             session.flush()
         except InvalidRequestError, e:
             session.rollback() #pylint:disable-msg=E1101

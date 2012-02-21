@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2007-2011  Red Hat, Inc.
+# Copyright (C) 2007-2012  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -135,13 +135,14 @@ class Collections(controllers.Controller):
         # The initial import doesn't have this information, though.
         try:
             #pylint:disable-msg=E1101
-            collection = select((Collection.id, Collection.name,
-                                 Collection.version, Collection.owner,
-                                 Collection.description, Collection.summary,
-                                 Collection.statuscode),
-                                and_(Collection.branchname == collctn)
-                               ).execute().fetchone()
-            if collection == None:
+            result = select((Collection.id, Collection.name,
+                             Collection.version, Collection.owner,
+                             Collection.description, Collection.summary,
+                             Collection.statuscode),
+                            and_(Collection.branchname == collctn)
+                           ).execute()
+            row_count = result.rowcount
+            if (row_count != 1):
 		# Test this with 0.6.4+.  fetchone() should have been fixed to
 		# always raise ResourceClosedError( subclas of
 		# InvalidRequresError) in that version.  If so, we can then get
@@ -158,13 +159,16 @@ class Collections(controllers.Controller):
                 error = dict(exc='InvalidCollection', packages=[])
             else:
                 error = dict(title=_('%(app)s -- Invalid Collection Name') % {
-                            'app': self.app_title},
-                        tg_template='pkgdb.templates.errors')
+                             'app': self.app_title}, packages=[],
+                             message='Invalid Collection Name',
+                             tg_template='pkgdb.templates.errors')
             return error
 
         # Why do we reformat the data returned from the database?
         # 1) We don't need all the information in the collection object
         # 2) We need statusname which is not in the specific table.
+        collection = result.fetchone()
+        result.close()
         collection_entry = {'name': collection[CollectionTable.c.name],
                 'version': collection[CollectionTable.c.version],
                 'owner': collection[CollectionTable.c.owner],
@@ -409,8 +413,8 @@ class Collections(controllers.Controller):
 
         if to_branch.statuscode == STATUS['EOL']:
             session.rollback() #pylint:disable-msg=E1101
-            flash(_('Will not branch packages in EOL collection %(branch)s') % {
-                'branch': branch})
+            flash(_('Will not branch packages in EOL collection %(branch)s') %
+                  {'branch': branch})
             return dict(exc='InvalidBranch')
 
         # Retrieve a koji session to get the list of packages from
@@ -501,13 +505,13 @@ class Collections(controllers.Controller):
                             Collection.version == 'devel'),
                        use_labels = True)
         result = query.execute()
-        row = result.fetchone()
-        result.close()
+        row_count = result.rowcount
         ver = ''
         koji_name = ''
         branch_name = ''
         new_disttag = ''
-        if (row):
+        if (row_count == 1):
+            row = result.fetchone()
             disttag = row[CollectionTable.c.disttag]
             verPat = re.compile("^\.fc(\d+)$")
             matchobj = verPat.match(disttag)
@@ -517,6 +521,7 @@ class Collections(controllers.Controller):
                 new_disttag = disttag[:start] + ver
                 koji_name = "f" + ver
                 branch_name = "f" + ver
+        result.close()
 
         return dict(title='New Collection Request', cname='Fedora',
                     cversion=ver, admins=admins, kname=koji_name,
@@ -534,9 +539,10 @@ class Collections(controllers.Controller):
                             Collection.version == collectn_ver))
         results = query.execute()
         rows = results.rowcount
+        results.close()
         if (rows > 0):
-            flash (_('The collection name and version (%(cname)s %(cversion)s) '
-                     'you specified already exists.  Try again.') %
+            flash (_('The collection name and version (%(cname)s %(cversion)s)'
+                     ' you specified already exists.  Try again.') %
                    {'cname': collectn_name, 'cversion': collectn_ver})
             redirect('/collections/')
 
@@ -558,9 +564,9 @@ class Collections(controllers.Controller):
                                 Collection.version == 'devel'),
                            use_labels = True)
             result = query.execute()
-            row = result.fetchone()
-            result.close()
-            if (row):
+            row_count = result.rowcount
+            if (row_count == 1):
+                row = result.fetchone()
                 disttag = row[CollectionTable.c.disttag]
                 verPat = re.compile("^\.fc(\d+)$")
                 matchobj = verPat.match(disttag)
@@ -576,6 +582,7 @@ class Collections(controllers.Controller):
                                                Collection.version == 'devel'))
                     update = update.values(disttag=new_disttag)
                     update.execute()
+            result.close()
 
         flash(_('Collection successfully added.'))
         redirect('/collections/')
