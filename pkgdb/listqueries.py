@@ -765,7 +765,7 @@ class ListQueries(controllers.Controller):
         if errors:
             return errors
 
-        pkg_names = select((Collection.c.branchname, PackageTable.c.name))\
+        pkg_names = select((CollectionTable.c.branchname, PackageTable.c.name))\
                 .where(and_(PackageTable.c.id==PackageListingTable.c.packageid,
                     PackageListingTable.c.collectionid==CollectionTable.c.id,
                     PackageListingTable.c.critpath==True))
