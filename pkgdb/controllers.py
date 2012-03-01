@@ -53,6 +53,7 @@ from pkgdb.search import Search
 from pkgdb.tag import Tags
 from pkgdb.user_rating import UserRatings
 from pkgdb.users import Users
+from pkgdb.semantic import DoapController
 
 from pkgdb.model import PackageBuild, Comment, Application
 
@@ -84,6 +85,7 @@ class Root(controllers.RootController):
     rating = UserRatings(app_title)
     users = Users(app_title)
     builds = BuildsController(app_title)
+    doap = DoapController()
 
 
     @expose(template="pkgdb.templates.login", allow_json=True)
