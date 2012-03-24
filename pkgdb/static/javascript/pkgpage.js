@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2011  Red Hat, Inc.
+ * Copyright (c) 2007-2012  Red Hat, Inc.
  *
  * This copyrighted material is made available to anyone wishing to use,
  * modify, copy, or redistribute it subject to the terms and conditions of the
@@ -255,6 +255,24 @@ function set_retirement(retirementDiv, data) {
         removeElement(ownerName);
         addElementClass(ownerButton, 'invisible');
         addElementClass(addMyselfButton, 'invisible');
+
+        var txt='';
+        txt+='<html>';
+        txt+='<head>';
+        txt+='<title>Retiring A Package</title>';
+        txt+='</head>';
+        txt+='<body>';
+        txt+='<h1>Retiring A Package</h1>';
+        txt+='<p>Have you completed the other ';
+        txt+='<a href="http://fedoraproject.org/wiki/';
+        txt+='How_to_remove_a_package_at_end_of_life">';
+        txt+=' steps</a> to retire this package.</p>';
+        txt+='</body>';
+        txt+='</html>';
+        var end_window = window.open("", 'Retirement Tasks',
+                                     "status=1,width=1000,height=300");
+        end_window.document.write(txt);
+
     } else {
 	logDebug('display unretired package');
         /* Reflect the fact that the package has been unretired */
