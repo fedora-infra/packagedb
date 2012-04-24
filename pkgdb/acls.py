@@ -33,6 +33,10 @@ Controller for handling Package ownership information.
 from sqlalchemy.orm import eagerload
 from sqlalchemy import case, cast
 from sqlalchemy.types import Integer 
+try:
+    from sqlalchemy.exceptions import InvalidRequestError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError
 
 from turbogears import controllers, error_handler, expose, paginate, validate
 from turbogears import validators
@@ -264,8 +268,15 @@ class Acls(controllers.Controller):
         if not eol:
             # We don't want EOL releases, filter those out of each clause
             #pylint:disable-msg=E1101
-            query = query.join(['listings2', 'collection']).filter(
-                    Collection.statuscode!=STATUS['EOL'])
+            try:
+                # sqlalchemy >= 0.7
+                query = query.join('listings2', 'collection').filter(
+                        Collection.statuscode!=STATUS['EOL'])
+            except InvalidRequestError:
+                # sqlalchemy < 0.7
+                query = query.join(['listings2', 'collection']).filter(
+                        Collection.statuscode!=STATUS['EOL'])
+
         pkg_list = []
         statuses = set()
         collectn_map = {}

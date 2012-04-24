@@ -36,6 +36,11 @@ import urllib
 import sqlalchemy
 from sqlalchemy.orm import lazyload
 
+try:
+    from sqlalchemy.exceptions import InvalidRequestError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError
+
 from turbogears import controllers, expose, paginate, redirect, identity
 
 from pkgdb.model import Collection, Package, PackageListing, \
@@ -139,8 +144,15 @@ class Users(controllers.Controller):
 
         if not eol:
             # We don't want EOL releases, filter those out of each clause
-            query = query.join(['listings2', 'collection']).filter(
-                        Collection.statuscode != STATUS['EOL'])
+            try:
+                # sqlalchemy >= 0.7
+                query = query.join('listings2', 'collection').filter(
+                            Collection.statuscode != STATUS['EOL'])
+            except InvalidRequestError:
+                # sqlalchemy < 0.7
+                query = query.join(['listings2', 'collection']).filter(
+                            Collection.statuscode != STATUS['EOL'])
+
 
         queries = []
         if 'owner' in acls:
@@ -160,18 +172,36 @@ class Users(controllers.Controller):
 
         if acls:
             # Return any package on which the user has an Approved acl.
-            queries.append(query.join(['listings2', 'people2']).join(
-                    ['listings2', 'people2', 'acls2']).filter(sqlalchemy.and_(
+            approved_acl_query = query
+            try:
+                # sqlalchemy >= 0.7
+                approved_acl_query = query.join(
+                    'listings2', 'people2'
+                ).join(
+                    'listings2', 'people2', 'acls2'
+                )
+            except InvalidRequestError:
+                # sqlalchemy < 0.7
+                approved_acl_query = query.join(
+                    ['listings2', 'people2']
+                ).join(
+                    ['listings2', 'people2', 'acls2']
+                )
+
+            approved_acl_query = approved_acl_query.filter(sqlalchemy.and_(
                     Package.statuscode.in_((STATUS['Approved'],
                         STATUS['Awaiting Review'], STATUS['Under Review'])),
                     PersonPackageListing.username == fasname,
                     PersonPackageListingAcl.statuscode == STATUS['Approved'],
                     PackageListing.statuscode.in_((STATUS['Approved'],
                         STATUS['Awaiting Branch'], STATUS['Awaiting Review']))
-                    )))
+            ))
+
             # Return only those acls which the user wants listed
-            queries[-1] = queries[-1].filter(
+            approved_acl_query = approved_acl_query.filter(
                     PersonPackageListingAcl.acl.in_(acls))
+
+            queries.append(approved_acl_query)
 
         if len(queries) == 2:
             my_pkgs = Package.query.select_from(
