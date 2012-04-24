@@ -35,7 +35,11 @@ Controller to process requests to change package information.
 import xmlrpclib
 
 from sqlalchemy import and_, not_, select
-from sqlalchemy.exceptions import InvalidRequestError, SQLError
+try:
+    from sqlalchemy.exceptions import InvalidRequestError, SQLError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError, SQLAlchemyError as SQLError
+
 from sqlalchemy.orm import eagerload, lazyload
 
 from turbogears import controllers, error_handler, expose, identity, \
