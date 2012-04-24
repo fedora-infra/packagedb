@@ -49,7 +49,10 @@ import rpmUtils.transaction
 from turbogears import config, view
 from cherrypy import request
 from sqlalchemy import select, and_
-from sqlalchemy.exceptions import DataError
+try:
+    from sqlalchemy.exceptions import DataError
+except ImportError:
+    from sqlalchemy.exc import DataError
 
 from bugzilla import Bugzilla
 import memcache

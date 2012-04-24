@@ -33,7 +33,11 @@ Controller for displaying Package Bug Information.
 from urllib import quote
 import xmlrpclib
 from turbogears import controllers, expose, config, redirect
-from sqlalchemy.exceptions import InvalidRequestError
+try:
+    from sqlalchemy.exceptions import InvalidRequestError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError
+
 from cherrypy import request
 from fedora.tg.tg1utils import request_format
 from operator import itemgetter, attrgetter

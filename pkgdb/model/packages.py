@@ -44,7 +44,12 @@ import logging
 from sqlalchemy import Column, ForeignKeyConstraint, Integer, Table, Text
 from sqlalchemy import Boolean, DateTime, func, UniqueConstraint
 from sqlalchemy import text, DDL, Index
-from sqlalchemy.exceptions import InvalidRequestError
+
+try:
+    from sqlalchemy.exceptions import InvalidRequestError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError
+
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import backref, eagerload, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection,\

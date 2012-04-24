@@ -42,7 +42,10 @@ import re
 
 from turbogears.validators import Invalid, FancyValidator, Set, Regex, \
         UnicodeString
-from sqlalchemy.exceptions import InvalidRequestError
+try:
+    from sqlalchemy.exceptions import InvalidRequestError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError
 
 try:
     from fedora.textutils import to_unicode
