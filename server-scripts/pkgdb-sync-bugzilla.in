@@ -49,7 +49,7 @@ configspec = '''
     fas.url = string(default = '')
     fas.username = string(default = '')
     fas.password = string(default = '')
-    notify.email = string(default = '')
+    notify.email = force_list(default = list(''))
     debug = boolean(default = 'False')
 '''.splitlines()
 cfg = ConfigObj('/etc/pkgdb-sync-bugzilla.cfg', configspec = configspec)
@@ -224,12 +224,12 @@ def send_email(fromAddress, toAddress, subject, message):
     This will be replaced by sending messages to a log later.
     '''
     msg = Message()
-    msg.add_header('To', toAddress)
+    msg.add_header('To', ','.join(toAddress))
     msg.add_header('From', fromAddress)
     msg.add_header('Subject', subject)
     msg.set_payload(message)
     smtp = smtplib.SMTP('bastion')
-    smtp.sendmail(fromAddress, [toAddress], msg.as_string())
+    smtp.sendmail(fromAddress, toAddress, msg.as_string())
     smtp.quit()
 
 if __name__ == '__main__':
