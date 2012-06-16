@@ -27,7 +27,12 @@ from sqlalchemy import Table, Column, Integer, Text, String
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, text
 from sqlalchemy import select, not_, Boolean, PassiveDefault, func
 from sqlalchemy import PrimaryKeyConstraint, DDL, Index
-from sqlalchemy.exceptions import InvalidRequestError
+
+try:
+    from sqlalchemy.exceptions import InvalidRequestError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError
+
 from sqlalchemy.orm import polymorphic_union, relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from turbogears.database import metadata, mapper, get_engine, session

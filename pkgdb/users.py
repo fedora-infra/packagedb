@@ -37,8 +37,11 @@ import urllib
 
 import sqlalchemy
 from sqlalchemy import and_, select, union
-from sqlalchemy.exceptions import InvalidRequestError
 from sqlalchemy.orm import lazyload
+try:
+    from sqlalchemy.exceptions import InvalidRequestError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError
 
 from turbogears import config, controllers, expose, flash, identity, paginate
 from turbogears import redirect, validate, validators

@@ -27,7 +27,11 @@ Controller for displaying Applications related information
 # :E1101: SQLAlchemy monkey patches database fields into the mapper classes so
 #   we have to disable this when accessing an attribute of a mapped class.
 
-from sqlalchemy.exceptions import InvalidRequestError
+try:
+    from sqlalchemy.exceptions import InvalidRequestError
+except ImportError:
+    from sqlalchemy.exc import InvalidRequestError
+
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import and_, literal_column, union
 from sqlalchemy import Text, Integer, func, desc
