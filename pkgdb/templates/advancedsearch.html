@@ -20,11 +20,15 @@
                       } else {
                           operator = "OR"
                       }
-                      window.location = "${tg.url('/search/package/')}" +
+                      new_page = fedora.baseurl + "/search/package/" +
                               document.forms[1].searchwords.value +
                               document.forms[1].collection.value + '/' +
                               searchon + '/' +
                               operator + '/';
+                      if (!fedora.identity.anonymous) {
+                          new_page = new_page +'?' + fedora.identity.token;
+                      }
+                      window.location = new_page;
                       return false
                       }
       /* ]]> */
