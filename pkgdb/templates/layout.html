@@ -64,8 +64,14 @@
   <body py:attrs="select('@*')" class="tundra">
     <div py:for="js in tg_js_bodytop" py:replace="XML(js.display())" />
     <div id="wrapper">
-      <div id="head">
+      <div id="head" class="head-${config.get('deployment_type', 'dev')}">
         <h1><a href="http://fedoraproject.org/index.html">Fedora</a></h1>
+        <h2 py:if="config.get('deployment_type', 'dev')=='dev'">
+          DEVELOPMENT INSTANCE
+        </h2>
+        <h2 py:if="config.get('deployment_type', 'dev')=='stg'">
+          STAGING INSTANCE
+        </h2>
         <ul class="toolbar" id="#main-toolbar">
           <logintoolitem href="${tg.url('/users/info')}" />
         </ul>
