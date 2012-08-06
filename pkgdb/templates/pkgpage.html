@@ -97,18 +97,18 @@ import simplejson
           <td>
             <py:choose>
               <py:when test="pkg.collection.gitbranchname=='master' and pkg.status.locale['C'].statusname=='Approved'">
-                <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s;hb=%s'
-                  % (pkgUrlName, pkg.collection.gitbranchname, pkg.collection.gitbranchname)}">
+                <a class="cvs" href="${'http://pkgs.fedoraproject.org/cgit/%s.git/tree/?h=%s'
+                  % (pkgUrlName, pkg.collection.gitbranchname)}">
                   <span class="invisible">Spec File</span></a>
               </py:when>
               <py:when test="pkg.collection.gitbranchname and pkg.status.locale['C'].statusname=='Approved'">
-                <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s/master;hb=%s/master'
-                  % (pkgUrlName, pkg.collection.gitbranchname, pkg.collection.gitbranchname)}">
+                <a class="cvs" href="${'http://pkgs.fedoraproject.org/cgit/%s.git/tree/?h=%s'
+                  % (pkgUrlName, pkg.collection.gitbranchname)}">
                   <span class="invisible">Spec File</span></a>
               </py:when>
               <py:when test="pkg.status.locale['C'].statusname=='Approved' and pkg.collection.status.locale['C'].statusname != 'EOL'">
-                <a class="cvs" href="${'http://pkgs.fedoraproject.org/gitweb/?p=%s.git;a=tree;h=refs/heads/%s/master;hb=%s/master'
-                  % (pkgUrlName, pkg.collection.branchname, pkg.collection.branchname)}">
+                <a class="cvs" href="${'http://pkgs.fedoraproject.org/cgit/%s.git/tree/?h=%s'
+                  % (pkgUrlName, pkg.collection.branchname)}">
                   <span class="invisible">Spec File</span></a>
               </py:when>
             </py:choose>
