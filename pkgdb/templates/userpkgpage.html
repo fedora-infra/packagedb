@@ -80,10 +80,10 @@
         </li>
         <li><a href="http://koji.fedoraproject.org/koji/search?type=package&amp;match=glob&amp;terms=$build.name" class="koji">Build Status</a>
         </li>
-        <li><a href="https://admin.fedoraproject.org/updates/$build.name"
+        <li><a href="https://admin.fedoraproject.org/updates/${build.name}"
                class="bodhi">Update Status</a>
         </li>
-        <li><a href="http://cvs.fedoraproject.org/viewcvs/rpms/$build.name/${build.repo.shortname}" class="cvs">Package Source</a>
+        <li><a href="http://pkgs.fedoraproject.org/cgit/${build.name}.git/tree?h=${build.repo.shortname}" class="cvs">Package Source</a>
         </li>
         <li><a href="${tg.url('/acls/bugs/'+build.name)}" class="bugz">
             Bug Reports</a>
