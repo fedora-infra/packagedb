@@ -4,71 +4,23 @@
   xmlns:xi="http://www.w3.org/2001/XInclude"
   xml:lang="en" lang="en">
   <xi:include href="layout.html" />
-  <head />
-  <body>
-    <h3>Search Packages</h3>
-    <script type="text/javascript">
-      /* <![CDATA[ */
-                      function jump_search(){
-                      for (i=0;i<document.forms[1].searchon.length;i++) {
-                          if (document.forms[1].searchon[i].checked) {
-                              searchon = document.forms[1].searchon[i].value;
-                          }
-                      }
-                      if (document.forms[1].operator[0].checked) {
-                          operator = "AND"
-                      } else {
-                          operator = "OR"
-                      }
-                      new_page = fedora.baseurl + "/search/package/" +
-                              document.forms[1].searchwords.value +
-                              document.forms[1].collection.value + '/' +
-                              searchon + '/' +
-                              operator + '/';
-                      if (!fedora.identity.anonymous) {
-                          new_page = new_page +'?' + fedora.identity.token;
-                      }
-                      window.location = new_page;
-                      return false
-                      }
-      /* ]]> */
+  <head>
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true" >
     </script>
-    <p>This is the advanced package search page.</p>
-    
-    <form action="${tg.url('/search/package/')}"
-          method="post" onsubmit="return jump_search()">
-    <p>Keywords: <input id="package" name="searchwords" size="20" type="text" />
-    
-    <input type="radio" id="AND" name="operator" value="AND" checked="checked" />
-        <label for="AND">AND</label>
-    <input type="radio" id="OR" name="operator" value="OR" />
-        <label for="OR">OR</label>
-    <input type="submit" value="Search" /> 
-    </p>
-    
-    <p>Release: 
-        <select id="collection" name="collection">
-            <option py:for="collection in collections" value="$collection.id">
-              $collection.name $collection.version</option>
-        </select>
-    </p>
-    <p>Search on:
-    <input type="radio" id="both" name="searchon"
-           value="both" checked="checked" />
-        <label for="both">name and description</label>
-    <input type="radio" id="name" name="searchon" value="name" />
-        <label for="name">name</label>
-    <input type="radio" id="description" name="searchon" value="description" />
-        <label for="description">description</label>
-    </p>
-   
-    </form>
-    <br />
-    <p>You can build your query above, but you can also play around with the URL:
-    </p>
-    <p><em>/search/package/vim emacs/8/name/OR</em> - searches for all packages
-      containing the words vim or emacs in their name in the Fedora devel
-      collections</p>
+    <script type="text/javascript">
+        dojo.require("dijit.Tooltip");
+        dojo.addOnLoad(function(){
+        });
+    </script>
+  </head>
+  <body>
+    <h2>Advanced Search</h2>
+    <xi:include href="_adv_search.html" />
+
+    ${adv_search_box()}
+
     </body>
 </html>
 

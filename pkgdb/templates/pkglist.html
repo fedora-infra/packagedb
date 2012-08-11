@@ -11,12 +11,12 @@
         <py:choose test="mode">
           <py:when test="'tag/'">
             <a href="${tg.url('/packages/%s/%s' %
-                     (pkg['name'], pkg.repo.shortname))}"
-               py:content="'%s (%s)' % (pkg['name'], pkg.repo.shortname)"
+                     (pkg['name'], pkg['cbname']))}"
+               py:content="'%s (%s)' % (pkg['name'], pkg['cbname'])"
                class="PackageName">Build Name</a>
           </py:when>
           <py:when test="'/packages'">
-            <a href="${tg.url('%s/%s/%s' %(mode, pkg['name'], pkg.repo.shortname))}"
+            <a href="${tg.url('%s/%s/%s' %(mode, pkg['name'], pkg['cbname']))}"
                py:content="pkg['name']" class="PackageName">Package Name</a>
             <em>-- ${pkg['summary']}</em>
           </py:when>
@@ -45,12 +45,13 @@
             </span>
           </py:when>
           <py:otherwise>
-            <py:for each="repo in buildrepos[pkg.name]">
-              [<a py:content="repo.shortname"
+            <span py:for="repo in sorted(pkg['repos'].keys())">
+              [<a py:content="repo"
                   href="${tg.url('/packages/%s/%s' %
-                        (pkg.name, pkg.repo.shortname))}">
+                        (pkg.name, repo))}">
+
                 Collection shortname</a>]
-            </py:for>
+            </span>
           </py:otherwise>
         </dd>
         <br />

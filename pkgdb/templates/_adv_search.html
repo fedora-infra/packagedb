@@ -1,0 +1,116 @@
+<html py:strip=""
+      xmlns:py="http://genshi.edgewall.org/">
+  <div py:def="adv_search_box(apps=True, builds=True, packages=True)"
+       id="advanced_search">
+    <div>
+      <form action="${tg.url('/advsearch_dispatcher')}" method="POST">
+        <table>
+          <tr>
+            <td>Keywords:</td>
+            <td>
+              <input name="searchwords" value="${searchwords}" style="size:50" />
+            </td>
+            <td align="center">
+              <label for="AND">AND</label>
+              <input py:if="operator=='AND'" type="radio" id="AND"
+                     name="operator" value="AND" checked="checked" />
+              <input py:if="operator!='AND'" type="radio" id="AND"
+                     name="operator" value="AND" checked="checked" />
+            </td>
+            <td align="center">
+              <label for="OR">OR</label>
+              <input py:if="operator=='OR'" type="radio" id="OR"
+                     name="operator" value="OR" checked="checked" />
+              <input py:if="operator!='OR'" type="radio" id="OR"
+                     name="operator" value="OR" />
+            </td>
+          </tr>
+          <tr>
+            <td>Collection:</td>
+            <td>
+              <select id="collection_id" name="collection_id">
+                <span py:for="collection in collections">
+                  <option py:if="collection_id == collection['id']"
+                          value="${collection['id']}" selected='selected'>
+                    ${collection['name']} ${collection['version']}
+                  </option>
+                  <option py:if="collection_id != collection['id']"
+                          value="${collection['id']}">
+                    ${collection['name']} ${collection['version']}
+                  </option>
+                </span>
+              </select>
+            </td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+          </tr>
+          <tr>
+            <td>Search on:</td>
+            <td>
+              <label for="both">name and description</label>
+              <input py:if="searchon=='both'" type="radio" id="both"
+                     name="searchon" value="both" checked="checked" />
+              <input py:if="searchon!='both'" type="radio" id="both"
+                     name="searchon" value="both" />
+            </td>
+            <td>
+              <label for="name">name</label>
+              <input py:if="searchon=='name'" type="radio" id="name"
+                     name="searchon" value="name" checked="checked" />
+              <input py:if="searchon!='name'" type="radio" id="name"
+                     name="searchon" value="name" />
+            </td>
+            <td>
+              <label for="description">description</label>
+              <input py:if="searchon=='description'" type="radio"
+                     id="description" name="searchon" value="description"
+                     checked="checked" />
+              <input py:if="searchon!='description'" type="radio"
+                     id="description" name="searchon" value="description" />
+            </td>
+          </tr>
+          <tr>
+            <td colspan="4" align="center">
+              <span style="white-space: nowrap;">
+                <input py:if="apps" class="button" name="submit"
+                       type="Submit" value="Applications" />
+                <input py:if="builds" class="button" name="submit"
+                       type="Submit" value="Builds" />
+                <input py:if="packages" class="button" name="submit"
+                       type="Submit" value="Packages" />
+                <img id="search-help"
+                     style="padding-left: 6px; padding-top: 2px;"
+                     src="${tg.url('/static/images/info.png')}" />
+              </span>
+            </td>
+          </tr>
+        </table>
+        <div dojoType="dijit.Tooltip" connectId="search-help"
+             position="below">
+          <div py:if="apps">
+            <h3>Search in Applications</h3>
+            <p>
+              Start here to look for Applications whose name and/or
+              description contain the keyword(s) specified.
+            </p>
+          </div>
+          <div py:if="builds">
+            <h3>Search in Builds</h3>
+            <p>
+              Start here to look for Builds whose name and/or
+              description contain the keyword(s) specified.
+            </p>
+          </div>
+          <div py:if="packages">
+            <h3>Search in Packages</h3>
+            <p>
+              Start here to look for Packages whose name and/or
+              description contain the keyword(s) specified.
+            </p>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</html>
+

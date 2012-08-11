@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xml:lang="en" lang="en">
+  <xi:include href="layout.html" />
+  <xi:include href="paginator.html" />
+  <?python
+    from pkgdb.lib.dt_utils import fancy_delta
+    from pkgdb.lib.text_utils import highlight
+    from genshi import HTML
+  ?>
+  <head>
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true" >
+    </script>
+    <script type="text/javascript">
+        dojo.require("dijit.Tooltip");
+        dojo.addOnLoad(function(){
+        });
+    </script>
+  </head>
+  <body>
+    <div id="main-panel">
+      <h2 style="color: #337acc;" >Builds</h2>
+      <xi:include href="_adv_search.html" />
+      ${adv_search_box(packages=False, apps=False)}
+
+      <p>
+      Number of items found = $count
+      </p>
+
+      <div py:if="build_list" class="app-search-result-box">
+        ${paginate_nav()}
+        <table>
+          <tr>
+            <th>&nbsp;</th>
+            <th>Package</th>
+            <th>Repo</th>
+            <th>Description</th>
+          </tr>
+          <tr py:for="b in build_list">
+            <td class="col-icon">
+              <a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b['repo'], b['name'], b['epoch'], b['version'], b['release'], b['arch']))}">
+                <img src="${tg.url('/static/images/build.png')}" />
+              </a>
+            </td>
+            <td py:if="searchon=='name' or searchon=='both'">
+              <div class="app-name">
+                <a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b['repo'], b['name'], b['epoch'], b['version'], b['release'], b['arch']))}">
+                  ${HTML("%s-%s-%s.%s" % (highlight(b['name'], searchwords), b['version'], b['release'], b['arch']))}
+                </a>
+              </div>
+            </td>
+            <td py:if="searchon=='description'">
+              <div class="app-name">
+                <a href="${tg.url('/builds/show/%s/%s/%s/%s/%s/%s' % (b['repo'], b['name'], b['epoch'], b['version'], b['release'], b['arch']))}">
+                  ${HTML("%s-%s-%s.%s" % (b['name'], b['version'], b['release'], b['arch']))}
+                </a>
+              </div>
+            </td>
+            <td>
+              ${b['repo']}
+            </td>
+            <td py:if="searchon=='description' or searchon=='both'">
+              ${HTML(highlight(b['desc'], searchwords))}
+            </td>
+            <td py:if="searchon=='name'">
+              ${b['desc']}
+            </td>
+          </tr>
+          <tr py:if="count==0">
+            <td colspan="4">No packagebuild found</td>
+          </tr>
+        </table>
+        ${paginate_nav()}
+      </div>
+
+    </div>
+
+  </body>
+</html>

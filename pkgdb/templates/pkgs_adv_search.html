@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:py="http://genshi.edgewall.org/"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xml:lang="en" lang="en">
+  <xi:include href="layout.html" />
+  <xi:include href="paginator.html" />
+  <?python
+    from pkgdb.lib.dt_utils import fancy_delta
+    from pkgdb.lib.text_utils import highlight
+    from genshi import HTML
+  ?>
+  <head>
+    <script type="text/javascript"
+            src="${tg.url('/static/js/dojo/dojo.js')}"
+            djConfig="parseOnLoad: true" >
+    </script>
+    <script type="text/javascript">
+        dojo.require("dijit.Tooltip");
+        dojo.addOnLoad(function(){
+        });
+    </script>
+  </head>
+  <body>
+    <div id="main-panel">
+      <h2 style="color: #337acc;" >Packages Advanced Search</h2>
+      <xi:include href="_adv_search.html" />
+      ${adv_search_box(apps=False, builds=False)}
+
+      <p>
+        Number of items found = $count
+      </p>
+
+      <div py:if="searchwords" class="app-search-result-box">
+        ${paginate_nav()}
+        <table>
+          <tr py:for="pkg in pkg_list">
+            <td>
+              <div py:if="searchon=='name' or searchon=='both'"
+                   class="app-name">
+                <a href="${tg.url('/acls/name/%s' % pkg['name'])}">
+                  ${HTML(highlight(pkg['name'], searchwords))}
+                </a>
+              </div>
+              <div py:if="searchon=='description'" class="app-name">
+                <a href="${tg.url('/acls/name/%s' % pkg['name'])}">
+                  ${pkg['name']}
+                </a>
+              </div>
+              <span py:choose="" py:strip="">
+                <div py:if="searchon=='description' or searchon=='both'">
+                  <span py:when="pkg['desc']" py:strip="">
+                    ${HTML(highlight(pkg['desc'], searchwords))} 
+                  </span>
+                </div>
+                <div py:if="searchon=='name'">
+                  <span py:when="pkg['desc']" py:strip="">
+                    ${pkg['desc']} 
+                  </span>
+                </div>
+              </span>
+            </td>
+          </tr>
+          <tr py:if="count==0">
+            <td colspan="3">No application found</td>
+          </tr>
+        </table>
+        ${paginate_nav()}
+      </div>
+    </div>
+
+  </body>
+</html>
