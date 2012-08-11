@@ -31,7 +31,6 @@ Controller to process requests to change package information.
 #   attributes from a base class that pylint can't see.
 # :W0201: SQLAlchemy mappers define additional attributes on classes so we
 #   can't know about the instance attributes all the time.
-
 import xmlrpclib
 
 from sqlalchemy import and_, not_, select

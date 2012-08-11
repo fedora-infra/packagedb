@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2007-2012  Red Hat, Inc.
+# Copyright (C) 2012  Frank Chiulli
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -31,7 +32,8 @@ Controller for handling Package ownership information.
 #   classes so we have to disable these checks.
 # :C0322: Disable space around operator checking in multiline decorators
 from sqlalchemy.orm import eagerload
-from sqlalchemy import and_, case, cast, select
+from sqlalchemy import and_, case, cast, or_, select
+from sqlalchemy.sql import func
 from sqlalchemy.types import Integer 
 
 from turbogears import controllers, error_handler, expose, flash, paginate
@@ -42,12 +44,19 @@ from pkgdb.model import Package, PackageTable, Collection, CollectionTable, \
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
+from pkgdb.lib.search import get_collection_info
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
 from fedora.tg.tg1utils import request_format
 
 COLLECTION = 21
+
+#
+# collection.id = 8 => Fedora devel
+#
+COLLECTION_ID = 8
+
 
 #
 # Exceptions.
@@ -89,6 +98,135 @@ class Acls(controllers.Controller):
         self.bugs = Bugs(app_title)
         self.list = Letters(app_title)
         self.dispatcher = PackageDispatcher()
+
+    @expose(template='pkgdb.templates.pkgs_adv_search')
+    @validate(validators = {'searchwords':
+              validators.UnicodeString(not_empty=False, strip=True)})
+    @paginate('pkg_list', limit=50, default_order=('name'), max_limit=None,
+              max_pages=13)
+    #pylint:disable-msg=C0322
+    def adv_search(self, searchwords, operator='AND',
+                   collection_id=COLLECTION_ID, searchon='both'):
+        '''Package advanced search result
+
+        :arg searchwords: one or more words to search for.
+        :arg operator: 'AND'/'OR' as applied to searchwords.
+        :arg collection_id: collection to search
+        :arg searchon: 'name', 'description' or 'both'
+
+        Search is performed on name, description.
+        Results are sorted according to name.
+        Parts where pattern was recognized are shown in listing.
+        '''
+
+        pkg_list = []
+
+        #
+        # Do some validation.
+        #
+        if len(searchwords) == 0:
+            flash('Specify one or more keywords...')
+
+        if ((operator != 'AND') and (operator != 'OR')):
+            flash('Invalid operator (%s).  "AND"/"OR" are acceptable' %
+                  operator)
+
+        if ((searchon != 'name') and (searchon != 'description') and
+            (searchon != 'both')):
+            flash('Invalid search on (%s).  Valid options: "name", ' +
+                  '"description" or "both"' % searchon)
+
+        #
+        # case insensitive
+        #
+        swords = searchwords.lower()
+        swords = swords.split()
+
+        pkg_query = select((Package.name, Package.description),
+                           and_(Package.id == PackageListing.packageid,
+                                PackageListing.collectionid == collection_id,
+                                Package.statuscode != STATUS['Removed']),
+                           use_labels=True)
+
+        if operator == 'OR':
+            clauses = []
+            for searchword in swords:
+                pattern = '%' + searchword + '%'
+                if searchon == 'description':
+                    #pylint:disable=E1101
+                    clauses.append(func.lower(Package.description).\
+                                              like(pattern))
+                    #pylint:enable=E1101
+
+                elif searchon in ['name', 'both']:
+                    clauses.append(func.lower(Package.name).\
+                                              like(pattern))
+                    if searchon == 'both':
+                        #pylint:disable=E1101
+                        clauses.append(func.lower(Package.description).\
+                                                  like(pattern))
+                        #pylint:enable=E1101
+
+            pkg_query = pkg_query.where(and_(or_(*clauses)))
+
+        else: # AND operator
+            for searchword in swords:
+                pattern = '%' + searchword + '%'
+                clauses = []
+                if searchon == 'description':
+                    #pylint:disable=E1101
+                    clauses.append(func.lower(Package.description).\
+                                              like(pattern))
+                    #pylint:enable=E1101
+
+                elif searchon in ['name', 'both']:
+                    clauses.append(func.lower(Package.name).like(pattern))
+                    if searchon == 'both':
+                        #pylint:disable=E1101
+                        clauses.append(func.lower(Package.description).\
+                                                  like(pattern))
+                        #pylint:enable=E1101
+
+                pkg_query = pkg_query.where(or_(*clauses))
+
+        #
+        # Build a dictionary.
+        # pkg[<pkg_name>]
+        #
+        pkgs = {}
+        for row in pkg_query.execute():
+            pkg_name = row[PackageTable.c.name]
+            pkg_desc = row[PackageTable.c.description]
+            if not pkgs.has_key(pkg_name):
+                pkgs[pkg_name] = []
+                pkgs[pkg_name].append(pkg_desc)
+
+        result = select((CollectionTable,),
+                        and_(Collection.id == collection_id)).execute()
+        active_collection = result.fetchone()
+
+        #
+        # @paginate does not like dictionaries.  But it does like a list of
+        # dictionaries.
+        #
+        pkg_list = []
+        pkg_names = pkgs.keys()
+        pkg_names.sort()
+        for name in pkg_names:
+            pkg_info = {}
+            pkg_info['name'] = name
+            pkg_info['desc'] = pkgs[name][0]
+
+            pkg_list.append(pkg_info)
+
+        collection_list = []
+        collection_list = get_collection_info()
+
+        return dict(title=self.app_title,  searchwords=searchwords,
+                    operator=operator, collections=collection_list,
+                    collection_id=int(collection_id), searchon=searchon,
+                    pkg_list=pkg_list, count=len(pkg_list))
+
 
     @validate(validators=AclName())
     @error_handler()

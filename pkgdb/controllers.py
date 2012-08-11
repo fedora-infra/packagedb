@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2007-2011 Red Hat, Inc.
+# Copyright (C) 2012 Frank Chiulli
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -16,6 +17,7 @@
 # may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Author(s): Toshio Kuratomi <tkuratom@redhat.com>
+# Author(s):         Frank Chiulli <fchiulli@fedoraproject.org>
 #
 '''
 Root Controller for the PackageDB.  All controllers are mounted directly or
@@ -132,7 +134,23 @@ class Root(controllers.RootController):
         redirect('/')
 
 
-    
+    @expose(template='pkgdb.templates.advancedsearch')
+    def advsearch_dispatcher(self, searchwords='', operator='', collection_id='',
+                             searchon='', submit='' ):
+
+        if submit == 'Builds':
+            redirect('/builds/adv_search/%s/%s/%s/%s' % \
+                     (searchwords, operator, collection_id, searchon))
+        elif submit == 'Applications':
+            redirect('/apps/adv_search/%s/%s/%s/%s' % \
+                     (searchwords, operator, collection_id, searchon))
+        elif submit == 'Packages':
+            redirect('/acls/adv_search/%s/%s/%s/%s' % \
+                     (searchwords, operator, collection_id, searchon))
+
+        redirect('/search')
+
+
     @expose(content_type='application/xml', template='pkgdb.templates.opensearch')
     def opensearch(self, xmlfile):
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright © 2009  Red Hat, Inc.
+# Copyright (C) 2012  Frank Chiulli
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -16,6 +17,7 @@
 # may only be used or replicated with the express permission of Red Hat, Inc.
 #
 # Red Hat Project Author(s): Martin Bacovsky <mbacovsk@redhat.com>
+# Author(s):                 Frank Chiulli <fchiulli@fedoraproject.org>
 #
 '''
 Controller for displaying Applications related information
@@ -33,8 +35,8 @@ except ImportError:
     from sqlalchemy.exc import InvalidRequestError
 
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.expression import and_, literal_column, union
-from sqlalchemy import Text, Integer, func, desc
+from sqlalchemy.sql.expression import and_, or_, literal_column, union
+from sqlalchemy import Text, Integer, func, desc, select
 
 from turbogears import controllers, expose, identity, redirect, flash
 from turbogears import paginate, validate, validators
@@ -43,6 +45,8 @@ from turbogears.database import session
 from pkgdb.model import Comment, Application, Icon, IconName, PackageBuild
 from pkgdb.model import Tag, Usage, ApplicationUsage, ApplicationTag
 from pkgdb.model import MimeType, Theme
+from pkgdb.model import Collection, ApplicationsTable, CollectionTable
+from pkgdb.lib.search import get_collection_info
 from pkgdb.lib.utils import mod_grp
 from pkgdb import release, _
 from pkgdb.lib.text_utils import excerpt
@@ -55,6 +59,12 @@ import re
 
 import logging
 log = logging.getLogger('pkgdb.applications')
+
+#
+# Fedora devel
+#
+COLLECTION_ID = 8
+
 
 class ApplicationsController(controllers.Controller):
     
@@ -77,9 +87,12 @@ class ApplicationsController(controllers.Controller):
         redirect('/apps/name/list/a*')
 
     @expose(template='pkgdb.templates.apps_search')
-    @validate(validators = {'pattern': validators.UnicodeString(not_empty=False, strip=True)})
-    @paginate('app_list', limit=50, default_order=('-score','name'), max_limit=None,
-            max_pages=13) #pylint:disable-msg=C0322
+    @validate(validators = {'pattern':
+                            validators.UnicodeString(not_empty=False,
+                                                     strip=True)})
+    @paginate('app_list', limit=50, default_order=('-score','name'),
+              max_limit=None, max_pages=13)
+    #pylint:disable-msg=C0322
     def search(self, pattern=u''):
         '''Applications search result
 
@@ -110,7 +123,10 @@ class ApplicationsController(controllers.Controller):
                         'apptype': app['apptype'],
                         'score': 0,
                         'summary': app['summary'] or '',
-                        'descr': ''.join(excerpt(app['description'], text_pattern, max=120, all=True)) or app['description'][:120],
+                        'descr': ''.join(excerpt(app['description'],
+                                                 text_pattern, max=120,
+                                                 all=True)) or \
+                                 app['description'][:120],
                         'comments': [],
                         'tags': [],
                         'mimetypes': [],
@@ -120,7 +136,10 @@ class ApplicationsController(controllers.Controller):
                 if app['summary'] and not result['summary']:
                     result['summary'] = app['summary']
                 if app['description'] and not result['descr']:
-                    result['descr'] = ''.join(excerpt(app['description'], text_pattern, max=120, all=True)) or app['description'][:120]
+                    result['descr'] = ''.join(excerpt(app['description'],
+                                                      text_pattern, max=120,
+                                                      all=True)) or \
+                                      app['description'][:120]
                 result['score'] += app['score']
                 if app['foundin'] == 'Tags':
                     result['tags'].append(app['data'])
@@ -129,19 +148,157 @@ class ApplicationsController(controllers.Controller):
                 elif app['foundin'] == 'Usage':
                     result['usage'].append(app['data'])
                 elif app['foundin'] == 'Comments':
-                    result['comments'].append(''.join(excerpt(app['data'], text_pattern, all=True)))
+                    result['comments'].append(''.join(excerpt(app['data'],
+                                                      text_pattern, all=True)))
 
                 merged_results[(app['name'], app['apptype'])] = result
 
-            app_list = sorted(merged_results.values(), key=itemgetter('score'), reverse=True)
+            app_list = sorted(merged_results.values(),
+                              key=itemgetter('score'), reverse=True)
         return dict(title=self.app_title, version=release.VERSION,
             pattern=pattern, app_list=app_list)
+
+
+    @expose(template='pkgdb.templates.apps_adv_search')
+    @validate(validators = {'searchwords':
+                  validators.UnicodeString(not_empty=False, strip=True)})
+    @paginate('app_list', limit=50, default_order=('name'), max_limit=None,
+              max_pages=13)
+    #pylint:disable-msg=C0322
+    def adv_search(self, searchwords, operator='AND',
+                   collection_id=COLLECTION_ID, searchon='both'):
+        '''Applications advanced search result
+
+        :arg searchwords: one or more words to search for.
+        :arg operator: 'AND'/'OR' as applied to searchwords.
+        :arg collection_id: collection to search
+        :arg searchon: 'name', 'description' or 'both'
+
+        Search is performed on name, description.
+        Results are sorted according to name.
+        Parts where pattern was recognized are shown in listing.
+        '''
+
+        app_list = []
+
+        #
+        # Do some validation.
+        #
+        if len(searchwords) == 0:
+            flash('Specify one or more keywords...')
+
+        if ((operator != 'AND') and (operator != 'OR')):
+            flash('Invalid operator (%s).  "AND"/"OR" are acceptable' %
+                  operator)
+
+        if ((searchon != 'name') and (searchon != 'description') and
+            (searchon != 'both')):
+            flash('Invalid search on (%s).  Valid options: "name", ' +
+                  '"description" or "both"' % searchon)
+
+        #
+        # case insensitive
+        #
+        swords = searchwords.lower()
+        swords = swords.split()
+
+        app_query = select((Application.name, Application.description,
+                            Application.icon_status_id),
+                           and_(Application.desktoptype == 'Application',
+                                Application.apptype == 'desktop'), 
+                           use_labels=True)
+
+        if operator == 'OR':
+            clauses = []
+            for searchword in swords:
+                pattern = '%' + searchword + '%'
+                if searchon == 'description':
+                    #pylint:disable=E1101
+                    clauses.append(func.lower(Application.description).\
+                                              like(pattern))
+                    #pylint:enable=E1101
+
+                elif searchon in ['name', 'both']:
+                    clauses.append(func.lower(Application.name).\
+                                              like(pattern))
+                    if searchon == 'both':
+                        #pylint:disable=E1101
+                        clauses.append(func.lower(Application.description).\
+                                                  like(pattern))
+                        #pylint:enable=E1101
+
+            app_query = app_query.where(and_(or_(*clauses)))
+
+        else: # AND operator
+            for searchword in swords:
+                pattern = '%' + searchword + '%'
+                clauses = []
+                if searchon == 'description':
+                    #pylint:disable=E1101
+                    clauses.append(func.lower(Application.description).\
+                                              like(pattern))
+                    #pylint:enable=E1101
+
+                elif searchon in ['name', 'both']:
+                    clauses.append(func.lower(Application.name).\
+                                              like(pattern))
+                    if searchon == 'both':
+                        #pylint:disable=E1101
+                        clauses.append(func.lower(Application.description).\
+                                                  like(pattern))
+                        #pylint:enable=E1101
+
+                app_query = app_query.where(or_(*clauses))
+
+        #
+        # Build a dictionary.
+        # app[<app_name>]
+        #
+        apps = {}
+        row_count = 0
+        for row in app_query.execute():
+            row_count = row_count + 1
+            app_name = row[ApplicationsTable.c.name]
+            app_desc = row[ApplicationsTable.c.description]
+            app_icon_status = row[ApplicationsTable.c.icon_status_id]
+            if not apps.has_key(app_name):
+                apps[app_name] = []
+                apps[app_name].append(app_desc)
+                apps[app_name].append(app_icon_status)
+
+        result = select((CollectionTable,),
+                        and_(Collection.id == collection_id)).execute()
+        active_collection = result.fetchone()
+
+        #
+        # @paginate does not like dictionaries.  But it does like a list of
+        # dictionaries.
+        #
+        app_list = []
+        app_names = apps.keys()
+        app_names.sort()
+        for name in app_names:
+            app_info = {}
+            app_info['name'] = name
+            app_info['desc'] = apps[name][0]
+            app_info['icon_status'] = apps[name][1]
+
+            app_list.append(app_info)
+
+        collection_list = []
+        collection_list = get_collection_info()
+
+        return dict(title=self.app_title,  searchwords=searchwords,
+                    operator=operator, collections=collection_list,
+                    collection_id=int(collection_id), searchon=searchon,
+                    app_list=app_list, count=len(app_list))
 
 
     def _applications_search_query(self, pattern):
         p = re.compile(ur'\W+')
         s_pattern = p.sub(u' ', pattern).split(u' ')
-        s_pattern_list = [u'%%%s%%' % p.strip(ur'%') for p in s_pattern if p.strip(ur'%')]
+        s_pattern_list = [u'%%%s%%' % p.strip(ur'%') for p in s_pattern \
+                             if p.strip(ur'%')]
 
         std_columns = (
                 Application.apptype,
@@ -492,7 +649,7 @@ class ApplicationController(controllers.Controller):
                          title=_('%(app)s -- Invalid Application Name') % {
                              'app': self.app_title},
                              message=_('The application you were linked to'
-                             ' (%(app)s) does not exist in the Package '
+                             ' (%(app)s) does not exist in the Package'
                              ' Database. If you received this error from a link'
                              ' on the fedoraproject.org website, please report'
                              ' it.') % {'app': app_name})
@@ -543,7 +700,9 @@ class AppIconController(controllers.Controller):
         icons = dict(icon_data)
         
         # icon theme priority: default > hicolor > whatever
-        return str(icons.get('default', None) or icons.get('hicolor', None) or icons[icons.keys()[0]])
+        return str(icons.get('default', None) or \
+                   icons.get('hicolor', None) or \
+                   icons[icons.keys()[0]])
 
                     
 
