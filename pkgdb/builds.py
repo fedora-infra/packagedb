@@ -43,7 +43,7 @@ from pkgdb.model import PackageListing, Repo, RpmFiles, RpmProvides, RpmRequires
 from pkgdb.model import CollectionTable, PackageTable, PackageBuildTable
 from pkgdb.model import ReposTable
 
-from pkgdb.lib.search import get_collection_info
+from pkgdb.lib.sort import get_collection_info
 from pkgdb.lib.utils import STATUS
 
 from pkgdb import release, _

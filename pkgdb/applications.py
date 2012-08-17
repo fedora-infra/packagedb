@@ -46,7 +46,7 @@ from pkgdb.model import Comment, Application, Icon, IconName, PackageBuild
 from pkgdb.model import Tag, Usage, ApplicationUsage, ApplicationTag
 from pkgdb.model import MimeType, Theme
 from pkgdb.model import Collection, ApplicationsTable, CollectionTable
-from pkgdb.lib.search import get_collection_info
+from pkgdb.lib.sort import get_collection_info
 from pkgdb.lib.utils import mod_grp
 from pkgdb import release, _
 from pkgdb.lib.text_utils import excerpt

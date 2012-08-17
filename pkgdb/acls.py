@@ -44,7 +44,7 @@ from pkgdb.model import Package, PackageTable, Collection, CollectionTable, \
 from pkgdb.dispatcher import PackageDispatcher
 from pkgdb.bugs import Bugs
 from pkgdb.letter_paginator import Letters
-from pkgdb.lib.search import get_collection_info
+from pkgdb.lib.sort import get_collection_info
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 

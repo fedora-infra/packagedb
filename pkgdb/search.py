@@ -40,7 +40,7 @@ from pkgdb.model import Collection, Package, PackageBuild, PackageListing, \
                         Repo
 from pkgdb.model import CollectionTable, PackageTable, PackageBuildTable, \
                         ReposTable
-from pkgdb.lib.search import get_collection_info
+from pkgdb.lib.sort import get_collection_info
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
