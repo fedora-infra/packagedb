@@ -338,13 +338,6 @@ class PackageDispatcher(controllers.Controller):
                         STATUS[statusname])
                 change_person.acls.append(person_acl)
 
-            # For now, we specialcase the build acl to reflect the commit
-            # this is because we need to remove notifications and UI that
-            # depend on any acl being set and for now, the commit acl is being
-            # used for build and push
-            if new_acl == 'commit':
-                self._create_or_modify_acl(pkg_listing, person_name, 'build',
-                        statusname)
         #pylint:disable-msg=E1101
         person_acl.status = session.query(PackageAclStatus).filter(
                 PackageAclStatus.statuscodeid==STATUS[statusname]).one()
@@ -395,13 +388,6 @@ class PackageDispatcher(controllers.Controller):
                         STATUS[statusname])
                 change_group.acls.append(group_acl)
 
-        # For now, we specialcase the build acl to reflect the commit
-        # this is because we need to remove notifications and UI that
-        # depend on any acl being set and for now, the commit acl is being
-        # used for build and push
-        if new_acl == 'commit':
-            self._create_or_modify_group_acl(pkg_listing, group_name, 'build',
-                    statusname)
         return group_acl
 
     def _most_eligible_comaintainer(self, pkg_listing):
@@ -605,7 +591,7 @@ class PackageDispatcher(controllers.Controller):
         # Send a log to people interested in the package
         self._send_log_msg(log_msg, _('%(pkg)s (un)retirement') % {
             'pkg': pkg.package.name}, identity.current.user, (pkg,),
-            ('approveacls', 'watchbugzilla', 'watchcommits', 'build', 'commit'))
+            ('approveacls', 'watchbugzilla', 'watchcommits', 'commit'))
         return dict(status=True, retirement=retirement)
 
     @expose(allow_json=True)
@@ -1298,7 +1284,7 @@ class PackageDispatcher(controllers.Controller):
                 # Add Acls for them to the packages
                 for pkg_listing in listings:
                     for acl in ('watchbugzilla', 'watchcommits', 'commit',
-                            'build', 'approveacls'):
+                            'approveacls'):
                         person_acl = self._create_or_modify_acl(pkg_listing,
                                 username, acl, 'Approved')
 
@@ -1647,8 +1633,7 @@ class PackageDispatcher(controllers.Controller):
         self._send_log_msg('\n'.join(log_msgs), 
             _('%(pkg)s ownership changed') % {
                 'pkg': pkg_name}, identity.current.user, package_listings,
-                ('approveacls', 'watchbugzilla', 'watchcommits', 'build',
-                    'commit'))
+                ('approveacls', 'watchbugzilla', 'watchcommits', 'commit'))
 
         return dict(status=True, pkg_listings=package_listings)
 
