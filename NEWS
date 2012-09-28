@@ -10,6 +10,8 @@ NEWS
 0.5.5
 -----
 - Added warning for development and staging deployment types
+- Add set_remove_acl_request() function
+- Many and varied bugfixes
 
 -----
 0.5.4
