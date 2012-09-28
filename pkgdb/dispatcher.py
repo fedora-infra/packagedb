@@ -1766,16 +1766,22 @@ class PackageDispatcher(controllers.Controller):
                 return dict()
 
         if pkg_list:
+            # Select the pkgs requested
             pkg_listing_ids = select((PackageListingTable.c.id,), from_obj=(PackageTable\
                 .join(PackageListingTable).join(CollectionTable)\
                 .join(BranchTable, onclause=CollectionTable.c.id==BranchTable.c.collectionid)))\
                 .where(and_(PackageTable.c.name.in_(pkg_list),
                         PackageListingTable.c.critpath!=critpath))
         else:
-            pkg_listing_ids = select((PackageListingTable.c.id,)).where(and_(
-                    not_(PackageListingTable.c.statuscode.in_((STATUS['EOL'],
-                        STATUS['Removed']))),
-                    PackageListingTable.c.critpath!=critpath))
+            # Select all packages in the collection
+            pkg_listing_ids = select((PackageListingTable.c.id,),
+                    from_obj=(PackageTable.join(PackageListingTable)\
+                        .join(CollectionTable).join(BranchTable,
+                        onclause=CollectionTable.c.id==BranchTable.c.collectionid)))\
+                        .where(and_(
+                        not_(PackageListingTable.c.statuscode.in_((STATUS['EOL'],
+                             STATUS['Removed']))),
+                             PackageListingTable.c.critpath!=critpath))
 
         if collctn_list:
             pkg_listing_ids = pkg_listing_ids.where(BranchTable.c.branchname.in_(collctn_list))
