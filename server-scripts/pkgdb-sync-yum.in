@@ -285,7 +285,9 @@ def update(args):
     for repo in repos:
         log.info("Repo: %s" % repo.name)
         # prepare importer
-    
+        repo.mirror = str(repo.mirror)
+        repo.url = str(repo.url)
+
         try:
             importer = PackageBuildImporter(repo, force=args.force,
                     cachedir=cachedir)
@@ -298,7 +300,7 @@ def update(args):
         except Exception, e:
             log.error('Failed to read repo %s! (%s)' % (repo.name, e))
             continue
-        
+
         total = len(pkgbuilds)
         counter = 1
 
