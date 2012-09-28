@@ -8,7 +8,6 @@
     import socket
     import pkgdb.release
     from pkgdb import _
-    from turbogears import config
     from pkgdb.model.apps import icon_url 
     from fedora.tg.tg1utils import tg_url
     try:
@@ -65,12 +64,12 @@
   <body py:attrs="select('@*')" class="tundra">
     <div py:for="js in tg_js_bodytop" py:replace="XML(js.display())" />
     <div id="wrapper">
-      <div id="head" class="head-${config.get('deployment_type', 'dev')}">
+      <div id="head" class="head-${tg.config.get('deployment_type', 'dev')}">
         <h1><a href="http://fedoraproject.org/index.html">Fedora</a></h1>
-        <h2 py:if="config.get('deployment_type', 'dev')=='dev'">
+        <h2 py:if="tg.config.get('deployment_type', 'dev')=='dev'">
           DEVELOPMENT INSTANCE
         </h2>
-        <h2 py:if="config.get('deployment_type', 'dev')=='stg'">
+        <h2 py:if="tg.config.get('deployment_type', 'dev')=='stg'">
           STAGING INSTANCE
         </h2>
         <ul class="toolbar" id="#main-toolbar">
