@@ -33,7 +33,7 @@ options(
             'TurboGears[future] >= 1.0',
             'TurboMail',
             'python_fedora >= 0.3.12',
-            'SQLAlchemy >= 0.5.5',
+            'SQLAlchemy >= 0.5.5, < 0.7',
             # Doesn't use setuptools so not on RHEL5
             #'python_bugzilla >= 0.5',
         ],
