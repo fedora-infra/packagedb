@@ -219,6 +219,7 @@ class PackageListing(SABase):
         :returns: new branch
         :rtype: PackageListing
         '''
+        from pkgdb.lib.utils import STATUS
         from pkgdb.model.collections import Branch
         from pkgdb.model.logs import GroupPackageListingAclLog, \
                 PersonPackageListingAclLog
@@ -239,7 +240,7 @@ class PackageListing(SABase):
             #pylint:enable-msg=E1101
             # Create the new PackageListing
             clone_branch = self.package.create_listing(clone_collection,
-                    self.owner, 'Approved', qacontact=self.qacontact,
+                    self.owner, STATUS[self.statuscode], qacontact=self.qacontact,
                     author_name=author_name)
 
         log_params = {'user': author_name,
