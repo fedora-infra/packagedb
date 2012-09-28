@@ -1,4 +1,15 @@
 [global]
+#
+# Deployment type
+# Determines which color of the header is being used
+# Valid options:
+# - "dev": Development
+# - "stg": Staging
+# - "prod": Production
+#
+deployment_type = "dev"
+
+
 pkgdb.admin_grp = 'cvsadmin'
 pkgdb.pkger_grp = 'packager'
 pkgdb.mod_grp = 'sysadmin'

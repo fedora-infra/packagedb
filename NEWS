@@ -2,9 +2,14 @@
 NEWS
 ====
 
-:Authors: Toshio Kuratomi
-:Date: 5 Sep 2010
-:Version: 0.5.4
+:Authors: Toshio Kuratomi, Patrick Uiterwijk
+:Date: 4 Aug 2012
+:Version: 0.5.5
+
+-----
+0.5.5
+-----
+- Added warning for development and staging deployment types
 
 -----
 0.5.4
