@@ -18,7 +18,7 @@ include pkgdb/templates/*.mak
 include pkgdb/templates/plain/*.txt
 include pkgdb/templates/plain/*.mak
 include pkgdb/config/*.cfg
-recursive-include pkgdb/static/ *
+recursive-include pkgdb/static *
 include fedora-packagedb.spec
 include yum.repos.d/*
 include clients/*
