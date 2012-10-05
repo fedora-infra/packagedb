@@ -52,7 +52,7 @@ from turbogears.database import metadata, mapper, session
 
 from fedora.tg.json import SABase
 from turbogears import url, config
-from fedora.tg.tg1utils import tg_url
+from fedora.tg.utils import tg_url
 
 from pkgdb.model import PackageBuild, BinaryPackage, Collection
 from pkgdb.lib.dt_utils import fancy_delta

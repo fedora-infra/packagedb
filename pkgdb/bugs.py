@@ -39,7 +39,7 @@ except ImportError:
     from sqlalchemy.exc import InvalidRequestError
 
 from cherrypy import request
-from fedora.tg.tg1utils import request_format
+from fedora.tg.utils import request_format
 from operator import itemgetter, attrgetter
 
 try:

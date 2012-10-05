@@ -249,11 +249,12 @@ def _get_cachedir(cachedir):
 
 
 def update(args):
-    """Import rpm files from active repos into pkgdb
+    """Import local rpm files into pkgdb
 
-    Import builds from all active repos. 
-    Script goes through the builds backwards. 
-    It skips already imported builds.
+    Turns local rpms into YumLocalPackage and imports
+    them the usual way. This is usefull for testing
+    or initial import. WARNING: be carefull to associate
+    the builds with the right repo.
 
     :arg args: set of commandline arguments 
     """

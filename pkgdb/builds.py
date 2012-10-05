@@ -39,7 +39,7 @@ from pkgdb.model import Repo, PackageBuild, RpmFiles, RpmProvides
 from pkgdb.model import RpmRequires, PackageBuildDepends
 from pkgdb import release, _
 
-from fedora.tg.tg1utils import request_format
+from fedora.tg.utils import request_format
 
 from operator import itemgetter
 import re

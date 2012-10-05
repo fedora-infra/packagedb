@@ -32,7 +32,7 @@ from unittest import TestCase
 import atexit
 import cherrypy
 import cherrypy._cpwsgi
-import fedora.tg.tg1utils
+import fedora.tg.utils
 from webtest import TestApp
 
 cherrypy_major_ver = int(cherrypy.__version__.split('.')[0])
@@ -174,7 +174,7 @@ class WebAppTest(DBTest):
     def _init_env(self):
         import pkgdb.lib.utils
         pkgdb.lib.utils.init_globals()
-        turbogears.startup.call_on_startup.append(fedora.tg.tg1utils.enable_csrf)
+        turbogears.startup.call_on_startup.append(fedora.tg.utils.enable_csrf)
 
     def _init_app(self, controller, path):
         mount(controller, path)
