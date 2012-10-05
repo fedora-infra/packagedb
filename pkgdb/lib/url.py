@@ -1,6 +1,6 @@
 from cherrypy import request
 from turbogears import config, url
-from fedora.tg.util import tg_url
+from fedora.tg.tg1utils import tg_url
 
 # this is taken from turbogears 1.1 branch
 def get_server_name():

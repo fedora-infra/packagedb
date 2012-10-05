@@ -40,10 +40,10 @@ from operator import attrgetter
 from turbogears.feed import FeedController
 from turbogears.database import session
 
-from fedora.tg.util import tg_url
+from fedora.tg.tg1utils import tg_url
 
 try:
-    from fedora.tg.util import tg_absolute_url
+    from fedora.tg.tg1utils import tg_absolute_url
 except:
     from pkgdb.lib.url import tg_absolute_url
 

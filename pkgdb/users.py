@@ -43,7 +43,7 @@ from pkgdb.model import Collection, Package, PackageListing, \
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
-from fedora.tg.util import request_format
+from fedora.tg.tg1utils import request_format
 
 class Users(controllers.Controller):
     '''Controller for all things user related.

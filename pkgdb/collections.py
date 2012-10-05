@@ -44,7 +44,7 @@ from turbogears.database import session
 from cherrypy import request
 
 import koji
-from fedora.tg.util import json_or_redirect, request_format, tg_url
+from fedora.tg.tg1utils import json_or_redirect, request_format, tg_url
 
 from pkgdb import _
 from pkgdb.model.collections import CollectionPackage, Collection, Branch
