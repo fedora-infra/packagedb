@@ -51,7 +51,7 @@ from pkgdb.model import StatusTranslation, PackageAclStatus, \
 from pkgdb.model import BranchTable, CollectionTable, PackageTable, \
         PackageListingTable
 
-from fedora.tg.tg1utils import tg_url, jsonify_validation_errors
+from fedora.tg.utils import tg_url, jsonify_validation_errors
 
 from pkgdb import _
 from pkgdb.notifier import EventLogger

@@ -45,7 +45,7 @@ from pkgdb.letter_paginator import Letters
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
-from fedora.tg.tg1utils import request_format
+from fedora.tg.utils import request_format
 
 COLLECTION = 21
 

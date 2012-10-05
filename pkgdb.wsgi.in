@@ -16,7 +16,7 @@ import atexit
 import cherrypy
 import cherrypy._cpwsgi
 import turbogears
-import fedora.tg.tg1utils
+import fedora.tg.utils
 
 turbogears.config.update({'global': {'mako.directories': [os.path.join(
     '@DATADIR@', 'fedora-packagedb/pkgdb/templates')]}})
@@ -27,7 +27,7 @@ turbogears.config.update({'global': {'autoreload.on': False}})
 
 import pkgdb.lib.utils
 pkgdb.lib.utils.init_globals()
-turbogears.startup.call_on_startup.append(fedora.tg.tg1utils.enable_csrf)
+turbogears.startup.call_on_startup.append(fedora.tg.utils.enable_csrf)
 
 import pkgdb.controllers
 cherrypy.root = pkgdb.controllers.Root()

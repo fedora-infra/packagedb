@@ -32,7 +32,7 @@ from turbogears import controllers, expose, redirect, identity, flash, \
                        validate, validators
 from turbogears.database import session
 from cherrypy import request
-from fedora.tg.tg1utils import request_format
+from fedora.tg.utils import request_format
 
 from pkgdb.model import Tag, PackageBuild, Application
 from pkgdb.letter_paginator import Letters

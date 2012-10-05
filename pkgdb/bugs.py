@@ -36,7 +36,7 @@ import xmlrpclib
 from turbogears import controllers, expose, config, redirect
 from sqlalchemy.exceptions import InvalidRequestError
 from cherrypy import request
-from fedora.tg.tg1utils import request_format
+from fedora.tg.utils import request_format
 
 try:
     # python-bugzilla 0.4 >= rc5
