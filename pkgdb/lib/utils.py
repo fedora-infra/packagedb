@@ -54,7 +54,7 @@ try:
 except ImportError:
     from sqlalchemy.exc import DataError
 
-from bugzilla import Bugzilla
+from bugzilla import Bugzilla, RHBugzilla3
 import memcache
 
 # The Fedora Account System Module
@@ -227,7 +227,7 @@ def get_bz():
     bz_url = bz_server + '/xmlrpc.cgi'
     bz_user = config.get('bugzilla.user')
     bz_pass = config.get('bugzilla.password')
-    _bugzilla = Bugzilla(url=bz_url, user=bz_user, password=bz_pass,
+    _bugzilla = RHBugzilla3(url=bz_url, user=bz_user, password=bz_pass,
             cookiefile=None)
     return _bugzilla
     
