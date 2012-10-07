@@ -129,8 +129,7 @@ class Search(controllers.Controller):
         else: # AND operator
             if searchon in ['name', 'both']:
                 #pylint:disable-msg=E1101
-                exact = PackageBuild.query.filter_by(name=query).filter(
-                        PackageBuild.statuscode!=STATUS['Removed'])
+                exact = PackageBuild.query.filter_by(name=query)
                 # query the db for every searchword and build a Query object
                 # to filter succesively
                 query = query.split()
