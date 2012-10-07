@@ -59,6 +59,7 @@ class Letters(controllers.Controller):
            :kwarg searchwords: optional - string to restrict the list, can use
                 * and ? as wildcards
         '''
+        sql_searchwords = ''
         if searchwords:
             # Escape special chars and turn shell-style '*' and '?' wildcards
             # into sql '%' and '_' wildcards
