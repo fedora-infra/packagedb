@@ -57,8 +57,15 @@ class Letters(controllers.Controller):
         '''Return a list of all packages in the database.
 
            :kwarg searchwords: optional - string to restrict the list, can use
-           % or * as wildcards
+                * and ? as wildcards
         '''
+        if searchwords:
+            # Escape special chars and turn shell-style '*' and '?' wildcards
+            # into sql '%' and '_' wildcards
+            sql_searchwords = searchwords.replace('\\\\', '\\\\\\\\')\
+                    .replace('%', '\\%').replace('_', '\\_')\
+                    .replace('*', '%').replace('?', '_')
+
         server_webpath = config.get('server.webpath', '/pkgdb')
         if request.path.startswith("%s/acls/" % server_webpath):
             if request.path.startswith('%s/acls/bugs/' % server_webpath):
@@ -68,9 +75,8 @@ class Letters(controllers.Controller):
             else:
                 mode = 'acls/name/'
                 bzUrl = ''
-            if searchwords != '':
-                searchwords = searchwords.replace('*','%')
-                if searchwords.isdigit() and int(searchwords) < 10: # 0-9
+            if sql_searchwords != '':
+                if sql_searchwords.isdigit() and int(sql_searchwords) < 10: # 0-9
                     #pylint:disable-msg=E1101
                     packages = Package.query.options(
                             lazyload('listings2'), lazyload('status')
@@ -78,13 +84,11 @@ class Letters(controllers.Controller):
                                      Package.name.like('9%')))
                     #pylint:enable-msg=E1101
                 else: 
-                    # sanitize for ilike:
-                    searchwords = searchwords.replace('&','').replace('_','') 
                     #pylint:disable-msg=E1101
                     packages = Package.query.options(
                         lazyload('listings2'),
                         lazyload('status')).filter(
-                            Package.name.ilike(searchwords)
+                            Package.name.ilike(sql_searchwords, escape='\\\\')
                             ).order_by(Package.name.asc())
                     #pylint:enable-msg=E1101
             else:
@@ -100,13 +104,10 @@ class Letters(controllers.Controller):
         else:
             mode = 'tag/'
             bzUrl = ''
-            if searchwords != '':
-                searchwords = searchwords.replace('*','%') \
-                              .replace('&','').replace('_','')
-
+            if sql_searchwords:
                 #pylint:disable-msg=E1101
                 packages = session.query(Application).join('tags').filter(
-                        Tag.name.ilike(searchwords)).all()
+                        Tag.name.ilike(sql_searchwords, escape='\\\\')).all()
                 #pylint:enable-msg=E1101
             else:
                 packages = PackageBuild.query.all() #pylint:disable-msg=E1101
@@ -124,8 +125,6 @@ class Letters(controllers.Controller):
                     collectn_map[pkglisting.collection.collectionid] = \
                         pkglisting.collection.branchname
         statusMap = dict([(statuscode, STATUS[statuscode]) for statuscode in statuses])
-
-        searchwords = searchwords.replace('%','*')
 
         return dict(title=_('%(app)s -- Packages Overview %(mode)s') % {
             'app': self.app_title, 'mode': mode.strip('/')},
