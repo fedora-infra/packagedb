@@ -4,8 +4,8 @@ Fedora PackageDB
 
 :Author: Toshio Kuratomi
 :Contact: toshio@fedoraproject.org
-:Date: Wed 13 May, 2009
-:Version: 0.4.x
+:Date: Sun 7 October, 2012
+:Version: 0.5.x
 
 The `PackageDB` keeps track of package ownership within Fedora.
 
