@@ -180,7 +180,7 @@ setup(
         "TurboGears[future] >= 1.0",
         "TurboMail",
         "python_fedora >= 0.3.12",
-        "SQLAlchemy >= 0.5.5",
+        "SQLAlchemy >= 0.5.5, < 0.7",
         "python_migrate >= 0.5.0"
         "pytz"
     ],
