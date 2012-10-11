@@ -503,7 +503,7 @@ class ListQueries(controllers.Controller):
                 collection_name += ' (%s)' % collection
 
             try:
-                collectn = bugzilla_acls[collection_name]
+                collections = bugzilla_acls[collection_name]
             except KeyError:
                 collections = {}
                 bugzilla_acls[collection_name] = collections
@@ -770,7 +770,7 @@ class ListQueries(controllers.Controller):
                     PackageListingTable.c.collectionid==CollectionTable.c.id,
                     PackageListingTable.c.critpath==True))
         if collctn_list:
-            collectn_list = Collection.unify_branchnames(collectn_list)
+            collctn_list = Collection.unify_branchnames(collctn_list)
             pkg_names = pkg_names.where(CollectionTable.c.branchname.\
                                         in_(collctn_list))
         else:
