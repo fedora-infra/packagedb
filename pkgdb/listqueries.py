@@ -567,7 +567,7 @@ class ListQueries(controllers.Controller):
                 if (collection):
                     pkg[0] += ' (%s)' % collection
                 try:
-                    collection_name = package[pkg[0]]
+                    collections = package[pkg[0]]
                 except KeyError:
                     collections = {}
                     package[pkg[0]] = collections
