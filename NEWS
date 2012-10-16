@@ -3,8 +3,13 @@ NEWS
 ====
 
 :Authors: Toshio Kuratomi, Patrick Uiterwijk
-:Date: 4 Aug 2012
-:Version: 0.5.5
+:Date: 15 Oct 2012
+:Version: 0.5.6
+
+-----
+0.5.6
+-----
+- Add ability to specify collection as a filter to the notify list
 
 -----
 0.5.5
