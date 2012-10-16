@@ -502,7 +502,7 @@ class ListQueries(controllers.Controller):
                 collection_name += ' (%s)' % collection
 
             try:
-                collectn = bugzilla_acls[collection_name]
+                collections = bugzilla_acls[collection_name]
             except KeyError:
                 collections = {}
                 bugzilla_acls[collection_name] = collections
