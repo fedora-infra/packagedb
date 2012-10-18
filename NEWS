@@ -12,6 +12,8 @@ NEWS
 - Add massacls with functions add_comaintainers and change_owner (fchiulli)
 - Add validators to acls and users packages; change the eol argument to
   acls.orphans() and users.packages() a true Boolean
+- Add plain text output for listing critpath packages
+
 -----
 0.5.4
 -----
