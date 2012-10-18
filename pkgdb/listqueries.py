@@ -743,6 +743,10 @@ class ListQueries(controllers.Controller):
             'app': self.app_title}, packages=pkgs, collections=collections,
             name=name, version=version, eol=eol)
 
+    @expose(template='mako:/plain/critpath.mak',
+            as_format='plain', accept_format='text/plain',
+            content_type='text/plain; charset=utf-8', #pylint:disable-msg=C0322
+            format='text') #pylint:disable-msg=C0322
     @expose(allow_json=True)
     @validate(validators = {'collctn_list': SetOf(use_set=True,
             element_validator=IsCollectionSimpleNameRegex())})

@@ -10,6 +10,7 @@ NEWS
 0.5.6
 -----
 - Add ability to specify collection as a filter to the notify list
+- Add plain text output for listing critpath packages
 
 -----
 0.5.5
