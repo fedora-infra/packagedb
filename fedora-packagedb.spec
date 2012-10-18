@@ -1,5 +1,5 @@
 Name:           fedora-packagedb
-Version:        0.5.5
+Version:        0.5.6
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -100,6 +100,10 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Wed Oct 17 2012 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.6-1
+- Add plain text output for critpath list
+- Add ability to filter notify list by colleciton
+
 * Sun Oct  7 2012 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.5-1
 - 0.5.5 bugfix release
 
