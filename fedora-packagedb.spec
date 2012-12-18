@@ -26,8 +26,9 @@ Requires: koji
 Requires: mod_wsgi
 Requires: python-cpio
 Requires: python-memcached
+Requires: fedmsg
 
-BuildRequires: python-devel
+BuildRequires: python2-devel
 BuildRequires: python-genshi
 BuildRequires: TurboGears
 %if 0%{?rhel} || 0%{?fedora} >= 13
@@ -91,6 +92,7 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-sync-bugzilla
 %{_bindir}/pkgdb-sync-yum
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
+%config(noreplace) %{_sysconfdir}/fedmsg.d/pkgdb.py
 %config(noreplace) %{_sysconfdir}/pkgdb-sync-bugzilla.cfg
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/pkgdb.conf
 
