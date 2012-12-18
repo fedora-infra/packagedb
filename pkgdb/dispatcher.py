@@ -58,6 +58,7 @@ from pkgdb.notifier import EventLogger
 from pkgdb.lib.utils import fas, get_bz, admin_grp, critpath_grps, pkger_grp, \
         provenpkger_grp, newpkger_grp, LOG, STATUS
 from pkgdb.lib.validators import SetOf, IsCollectionSimpleNameRegex
+from pkgdb import fedmsgshim as fedmsg
 
 MAXSYSTEMUID = 9999
 
@@ -508,10 +509,17 @@ class PackageDispatcher(controllers.Controller):
                 pkg_listing.collection.version,
                 identity.current.user_name)
             statuscode = STATUS['Orphaned']
+
         # Make sure a log is created in the db as well.
         log = PackageListingLog(identity.current.user_name,
                 statuscode, log_msg, None, pkg_listing.id)
         log.packagelistingid = pkg_listing.id
+
+        # Emit an event to the fedmsg bus.
+        fedmsg.publish(topic="owner.update", msg=dict(
+            package_listing=pkg_listing.api_repr(version=1),
+            agent=identity.current.user_name,
+        ))
 
         return log_msg
 
@@ -596,10 +604,19 @@ class PackageDispatcher(controllers.Controller):
             return dict(status=False,
                 message=_('Unable to (un)retire package %(pkg)s') % {
                     'pkg': pkg_listing_id})
+
         # Send a log to people interested in the package
         self._send_log_msg(log_msg, _('%(pkg)s (un)retirement') % {
             'pkg': pkg.package.name}, identity.current.user, (pkg,),
             ('approveacls', 'watchbugzilla', 'watchcommits', 'commit'))
+
+        # Emit a message to the fedmsg bus
+        fedmsg.publish(topic="package.retire", msg=dict(
+            package_listing=pkg.api_repr(version=1),
+            retirement=retirement.lower(),
+            agent=identity.current.user_name,
+        ))
+
         return dict(status=True, retirement=retirement)
 
     @expose(allow_json=True)
@@ -749,6 +766,15 @@ class PackageDispatcher(controllers.Controller):
         self._send_log_msg(log_msg, _('%(pkg)s had acl change status') % {
             'pkg': pkg.package.name}, identity.current.user, (pkg,),
             other_email=(user['email'],))
+
+        # Emit a message to the fedmsg bus
+        fedmsg.publish(topic="acl.update", msg=dict(
+            package_listing=pkg.api_repr(version=1),
+            username=person_name,
+            acl=new_acl,
+            status=statusname,
+            agent=identity.current.user_name,
+        ))
 
         return dict(status=True)
 
@@ -939,6 +965,15 @@ class PackageDispatcher(controllers.Controller):
                 'user': identity.current.user_name, 'action': acl_action,
                 'acl': acl_name}, identity.current.user, (pkg_listing,))
 
+        # Emit a message to the fedmsg bus
+        fedmsg.publish(topic="acl.request.toggle", msg=dict(
+            package_listing=pkg_listing.api_repr(version=1),
+            acl_status=acl_status,
+            acl_action=acl_action,
+            acl=acl_name,
+            agent=identity.current.user_name,
+        ))
+
         # Return the new value
         return dict(status=True, personName=identity.current.user_name,
                 aclStatusFields=self.acl_status_translations,
@@ -1089,6 +1124,13 @@ class PackageDispatcher(controllers.Controller):
         self._send_log_msg('\n'.join(logs), _('%(pkg)s was added for %(owner)s')
                 % {'pkg': pkg.name, 'owner': owner}, identity.current.user,
                 (pkg_listing,))
+
+        # Emit a message to the fedmsg bus
+        fedmsg.publish(topic="package.new", msg=dict(
+            package=pkg.api_repr(version=1),
+            package_listing=pkg_listing.api_repr(version=1),
+            agent=identity.current.user_name,
+        ))
 
         # Return the new values
         return dict(status=True, package=pkg, packageListing=pkg_listing)
@@ -1441,6 +1483,15 @@ class PackageDispatcher(controllers.Controller):
                         'ver': pkg_listing.collection.version,
                         'user': identity.current.user_name},
                     identity.current.user, (pkg_listing,))
+
+        # Emit a message to the fedmsg bus
+        fedmsg.publish(topic="package.update", msg=dict(
+            package=package,
+            changes=changes,
+            package_listings=[pl.api_repr(version=1) for pl in pkg_list_log_msgs],
+            agent=identity.current.user_name,
+        ))
+
         return dict(status=True)
 
     @expose(allow_json=True)
@@ -1510,6 +1561,14 @@ class PackageDispatcher(controllers.Controller):
                     log_params
             self._send_log_msg(msg, subject,
                 identity.current.user, [clone_branch])
+
+        # Emit an event to the fedmsg bus
+        fedmsg.publish(topic="branch.clone", msg=dict(
+            package=pkg,
+            branch=branch,
+            master=master,
+            agent=identity.current.user_name,
+        ))
 
         return dict(pkglisting=clone_branch)
 
@@ -1599,6 +1658,15 @@ class PackageDispatcher(controllers.Controller):
         self._send_log_msg('\n'.join(log_msgs), _('%(pkg)s had acl change'
             ' status') % {'pkg': pkg.name}, identity.current.user,
             package_listings, other_email=(user_email,))
+
+        # Emit an event to the fedmsg bus.
+        fedmsg.publish(topic="acl.user.remove", msg=dict(
+            package=pkg.api_repr(version=1),
+            package_listings=[pl.api_repr(version=1) for pl in package_listings],
+            username=username,
+            collections=collectn_list,
+            agent=identity.current.user_name,
+        ))
 
         return dict(status=True)
 
@@ -1763,6 +1831,14 @@ class PackageDispatcher(controllers.Controller):
             if not critpath:
                 # Shortcut -- if the call is asking to unmark packages and
                 # we've just done that due to reset, we're done
+
+                # Emit an event to the fedmsg bus.
+                fedmsg.publish(topic="critpath.update", msg=dict(
+                    package_listing_ids=pkg_listing_ids,
+                    critpath=critpath,
+                    agent=identity.current.user_name,
+                ))
+
                 return dict()
 
         if pkg_list:
@@ -1797,5 +1873,12 @@ class PackageDispatcher(controllers.Controller):
             session.rollback() #pylint:disable-msg=E1101
             flash(_('Updating critpath produced an error: %s') % e)
             return dict(exc='UpdateUnsuccessful')
+
+        # Emit an event to the fedmsg bus.
+        fedmsg.publish(topic="critpath.update", msg=dict(
+            package_listing_ids=pkg_listing_ids,
+            critpath=critpath,
+            agent=identity.current.user_name,
+        ))
 
         return dict()

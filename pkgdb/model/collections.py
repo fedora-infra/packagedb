@@ -100,6 +100,18 @@ class Collection(SABase):
                 self.publishurltemplate, self.pendingurltemplate,
                 self.summary, self.description)
 
+    def api_repr(self, version):
+        """ Used by fedmsg to serialize Collections in messages. """
+        if version == 1:
+            return dict(
+                name=self.name,
+                version=self.version,
+                publishurltemplate=self.publishurltemplate,
+                pendingurltemplate=self.pendingurltemplate,
+            )
+        else:
+            raise NotImplementedError("Unsupported version %r" % version)
+
     @property
     def simple_name(self):
         '''Return a simple name for the Collection
@@ -172,6 +184,21 @@ class Branch(Collection):
                  self.parentid, self.name, self.version, self.statuscode,
                  self.owner, self.publishurltemplate, self.pendingurltemplate,
                  self.summary, self.description, self.gitbranchname)
+
+    def api_repr(self, version):
+        """ Used by fedmsg to serialize Branches in messages. """
+        if version == 1:
+            return dict(
+                name=self.name,
+                version=self.version,
+                publishurltemplate=self.publishurltemplate,
+                pendingurltemplate=self.pendingurltemplate,
+                branchname=self.branchname,
+                disttag=self.disttag,
+            )
+        else:
+            raise NotImplementedError("Unsupported version %r" % version)
+
 
 class Repo(SABase):
     '''Repos are actual yum repositories.

@@ -123,6 +123,19 @@ class Package(SABase):
                 self.name, self.summary, self.statuscode, self.description,
                 self.upstreamurl, self.reviewurl, self.shouldopen)
 
+    def api_repr(self, version):
+        """ Used by fedmsg to serialize Packages in messages. """
+        if version == 1:
+            return dict(
+                name=self.name,
+                summary=self.summary,
+                description=self.description,
+                reviewurl=self.reviewurl,
+                upstreamurl=self.upstreamurl,
+            )
+        else:
+            raise NotImplementedError("Unsupported version %r" % version)
+
     def create_listing(self, collection, owner, statusname,
             qacontact=None, author_name=None):
         '''Create a new PackageListing branch on this Package.
@@ -206,6 +219,19 @@ class PackageListing(SABase):
                ' qacontact=%r, specfile=%r)' % (self.owner, self.statuscode,
                         self.packageid, self.collectionid, self.qacontact,
                         self.specfile)
+
+    def api_repr(self, version):
+        """ Used by fedmsg to serialize PackageListing in messages. """
+        if version == 1:
+            return dict(
+                package=self.package.api_repr(version),
+                collection=self.collection.api_repr(version),
+                owner=self.owner,
+                qacontact=self.qacontact,
+                specfile=self.specfile,
+            )
+        else:
+            raise NotImplementedError("Unsupported version %r" % version)
 
     def clone(self, branch, author_name):
         '''Clone the permissions on this PackageListing to another `Branch`.
