@@ -1,5 +1,5 @@
 Name:           fedora-packagedb
-Version:        0.5.6
+Version:        0.5.7
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -100,6 +100,9 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* Tue Dec 18 2012 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.7-1
+- Add a fedmsg hook  (from threebean)
+
 * Wed Oct 17 2012 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.6-1
 - Add plain text output for critpath list
 - Add ability to filter notify list by colleciton
