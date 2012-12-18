@@ -98,7 +98,8 @@ options(
         #datafiles=[],
         localefiles=['locale'],
         docfiles=['docs'],
-        conffiles=['pkgdb.cfg', 'pkgdb-client.cfg', {'httpd-pkgdb.conf': 'httpd/conf.d/pkgdb.conf'}],
+        conffiles=['pkgdb.cfg', 'pkgdb-client.cfg', {'httpd-pkgdb.conf': 'httpd/conf.d/pkgdb.conf'},
+            'fedmsg.d/pkgdb.py'],
         ),
     ### FIXME: Eventually, this should be tied into data and a library that
     # finds file location instead.
