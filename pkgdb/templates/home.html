@@ -26,14 +26,11 @@
     <h1>Fedora Package Database -- Version ${version}</h1>
     <h2>Overview</h2>
 
-The Package Database is a central repository of package information in Fedora. You will eventually be able to find and change all the metainformation about a package by searching the database. The current implementation is focused on the data that package developers and release engineers need to create packages and spin them into a distribution. 
+The Package Database is a central repository of package information in Fedora. You will eventually be able to find and change all the metainformation about a package by searching the database. The current implementation is focused on the data that package developers and release engineers need to create packages and spin them into a distribution.
 
     ${search_box()}
 
     <div style="">
-    ${app_box('Most discussed', discussed, 'discussed')}
-    ${app_box('Most popular', popular, 'popular')}
-    ${app_box('Latest comments', comments, 'comments')}
     ${build_box('Most fresh Builds', fresh)}
     </div>
 
