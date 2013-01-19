@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2007-2009  Red Hat, Inc.
+# Copyright © 2007-2013  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -39,22 +39,15 @@ from pkgdb import release, _
 import logging
 log = logging.getLogger(__name__)
 
-from pkgdb.acls import Acls
 from pkgdb.collections import Collections
-from pkgdb.comments import Comments
-from pkgdb.feeds import ApplicationFeed, CommentsFeed
+from pkgdb.acls import Acls
 from pkgdb.listqueries import ListQueries
 from pkgdb.packages import Package
-from pkgdb.applications import ApplicationController, AppIconController
-from pkgdb.applications import ApplicationsController
-from pkgdb.builds import BuildsController
 from pkgdb.stats import Stats
 from pkgdb.search import Search
-from pkgdb.tag import Tags
-from pkgdb.user_rating import UserRatings
 from pkgdb.users import Users
 
-from pkgdb.model import PackageBuild, Comment, Application
+from pkgdb.model import PackageBuild
 
 from fedora.tg import controllers as f_ctrlers
 
@@ -68,23 +61,13 @@ class Root(controllers.RootController):
     #pylint:disable-msg=W0232
     app_title = _('Fedora Package Database')
 
-    appfeed = ApplicationFeed()
-    appicon = AppIconController()
-    commentsfeed = CommentsFeed()
     acls = Acls(app_title)
     collections = Collections(app_title)
-    comments = Comments(app_title)
     lists = ListQueries(app_title)
     packages = Package(app_title)
-    applications = ApplicationController(app_title)
-    apps = ApplicationsController(app_title)
     stats = Stats(app_title)
     search = Search(app_title)
-    tag = Tags(app_title)
-    rating = UserRatings(app_title)
     users = Users(app_title)
-    builds = BuildsController(app_title)
-
 
     @expose(template="pkgdb.templates.login", allow_json=True)
     def login(self, forward_url=None, *args, **kwargs):
@@ -92,33 +75,23 @@ class Root(controllers.RootController):
         login_dict['title'] = _('Login to the PackageDB')
         return login_dict
 
-
     @expose(allow_json=True)
     def logout(self):
         return f_ctrlers.logout()
-
 
     @expose(template='pkgdb.templates.home')
     def index(self):
         '''Overview of the PackageDB.
 
-        This page serves as an overview of the entire PackageDB.  
+        This page serves as an overview of the entire PackageDB.
         '''
         fresh = PackageBuild.most_fresh(5)
 
-        comments = Application.last_commented(10)
-
-        popular = Application.most_popular(limit=10)
-
-        discussed = Application.most_discussed(limit=5)
-
         return dict(title=self.app_title, version=release.VERSION,
-            pattern='', comments=comments, fresh=fresh, popular=popular,
-            discussed=discussed)
-
+            pattern='', fresh=fresh)
 
     @expose(template='pkgdb.templates.home')
-    def search_dispatcher(self, pattern='', submit='' ):
+    def search_dispatcher(self, pattern='', submit=''):
 
         if submit == 'Builds':
             redirect('/builds/search/%s' % pattern)
@@ -129,21 +102,20 @@ class Root(controllers.RootController):
 
         redirect('/')
 
-
-    
-    @expose(content_type='application/xml', template='pkgdb.templates.opensearch')
+    @expose(content_type='application/xml',
+        template='pkgdb.templates.opensearch')
     def opensearch(self, xmlfile):
 
         if xmlfile == 'pkgdb_packages.xml':
-            return dict(shortname='Packages', url='/acls/list/', 
+            return dict(shortname='Packages', url='/acls/list/',
                 param='searchwords', example='kernel',
                 stars=True)
         elif xmlfile == 'pkgdb_apps.xml':
-            return dict(shortname='Apps', url='/apps/search', 
+            return dict(shortname='Apps', url='/apps/search',
                 param='pattern', example='nethack',
                 stars=False)
         elif xmlfile == 'pkgdb_builds.xml':
-            return dict(shortname='Builds', url='/builds/search', 
+            return dict(shortname='Builds', url='/builds/search',
                 param='pattern', example='kernel',
                 stars=False)
 
