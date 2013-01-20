@@ -4,7 +4,6 @@
   xmlns:xi="http://www.w3.org/2001/XInclude"
   xml:lang="en" lang="en">
   <xi:include href="layout.html" />
-  <xi:include href="_build_box.html" />
   <?python
     from pkgdb.lib.dt_utils import fancy_delta
   ?>
@@ -27,10 +26,6 @@
 The Package Database is a central repository of package information in Fedora. You will eventually be able to find and change all the metainformation about a package by searching the database. The current implementation is focused on the data that package developers and release engineers need to create packages and spin them into a distribution.
 
     ${search_box()}
-
-    <div style="">
-    ${build_box('Most fresh Builds', fresh)}
-    </div>
 
   </div>
   <div style="clear: left;"></div>
