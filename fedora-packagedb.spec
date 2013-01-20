@@ -27,6 +27,7 @@ Requires: mod_wsgi
 Requires: python-cpio
 Requires: python-memcached
 Requires: fedmsg
+Requires: python-rdflib
 
 BuildRequires: python2-devel
 BuildRequires: python-genshi
