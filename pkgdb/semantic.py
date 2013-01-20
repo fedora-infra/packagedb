@@ -96,5 +96,4 @@ class DoapController(controllers.Controller):
         # Retrieve the serialized RDF/XML into a variable
         output = store.serialize(format='pretty-xml')
 
-        print output
         return output
