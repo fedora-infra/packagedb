@@ -63,7 +63,7 @@ class DoapController(controllers.Controller):
 
         :arg app_name: Name of the packagebuild/rpm to lookup
         '''
-        if app_name == None:
+        if pkgname == None:
             raise redirect('/')
 
         pkg = session.query(Package).filter(
