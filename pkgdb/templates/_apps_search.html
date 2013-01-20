@@ -1,0 +1,29 @@
+<html py:strip=""
+      xmlns:py="http://genshi.edgewall.org/">
+    <div py:def="search_box(packages=True)" id="search-applications">
+        <div>
+        <form action="${tg.url('/search_dispatcher')}" method="POST">
+            <h4>Search</h4> 
+            <input name="pattern" value="${pattern}" style="width: ${50+(12,0)[apps]+(10,0)[builds]+(10,0)[packages]}%; margin-bottom: 10px;" />
+            <span style="white-space: nowrap;">
+            <input py:if="packages" class="button" name="submit" type="Submit" value="Packages" />
+            <img  id="search-help" style="padding-left: 6px; padding-top: 2px;" src="${tg.url('/static/images/info.png')}" />
+            </span>
+                <div py:if="packages">
+                    <h3>Search in Packages</h3>
+                    <p>
+                    Use this type of search to list packages see its status and set ACLs.
+                    </p>
+                    <p>
+                    Pattern is one word that is fulltext searched in pacakage name.
+                    </p>
+                </div>
+            </div>
+        </form>
+        </div>
+        <!--div class="hint">
+            Type in what you are looking for or what do you want to do. E.g.: "web browser", "edit photo", "read mail", etc. 
+        </div-->
+    </div>
+
+</html>
