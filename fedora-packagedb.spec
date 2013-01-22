@@ -1,5 +1,5 @@
 Name:           fedora-packagedb
-Version:        0.5.7
+Version:        0.6.0
 Release:        1%{?dist}
 Summary:        Keep track of ownership of packages in Fedora
 
@@ -102,6 +102,9 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
+* - 0.6.0-1
+- Update to 0.6.0 which removes the application part
+
 * Tue Dec 18 2012 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.7-1
 - Add a fedmsg hook  (from threebean)
 
