@@ -1,5 +1,5 @@
 #!/usr/bin/python
-__requires__ = 'fedora_packagedb'
+__requires__ = 'TurboGears'
 
 import os.path
 import sys

@@ -31,7 +31,7 @@ from turbogears import controllers, expose, redirect
 
 from fedora.tg.utils import request_format
 
-from pkgdb.model import PackageBuild, Repo
+from pkgdb.model import Repo
 from pkgdb import _
 
 class Package(controllers.Controller):
@@ -61,7 +61,7 @@ class Package(controllers.Controller):
             raise redirect('/packages/list/')
 
         #pylint:disable-msg=E1101
-        builds_query = PackageBuild.query.filter_by(name=buildName)
+        #builds_query = PackageBuild.query.filter_by(name=buildName)
         #pylint:enable-msg=E1101
 
         # look for The One packagebuild

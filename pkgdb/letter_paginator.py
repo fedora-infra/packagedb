@@ -34,7 +34,7 @@ from sqlalchemy.orm import lazyload
 from turbogears import controllers, expose, paginate, config
 from turbogears.database import session
 
-from pkgdb.model import Application, Package, PackageBuild, Tag
+from pkgdb.model import Package
 from pkgdb.lib.utils import STATUS
 from pkgdb import _
 
@@ -102,16 +102,7 @@ class Letters(controllers.Controller):
             packages = packages.filter(
                     Package.statuscode!=STATUS['Removed'])
             #pylint:enable-msg=E1101
-        else:
-            mode = 'tag/'
-            bzUrl = ''
-            if sql_searchwords:
-                #pylint:disable-msg=E1101
-                packages = session.query(Application).join('tags').filter(
-                        Tag.name.ilike(sql_searchwords, escape='\\\\')).all()
-                #pylint:enable-msg=E1101
-            else:
-                packages = PackageBuild.query.all() #pylint:disable-msg=E1101
+
 
         # generate the statusMap and collectn_map
         statuses = set()

@@ -47,8 +47,6 @@ from pkgdb.stats import Stats
 from pkgdb.search import Search
 from pkgdb.users import Users
 
-from pkgdb.model import PackageBuild
-
 from fedora.tg import controllers as f_ctrlers
 
 
@@ -85,7 +83,7 @@ class Root(controllers.RootController):
 
         This page serves as an overview of the entire PackageDB.
         '''
-        fresh = PackageBuild.most_fresh(5)
+        #fresh = PackageBuild.most_fresh(5)
 
         return dict(title=self.app_title, version=release.VERSION,
             pattern='', fresh=fresh)
