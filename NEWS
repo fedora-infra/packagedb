@@ -7,6 +7,13 @@ NEWS
 :Version: 0.5.7
 
 -----
+0.6.0
+-----
+- Remove the application part from pkgdb
+  - This remove, applications, build, tag, user comments
+  - This does not clean the database (yet)
+
+-----
 0.5.7
 -----
 - Emit messages to fedmsg
