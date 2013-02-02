@@ -34,9 +34,7 @@ from pkgdb.model.collections import *
 from pkgdb.model.languages import *
 from pkgdb.model.logs import *
 from pkgdb.model.packages import *
-from pkgdb.model.prcof import *
 from pkgdb.model.statuses import *
-from pkgdb.model.apps import *
 from pkgdb.model.yumdb import *
 
 ### FIXME: Create sqlalchemy schema.

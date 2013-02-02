@@ -1,6 +1,6 @@
 #!/usr/bin/python -tt
 import __main__
-__main__.__requires__ = 'fedora_packagedb'
+__main__.__requires__ = 'TurboGears'
 
 import sys
 import os

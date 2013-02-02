@@ -48,11 +48,10 @@ from turbogears.database import get_engine, session
 
 from pkgdb.model import Package, Branch, GroupPackageListing, Collection, \
         GroupPackageListingAcl, PackageListing, PersonPackageListing, \
-        PersonPackageListingAcl, Repo, PackageBuild, PackageBuildRepo, Tag
+        PersonPackageListingAcl, Repo
 from pkgdb.model import PackageTable, PackageListingTable, \
         PersonPackageListingTable, PersonPackageListingAclTable, \
-        CollectionTable, ApplicationTag, PackageBuildApplicationsTable, \
-        BinaryPackageTag, BranchTable
+        CollectionTable, BranchTable
 from pkgdb.model import YumTagsTable
 from pkgdb.model.yumdb import yummeta
 from pkgdb.lib.utils import STATUS
@@ -320,132 +319,6 @@ class ListQueries(controllers.Controller):
         return dict(title=_('%(app)s -- VCS ACLs') % {'app': self.app_title},
                 packageAcls=package_acls)
 
-    @expose(template='mako:plain.buildtags',
-            as_format="plain", accept_format="text/plain",
-            content_type="text/plain; charset=utf-8",
-            format='text')
-    @expose(template='pkgdb.templates.xml.buildtags', as_format='xml',
-            accept_format='application/xml')
-    @expose(template="pkgdb.templates.buildtags", allow_json=True)
-    def buildtags(self, repos):
-        '''Return a dictionary with all the PackageBuild tags and their scores.
-        The PackageBuild tags are tags binded to applications belonging to 
-        the packagebuild. When there are more apps with same tag within one 
-        packaebuild, the maximum score is taken.
-
-        :arg repoName: A repo shortname to lookup packagebuilds into
-        for tags
-
-        Returns:
-        :buildtags: a dictionary of buildaname : tagdict, where tagdict is a
-        dictionary of tag : score key-value pairs. 
-        '''
-        if not isinstance(repos, list):
-            repos = [repos]
-
-        buildtags = {}
-        for repo in repos:
-            buildtags[repo] = {}
-
-            #pylint:disable-msg=E1101
-            repo_query = select((Repo.id,))
-            repo_query = repo_query.where(Repo.shortname == repo)
-            for result in repo_query.execute():
-                repoid = result[0]
-            #pylint:enable-msg=E1101
-
-            pkgbld_query = select((PackageBuild.name,
-                                   Tag.name,
-                                   ApplicationTag.score),
-                               and_(Tag.id == ApplicationTag.tagid,
-                                    ApplicationTag.applicationid == PackageBuildApplicationsTable.c.applicationid,
-                                    PackageBuildApplicationsTable.c.packagebuildid == PackageBuild.id,
-                                    PackageBuildRepo.repoid == Repo.id,
-                                    PackageBuildRepo.packagebuildid == \
-                                        PackageBuild.id,
-                                    Repo.shortname==repo))
-            pkgblds = pkgbld_query.execute()
-            #pylint:enable-msg=E1101
-
-            for pkgbld in pkgblds:
-                pkgname = pkgbld[0]
-                tag = pkgbld[1]
-                score = pkgbld[2]
-                if (not buildtags[repo].has_key(pkgname)):
-                    buildtags[repo][pkgname] = {}
-                buildtags[repo][pkgname][tag] = score
-
-        return dict(title=_('%(app)s -- Build Tags') % {'app': self.app_title},
-                    buildtags=buildtags, repos=repos)
-
-    @expose(content_type='application/sqlite')
-    def sqlitebuildtags(self, repo):
-        '''Return a sqlite database of packagebuilds and tags.
-
-        The database returned will contain copies or subsets of tables in the
-        pkgdb.
-
-        :arg repo: A repository shortname to retrieve tags for
-                   (e.g. 'F-11-i386')
-
-        .. versionadded:: 0.5.0
-
-        '''
-        # initialize/clear database
-        fd, dbfile = tempfile.mkstemp()
-        os.close(fd)
-        sqliteconn = 'sqlite:///%s' % dbfile
-
-        yummeta.bind = create_engine(sqliteconn)
-        yummeta.create_all()
-
-        # since we're using two databases, we'll need a new session
-        default_engine = get_engine()
-        lite_session = sessionmaker(yummeta.bind)()
-
-        # Retrieve the tags from the database
-        tags = union(select(
-            (PackageBuild.name.label('name'),
-                Tag.name.label('tag'),
-                ApplicationTag.score.label('score')),
-            and_(Tag.id==ApplicationTag.tagid,
-                 ApplicationTag.applicationid==\
-                     PackageBuildApplicationsTable.c.applicationid,
-                 PackageBuildApplicationsTable.c.packagebuildid==\
-                     PackageBuild.id,
-                 PackageBuildRepo.repoid==Repo.id,
-                 PackageBuildRepo.packagebuildid==PackageBuild.id,
-                 Repo.shortname==repo)),
-            select((PackageBuild.name.label('name'),
-                Tag.name.label('tag'),
-                BinaryPackageTag.score.label('score')),
-            and_(Tag.id==BinaryPackageTag.tagid,
-                BinaryPackageTag.binarypackagename==PackageBuild.name,
-                PackageBuildRepo.repoid==Repo.id,
-                PackageBuildRepo.packagebuildid==PackageBuild.id,
-                Repo.shortname==repo)))
-
-        pkg_tags = []
-        ### HACK: Should be able to do this in SQL somehow I think but it
-        # requires merging the scores somehow
-        used_tags = set()
-        for tag in tags.execute().fetchall():
-            if (tag[0], tag[1]) not in used_tags:
-                pkg_tags.append({'name': tag[0], 'tag': tag[1],
-                                 'score': tag[2]})
-                used_tags.add((tag[0], tag[1]))
-
-        if pkg_tags:
-            # If there's no tags, we'll return an empty database
-            lite_session.execute(YumTagsTable.insert(), pkg_tags)
-
-        lite_session.commit()
-
-        f = open(dbfile, 'r')
-        dump = f.read()
-        f.close()
-        os.unlink(dbfile)
-        return dump
 
     @expose(template="mako:/plain/bugzillaacls.mak",
             as_format="plain", accept_format="text/plain",
