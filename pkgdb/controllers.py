@@ -86,7 +86,7 @@ class Root(controllers.RootController):
         #fresh = PackageBuild.most_fresh(5)
 
         return dict(title=self.app_title, version=release.VERSION,
-            pattern='', fresh=fresh)
+            pattern='')
 
     @expose(template='pkgdb.templates.home')
     def search_dispatcher(self, pattern='', submit=''):
@@ -108,13 +108,5 @@ class Root(controllers.RootController):
             return dict(shortname='Packages', url='/acls/list/',
                 param='searchwords', example='kernel',
                 stars=True)
-        elif xmlfile == 'pkgdb_apps.xml':
-            return dict(shortname='Apps', url='/apps/search',
-                param='pattern', example='nethack',
-                stars=False)
-        elif xmlfile == 'pkgdb_builds.xml':
-            return dict(shortname='Builds', url='/builds/search',
-                param='pattern', example='kernel',
-                stars=False)
 
         redirect('/')
