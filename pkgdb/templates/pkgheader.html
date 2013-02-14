@@ -15,6 +15,9 @@
     <li py:if="action != 'bugz'"><a class="bugz"
       href="${tg.url('/acls/bugs/' + pkgUrlName)}">Bug Reports</a></li>
     <li py:if="action != 'pkgdb'"><a class="pkgdb"
-      href="${tg.url('/acls/name/' + pkgUrlName)}">Package Info</a></li>
+      href="${tg.url('/acls/name/' + pkgUrlName)}">Ownership Info</a></li>
+	<a class="beefy" href="${tg.url(
+      'https://apps.fedoraproject.org/packages/%s' % (pkgUrlName,))}"
+      >Package Info</a></li>
   </ul>
 </html>
