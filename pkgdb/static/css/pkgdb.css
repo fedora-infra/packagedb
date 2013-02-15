@@ -634,3 +634,7 @@
     white-space: nowrap;
 }
 
+a.beefy {
+   padding-left: 20px;
+   background: url(https://apps.fedoraproject.org/tagger/images/favicons/16_beefy.png) 0 50% no-repeat;
+}
