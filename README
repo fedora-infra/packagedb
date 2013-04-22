@@ -45,8 +45,8 @@ Installation
 
 Although it's not working yet, the goal is to be able to run::
 
-  paver build
-  paver install --root ${path to installation}
+  python seutp.py build
+  python setup.py install --root ${path to installation}
 
 and have a working installation.
 
@@ -67,8 +67,8 @@ Install Prerequisites
 Get and Build the Source
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ::
-  bzr branch bzr://bzr.fedorahosted.org/bzr/packagedb/fedora-packagedb-devel
-  cd fedora-packagedb-devel
+  git clone https://github.com/fedora-infra/packagedb.git
+  cd packagedb
   python setup.py egg_info
   paver build --install-conf=`pwd` --install-data=`pwd` --install-sbin=`pwd`
 
