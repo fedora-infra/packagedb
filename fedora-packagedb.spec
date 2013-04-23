@@ -102,7 +102,7 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
-* - 0.6.0-1
+* Tue Apr 23 2013 Toshio Kuratomi <toshio@fedoraproject.org> - 0.6.0-1
 - Update to 0.6.0 which removes the application part
 
 * Tue Dec 18 2012 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.7-1
