@@ -400,36 +400,53 @@ Release
 4) Make sure the NEWS file is accurate (use git log if needed).
    Commit everything to your branch
 
-5) Checkout a fresh copy of the release branch (so we know we aren't including
+5) Update fedora-packagedb.spec and pkgdb/release.py with the new version
+   information.
+     # Make edits to fedora-packagedb.spec and release.py
+     git commit
+
+6) Make sure the docs are proper and publish them::
+    # Build docs and check for errors
+    python setup.py build_sphinx
+    # packagedb isn't on pypi so don't use upload_docs.  Upload to
+    # fedorahosted instead.  The directory to upload to is slightly different
+    # depending on whether you're a fedorahosted admin or a normal
+    # fedorahosted user:
+    # Admin::
+    rsync -av build/sphinx/html/ fedorahosted.org:/srv/web/releases/p/a/packagedb/doc/
+    # Normal contributor::
+    rsync -av build/sphinx/html/ fedorahosted.org:packagedb/doc/
+
+7) Checkout a fresh copy of the release branch (so we know we aren't including
    any problematic files)
 
-6) Build the tarball::
+8) Build the tarball::
     python setup.py sdist --format bztar
 
-7) Copy the dist/fedora-packagedb-VERSION.tar.bz2 and fedora-packagedb.spec files
+9) Copy the dist/fedora-packagedb-VERSION.tar.bz2 and fedora-packagedb.spec files
    to where you build Fedora RPMS.  Do a test build::
      cp dist/fedora-packagedb-*.tar.bz2 fedora-packagedb.spec /srv/git/fedora-packagedb/
      pushd /srv/git/fedora-packagedb/
      rpmbuild -bs --nodeps fedora-packagedb.spec
      mock -r epel-6-i386 *.src.rpm
 
-5) Make sure the build completes.  Run rpmlint on the results.  Install and
-   test the new packages::
+10) Make sure the build completes.  Run rpmlint on the results.  Install and
+    test the new packages::
      rpmlint *rpm
      sudo rpm -Uvh *noarch.rpm
      [test]
 
-6) When satisfied that the build works, create a fresh tarball and upload to
-   fedorahosted.  The directory to upload to is slightly different for
-   fedorahosted admins vs normal fedorahosted users:
-   Admin::
+11) When satisfied that the build works, create a fresh tarball and upload to
+    fedorahosted.  The directory to upload to is slightly different for
+    fedorahosted admins vs normal fedorahosted users:
+    Admin::
      scp dist/fedora-packagedb*tar.bz2 fedorahosted.org:/srv/web/releases/p/a/packagedb/
-   Normal contributor::
+    Normal contributor::
      scp dist/fedora-packagedb*tar.bz2 fedorahosted.org:packagedb/
 
-7) Mark the release as finished in git::
+12) Mark the release as finished in git::
      git flow release finish $VERSION
      git push --all
      git push --tags
 
-8) Finish building and pushing packages for Fedora.
+13) Finish building and pushing packages for Fedora.
