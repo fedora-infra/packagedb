@@ -418,7 +418,10 @@ Release
     rsync -av build/sphinx/html/ fedorahosted.org:packagedb/doc/
 
 7) Checkout a fresh copy of the release branch (so we know we aren't including
-   any problematic files)
+   any problematic files)::
+    push ../
+    git clone packagedb packagedb-release
+    git checkout release/$VERSION
 
 8) Build the tarball::
     python setup.py sdist --format bztar
