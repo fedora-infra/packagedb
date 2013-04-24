@@ -150,6 +150,7 @@ class InstallApp(_install_lib, object):
         confdir = '%s%s%s' % (self.root, os.path.sep, self.install_conf)
         confdir.replace('//','/')
         self.mkpath(confdir)
+        self.mkpath(os.path.join(confdir, 'fedmsg.d'))
         if not os.path.exists('pkgdb.cfg') \
                 and os.path.exists('pkgdb.cfg.sample'):
             conf_src = 'pkgdb.cfg.sample'
