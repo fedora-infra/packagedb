@@ -158,6 +158,8 @@ class InstallApp(_install_lib, object):
                 os.path.join(confdir, 'pkgdb-sync-bugzilla.cfg'))
         self.copy_file('clients/pkgdb-client.cfg',
                 os.path.join(confdir, 'pkgdb-client.cfg'))
+        self.copy_file('fedmsg.d/pkgdb.py',
+                os.path.join(confdir, 'fedmsg.d/pkgdb.py'))
 
 setup(
     name=NAME,
@@ -195,16 +197,16 @@ setup(
 
         # if this has widgets, uncomment the next line
         # 'turbogears.widgets',
-        
+
         # if this has a tg-admin command, uncomment the next line
         # 'turbogears.command',
-        
+
         # if this has identity providers, uncomment the next line
         # 'turbogears.identity.provider',
-    
+
         # If this is a template plugin, uncomment the next line
         # 'python.templating.engines',
-        
+
         # If this is a full application, uncomment the next line
         'turbogears.app',
     ],
