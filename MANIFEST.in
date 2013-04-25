@@ -1,5 +1,6 @@
 include pkgdb.wsgi.in
 include setup.py
+include pavement.py
 include httpd-pkgdb.conf.in
 include pkgdb.sql
 include start-pkgdb.in
@@ -11,6 +12,7 @@ exclude server-scripts/pkgdb-sync-repo
 recursive-include update-schema *
 include AUTHORS README COPYING ChangeLog NEWS
 include *.cfg.sample
+include fedmsg.d/*
 include pkgdb/templates/*.html
 include pkgdb/templates/*.mak
 include pkgdb/templates/plain/*.txt

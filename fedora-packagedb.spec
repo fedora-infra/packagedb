@@ -92,7 +92,7 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-sync-bugzilla
 %{_bindir}/pkgdb-sync-yum
 %config(noreplace) %{_sysconfdir}/pkgdb.cfg
-%config(noreplace) %{_sysconfdir}/fedmsg.d/pkgdb.py
+%config(noreplace) %{_sysconfdir}/fedmsg.d/pkgdb.py*
 %config(noreplace) %{_sysconfdir}/pkgdb-sync-bugzilla.cfg
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/pkgdb.conf
 
@@ -102,7 +102,7 @@ rm -rf %{buildroot}
 %{_bindir}/pkgdb-client
 
 %changelog
-* - 0.6.0-1
+* Tue Apr 23 2013 Toshio Kuratomi <toshio@fedoraproject.org> - 0.6.0-1
 - Update to 0.6.0 which removes the application part
 
 * Tue Dec 18 2012 Toshio Kuratomi <toshio@fedoraproject.org> - 0.5.7-1
