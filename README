@@ -421,6 +421,7 @@ Release
    any problematic files)::
     pushd ../
     git clone packagedb packagedb-release
+    cd packagedb-release
     git checkout release/$VERSION
 
 8) Build the tarball::
