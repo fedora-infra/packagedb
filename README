@@ -419,7 +419,7 @@ Release
 
 7) Checkout a fresh copy of the release branch (so we know we aren't including
    any problematic files)::
-    push ../
+    pushd ../
     git clone packagedb packagedb-release
     git checkout release/$VERSION
 
