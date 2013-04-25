@@ -14,7 +14,7 @@ information from other tools.
 ''')
 AUTHOR = 'Toshio Kuratomi'
 EMAIL = 'toshio@fedoraproject.org'
-COPYRIGHT = '2007-2012 Red Hat, Inc.'
+COPYRIGHT = '2013 Red Hat, Inc.'
 URL = 'https://fedorahosted.org/packagedb'
 DOWNLOAD_URL = 'https://fedorahosted.org/releases/p/a/packagedb/'
 LICENSE = 'GPLv2+'

@@ -73,35 +73,48 @@ class Stats(controllers.Controller):
                         PackageListing.owner!='orphan')).group_by(
                                 PackageListing.owner).order_by(
                                         desc('numpkgs')).limit(20)
+        top_owners_selection = top_owners_select.execute().fetchall()
         top_owners_names = []
-        for listing in top_owners_select.execute():
+        for listing in top_owners_selection:
             top_owners_names.append(listing.owner)
 
         # most packages owned or comaintained in DEVEL collection
         maintain_select = select(
-            [func.count(PersonPackageListing.username).label('numpkgs'),
+                [func.count(PersonPackageListing.username).label('numpkgs'),
                 PersonPackageListing.username,
-            PackageListing.collectionid], and_(
-            PersonPackageListing.packagelistingid==PackageListing.id,
-            PackageListing.collectionid==DEVEL)).group_by(
+                PackageListing.collectionid],
+            and_(
+                PersonPackageListing.packagelistingid==PackageListing.id,
+                PackageListing.collectionid==DEVEL)
+            ).group_by(
                 PersonPackageListing.username,
-            PackageListing.collectionid).order_by(
-            desc('numpkgs')).limit(20)
+                PackageListing.collectionid
+            ).order_by(
+                desc('numpkgs')
+            ).limit(20)
         maintain_names = []
-        for listing in maintain_select.execute():
+        maintain_selection = maintain_select.execute().fetchall()
+        for listing in maintain_selection:
             maintain_names.append(listing.username)
 
         # total number of packages in pkgdb
         total = PackageListing.query.count()
         # number of packages with no comaintainers
-        no_comaintainers = select([PackageListing.id],
-            and_(PackageListing.id==PersonPackageListing.packagelistingid,
-            PackageListing.collectionid==DEVEL,
-            PersonPackageListingAcl.
+        no_comaintainers = select(
+                [PackageListing.id],
+            and_(
+                PackageListing.id==PersonPackageListing.packagelistingid,
+                PackageListing.collectionid==DEVEL,
+                PersonPackageListingAcl.
                 personpackagelistingid==PersonPackageListing.id,
-            not_(or_(PersonPackageListingAcl.acl=='commit',
-            PersonPackageListingAcl.acl=='approveacls')))).group_by(
-            PackageListing.id).execute().rowcount
+            not_(
+                or_(
+                    PersonPackageListingAcl.acl=='commit',
+                    PersonPackageListingAcl.acl=='approveacls')
+                )
+            )).group_by(
+                PackageListing.id
+            ).execute().rowcount
         # orphan packages in DEVEL 
         orphan_devel = PackageListing.query.filter_by(
             statuscode=STATUS['Orphaned'], collectionid=DEVEL).count()
@@ -116,7 +129,7 @@ class Stats(controllers.Controller):
             orphan_devel=orphan_devel, orphan_latest=orphan_latest,
             own=own,
             top_owners_names=top_owners_names,
-            top_owners_list=top_owners_select.execute(),
+            top_owners_list=top_owners_selection,
             maintain_names=maintain_names,
-            maintain_list=maintain_select.execute(),
+            maintain_list=maintain_selection,
             message='Warning: Do not depend on the json data from this function remaining the same.  It could change, be moved to other functions, or go away at any time.  There is no guaranteed API stability for this function!')

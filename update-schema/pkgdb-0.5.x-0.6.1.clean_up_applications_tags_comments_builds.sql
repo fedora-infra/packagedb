@@ -1,0 +1,26 @@
+DROP TABLE applicationstags;
+DROP TABLE applicationsusages;
+DROP TABLE appsmimetypes;
+DROP TABLE comments;
+DROP TABLE mimetypes;
+DROP TABLE packagebuildapplications;
+DROP TABLE packagebuilddepends;
+DROP TABLE packagebuildlog;
+DROP TABLE packagebuildlogstatuscode;
+DROP TABLE packagebuildrepos;
+DROP TABLE packagebuildstatuscode;
+DROP TABLE rpmconflicts;
+DROP TABLE rpmfiles;
+DROP TABLE rpmobsoletes;
+DROP TABLE rpmprovides;
+DROP TABLE rpmrequires;
+DROP TABLE binarypackagetags;
+DROP TABLE tags;
+DROP TABLE usages;
+DROP TABLE packagebuild;
+DROP TABLE binarypackages;
+DROP TABLE applications;
+DROP TABLE apptypes;
+DROP TABLE icons;
+DROP TABLE iconnames;
+
