@@ -1,7 +1,7 @@
 #!/usr/bin/python -tt
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2008  Red Hat, Inc.
+# Copyright © 2013  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -29,6 +29,7 @@ into bugzilla.
 import sys
 import os
 import getopt
+import itertools
 import xmlrpclib
 import codecs
 import smtplib
@@ -46,6 +47,7 @@ configspec = '''
     bugzilla.url = string(default = 'https://bugdev.devel.redhat.com/bugzilla-cvs/xmlrpc.cgi')
     bugzilla.username = string(default = '')
     bugzilla.password = string(default = '')
+    bugzilla.component_api = string(default = 'component.get')
     fas.url = string(default = '')
     fas.username = string(default = '')
     fas.password = string(default = '')
@@ -63,6 +65,7 @@ for entry in flatten_errors(cfg, res):
 BZSERVER = cfg['global']['bugzilla.url']
 BZUSER = cfg['global']['bugzilla.username']
 BZPASS = cfg['global']['bugzilla.password']
+BZCOMPAPI = cfg['global']['bugzilla.component_api']
 FASURL = cfg['global']['fas.url']
 FASUSER = cfg['global']['fas.username']
 FASPASS = cfg['global']['fas.password']
@@ -70,19 +73,69 @@ NOTIFYEMAIL = cfg['global']['notify.email']
 PKGDBSERVER = cfg['global']['pkgdbserver.url']
 DRY_RUN = cfg['global']['debug']
 
+# When querying for current info, take segments of 5000 packages a time
+BZ_PKG_SEGMENT = 5000
+
 class DataChangedError(Exception):
     '''Raised when data we are manipulating changes while we're modifying it.'''
     pass
 
+def segment(iterable, chunk, fill=None):
+    '''Collect data into `chunk` sized block'''
+    args = [iter(iterable)] * chunk
+    return itertools.izip_longest(*args, fillvalue=fill)
+    
+class ProductCache(dict):
+    def __init__(self, bz, acls):
+        self.bz = bz
+        self.acls = acls
+
+    # Ask bugzilla for a section of the pkglist.
+    # Save the information from the section that we want.
+    def __getitem__(self, key):
+        try:
+            return super(ProductCache, self).__getitem__(key)
+        except KeyError:
+            # We can only cache products we have pkgdb information for
+            if key not in self.acls:
+                raise
+
+        if BZCOMPAPI == 'getcomponentsdetails':
+            # Old API -- in python-bugzilla.  But with current server, this
+            # gives ProxyError
+            products = self.server.getcomponentsdetails(key)
+        elif BZCOMPAPI == 'component.get':
+            # Way that's undocumented in the partner-bugzilla api but works
+            # currently
+            pkglist = acls[key].keys()
+            products = {}
+            for pkg_segment in segment(pkglist, BZ_PKG_SEGMENT):
+                # Format that bugzilla will understand.  Strip None's that segment() pads
+                # out the final data segment() with
+                query = [dict(product=key, component=p) for p in pkg_segment if p is not None]
+                raw_data = self.bz._proxy.Component.get(dict(names=query))
+                for package in raw_data['components']:
+                    # Reformat data to be the same as what's returned from
+                    # getcomponentsdetails
+                    product = dict(initialowner=package['default_assignee'],
+                                   description=package['description'],
+                                   initialqacontact=package['default_qa_contact'],
+                                   initialcclist=package['default_cc'])
+                    products[package['name'].lower()] = product
+        self[key] = products
+
+        return super(ProductCache, self).__getitem__(key)
+
+
 class Bugzilla(object):
 
-    def __init__(self, bzServer, username, password):
-        self.productCache = {}
+    def __init__(self, bzServer, username, password, acls):
         self.bzXmlRpcServer = bzServer
         self.username = username
         self.password = password
 
         self.server = bugzilla.Bugzilla(url=self.bzXmlRpcServer, user=self.username,password=self.password)
+        self.productCache = ProductCache(self.server, acls)
 
         # Connect to the fedora account system
         self.fas = AccountSystem(base_url=FASURL, username=FASUSER,
@@ -122,20 +175,13 @@ class Bugzilla(object):
         # Lookup product
         try:
             product = self.productCache[collection]
-        except KeyError:
-            try:
-                product = self.server.getcomponentsdetails(collection)
-            except xmlrpclib.Fault, e:
-                # Output something useful in args
-                e.args = (e.faultCode, e.faultString)
-                raise
-            except xmlrpclib.ProtocolError, e:
-                e.args = ('ProtocolError', e.errcode, e.errmsg)
-                raise
-            for pkg in product.keys():
-                if pkg.lower() != pkg:
-                    product[pkg.lower()] = product[pkg]
-            self.productCache[collection] = product
+        except xmlrpclib.Fault as e:
+            # Output something useful in args
+            e.args = (e.faultCode, e.faultString)
+            raise
+        except xmlrpclib.ProtocolError as e:
+            e.args = ('ProtocolError', e.errcode, e.errmsg)
+            raise
 
         pkgKey = package.lower()
         if pkgKey in product:
@@ -220,7 +266,7 @@ class Bugzilla(object):
 
 def send_email(fromAddress, toAddress, subject, message):
     '''Send an email if there's an error.
-    
+
     This will be replaced by sending messages to a log later.
     '''
     msg = Message()
@@ -244,15 +290,15 @@ Sync package information from the package database to bugzilla.
 '''
         sys.exit(1)
 
-    # Initialize the connection to bugzilla
-    bugzilla = Bugzilla(BZSERVER, BZUSER, BZPASS)
-
     # Non-fatal errors to alert people about
     errors = []
 
     # Get bugzilla information from the package database
     pkgdb = PackageDB(base_url=PKGDBSERVER)
     acls = pkgdb.get_bugzilla_acls()
+
+    # Initialize the connection to bugzilla
+    bugzilla = Bugzilla(BZSERVER, BZUSER, BZPASS, acls)
 
     for product in acls.keys():
         if product not in ('Fedora', 'Fedora EPEL'):
@@ -280,7 +326,7 @@ Sync package information from the package database to bugzilla.
                 # we better see what it is
                 errors.append(str(e.args))
 
-    # Send notification of errors 
+    # Send notification of errors
     if errors:
         #print '[DEBUG]', '\n'.join(errors)
         send_email('accounts@fedoraproject.org',
