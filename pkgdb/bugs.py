@@ -92,7 +92,7 @@ class BugList(list):
         bug.bug_status = to_unicode(bug.bug_status)
         bug.short_desc = to_unicode(bug.short_desc)
         bug.product = to_unicode(bug.product)
-        return {'url': bug.url, 'bug_status': bug.bug_status,
+        return {'url': bug.weburl, 'bug_status': bug.bug_status,
                 'short_desc': bug.short_desc, 'bug_id': bug.bug_id,
                 'product': bug.product}
 
