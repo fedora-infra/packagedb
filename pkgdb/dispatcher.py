@@ -489,6 +489,7 @@ class PackageDispatcher(controllers.Controller):
         bzComment = 'This package has changed ownership in the Fedora'\
                         ' Package Database.  Reassigning to the new owner'\
                         ' of this component.'
+        previous_owner = pkg_listing.owner
         if owner['username'] != 'orphan':
             # Take ownership
             pkg_listing.owner = owner['username']
@@ -518,6 +519,7 @@ class PackageDispatcher(controllers.Controller):
         # Emit an event to the fedmsg bus.
         fedmsg.publish(topic="owner.update", msg=dict(
             package_listing=pkg_listing.api_repr(version=1),
+            previous_owner=previous_owner,
             agent=identity.current.user_name,
         ))
 
