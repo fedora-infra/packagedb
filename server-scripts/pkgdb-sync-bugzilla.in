@@ -74,7 +74,7 @@ PKGDBSERVER = cfg['global']['pkgdbserver.url']
 DRY_RUN = cfg['global']['debug']
 
 # When querying for current info, take segments of 5000 packages a time
-BZ_PKG_SEGMENT = 5000
+BZ_PKG_SEGMENT = cfg['global']['bugzilla.component_api_segment']
 
 class DataChangedError(Exception):
     '''Raised when data we are manipulating changes while we're modifying it.'''
@@ -84,7 +84,7 @@ def segment(iterable, chunk, fill=None):
     '''Collect data into `chunk` sized block'''
     args = [iter(iterable)] * chunk
     return itertools.izip_longest(*args, fillvalue=fill)
-    
+
 class ProductCache(dict):
     def __init__(self, bz, acls):
         self.bz = bz
