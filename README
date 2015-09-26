@@ -24,7 +24,7 @@ Project
 The `PackageDB` was started in January of 2007 to remove some of the hurdles
 that made it more time consuming to maintain packages in Fedora after CVS
 acls were introduced.  The intial goal was to take information about who owned,
-comaintained, and was allowed to commit changes to a package and put it in a
+co-maintained, and was allowed to commit changes to a package and put it in a
 database where owners could edit it.
 
 The system began to be used by cvsadmins in July of 2007, and was opened for
@@ -61,7 +61,7 @@ Running from a Checkout
 
 If you want to run from a checkout, you can perform the following commands::
 
-Install Prerequisites
+Install Prerequisites (on 22+ replace  yum with yum-deprecated or  dnf)
 ~~~~~~~~~~~~~~~~~~~~~
 ::
   yum -y install python-genshi TurboGears python-turbojson postgresql-server \
@@ -173,17 +173,7 @@ We don't have a good way to test these.latter scripts.
 
 TG FeedController bug
 ---------------------
-
-We're using an old version of TG (1.0) that no longer gets any updates so
-we'll have to modify the local TG everytime.
-
-Apply this patch to turbogears/feeds/feed.py
-http://trac.turbogears.org/attachment/ticket/2348/feedkid.diff
-
-And here's the link to the upstream ticket:
-http://trac.turbogears.org/ticket/2348
-
-Note: this has been applied to the Fedora and EPEL packages.
+## Per the linked ticket, it appears this section is now  useless and outdated (current  Fedora / EPEL installs appear to bring in 1.1.x)
 
 App icons as static content
 -------------------------------------------
@@ -376,7 +366,7 @@ Installing Message Catalogs
 
 ``python releaseutils.py install_catalogs`` will install the catalogs.  This
 commmand may be customized through the use of environment variables.  See
-``python releaseutils.py ==help`` for details.
+``python releaseutils.py --help`` for details.
 
 -------
 Release
